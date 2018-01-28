@@ -3,7 +3,11 @@ package shared
 import shared.data._
 
 trait Api {
-  def authenticate(input: Authentication.Input): ClientState
 
-  def change(token: Authentication.Token, changes: List[Change]): ClientStateUpdate
+  private var changes: Seq[Change] = Seq.empty
+
+  def init(token: Authentication.Token): ClientState
+
+  def change(snapshot: ClientStateSnapshot,
+    changes: Seq[Change]): ClientStateUpdate
 }

@@ -7,22 +7,24 @@ lazy val server = (project in file("jvm")).settings(
   libraryDependencies ++= Deps.server.value,
   WebKeys.packagePrefix in Assets := "public/",
   managedClasspath in Runtime += (packageBin in Assets).value
-).enablePlugins(SbtWeb, JavaAppPackaging).
+).enablePlugins(SbtWeb, JavaAppPackaging, WebScalaJSBundlerPlugin).
   dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(
   scalaVersion := Version.scala,
   scalaJSUseMainModuleInitializer := true,
+  npmDependencies in Compile ++= Deps.clientJs,
   libraryDependencies ++= Deps.client.value
-).enablePlugins(ScalaJSPlugin, ScalaJSWeb).
+).enablePlugins(ScalaJSPlugin, ScalaJSWeb, ScalaJSBundlerPlugin).
   dependsOn(sharedJs)
 
 lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared")).
   settings(
     scalaVersion := Version.scala,
-    libraryDependencies ++= Deps.shared.value
+    libraryDependencies ++= Deps.shared.value,
+    testFrameworks += new TestFramework("utest.runner.Framework")
   ).
-  jsConfigure(_ enablePlugins ScalaJSWeb)
+  jsConfigure(_.enablePlugins(ScalaJSWeb, ScalaJSBundlerPlugin))
 
 lazy val sharedJvm = shared.jvm
 lazy val sharedJs = shared.js

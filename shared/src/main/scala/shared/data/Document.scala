@@ -2,22 +2,33 @@ package shared.data
 
 object Node {
   // a reference of a child node
-  type Ref = List[Int] // empty path = root
+  type Ref = Seq[Int] // empty path = root
   object Ref {
-    def root = List.empty
+    def root = Seq.empty
   }
   type Content = String
   object Content {
     type PointRef = Int
     case class SegmentRef(from: PointRef, to: PointRef)
+    def empty = ""
   }
 
   case class PointRef(child: Node.Ref, contentPoint: Content.PointRef)
   case class SegmentRef(child: Node.Ref, contentSegment: Content.SegmentRef)
+
+  def empty(id: String) = Node(id, "", Seq.empty)
 }
 
-case class Node(id: String, content: Node.Content, childs: List[Node])
-
+case class Node(id: String, content: Node.Content, childs: Seq[Node]) {
+  def map(child: Node.Ref)(p: Node => Node): Node = {
+    if (child == Node.Ref.root) {
+      p(this)
+    } else {
+      val index = child.head
+      copy(childs = childs.take(index) ++ Seq(childs(index).map(child.tail)(p)) ++ childs.drop(index + 1))
+    }
+  }
+}
 
 
 sealed class Mode {
@@ -29,9 +40,9 @@ object Mode {
   case class SelectionTree(node: Node.Ref) extends Mode
 }
 
-case class Document(root: Node)
+case class Document(version: Int, root: Node)
 
 object Document {
-  def empty = Document(Node("0", "What", List.empty))
+  def empty = Document(0, Node.empty(generateNewRandomUniqueId()))
 }
 

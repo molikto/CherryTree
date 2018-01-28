@@ -20,6 +20,7 @@ object Deps {
     "com.github.julien-truffaut" %%%  "monocle-core"  % Version.monocle ::
     "com.github.julien-truffaut" %%%  "monocle-macro" % Version.monocle ::
     "io.suzaku" %%% "boopickle" % Version.boopickle ::
+    "com.lihaoyi" %%% "utest" % "0.6.0" % "test" ::
       Nil)
 
   val server = Def.setting(shared.value ++ (
@@ -31,5 +32,10 @@ object Deps {
     "org.scala-js" %%% "scalajs-dom" % Version.scalajsDom ::
     "com.github.lukajcb" %%% "rxscala-js" % "0.15.0" ::
      Nil))
+
+  val clientJs = Seq(
+    "react" -> "15.6.1",
+    "react-dom" -> "15.6.1",
+    "rxjs" -> "5.5.6")
 
 }

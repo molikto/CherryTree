@@ -13,7 +13,7 @@ object ApiRouter extends autowire.Server[ByteBuffer, Pickler, Pickler] {
   override def read[R: Pickler](p: ByteBuffer) = Unpickle[R].fromBytes(p)
   override def write[R: Pickler](r: R) = Pickle.intoBytes(r)
 
-  def dispatch(url: List[String])(implicit ec: ExecutionContext): RequestContext => Future[RouteResult] =
+  def dispatch(url: Seq[String])(implicit ec: ExecutionContext): RequestContext => Future[RouteResult] =
     entity(as[ByteString]) { entity =>
       val service = ApiImpl
       val body = Unpickle[Map[String, ByteBuffer]].fromBytes(entity.asByteBuffer)
