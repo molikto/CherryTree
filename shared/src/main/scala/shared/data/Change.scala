@@ -34,7 +34,12 @@ sealed trait Change {
   def rebase(o: Change): Change
 }
 object Change {
-
+  case object Id extends Change {
+    override def map(ref: N.Ref): N.Ref = ref
+    override def map(ref: N.PointRef): N.PointRef = ref
+    override def map(ref: N.SegmentRef): N.SegmentRef = ref
+    override def rebase(o: Change): Change = o
+  }
 
   sealed trait Node extends Change
 
