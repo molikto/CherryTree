@@ -14,5 +14,5 @@ object ApiImpl extends Api {
   override def init(token: Authentication.Token): ClientState =
     ClientState(token, document, Node.Ref.root)
 
-  override def change(snapshot: ClientStateSnapshot, changes: Seq[Change]): ClientStateUpdate = ???
+  override def change(snapshot: ClientStateSnapshot, changes: Seq[Transaction]): ClientStateUpdate = ???
 }

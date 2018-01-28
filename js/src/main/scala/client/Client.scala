@@ -27,12 +27,12 @@ class Client(initial: ClientState) {
     */
   private val _state = BehaviorSubject[ClientState](initial)
   def state: Observable[ClientState] = _state
-  private var committedState: ClientState = initial
-  private var uncommittedChanges: Seq[Change] = Seq.empty
+  private var committed: ClientState = initial
+  private var uncommitted: Seq[Transaction] = Seq.empty
 
 
-  def update(changes: Seq[Change]): Unit = {
-    uncommittedChanges = uncommittedChanges ++ changes
+  def update(changes: Transaction): Unit = {
+    uncommitted = uncommitted ++ Seq(changes)
     //state = state.copy(state.document.copy())
 //    api.change(state.authentication, changes).call().onComplete {
 //      case Success(i) =>
