@@ -1,7 +1,7 @@
 object Version {
   val akka = "10.0.10"
   val autowire = "0.2.6"
-  val upickle = "1.2.6"
+  val boopickle = "1.2.6"
   val monocle = "1.4.0"
   val scala = "2.12.4"
   val scalajsDom = "0.9.3"
@@ -19,7 +19,7 @@ object Deps {
     "com.lihaoyi" %%% "scalatags" % Version.scalatags  ::
     "com.github.julien-truffaut" %%%  "monocle-core"  % Version.monocle ::
     "com.github.julien-truffaut" %%%  "monocle-macro" % Version.monocle ::
-    "com.lihaoyi" %%% "upickle" % Version.upickle ::
+    "io.suzaku" %%% "boopickle" % Version.boopickle ::
       Nil)
 
   val server = Def.setting(shared.value ++ (
