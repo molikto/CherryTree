@@ -1,5 +1,7 @@
 package shared.data
 
+import scala.util.Try
+
 object Node {
   // a reference of a child node
   type Ref = Seq[Int] // empty path = root
@@ -20,6 +22,7 @@ object Node {
 }
 
 case class Node(id: String, content: Node.Content, childs: Seq[Node]) {
+  // This might fail
   def map(child: Node.Ref)(p: Node => Node): Node = {
     if (child == Node.Ref.root) {
       p(this)

@@ -17,4 +17,8 @@
 
 * users and authentication
 * db
-* unique id collision detection
+* user input validation
+    * we only assume user input is valid
+    * unique id collision detection
+    * ~~make logic all total, no exceptions~~
+
