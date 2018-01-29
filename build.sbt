@@ -1,4 +1,5 @@
 lazy val server = (project in file("jvm")).settings(
+  sharedSettings,
   scalaVersion := Version.scala,
   scalaJSProjects := Seq(client),
   pipelineStages in Assets := Seq(scalaJSPipeline),
@@ -11,6 +12,7 @@ lazy val server = (project in file("jvm")).settings(
   dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(
+  sharedSettings,
   scalaVersion := Version.scala,
   scalaJSUseMainModuleInitializer := true,
   npmDependencies in Compile ++= Deps.clientJs,
@@ -20,6 +22,7 @@ lazy val client = (project in file("js")).settings(
 
 lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared")).
   settings(
+    sharedSettings,
     scalaVersion := Version.scala,
     libraryDependencies ++= Deps.shared.value,
     testFrameworks += new TestFramework("utest.runner.Framework")
@@ -30,6 +33,17 @@ lazy val sharedJvm = shared.jvm
 lazy val sharedJs = shared.js
 
 scalaVersion := Version.scala
+
+autoCompilerPlugins := true
+
+
+val sharedSettings = Seq(
+  libraryDependencies += "com.lihaoyi" %% "acyclic" % "0.1.7" % "provided",
+  resolvers += Resolver.sonatypeRepo("releases"),
+  scalacOptions += "-P:acyclic:force",
+  autoCompilerPlugins := true,
+  addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.7")
+)
 
 // loads the server project at sbt startup
 onLoad in Global := (Command.process("project server", _: State)) compose (onLoad in Global).value

@@ -1,8 +1,9 @@
 package shared.data
 
-import scala.util.Try
+import scala.util.{Random, Try}
 
-object Node {
+object Node extends IdGenerator  {
+
   // a reference of a child node
   type Ref = Seq[Int] // empty path = root
   object Ref {
@@ -46,6 +47,6 @@ object Mode {
 case class Document(version: Int, root: Node)
 
 object Document {
-  def empty = Document(0, Node.empty(generateNewRandomUniqueId()))
+  def empty = Document(0, Node.empty(Node.newId()))
 }
 
