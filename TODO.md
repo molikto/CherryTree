@@ -1,4 +1,10 @@
 
+## top most (at most 5 tasks here)
+
+* rebase
+* server communication
+* basic editor ui
+
 ## build
 * production build?
 

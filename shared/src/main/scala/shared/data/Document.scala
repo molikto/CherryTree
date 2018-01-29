@@ -114,7 +114,6 @@ case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends  (
   }
 
   def map(child: Node.Ref)(p: Node => Node): Node = {
-
     if (child == Node.Ref.root) {
       p(this)
     } else {

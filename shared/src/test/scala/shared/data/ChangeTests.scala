@@ -4,7 +4,7 @@ import shared.data.Node.Ref
 import utest._
 
 
-object ChangesTests extends TestSuite {
+object ChangeTests extends TestSuite {
 
   def assertChange(root: Node, change: Change, after: Node): Unit = {
     val changed = Change.apply(root, change)
@@ -33,6 +33,22 @@ object ChangesTests extends TestSuite {
         }
       }
     }
+    'content - {
+      'insert - {
+        'simple - {
+          val root = Node(Node.newId(), "01234", Seq.empty)
+          val insert = Change.Content.Insert(Node.PointRef(Node.Ref.root, 1), "aa")
+          assertChange(root, insert, root.copy(content = "0aa1234"))
+        }
+      }
 
+      'delete - {
+        'simple - {
+          val root = Node(Node.newId(), "01234", Seq.empty)
+          val insert = Change.Content.Delete(Node.SegmentRef(Node.Ref.root, Node.Content.SegmentRef(1, 3)))
+          assertChange(root, insert, root.copy(content = "04"))
+        }
+      }
+    }
   }
 }
