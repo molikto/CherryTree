@@ -5,7 +5,7 @@ import shared.data.Node.{Content, Ref}
 import scala.util.{Random, Try}
 
 
-object Node extends IdGenerator  {
+object Node extends IdGenerator {
 
   case class Ref(v: Seq[Int]) {
     def disjoint(to: Ref): Boolean = !to.v.startsWith(v) && !v.startsWith(to.v)
