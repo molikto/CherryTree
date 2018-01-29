@@ -10,13 +10,10 @@ object NodeTests extends TestSuite {
       def test(a: Seq[Int], b: Seq[Int], common: Seq[Int], ap: Seq[Int], bp: Seq[Int]) = {
         assert(Node.Ref.destructRelative(Node.Ref(a), Node.Ref(b)) == (common, ap, bp))
       }
-      'test1 - {
+      'basic - {
+        test(Seq.empty, Seq(0, 1), Seq.empty, Seq.empty, Seq(0, 1))
         test(Seq(0, 1, 2, 3), Seq(0, 1), Seq(0, 1), Seq(2, 3), Seq.empty)
-      }
-      'test2 - {
         test(Seq(0, 1, 2, 3), Seq(0, 1, 5, 6), Seq(0, 1), Seq(2, 3), Seq(5, 6))
-      }
-      'test3 - {
         test(Seq(0, 1, 2, 3), Seq(5, 1, 5, 6), Seq.empty, Seq(0, 1, 2, 3), Seq(5, 1, 5, 6))
       }
     }

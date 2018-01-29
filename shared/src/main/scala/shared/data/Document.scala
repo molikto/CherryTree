@@ -97,7 +97,7 @@ object Node extends IdGenerator {
     def transformAfterDeleted(segmentRef: SegmentRef, p: PointRef): Option[PointRef] = {
       if (p < segmentRef.from) {
         Some(p)
-      } else if (p >= segmentRef.from && p <= segmentRef.to) {
+      } else if (segmentRef.contains(p)) {
         None
       } else {
         Some(p - segmentRef.size)
@@ -113,6 +113,17 @@ object Node extends IdGenerator {
       (l, r) match {
         case (Some(ll), Some(rr)) => Some(SegmentRef(ll, rr))
         case _ => None
+      }
+    }
+
+    def transformDeletingSegmentAfterDeleted(segmentRef: SegmentRef, s: SegmentRef): Option[SegmentRef] = {
+      val l = transformAfterDeleted(segmentRef, s.from)
+      val r = transformAfterDeleted(segmentRef, s.to)
+      (l, r) match {
+        case (Some(ll), Some(rr)) => Some(SegmentRef(ll, rr))
+        case (Some(ll), None) => Some(SegmentRef(ll, segmentRef.from - 1))
+        case (None, Some(rr)) => Some(SegmentRef(segmentRef.from, rr))
+        case (None, None) =>  None
       }
     }
 
@@ -133,9 +144,13 @@ object Node extends IdGenerator {
       * @param to inclusive
       */
     case class SegmentRef(from: PointRef, to: PointRef) {
+      assert(to >= from)
+
+      def contains(content: PointRef): Boolean = content >= from && content <= to
+      def contains(content: SegmentRef): Boolean = contains(content.from) && contains(content.to)
+
       def size = to - from + 1
 
-      assert(to >= from)
     }
     def empty: Content = ""
     def testRandom(): Content = Random.nextString(10)

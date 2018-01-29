@@ -41,7 +41,7 @@ object RebaseTests extends TestSuite {
           }
           assert(app0 == app1)
         case (None, None) => Unit
-        case _ => throw new IllegalArgumentException("Not matching rebase")
+        case (a, b) => throw new IllegalArgumentException(s"Not matching rebase b': $a, a': $b")
       }
     }
     val insert0 =
@@ -56,11 +56,25 @@ object RebaseTests extends TestSuite {
     val delete02 = Change.Node.Delete(Node.Ref.root.withChilds(0,2))
     val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
     val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
+    val insert0t2 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), Node.Content.testRandom())
     val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), Node.Content.testRandom())
+    val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), Node.Content.testRandom())
+    val delete0t = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(3))
+    val delete0t2 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 5).to(3))
+    val delete0t3 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(4))
+    val delete0t4 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 5).to(4))
+    val delete0t5 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 10).to(4))
+    val delete0t6 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 0).to(2))
+    val delete0t7 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 0).to(10))
+    val delete03t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,3), 20).to(10))
+    val delete02t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,2), 20).to(10))
 
     val changes = Seq(insert0, insert02, insert020,
       delete0, delete00, delete01, delete02, delete20,
-      insert0t, insert03t)
+      insert0t, insert0t2,
+      insert03t, insert02t,
+      delete0t, delete0t2, delete0t3, delete0t4, delete0t4, delete0t5, delete0t6, delete0t7,
+      delete03t, delete02t)
 
     'simple - {
       for (c <- changes) {

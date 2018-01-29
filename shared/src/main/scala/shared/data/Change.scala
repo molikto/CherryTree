@@ -145,7 +145,11 @@ object Change {
           case i: Node.Insert => Some(i)
           case d: Content.Delete =>
             if (d.segment.node == point.node) {
-              mapOption(d.segment).map(s => d.copy(segment = s))
+              if (d.segment.content.contains(point.content)) {
+                None
+              } else {
+                mapOption(d.segment).map(s => d.copy(segment = s))
+              }
             } else {
               Some(d)
             }
@@ -177,7 +181,10 @@ object Change {
           case d: Node.Delete => Some(d)
           case i: Node.Insert => Some(i)
           case d: Content.Delete =>
-            mapOption(d.segment).map(it => d.copy(segment = it)).orElse(Some(Id))
+            if (segment.node == d.segment.node)
+              C.transformDeletingSegmentAfterDeleted(segment.content, d.segment.content).map(s =>
+                d.copy(segment = d.segment.copy(content = s))).orElse(Some(Id))
+            else Some(d)
           case i: Content.Insert =>
             mapOption(i.point).map(it => i.copy(point = it))
           case Id => Some(Id)
