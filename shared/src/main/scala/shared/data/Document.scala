@@ -22,6 +22,7 @@ object Node extends IdGenerator {
     private[Node] def head: Int = v.head
     private[Node] def tail = Ref(v.tail)
     private[Node] def last: Int = v.last
+    def depth = v.size
   }
 
   object Ref {
@@ -44,38 +45,42 @@ object Node extends IdGenerator {
 
     def transformAfterInserted(inserted: Ref, ref: Ref): Ref = {
       val (common, ii, rr) = destructRelative(inserted, ref)
-      (ii.headOption, rr.headOption) match {
-        case (Some(i), Some(r)) =>
-          if (r > i) {
-            ref.replaceAt(common.size, ref.v(common.size) + 1)
-          } else {
-            ref
-          }
-        case (Some(_), None) =>
-          ref
-        case (None, _) =>
-          ref.replaceAt(common.size - 1, ref.v(common.size - 1) + 1)
+      if (ii.size > 1 || rr.size < ii.size) {
+        ref
+      } else {
+        (ii.headOption, rr.headOption) match {
+          case (Some(i), Some(r)) =>
+            if (r < i) {
+              ref
+            } else {
+              ref.replaceAt(common.size, r + 1)
+            }
+          case (None, _) =>
+            ref.replaceAt(common.size - 1, ref.v(common.size - 1) + 1)
+        }
       }
     }
 
     /**
       * what will deleting item at `deleted` affects `ref`? assuming ref points to a concrete node
+      * 02
+      * 134
       */
     def transformAfterDeleted(deleted: Ref, ref: Ref): Option[Ref] = {
       val (common, dd, rr) = destructRelative(deleted, ref)
-      (dd.headOption, rr.headOption) match {
-        case (Some(d), Some(r)) =>
-          if (r < d) {
-            Some(ref)
-          } else {
-            Some(ref.replaceAt(common.size, r - 1))
-          }
-        case (Some(d), None) =>
-          Some(ref)
-        case (None, Some(r)) =>
-          None
-        case (None, None) =>
-          None
+      if (dd.size > 1 || rr.size < dd.size) {
+        Some(ref)
+      } else {
+        (dd.headOption, rr.headOption) match {
+          case (Some(d), Some(r)) =>
+            if (r < d) {
+              Some(ref)
+            } else {
+              Some(ref.replaceAt(common.size, r - 1))
+            }
+          case (None, _) =>
+            None
+        }
       }
     }
   }

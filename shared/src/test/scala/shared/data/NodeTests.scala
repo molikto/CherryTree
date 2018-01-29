@@ -20,6 +20,23 @@ object NodeTests extends TestSuite {
         test(Seq(0, 1, 2, 3), Seq(5, 1, 5, 6), Seq.empty, Seq(0, 1, 2, 3), Seq(5, 1, 5, 6))
       }
     }
+    'transformDeleted - {
+      def test(a: Seq[Int], b: Seq[Int], c: Option[Seq[Int]]) = {
+        assert(Node.Ref.transformAfterDeleted(
+          Node.Ref.root.withChilds(a.toArray :_*),
+          Node.Ref.root.withChilds(b.toArray: _*))
+          == c.map(it => Node.Ref.root.withChilds(it.toArray: _*)))
+      }
+      'basics - {
+        test(Seq(0, 2), Seq(0, 2, 3), None)
+        test(Seq(0, 2), Seq(0, 2), None)
+        test(Seq(0, 2), Seq(0, 1), Some(Seq(0, 1)))
+        test(Seq(0, 2), Seq(0, 3), Some(Seq(0, 2)))
+        test(Seq(0, 2), Seq(1), Some(Seq(1)))
+        test(Seq(0, 2), Seq(0, 3, 4), Some(Seq(0, 2, 4)))
+        test(Seq(0, 2), Seq(1, 3, 4), Some(Seq(1, 3, 4)))
+      }
+    }
     'transformInserted - {
       def test(a: Seq[Int], b: Seq[Int], c: Seq[Int]) = {
         assert(Node.Ref.transformAfterInserted(
@@ -27,18 +44,13 @@ object NodeTests extends TestSuite {
           Node.Ref.root.withChilds(b.toArray: _*))
           == Node.Ref.root.withChilds(c.toArray: _*))
       }
-      'test1 - {
+      'basics - {
         test(Seq(0, 2), Seq(0, 3), Seq(0, 4))
-      }
-
-      'test2 - {
         test(Seq(0, 3), Seq(0, 2), Seq(0, 2))
-      }
-      'test3 - {
         test(Seq(0), Seq(0, 1), Seq(1, 1))
-      }
-      'test4 - {
+        test(Seq(0), Seq(1, 1), Seq(2, 1))
         test(Seq(1), Seq(0, 1), Seq(0, 1))
+        test(Seq(0, 2, 0), Seq(0, 3), Seq(0, 3))
       }
     }
   }
