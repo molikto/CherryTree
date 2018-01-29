@@ -47,7 +47,18 @@ object Change {
       override def map(ref: N.Ref): N.Ref = ???
       override def map(ref: N.PointRef): N.PointRef = ???
       override def map(ref: N.SegmentRef): N.SegmentRef = ???
-      override def rebase(o: Change): Change = ???
+      override def rebase(o: Change): Change = {
+        o match {
+          case d: Node.Delete =>
+            val diff =
+            if (d.position == position) {
+              Id
+            } else
+          case i: Node.Insert =>
+          case d: Content.Delete =>
+          case i: Content.Insert =>
+        }
+      }
     }
     case class Insert(position: N.Ref, node: N) extends Node() {
       override def map(ref: N.Ref): N.Ref = ???
@@ -61,7 +72,7 @@ object Change {
   object Content {
     case class Insert(point: N.PointRef, content: C) extends Content() {
       assert(content.nonEmpty)
-      override def map(ref: N.Ref): N.Ref = ???
+      override def map(ref: N.Ref): N.Ref = ref
       override def map(ref: N.PointRef): N.PointRef = ???
       override def map(ref: N.SegmentRef): N.SegmentRef = ???
       override def rebase(o: Change): Change = ???

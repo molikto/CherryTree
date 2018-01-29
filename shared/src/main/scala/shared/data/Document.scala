@@ -7,13 +7,14 @@ import scala.util.{Random, Try}
 
 object Node extends IdGenerator {
 
-  case class Ref(v: Seq[Int]) {
+  case class Ref(private val v: Seq[Int]) {
     def disjoint(to: Ref): Boolean = !to.v.startsWith(v) && !v.startsWith(to.v)
     def intersect(to: Ref): Boolean = !disjoint(to)
     def parent: Ref = Ref(v.dropRight(1))
     def withChild(a: Int): Ref = Ref(v :+ a)
     def previous: Ref = parent.withChild(v.last - 1)
     def next: Ref = parent.withChild(v.last + 1)
+    def eqOrChildOf(b: Ref) = b.v.startsWith(v)
     private[Node] def head: Int = v.head
     private[Node] def tail = Ref(v.tail)
     private[Node] def last: Int = v.last
@@ -21,6 +22,24 @@ object Node extends IdGenerator {
 
   object Ref {
     def root = Ref(Seq.empty)
+
+    /**
+      * @return common, left unique, right unique
+      */
+    private def destructRelative(a: Ref, b: Ref): (Seq[Int], Seq[Int], Seq[Int]) = {
+      val len = a.v.size min b.v.size
+      val common = (0 until len).takeWhile(i => a.v(i) == b.v(i)).lastOption.getOrElse(-1)
+      if (common == -1) {
+        (Seq.empty, a.v, b.v)
+      } else {
+        val i = common + 1
+        (a.v.take(i), a.v.drop(i), b.v.drop(i))
+      }
+    }
+
+    def transformAfterDeleted(deleted: Ref, ref: Ref): Option[Ref] = {
+      val (common, d, r) = destructRelative(deleted, ref)
+    }
   }
   type Content = String
   object Content {
@@ -57,11 +76,30 @@ object Node extends IdGenerator {
   }
 
   def empty(id: String) = Node(id, Content.empty, Seq.empty)
+
+  def testFromText(str: String): Node = {
+    def rec2(left: Seq[Node], r: Seq[String]): (Seq[Node], Seq[String]) = {
+      if (r.isEmpty) {
+        (left, r)
+      } else {
+        val nContent = r.head
+        val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
+        val r0 = r.tail.drop(childs.size)
+        val n = Node(newId(), nContent, rec2(Seq.empty, childs)._1)
+        rec2(left :+ n, r0)
+      }
+    }
+    rec2(Seq.empty, str.split('\n'))._1.head
+  }
 }
 
-case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends  (Node.Ref => Node) {
+case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends (Node.Ref => Node) {
+
+
 
   // This might fail
+
+  override def toString(): Content = s"Node($content, ${childs.mkString(", ")})"
 
   override def apply(child: Node.Ref): Node = {
     if (child == Node.Ref.root) {
