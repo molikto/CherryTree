@@ -8,6 +8,8 @@ import scala.util.{Random, Try}
 object Node extends IdGenerator {
 
   case class Ref(private val v: Seq[Int]) {
+    def replaceAt(size: Int, i: Int): Ref = Ref(v.take(size) ++ Seq(i) ++ v.drop(size + 1))
+
     def disjoint(to: Ref): Boolean = !to.v.startsWith(v) && !v.startsWith(to.v)
     def intersect(to: Ref): Boolean = !disjoint(to)
     def parent: Ref = Ref(v.dropRight(1))
@@ -37,12 +39,58 @@ object Node extends IdGenerator {
       }
     }
 
+
+    def transformAfterInserted(inserted: Ref, ref: Ref): Ref = {
+      val (common, ii, rr) = destructRelative(inserted, ref)
+      (ii.headOption, rr.headOption) match {
+        case (Some(i), _) =>
+          ref
+        case (None, _) =>
+          ref.replaceAt(common.size - 1, ref.v(common.size - 1))
+      }
+    }
+
+    /**
+      * what will deleting item at `deleted` affects `ref`? assuming ref points to a concrete node
+      */
     def transformAfterDeleted(deleted: Ref, ref: Ref): Option[Ref] = {
-      val (common, d, r) = destructRelative(deleted, ref)
+      val (common, dd, rr) = destructRelative(deleted, ref)
+      (dd.headOption, rr.headOption) match {
+        case (Some(d), Some(r)) =>
+          if (r < d) {
+            Some(ref)
+          } else {
+            Some(ref.replaceAt(common.size, r - 1))
+          }
+        case (Some(d), None) =>
+          Some(ref)
+        case (None, Some(r)) =>
+          None
+        case (None, None) =>
+          None
+      }
     }
   }
   type Content = String
   object Content {
+    def transformAfterInserted(point: PointRef, size: Int, p: PointRef): PointRef = {
+      if (p < point) {
+        p
+      } else {
+        p + size
+      }
+    }
+
+    def transformAfterDeleted(segmentRef: SegmentRef, p: PointRef): Option[PointRef] = {
+      if (p < segmentRef.from) {
+        Some(p)
+      } else if (p >= segmentRef.from && p <= segmentRef.to) {
+        None
+      } else {
+        Some(p - segmentRef.size)
+      }
+    }
+
     def insert(content: Content, contentPoint: PointRef, c: Content): Content = {
       content.substring(0, contentPoint) ++ c ++ content.substring(contentPoint)
     }
@@ -60,6 +108,8 @@ object Node extends IdGenerator {
       * @param to inclusive
       */
     case class SegmentRef(from: PointRef, to: PointRef) {
+      def size = to - from + 1
+
       assert(to >= from)
     }
     def empty: Content = ""
