@@ -13,10 +13,10 @@ object Node extends IdGenerator {
     def parent: Ref = Ref(v.dropRight(1))
     def withChild(a: Int): Ref = Ref(v :+ a)
     def previous: Ref = parent.withChild(v.last - 1)
-    def next:Ref = parent.withChild(v.last + 1)
-    def head: Int = v.head
-    def tail = Ref(v.tail)
-    def last: Int = v.last
+    def next: Ref = parent.withChild(v.last + 1)
+    private[Node] def head: Int = v.head
+    private[Node] def tail = Ref(v.tail)
+    private[Node] def last: Int = v.last
   }
 
   object Ref {
@@ -43,7 +43,7 @@ object Node extends IdGenerator {
     case class SegmentRef(from: PointRef, to: PointRef) {
       assert(to >= from)
     }
-    def empty = ""
+    def empty: Content = ""
   }
 
   case class PointRef(child: Node.Ref, contentPoint: Content.PointRef) {
@@ -56,7 +56,7 @@ object Node extends IdGenerator {
     def to: PointRef = PointRef(child, contentSegment.to)
   }
 
-  def empty(id: String) = Node(id, "", Seq.empty)
+  def empty(id: String) = Node(id, Content.empty, Seq.empty)
 }
 
 case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends  (Node.Ref => Node) {
