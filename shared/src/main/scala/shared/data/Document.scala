@@ -7,16 +7,18 @@ import scala.util.{Random, Try}
 
 object Node extends IdGenerator {
 
-  case class Ref(private val v: Seq[Int]) {
+  case class Ref(v: Seq[Int]) {
     def replaceAt(size: Int, i: Int): Ref = Ref(v.take(size) ++ Seq(i) ++ v.drop(size + 1))
 
     def disjoint(to: Ref): Boolean = !to.v.startsWith(v) && !v.startsWith(to.v)
     def intersect(to: Ref): Boolean = !disjoint(to)
     def parent: Ref = Ref(v.dropRight(1))
     def withChild(a: Int): Ref = Ref(v :+ a)
+    def withChilds(a: Int*): Ref = Ref(v ++ a)
     def previous: Ref = parent.withChild(v.last - 1)
     def next: Ref = parent.withChild(v.last + 1)
-    def eqOrChildOf(b: Ref) = b.v.startsWith(v)
+    def eqOrChildOf(b: Ref) = v.startsWith(b.v)
+    def childOf(b: Ref) = v != b.v && v.startsWith(b.v)
     private[Node] def head: Int = v.head
     private[Node] def tail = Ref(v.tail)
     private[Node] def last: Int = v.last
@@ -28,7 +30,7 @@ object Node extends IdGenerator {
     /**
       * @return common, left unique, right unique
       */
-    private def destructRelative(a: Ref, b: Ref): (Seq[Int], Seq[Int], Seq[Int]) = {
+    def destructRelative(a: Ref, b: Ref): (Seq[Int], Seq[Int], Seq[Int]) = {
       val len = a.v.size min b.v.size
       val common = (0 until len).takeWhile(i => a.v(i) == b.v(i)).lastOption.getOrElse(-1)
       if (common == -1) {
@@ -43,10 +45,16 @@ object Node extends IdGenerator {
     def transformAfterInserted(inserted: Ref, ref: Ref): Ref = {
       val (common, ii, rr) = destructRelative(inserted, ref)
       (ii.headOption, rr.headOption) match {
-        case (Some(i), _) =>
+        case (Some(i), Some(r)) =>
+          if (r > i) {
+            ref.replaceAt(common.size, ref.v(common.size) + 1)
+          } else {
+            ref
+          }
+        case (Some(_), None) =>
           ref
         case (None, _) =>
-          ref.replaceAt(common.size - 1, ref.v(common.size - 1))
+          ref.replaceAt(common.size - 1, ref.v(common.size - 1) + 1)
       }
     }
 
@@ -91,6 +99,18 @@ object Node extends IdGenerator {
       }
     }
 
+    /**
+      * @return None if either side of `s` is deleted
+      */
+    def transformAfterDeleted(segmentRef: SegmentRef, s: SegmentRef): Option[SegmentRef] = {
+      val l = transformAfterDeleted(segmentRef, s.from)
+      val r = transformAfterDeleted(segmentRef, s.to)
+      (l, r) match {
+        case (Some(ll), Some(rr)) => Some(SegmentRef(ll, rr))
+        case _ => None
+      }
+    }
+
     def insert(content: Content, contentPoint: PointRef, c: Content): Content = {
       content.substring(0, contentPoint) ++ c ++ content.substring(contentPoint)
     }
@@ -113,16 +133,17 @@ object Node extends IdGenerator {
       assert(to >= from)
     }
     def empty: Content = ""
+    def testRandom(): Content = Random.nextString(10)
   }
 
-  case class PointRef(child: Node.Ref, contentPoint: Content.PointRef) {
-    def to(length: Int): SegmentRef = SegmentRef(child, Content.SegmentRef(contentPoint, contentPoint + length - 1))
+  case class PointRef(node: Node.Ref, content: Content.PointRef) {
+    def to(length: Int): SegmentRef = SegmentRef(node, Content.SegmentRef(content, content + length - 1))
 
   }
 
-  case class SegmentRef(child: Node.Ref, contentSegment: Content.SegmentRef) {
-    def from: PointRef = PointRef(child, contentSegment.from)
-    def to: PointRef = PointRef(child, contentSegment.to)
+  case class SegmentRef(node: Node.Ref, content: Content.SegmentRef) {
+    def from: PointRef = PointRef(node, content.from)
+    def to: PointRef = PointRef(node, content.to)
   }
 
   def empty(id: String) = Node(id, Content.empty, Seq.empty)
@@ -147,9 +168,14 @@ case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends (N
 
 
 
-  // This might fail
-
-  override def toString(): Content = s"Node($content, ${childs.mkString(", ")})"
+  def toString(margin: Int): String =
+    "                                          ".take(margin) ++
+      content.take(10) ++ "\n" ++
+      childs.map(a => a.toString(margin + 2)).mkString("")
+  /**
+    * only for test purpose
+    */
+  override def toString(): String = if (childs.isEmpty) if (content.isEmpty) "(empty)" else content else toString(0)
 
   override def apply(child: Node.Ref): Node = {
     if (child == Node.Ref.root) {
@@ -174,8 +200,8 @@ case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends (N
 
   def delete(child: Node.SegmentRef): (Node, Node.Content) = {
     var removed: Node.Content = null
-    val res = map(child.child) { item =>
-      val pair = Node.Content.delete(item.content, child.contentSegment)
+    val res = map(child.node) { item =>
+      val pair = Node.Content.delete(item.content, child.content)
       removed = pair._2
       item.copy(content = pair._1)
     }
@@ -184,8 +210,8 @@ case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends (N
 
 
   def insert(point: Node.PointRef, content: Content): Node = {
-    map(point.child) { item =>
-      val cc = Node.Content.insert(item.content, point.contentPoint, content)
+    map(point.node) { item =>
+      val cc = Node.Content.insert(item.content, point.content, content)
       item.copy(content = cc)
     }
   }

@@ -1,7 +1,5 @@
 package shared
 
-import scala.util.Random
-import acyclic.skipped
 
 package object data extends ChangeImplicits {
 

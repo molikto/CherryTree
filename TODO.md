@@ -4,6 +4,7 @@
 * rebase
 * server communication
 * basic editor ui
+* rebase with partial success
 
 ## build
 * production build?
