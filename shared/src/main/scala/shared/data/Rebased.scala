@@ -1,14 +1,14 @@
 package shared.data
 
 
-sealed class ResolveType {
-  object Free extends ResolveType
+sealed class RebaseType {
+  object Free extends RebaseType
   /**
     * in favor of winner, e.g. insert at same position, winner's text is treated as fire first
     */
-  object Asymmetry extends ResolveType
+  object Asymmetry extends RebaseType
 
-  abstract class Conflict extends ResolveType
+  abstract class Conflict extends RebaseType
 
   /**
     * in case the loser's action deletes winner's unseen (by loser) action
@@ -23,6 +23,6 @@ sealed class ResolveType {
 
 
 
-case class Resolved[T](result: T, ty: ResolveType) {
+case class Rebased[T](result: T, ty: RebaseType) {
 
 }
