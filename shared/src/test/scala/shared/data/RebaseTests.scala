@@ -29,18 +29,21 @@ object RebaseTests extends TestSuite {
     val id = Change.Id
     val insert0 =
       Change.Node.Insert(Node.Ref.root.withChild(0), Node(Node.newId(), "insert0", Seq.empty))
+    val insert0c =
+      Change.Node.Insert(Node.Ref.root.withChild(0), Node(Node.newId(), "insert0", Seq.empty))
     val insert02 =
       Change.Node.Insert(Node.Ref.root.withChilds(0,2), Node(Node.newId(), "insert02", Seq.empty))
     val insert020 =
       Change.Node.Insert(Node.Ref.root.withChilds(0,2,0), Node(Node.newId(), "insert020", Seq.empty))
     val delete0 = Change.Node.Delete(Node.Ref.root.withChild(0))
     val delete00 = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
+    val delete00c = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
     val delete01 = Change.Node.Delete(Node.Ref.root.withChilds(0,1))
     val delete02 = Change.Node.Delete(Node.Ref.root.withChilds(0,2))
-    val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
+    val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(2,0))
     val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
     val insert0t1 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
-    val insert0t2 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), Node.Content.testRandom())
+    val insert0t1c = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), Node.Content.testRandom())
     val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), Node.Content.testRandom())
     val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), Node.Content.testRandom())
     val delete0t = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(3))
@@ -53,9 +56,9 @@ object RebaseTests extends TestSuite {
     val delete03t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,3), 20).to(10))
     val delete02t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,2), 20).to(10))
 
-    val changes = Seq(id, insert0, insert02, insert020,
-      delete0, delete00, delete01, delete02, delete20,
-      insert0t, insert0t1, insert0t2,
+    val changes = Seq(id, insert0, insert0c, insert02, insert020,
+      delete0, delete00, delete00c, delete01, delete02, delete20,
+      insert0t, insert0t1, insert0t1c,
       insert03t, insert02t,
       delete0t, delete0t2, delete0t3, delete0t4, delete0t4, delete0t5, delete0t6, delete0t7,
       delete03t, delete02t)
@@ -65,8 +68,9 @@ object RebaseTests extends TestSuite {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      Change.rebase(a, b) match {
-        case Some((ap, bp)) =>
+      a.rebasePair(b) match {
+        case Rebased((ap, bp), s) =>
+          if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
           val app0 = Change.apply(Change.apply(node, a)._1, bp)._1

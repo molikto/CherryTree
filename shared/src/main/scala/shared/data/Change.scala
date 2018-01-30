@@ -44,6 +44,18 @@ sealed trait Change {
     * @return None if this is destructive, even partially
     */
   def rebase(loser: Change): Rebased[Change]
+
+  def rebasePair(loser: Change): (Rebased[(Change, Change)]) = {
+    (rebase(loser), loser.rebase(this)) match {
+      case (Rebased(b, RebaseType.Free), Rebased(a, RebaseType.Free)) =>
+        Rebased.Free((a, b))
+      case (Rebased(b, RebaseType.WinnerDeletesLoser), Rebased(a, RebaseType.LoserDeletesWinner)) =>
+        Rebased.WinnerDeletesLoser((a, b))
+      case (Rebased(b, RebaseType.LoserDeletesWinner), Rebased(a, RebaseType.WinnerDeletesLoser)) =>
+        Rebased.LoserDeletesWinner((a, b))
+      case _ => throw new IllegalStateException("You should override this!!!")
+    }
+  }
 }
 
 object Change {
@@ -110,7 +122,7 @@ object Change {
       override def map(ref: N.SegmentRef): Option[N.SegmentRef] =
         map(ref.node).map(c => N.SegmentRef(c, ref.content))
 
-      override def rebase(loser: Change): Rebased[Change] =
+      override def rebase(loser: Change): Rebased[Change] = {
         loser match {
           case d: Node.Delete =>
             if (position.childOf(d.position)) {
@@ -119,7 +131,6 @@ object Change {
               Rebased.Free(map(d.position).map(c => Delete(c)).get)
             }
           case i: Node.Insert =>
-            // weak conflict
             val conflictType = if (position == i.position) RebaseType.Asymmetry else RebaseType.Free
             Rebased(map(i.position).map(c => Insert(c, i.node)).get, conflictType)
           case d: Content.Delete =>
@@ -128,6 +139,16 @@ object Change {
             Rebased.Free(map(i.point.node).map(c => i.copy(point = i.point.copy(node = c))).get)
           case Id => Rebased.Free(Id)
         }
+      }
+
+      override def rebasePair(loser: Change): Rebased[(Change, Change)] = {
+        loser match {
+          case i: Node.Insert if position == i.position =>
+            // no change on our side!
+            Rebased((this, map(i.position).map(c => Insert(c, i.node)).get), RebaseType.Asymmetry)
+          case _ => super.rebasePair(loser)
+        }
+      }
     }
 
   }
@@ -160,11 +181,11 @@ object Change {
         Some(res)
       }
 
-      override def rebase(loser: Change): Rebased[Change] =
+      override def rebase(loser: Change): Rebased[Change] = {
         loser match {
           case d: Node.Delete =>
             if (point.node.eqOrChildOf(d.position)) {
-              Rebased.LoserDeletesWinner(Id)
+              Rebased.LoserDeletesWinner(d)
             } else {
               Rebased.Free(d)
             }
@@ -172,7 +193,10 @@ object Change {
           case d: Content.Delete =>
             if (d.segment.node == point.node) {
               if (d.segment.content.contains(point.content)) {
-                Rebased.LoserDeletesWinner(Id)
+                Rebased.LoserDeletesWinner(
+                  d.copy(segment = d.segment.copy(
+                    content = d.segment.content.copy(
+                      to = d.segment.content.to + content.length))))
               } else {
                 Rebased.Free(map(d.segment).map(s => d.copy(segment = s)).get)
               }
@@ -181,13 +205,23 @@ object Change {
             }
           case i: Content.Insert =>
             if (i.point.node == point.node) {
-              val conflictType = if (point.content== i.point.content) RebaseType.Asymmetry else RebaseType.Free
+              val conflictType = if (point.content == i.point.content) RebaseType.Asymmetry else RebaseType.Free
               Rebased(map(i.point).map(s => i.copy(point = s)).get, conflictType)
             } else {
               Rebased.Free(i)
             }
           case Id => Rebased.Free(Id)
         }
+      }
+
+      override def rebasePair(loser: Change): Rebased[(Change, Change)] = {
+        loser match {
+          case i: Content.Insert if point == i.point =>
+            // no change our side!!!
+            Rebased((this, map(i.point).map(s => i.copy(point = s)).get), RebaseType.Asymmetry)
+          case _ => super.rebasePair(loser)
+        }
+      }
     }
 
     case class Delete(segment: N.SegmentRef) extends Content() {
