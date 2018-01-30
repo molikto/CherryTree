@@ -29,38 +29,51 @@ sealed trait Change {
     * @return None if this is destructive, even partially
     */
   def mapOption(ref: N.Ref): Option[N.Ref]
+
   /**
     * @return None if this is destructive, even partially
     */
   def mapOption(ref: N.PointRef): Option[N.PointRef]
+
   /**
     * @return None if this is destructive, even partially
     */
   def mapOption(ref: N.SegmentRef): Option[N.SegmentRef]
+
   /**
     * @return None if this is destructive, even partially
     */
   def rebaseOption(o: Change): Option[Change]
 }
+
 object Change {
+
   case object Id extends Change {
     override def mapOption(ref: N.Ref) = Some(ref)
+
     override def mapOption(ref: N.PointRef) = Some(ref)
+
     override def mapOption(ref: N.SegmentRef) = Some(ref)
+
     override def rebaseOption(o: Change) = Some(o)
   }
 
   sealed trait Node extends Change
 
   object Node {
+
     case class Delete(position: N.Ref) extends Node() {
       assert(position != N.Ref.root)
+
       override def mapOption(ref: N.Ref): Option[N.Ref] =
         N.Ref.transformAfterDeleted(position, ref)
+
       override def mapOption(ref: N.PointRef): Option[N.PointRef] =
         mapOption(ref.node).map(c => N.PointRef(c, ref.content))
+
       override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] =
         mapOption(ref.node).map(c => N.SegmentRef(c, ref.content))
+
       override def rebaseOption(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
@@ -82,14 +95,19 @@ object Change {
           case Id => Some(Id)
         }
     }
+
     case class Insert(position: N.Ref, node: N) extends Node() {
       assert(position != N.Ref.root)
+
       override def mapOption(ref: N.Ref): Option[N.Ref] =
         Some(N.Ref.transformAfterInserted(position, ref))
+
       override def mapOption(ref: N.PointRef): Option[N.PointRef] =
         mapOption(ref.node).map(c => N.PointRef(c, ref.content))
+
       override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] =
         mapOption(ref.node).map(c => N.SegmentRef(c, ref.content))
+
       override def rebaseOption(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
@@ -108,12 +126,16 @@ object Change {
           case Id => Some(Id)
         }
     }
+
   }
 
   sealed trait Content extends Change
+
   object Content {
+
     case class Insert(point: N.PointRef, content: C) extends Content() {
       assert(content.nonEmpty)
+
       override def mapOption(ref: N.Ref) = Some(ref)
 
       override def mapOption(ref: N.PointRef): Some[N.PointRef] = {
@@ -134,6 +156,7 @@ object Change {
           else ref
         Some(res)
       }
+
       override def rebaseOption(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
@@ -162,6 +185,7 @@ object Change {
           case Id => Some(Id)
         }
     }
+
     case class Delete(segment: N.SegmentRef) extends Content() {
       override def mapOption(ref: N.Ref) = Some(ref)
 
@@ -176,6 +200,7 @@ object Change {
           C.transformAfterDeleted(segment.content, ref.content).map(s => ref.copy(content = s))
         else Some(ref)
       }
+
       override def rebaseOption(o: Change): Option[Change] =
         o match {
           case d: Node.Delete => Some(d)
@@ -190,6 +215,7 @@ object Change {
           case Id => Some(Id)
         }
     }
+
   }
 
   /**
@@ -211,5 +237,53 @@ object Change {
         (root, Id)
     }
   }
+
+
+  /**
+    *
+    * @return a' b'
+    */
+  def rebaseOptionPair(a: Change, b: Change): Option[(Change, Change)] = {
+    (a.rebaseOption(b), b.rebaseOption(a)) match {
+      case (Some(bp), Some(ap)) =>
+        Some(ap, bp)
+      case (None, None) => None
+      case (aa, bb) => throw new IllegalArgumentException(s"Not matching rebase b': $aa, a': $bb")
+    }
+  }
+
+  def rebaseOptionLine(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
+    b.foldLeft(Option((a, Seq.empty[Change]))) { (pair, bb) =>
+      pair.flatMap {
+        case (lp, bp) =>
+          rebaseOptionPair(lp, bb).map {
+            case (lpp, bbp) =>
+              (lpp, bp :+ bbp)
+          }
+      }
+    }
+  }
+
+  /**
+    * l  /\  w
+    * w' / l'
+    *
+    * @param w winner
+    * @param l loser
+    * @return (wp, lp)
+    */
+  def rebaseOption(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
+    l.foldLeft(Option((w, Seq.empty[Change]))) { (pair, ll) =>
+      pair.flatMap {
+        case (wpp, lpb) =>
+          rebaseOptionLine(ll, wpp).map {
+            case (llp, wppp) =>
+              (wppp, lpb :+ llp)
+          }
+      }
+    }
+  }
+}
+
 }
 

@@ -27,8 +27,8 @@ object RebaseTests extends TestSuite {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      (a.rebaseOption(b), b.rebaseOption(a)) match {
-        case (Some(bp), Some(ap)) =>
+      Change.rebaseOptionPair(a, b) match {
+        case Some((ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
           val app0 = Change.apply(Change.apply(node, a)._1, bp)._1
@@ -40,8 +40,7 @@ object RebaseTests extends TestSuite {
             if (debug) println(s"App 1: $app1")
           }
           assert(app0 == app1)
-        case (None, None) => Unit
-        case (aa, bb) => throw new IllegalArgumentException(s"Not matching rebase b': $aa, a': $bb")
+        case _ =>
       }
     }
     val insert0 =
