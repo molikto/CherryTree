@@ -148,6 +148,7 @@ object Node extends IdGenerator {
     case class SegmentRef(from: PointRef, to: PointRef) {
       assert(to >= from)
 
+      def leftOpenContains(content: PointRef) = content > from && content <= to
       def contains(content: PointRef): Boolean = content >= from && content <= to
       def contains(content: SegmentRef): Boolean = contains(content.from) && contains(content.to)
 

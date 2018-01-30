@@ -65,7 +65,7 @@ object RebaseTests extends TestSuite {
 
 
     def assertRebase(a: Change, b: Change): Unit = {
-      val debug = false
+      val debug = true
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
       a.rebasePair(b) match {
@@ -83,6 +83,29 @@ object RebaseTests extends TestSuite {
           }
           assert(app0 == app1)
         case _ =>
+      }
+    }
+
+    'insertOnDelete - {
+      assert(delete0t.rebase(insert0t) == Rebased.Free(insert0t))
+    }
+    'simpleSymmetry - {
+      for (a <- changes) {
+        for (b <- changes) {
+          val k = a.rebasePair(b)
+          val j = b.rebasePair(a)
+          (k, j) match {
+            case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
+              val mirrored = RebaseType.mirror(js)
+              if (ks != mirrored) {
+                throw new IllegalArgumentException(s"Wrong mirror $a, $b $mirrored, $ks")
+              }
+              if (!ks.contains(RebaseType.Asymmetry)) {
+                assert(kap == jap)
+                assert(kbp == jbp)
+              }
+          }
+        }
       }
     }
 

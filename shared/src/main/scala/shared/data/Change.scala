@@ -131,8 +131,11 @@ object Change {
               Rebased.Free(map(d.position).map(c => Delete(c)).get)
             }
           case i: Node.Insert =>
-            val conflictType = if (position == i.position) Set[RebaseType](RebaseType.Asymmetry) else Set.empty[RebaseType]
-            Rebased(map(i.position).map(c => Insert(c, i.node)).get, conflictType)
+            if (position == i.position) {
+              Rebased.Asymmetry(i)
+            } else {
+              Rebased.Free(map(i.position).map(c => Insert(c, i.node)).get)
+            }
           case d: Content.Delete =>
             Rebased.Free(map(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c))).get)
           case i: Content.Insert =>
@@ -144,8 +147,7 @@ object Change {
       override def rebasePair(loser: Change): Rebased[(Change, Change)] = {
         loser match {
           case i: Node.Insert if position == i.position =>
-            // no change on our side!
-            Rebased((this, map(i.position).map(c => Insert(c, i.node)).get), Set(RebaseType.Asymmetry))
+            Rebased((Insert(position.next, node), i), Set(RebaseType.Asymmetry))
           case _ => super.rebasePair(loser)
         }
       }
@@ -192,7 +194,7 @@ object Change {
           case i: Node.Insert => Rebased.Free(i)
           case d: Content.Delete =>
             if (d.segment.node == point.node) {
-              if (d.segment.content.contains(point.content)) {
+              if (d.segment.content.leftOpenContains(point.content)) {
                 Rebased.LoserDeletesWinner(
                   d.copy(segment = d.segment.copy(
                     content = d.segment.content.copy(
@@ -205,8 +207,11 @@ object Change {
             }
           case i: Content.Insert =>
             if (i.point.node == point.node) {
-              val conflictType = if (point.content == i.point.content) Set[RebaseType](RebaseType.Asymmetry) else Set.empty[RebaseType]
-              Rebased(map(i.point).map(s => i.copy(point = s)).get, conflictType)
+              if (point.content == i.point.content) {
+                Rebased.Asymmetry(i)
+              } else {
+                Rebased.Free(map(i.point).map(s => i.copy(point = s)).get)
+              }
             } else {
               Rebased.Free(i)
             }
@@ -218,7 +223,7 @@ object Change {
         loser match {
           case i: Content.Insert if point == i.point =>
             // no change our side!!!
-            Rebased((this, map(i.point).map(s => i.copy(point = s)).get), Set(RebaseType.Asymmetry))
+            Rebased((copy(point = point.copy(content = point.content + i.content.size)), i), Set(RebaseType.Asymmetry))
           case _ => super.rebasePair(loser)
         }
       }
@@ -249,8 +254,12 @@ object Change {
                 d.copy(segment = d.segment.copy(content = s))).getOrElse(Id))
             else Rebased.Free(d)
           case i: Content.Insert =>
-            map(i.point).map(it => Rebased.Free(i.copy(point = it)).asInstanceOf[Rebased[Change]])
-              .getOrElse(Rebased.WinnerDeletesLoser(Id))
+            if (i.point == segment.from) {
+              Rebased.Free(i)
+            } else {
+              map(i.point).map(it => Rebased.Free(i.copy(point = it)).asInstanceOf[Rebased[Change]])
+                .getOrElse(Rebased.WinnerDeletesLoser(Id))
+            }
           case Id => Rebased.Free(Id)
         }
     }
@@ -291,34 +300,24 @@ object Change {
 
 
   def rebaseLine(winner: Change, loser: Seq[Change]): Rebased[(Change, Seq[Change])] = {
-    loser.foldLeft(Rebased.Free(winner, Seq.empty[Change])) { (pair, bb) =>
+    loser.foldLeft(Rebased.Free(winner, Seq.empty[Change])) { (pair, ll) =>
       pair match {
-        case Rebased((lp, bp), ls) =>
-          val Rebased((lpp, bbp), ns) = lp.rebasePair(bb)
-          Rebased((lpp, bp :+ bbp), ls ++ ns)
+        case Rebased((wi, lp), t) =>
+          val Rebased((wi0, lp0), t0) = wi.rebasePair(ll)
+          Rebased((wi0, lp :+ lp0), t ++ t0)
       }
     }
   }
 
   def rebaseLine(winner: Seq[Change], loser: Change): Rebased[(Seq[Change], Change)] = {
-    winner.foldLeft(Rebased.Free(loser, Seq.empty[Change])) { (pair, bb) =>
+    winner.foldLeft(Rebased.Free(Seq.empty[Change], loser)) { (pair, ww) =>
       pair match {
-        case Rebased((lp, bp), ls) =>
-          val Rebased((lpp, bbp), ns) = bb.rebasePair(lp)
-          Rebased((lpp, bp :+ bbp), ls ++ ns)
+        case Rebased((wp, li), t) =>
+          val Rebased((wp0, li0), t0) = ww.rebasePair(li)
+          Rebased((wp :+ wp0, li0), t ++ t0)
       }
     }
   }
-
-//  def rebaseLine(winner: Change, loser: Seq[Change]): (Rebased[Change], Seq[Rebased[Change]]) = {
-//    loser.foldLeft(Rebased.Free(winner), Seq.empty[Rebased[Change]]) { (pair, bb) =>
-//      pair match {
-//        case (lp, bp) =>
-//          val Rebased((lpp, bbp), _) = lp.rebasePair(bb)
-//          (lpp, bp :+ bbp)
-//      }
-//    }
-//  }
 
   /**
     * l  /\  w
@@ -329,11 +328,11 @@ object Change {
     * @return (wp, lp)
     */
   def rebaseSquare(winner: Seq[Change], loser: Seq[Change]): Rebased[(Seq[Change], Seq[Change])] = {
-    loser.foldLeft(Rebased.Free((winner, Seq.empty[Change]))) { (pair, ll) =>
+    winner.foldLeft(Rebased.Free(Seq.empty[Change], loser)) { (pair, ww) =>
       pair match {
-        case Rebased((wpp, lpb), ls) =>
-          val Rebased((llp, wppp), ns) = rebaseLine(wpp, ll)
-          Rebased((wppp, lpb :+ llp), ls ++ ns)
+        case Rebased((wp, li), t) =>
+          val Rebased((wp0, li0), t0) = rebaseLine(ww, li)
+          Rebased((wp :+ wp0, li0), t ++ t0)
       }
     }
   }
