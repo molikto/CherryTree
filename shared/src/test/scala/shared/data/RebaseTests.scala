@@ -41,7 +41,7 @@ object RebaseTests extends TestSuite {
           }
           assert(app0 == app1)
         case (None, None) => Unit
-        case (a, b) => throw new IllegalArgumentException(s"Not matching rebase b': $a, a': $b")
+        case (aa, bb) => throw new IllegalArgumentException(s"Not matching rebase b': $aa, a': $bb")
       }
     }
     val insert0 =
