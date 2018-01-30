@@ -1,39 +1,29 @@
 package shared.data
 
-
-sealed class RebaseType {
+abstract sealed class RebaseType {
+  def mirror = this
 }
-
 object RebaseType {
-  object Free extends RebaseType
-  /**
-    * in favor of winner, e.g. insert at same position, winner's text is treated as fire first
-    */
+  def mirror(js: Set[RebaseType]): Set[RebaseType] = js.map(_.mirror)
+
   object Asymmetry extends RebaseType
-
-  abstract class Conflict extends RebaseType
-
-  /**
-    * in case the loser's action deletes winner's unseen (by loser) action
-    */
-  object LoserDeletesWinner extends Conflict
-
-  /**
-    * in case the winner's action deletes new loser's insert
-    */
-  object WinnerDeletesLoser extends Conflict
+  object LoserDeletesWinner extends RebaseType {
+    override def mirror: RebaseType = WinnerDeletesLoser
+  }
+  object WinnerDeletesLoser extends RebaseType {
+    override def mirror: RebaseType = LoserDeletesWinner
+  }
 }
 
 object Rebased {
-  def Free[T](t: T): Rebased[T] = Rebased(t, RebaseType.Free)
-  def Asymmetry[T](t: T): Rebased[T] = Rebased(t, RebaseType.Asymmetry)
-  def LoserDeletesWinner[T](t: T): Rebased[T] = Rebased(t, RebaseType.LoserDeletesWinner)
-  def WinnerDeletesLoser[T](t: T): Rebased[T] = Rebased(t, RebaseType.WinnerDeletesLoser)
+  def Free[T](t: T): Rebased[T] = Rebased(t, Set.empty)
+  def Asymmetry[T](t: T): Rebased[T] = Rebased(t, Set(RebaseType.Asymmetry))
+  def LoserDeletesWinner[T](t: T): Rebased[T] = Rebased(t, Set(RebaseType.LoserDeletesWinner))
+  def WinnerDeletesLoser[T](t: T): Rebased[T] = Rebased(t, Set(RebaseType.WinnerDeletesLoser))
 }
 
 
 
-case class Rebased[T](result: T, ty: RebaseType) {
-
+case class Rebased[T](result: T, ty: Set[RebaseType]) {
   def map[U](a: T => U): Rebased[U] = Rebased(a(result), ty)
 }

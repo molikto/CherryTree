@@ -103,9 +103,15 @@ object RebaseTests extends TestSuite {
               val k = Change.rebaseSquare(a, b)
               val j = Change.rebaseSquare(b, a)
               (k, j) match {
-                case ((kap, kbp), (jbp, jap)) =>
-                  assert(kap == jap)
-                  assert(kbp == jbp)
+                case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
+                  val mirrored = RebaseType.mirror(js)
+                  if (ks != mirrored) {
+                    throw new IllegalArgumentException(s"Wrong mirror $a, $b $mirrored, $ks")
+                  }
+                  if (!ks.contains(RebaseType.Asymmetry)) {
+                    assert(kap == jap)
+                    assert(kbp == jbp)
+                  }
               }
             }
           }
@@ -118,7 +124,7 @@ object RebaseTests extends TestSuite {
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
       Change.rebaseSquare(a, b) match {
-        case (ap, bp) =>
+        case Rebased((ap, bp), _) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
           val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
