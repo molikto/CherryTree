@@ -155,7 +155,7 @@ object Node extends IdGenerator {
 
     }
     def empty: Content = ""
-    def testRandom(): Content = Random.nextString(10)
+    def testRandom(): Content = Random.nextLong() + ""
   }
 
   case class PointRef(node: Node.Ref, content: Content.PointRef) {

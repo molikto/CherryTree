@@ -39,6 +39,7 @@ object RebaseTests extends TestSuite {
     val delete02 = Change.Node.Delete(Node.Ref.root.withChilds(0,2))
     val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
     val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
+    val insert0t1 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
     val insert0t2 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), Node.Content.testRandom())
     val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), Node.Content.testRandom())
     val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), Node.Content.testRandom())
@@ -54,7 +55,7 @@ object RebaseTests extends TestSuite {
 
     val changes = Seq(id, insert0, insert02, insert020,
       delete0, delete00, delete01, delete02, delete20,
-      insert0t, insert0t2,
+      insert0t, insert0t1, insert0t2,
       insert03t, insert02t,
       delete0t, delete0t2, delete0t3, delete0t4, delete0t4, delete0t5, delete0t6, delete0t7,
       delete03t, delete02t)
@@ -80,7 +81,10 @@ object RebaseTests extends TestSuite {
               assert(aaa == bbb)
             case (Failure(_), Failure(_)) =>
               Unit
-            case _ => throw new IllegalArgumentException("one apply failed and one succeeded")
+            case (Success(s), Failure(e)) =>
+              throw new IllegalArgumentException(s"a succeeded $s", e)
+            case (Failure(e), Success(s)) =>
+              throw new IllegalArgumentException(s"b succeeded$s", e)
           }
         case _ =>
       }
@@ -129,6 +133,25 @@ object RebaseTests extends TestSuite {
                   assert(kbp == jbp)
                 case (None, None) => Unit
                 case _ => throw new IllegalStateException("Not possible")
+              }
+            }
+          }
+        }
+      }
+    }
+
+    'square - {
+      for (a1 <- changes) {
+        for (a2 <- changes) {
+          for (b1 <- changes) {
+            for (b2 <- changes) {
+              val a = Seq(a1, a2)
+              val r1 = Try { Change.apply(node, a) }
+              val b = Seq(b1, b2)
+              val r2 = Try { Change.apply(node, b) }
+              // for invalid sequences, rebasing might just make the sequence valid
+              if (r1.isSuccess && r2.isSuccess) {
+                assertRebaseSquare(a, b)
               }
             }
           }
