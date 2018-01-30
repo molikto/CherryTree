@@ -28,34 +28,34 @@ sealed trait Change {
   /**
     * @return None if this is destructive, even partially
     */
-  def mapOption(ref: N.Ref): Option[N.Ref]
+  def map(ref: N.Ref): Option[N.Ref]
 
   /**
     * @return None if this is destructive, even partially
     */
-  def mapOption(ref: N.PointRef): Option[N.PointRef]
+  def map(ref: N.PointRef): Option[N.PointRef]
 
   /**
     * @return None if this is destructive, even partially
     */
-  def mapOption(ref: N.SegmentRef): Option[N.SegmentRef]
+  def map(ref: N.SegmentRef): Option[N.SegmentRef]
 
   /**
     * @return None if this is destructive, even partially
     */
-  def rebaseOption(o: Change): Option[Change]
+  def rebase(o: Change): Option[Change]
 }
 
 object Change {
 
   case object Id extends Change {
-    override def mapOption(ref: N.Ref) = Some(ref)
+    override def map(ref: N.Ref) = Some(ref)
 
-    override def mapOption(ref: N.PointRef) = Some(ref)
+    override def map(ref: N.PointRef) = Some(ref)
 
-    override def mapOption(ref: N.SegmentRef) = Some(ref)
+    override def map(ref: N.SegmentRef) = Some(ref)
 
-    override def rebaseOption(o: Change) = Some(o)
+    override def rebase(o: Change) = Some(o)
   }
 
   sealed trait Node extends Change
@@ -65,33 +65,33 @@ object Change {
     case class Delete(position: N.Ref) extends Node() {
       assert(position != N.Ref.root)
 
-      override def mapOption(ref: N.Ref): Option[N.Ref] =
+      override def map(ref: N.Ref): Option[N.Ref] =
         N.Ref.transformAfterDeleted(position, ref)
 
-      override def mapOption(ref: N.PointRef): Option[N.PointRef] =
-        mapOption(ref.node).map(c => N.PointRef(c, ref.content))
+      override def map(ref: N.PointRef): Option[N.PointRef] =
+        map(ref.node).map(c => N.PointRef(c, ref.content))
 
-      override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] =
-        mapOption(ref.node).map(c => N.SegmentRef(c, ref.content))
+      override def map(ref: N.SegmentRef): Option[N.SegmentRef] =
+        map(ref.node).map(c => N.SegmentRef(c, ref.content))
 
-      override def rebaseOption(o: Change): Option[Change] =
+      override def rebase(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
             // if we cannot find the deleted node, then we are fine!
-            mapOption(d.position).map(c => Delete(c)).orElse(Some(Id))
+            map(d.position).map(c => Delete(c)).orElse(Some(Id))
           case i: Node.Insert =>
             if (i.position == position) {
               Some(i)
             } else {
-              mapOption(i.position).map(c => Insert(c, i.node))
+              map(i.position).map(c => Insert(c, i.node))
             }
           case d: Content.Delete =>
             // if we cannot find the deleted segment, we are fine!
-            mapOption(d.segment.node)
+            map(d.segment.node)
               .map(c => d.copy(segment = d.segment.copy(node = c)))
               .orElse(Some(Id))
           case i: Content.Insert =>
-            mapOption(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
+            map(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
           case Id => Some(Id)
         }
     }
@@ -99,30 +99,30 @@ object Change {
     case class Insert(position: N.Ref, node: N) extends Node() {
       assert(position != N.Ref.root)
 
-      override def mapOption(ref: N.Ref): Option[N.Ref] =
+      override def map(ref: N.Ref): Option[N.Ref] =
         Some(N.Ref.transformAfterInserted(position, ref))
 
-      override def mapOption(ref: N.PointRef): Option[N.PointRef] =
-        mapOption(ref.node).map(c => N.PointRef(c, ref.content))
+      override def map(ref: N.PointRef): Option[N.PointRef] =
+        map(ref.node).map(c => N.PointRef(c, ref.content))
 
-      override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] =
-        mapOption(ref.node).map(c => N.SegmentRef(c, ref.content))
+      override def map(ref: N.SegmentRef): Option[N.SegmentRef] =
+        map(ref.node).map(c => N.SegmentRef(c, ref.content))
 
-      override def rebaseOption(o: Change): Option[Change] =
+      override def rebase(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
             if (position.childOf(d.position)) {
               None
             } else {
-              mapOption(d.position).map(c => Delete(c))
+              map(d.position).map(c => Delete(c))
             }
           case i: Node.Insert =>
             // weak conflict
-            mapOption(i.position).map(c => Insert(c, i.node))
+            map(i.position).map(c => Insert(c, i.node))
           case d: Content.Delete =>
-            mapOption(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c)))
+            map(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c)))
           case i: Content.Insert =>
-            mapOption(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
+            map(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
           case Id => Some(Id)
         }
     }
@@ -136,9 +136,9 @@ object Change {
     case class Insert(point: N.PointRef, content: C) extends Content() {
       assert(content.nonEmpty)
 
-      override def mapOption(ref: N.Ref) = Some(ref)
+      override def map(ref: N.Ref) = Some(ref)
 
-      override def mapOption(ref: N.PointRef): Some[N.PointRef] = {
+      override def map(ref: N.PointRef): Some[N.PointRef] = {
         val res =
           if (point.node == ref.node)
             ref.copy(content = C.transformAfterInserted(point.content, content.length, ref.content))
@@ -146,7 +146,7 @@ object Change {
         Some(res)
       }
 
-      override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] = {
+      override def map(ref: N.SegmentRef): Option[N.SegmentRef] = {
         val res =
           if (point.node == ref.node)
             ref.copy(content = C.SegmentRef(
@@ -157,7 +157,7 @@ object Change {
         Some(res)
       }
 
-      override def rebaseOption(o: Change): Option[Change] =
+      override def rebase(o: Change): Option[Change] =
         o match {
           case d: Node.Delete =>
             if (point.node.eqOrChildOf(d.position)) {
@@ -171,14 +171,14 @@ object Change {
               if (d.segment.content.contains(point.content)) {
                 None
               } else {
-                mapOption(d.segment).map(s => d.copy(segment = s))
+                map(d.segment).map(s => d.copy(segment = s))
               }
             } else {
               Some(d)
             }
           case i: Content.Insert =>
             if (i.point.node == point.node) {
-              mapOption(i.point).map(s => i.copy(point = s))
+              map(i.point).map(s => i.copy(point = s))
             } else {
               Some(i)
             }
@@ -187,21 +187,21 @@ object Change {
     }
 
     case class Delete(segment: N.SegmentRef) extends Content() {
-      override def mapOption(ref: N.Ref) = Some(ref)
+      override def map(ref: N.Ref) = Some(ref)
 
-      override def mapOption(ref: N.PointRef): Option[N.PointRef] = {
+      override def map(ref: N.PointRef): Option[N.PointRef] = {
         if (segment.node == ref.node)
           C.transformAfterDeleted(segment.content, ref.content).map(s => ref.copy(content = s))
         else Some(ref)
       }
 
-      override def mapOption(ref: N.SegmentRef): Option[N.SegmentRef] = {
+      override def map(ref: N.SegmentRef): Option[N.SegmentRef] = {
         if (segment.node == ref.node)
           C.transformAfterDeleted(segment.content, ref.content).map(s => ref.copy(content = s))
         else Some(ref)
       }
 
-      override def rebaseOption(o: Change): Option[Change] =
+      override def rebase(o: Change): Option[Change] =
         o match {
           case d: Node.Delete => Some(d)
           case i: Node.Insert => Some(i)
@@ -211,7 +211,7 @@ object Change {
                 d.copy(segment = d.segment.copy(content = s))).orElse(Some(Id))
             else Some(d)
           case i: Content.Insert =>
-            mapOption(i.point).map(it => i.copy(point = it))
+            map(i.point).map(it => i.copy(point = it))
           case Id => Some(Id)
         }
     }
@@ -255,8 +255,8 @@ object Change {
     *
     * @return a' b'
     */
-  def rebaseOption(a: Change, b: Change): Option[(Change, Change)] = {
-    (a.rebaseOption(b), b.rebaseOption(a)) match {
+  def rebase(a: Change, b: Change): Option[(Change, Change)] = {
+    (a.rebase(b), b.rebase(a)) match {
       case (Some(bp), Some(ap)) =>
         Some(ap, bp)
       case (None, None) => None
@@ -264,11 +264,11 @@ object Change {
     }
   }
 
-  def rebaseLineOption(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
+  def rebaseLine(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
     b.foldLeft(Option((a, Seq.empty[Change]))) { (pair, bb) =>
       pair.flatMap {
         case (lp, bp) =>
-          rebaseOption(lp, bb).map {
+          rebase(lp, bb).map {
             case (lpp, bbp) =>
               (lpp, bp :+ bbp)
           }
@@ -284,11 +284,11 @@ object Change {
     * @param l loser
     * @return (wp, lp)
     */
-  def rebaseSquareOption(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
+  def rebaseSquare(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
     l.foldLeft(Option((w, Seq.empty[Change]))) { (pair, ll) =>
       pair.flatMap {
         case (wpp, lpb) =>
-          rebaseLineOption(ll, wpp).map {
+          rebaseLine(ll, wpp).map {
             case (llp, wppp) =>
               (wppp, lpb :+ llp)
           }

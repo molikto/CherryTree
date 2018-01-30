@@ -64,7 +64,7 @@ object RebaseTests extends TestSuite {
       val debug = true
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      Change.rebaseSquareOption(a, b) match {
+      Change.rebaseSquare(a, b) match {
         case Some((ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
@@ -94,7 +94,7 @@ object RebaseTests extends TestSuite {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      Change.rebaseOption(a, b) match {
+      Change.rebase(a, b) match {
         case Some((ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
@@ -125,8 +125,8 @@ object RebaseTests extends TestSuite {
             for (b2 <- changes) {
               val a = Seq(a1, a2)
               val b = Seq(b1, b2)
-              val k = Change.rebaseSquareOption(a, b)
-              val j = Change.rebaseSquareOption(b, a)
+              val k = Change.rebaseSquare(a, b)
+              val j = Change.rebaseSquare(b, a)
               (k, j) match {
                 case (Some((kap, kbp)), Some((jbp, jap))) =>
                   assert(kap == jap)
