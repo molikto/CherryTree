@@ -290,30 +290,25 @@ object Change {
   }
 
 
-  /**
-    *
-    * @return a' b'
-    */
-  def rebase(a: Change, b: Change): Option[(Change, Change)] = {
-    (a.rebase(b), b.rebase(a)) match {
-      case (Some(bp), Some(ap)) =>
-        Some(ap, bp)
-      case (None, None) => None
-      case (aa, bb) => throw new IllegalArgumentException(s"Not matching rebase b': $aa, a': $bb")
-    }
-  }
-
-  def rebaseLine(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
-    b.foldLeft(Option((a, Seq.empty[Change]))) { (pair, bb) =>
-      pair.flatMap {
+  def rebaseLine(winner: Change, loser: Seq[Change]): (Change, Seq[Change]) = {
+    loser.foldLeft(winner, Seq.empty[Change]) { (pair, bb) =>
+      pair match {
         case (lp, bp) =>
-          rebase(lp, bb).map {
-            case (lpp, bbp) =>
-              (lpp, bp :+ bbp)
-          }
+          val Rebased((lpp, bbp), _) = lp.rebasePair(bb)
+          (lpp, bp :+ bbp)
       }
     }
   }
+
+//  def rebaseLine(winner: Change, loser: Seq[Change]): (Rebased[Change], Seq[Rebased[Change]]) = {
+//    loser.foldLeft(Rebased.Free(winner), Seq.empty[Rebased[Change]]) { (pair, bb) =>
+//      pair match {
+//        case (lp, bp) =>
+//          val Rebased((lpp, bbp), _) = lp.rebasePair(bb)
+//          (lpp, bp :+ bbp)
+//      }
+//    }
+//  }
 
   /**
     * l  /\  w
@@ -323,14 +318,12 @@ object Change {
     * @param l loser
     * @return (wp, lp)
     */
-  def rebaseSquare(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
-    l.foldLeft(Option((w, Seq.empty[Change]))) { (pair, ll) =>
-      pair.flatMap {
+  def rebaseSquare(w: Seq[Change], l: Seq[Change]): (Seq[Change], Seq[Change]) = {
+    l.foldLeft((w, Seq.empty[Change])) { (pair, ll) =>
+      pair match {
         case (wpp, lpb) =>
-          rebaseLine(ll, wpp).map {
-            case (llp, wppp) =>
-              (wppp, lpb :+ llp)
-          }
+          val (llp, wppp) = rebaseLine(ll, wpp)
+          (wppp, lpb :+ llp)
       }
     }
   }

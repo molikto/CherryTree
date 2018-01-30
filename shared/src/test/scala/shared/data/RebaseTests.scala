@@ -103,11 +103,9 @@ object RebaseTests extends TestSuite {
               val k = Change.rebaseSquare(a, b)
               val j = Change.rebaseSquare(b, a)
               (k, j) match {
-                case (Some((kap, kbp)), Some((jbp, jap))) =>
+                case ((kap, kbp), (jbp, jap)) =>
                   assert(kap == jap)
                   assert(kbp == jbp)
-                case (None, None) => Unit
-                case _ => throw new IllegalStateException("Not possible")
               }
             }
           }
@@ -116,11 +114,11 @@ object RebaseTests extends TestSuite {
     }
 
     def assertRebaseSquare(a: Seq[Change], b: Seq[Change]): Unit = {
-      val debug = true
+      val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
       Change.rebaseSquare(a, b) match {
-        case Some((ap, bp)) =>
+        case (ap, bp) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
           val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
