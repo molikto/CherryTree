@@ -60,35 +60,6 @@ object RebaseTests extends TestSuite {
       delete0t, delete0t2, delete0t3, delete0t4, delete0t4, delete0t5, delete0t6, delete0t7,
       delete03t, delete02t)
 
-    def assertRebaseSquare(a: Seq[Change], b: Seq[Change]): Unit = {
-      val debug = true
-      if (debug) println(s"Change a: $a")
-      if (debug) println(s"Change b: $b")
-      Change.rebaseSquare(a, b) match {
-        case Some((ap, bp)) =>
-          if (debug) println(s"Change a': $ap")
-          if (debug) println(s"Change b': $bp")
-          val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
-          val app1 = Try { Change.apply(Change.apply(node, b)._1, ap)._1 }
-          (app0, app1) match {
-            case (Success(aaa), Success(bbb)) =>
-              if (aaa == bbb) {
-                if (debug) println(s"App: $aaa")
-              } else {
-                if (debug) println(s"App 0: $aaa")
-                if (debug) println(s"App 1: $bbb")
-              }
-              assert(aaa == bbb)
-            case (Failure(_), Failure(_)) =>
-              Unit
-            case (Success(s), Failure(e)) =>
-              throw new IllegalArgumentException(s"a succeeded $s", e)
-            case (Failure(e), Success(s)) =>
-              throw new IllegalArgumentException(s"b succeeded$s", e)
-          }
-        case _ =>
-      }
-    }
 
     def assertRebase(a: Change, b: Change): Unit = {
       val debug = false
@@ -137,6 +108,36 @@ object RebaseTests extends TestSuite {
             }
           }
         }
+      }
+    }
+
+    def assertRebaseSquare(a: Seq[Change], b: Seq[Change]): Unit = {
+      val debug = true
+      if (debug) println(s"Change a: $a")
+      if (debug) println(s"Change b: $b")
+      Change.rebaseSquare(a, b) match {
+        case Some((ap, bp)) =>
+          if (debug) println(s"Change a': $ap")
+          if (debug) println(s"Change b': $bp")
+          val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
+          val app1 = Try { Change.apply(Change.apply(node, b)._1, ap)._1 }
+          (app0, app1) match {
+            case (Success(aaa), Success(bbb)) =>
+              if (aaa == bbb) {
+                if (debug) println(s"App: $aaa")
+              } else {
+                if (debug) println(s"App 0: $aaa")
+                if (debug) println(s"App 1: $bbb")
+              }
+              assert(aaa == bbb)
+            case (Failure(_), Failure(_)) =>
+              Unit
+            case (Success(s), Failure(e)) =>
+              throw new IllegalArgumentException(s"a succeeded $s", e)
+            case (Failure(e), Success(s)) =>
+              throw new IllegalArgumentException(s"b succeeded$s", e)
+          }
+        case _ =>
       }
     }
 
