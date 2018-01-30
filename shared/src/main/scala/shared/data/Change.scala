@@ -218,6 +218,18 @@ object Change {
 
   }
 
+
+  /**
+    *
+    * @param root
+    * @param changes change is properly based!
+    */
+  def apply(root: data.Node, changes: Seq[Change]): (data.Node, Seq[Change]) = {
+    changes.foldLeft((root, Seq.empty[Change])) { (pair, c) =>
+      val (nodep, r) = apply(pair._1, c)
+      (nodep, r +: pair._2)
+    }
+  }
   /**
     * @return return a pair of new root, and a reverse change
     */
@@ -243,7 +255,7 @@ object Change {
     *
     * @return a' b'
     */
-  def rebaseOptionPair(a: Change, b: Change): Option[(Change, Change)] = {
+  def rebaseOption(a: Change, b: Change): Option[(Change, Change)] = {
     (a.rebaseOption(b), b.rebaseOption(a)) match {
       case (Some(bp), Some(ap)) =>
         Some(ap, bp)
@@ -252,11 +264,11 @@ object Change {
     }
   }
 
-  def rebaseOptionLine(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
+  def rebaseLineOption(a: Change, b: Seq[Change]): Option[(Change, Seq[Change])] = {
     b.foldLeft(Option((a, Seq.empty[Change]))) { (pair, bb) =>
       pair.flatMap {
         case (lp, bp) =>
-          rebaseOptionPair(lp, bb).map {
+          rebaseOption(lp, bb).map {
             case (lpp, bbp) =>
               (lpp, bp :+ bbp)
           }
@@ -272,18 +284,16 @@ object Change {
     * @param l loser
     * @return (wp, lp)
     */
-  def rebaseOption(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
+  def rebaseSquareOption(w: Seq[Change], l: Seq[Change]): Option[(Seq[Change], Seq[Change])] = {
     l.foldLeft(Option((w, Seq.empty[Change]))) { (pair, ll) =>
       pair.flatMap {
         case (wpp, lpb) =>
-          rebaseOptionLine(ll, wpp).map {
+          rebaseLineOption(ll, wpp).map {
             case (llp, wppp) =>
               (wppp, lpb :+ llp)
           }
       }
     }
   }
-}
-
 }
 

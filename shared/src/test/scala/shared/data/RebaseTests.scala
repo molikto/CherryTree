@@ -2,6 +2,8 @@ package shared.data
 
 import utest._
 
+import scala.util.{Failure, Success, Try}
+
 
 object RebaseTests extends TestSuite {
 
@@ -23,26 +25,8 @@ object RebaseTests extends TestSuite {
          |  3 $randomText
          |  4 $randomText
          |  """.stripMargin)
-    def assertRebase(a: Change, b: Change): Unit = {
-      val debug = false
-      if (debug) println(s"Change a: $a")
-      if (debug) println(s"Change b: $b")
-      Change.rebaseOptionPair(a, b) match {
-        case Some((ap, bp)) =>
-          if (debug) println(s"Change a': $ap")
-          if (debug) println(s"Change b': $bp")
-          val app0 = Change.apply(Change.apply(node, a)._1, bp)._1
-          val app1 = Change.apply(Change.apply(node, b)._1, ap)._1
-          if (app0 == app1) {
-            if (debug) println(s"App: $app0")
-          } else {
-            if (debug) println(s"App 0: $app0")
-            if (debug) println(s"App 1: $app1")
-          }
-          assert(app0 == app1)
-        case _ =>
-      }
-    }
+
+    val id = Change.Id
     val insert0 =
       Change.Node.Insert(Node.Ref.root.withChild(0), Node(Node.newId(), "insert0", Seq.empty))
     val insert02 =
@@ -68,17 +52,86 @@ object RebaseTests extends TestSuite {
     val delete03t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,3), 20).to(10))
     val delete02t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,2), 20).to(10))
 
-    val changes = Seq(insert0, insert02, insert020,
+    val changes = Seq(id, insert0, insert02, insert020,
       delete0, delete00, delete01, delete02, delete20,
       insert0t, insert0t2,
       insert03t, insert02t,
       delete0t, delete0t2, delete0t3, delete0t4, delete0t4, delete0t5, delete0t6, delete0t7,
       delete03t, delete02t)
 
+    def assertRebaseSquare(a: Seq[Change], b: Seq[Change]): Unit = {
+      val debug = true
+      if (debug) println(s"Change a: $a")
+      if (debug) println(s"Change b: $b")
+      Change.rebaseSquareOption(a, b) match {
+        case Some((ap, bp)) =>
+          if (debug) println(s"Change a': $ap")
+          if (debug) println(s"Change b': $bp")
+          val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
+          val app1 = Try { Change.apply(Change.apply(node, b)._1, ap)._1 }
+          (app0, app1) match {
+            case (Success(aaa), Success(bbb)) =>
+              if (aaa == bbb) {
+                if (debug) println(s"App: $aaa")
+              } else {
+                if (debug) println(s"App 0: $aaa")
+                if (debug) println(s"App 1: $bbb")
+              }
+              assert(aaa == bbb)
+            case (Failure(_), Failure(_)) =>
+              Unit
+            case _ => throw new IllegalArgumentException("one apply failed and one succeeded")
+          }
+        case _ =>
+      }
+    }
+
+    def assertRebase(a: Change, b: Change): Unit = {
+      val debug = false
+      if (debug) println(s"Change a: $a")
+      if (debug) println(s"Change b: $b")
+      Change.rebaseOption(a, b) match {
+        case Some((ap, bp)) =>
+          if (debug) println(s"Change a': $ap")
+          if (debug) println(s"Change b': $bp")
+          val app0 = Change.apply(Change.apply(node, a)._1, bp)._1
+          val app1 = Change.apply(Change.apply(node, b)._1, ap)._1
+          if (app0 == app1) {
+            if (debug) println(s"App: $app0")
+          } else {
+            if (debug) println(s"App 0: $app0")
+            if (debug) println(s"App 1: $app1")
+          }
+          assert(app0 == app1)
+        case _ =>
+      }
+    }
+
     'simple - {
       for (c <- changes) {
         for (cc <- changes) {
           assertRebase(c, cc)
+        }
+      }
+    }
+    'squareSymmetry - {
+      for (a1 <- changes) {
+        for (a2 <- changes) {
+          for (b1 <- changes) {
+            for (b2 <- changes) {
+              val a = Seq(a1, a2)
+              val b = Seq(b1, b2)
+              val k = Change.rebaseSquareOption(a, b)
+              val j = Change.rebaseSquareOption(b, a)
+              (k, j) match {
+                case (Some((kap, kbp)), Some((jbp, jap))) =>
+                  assert(kap == jap)
+                  assert(kbp == jbp)
+                case (None, None) => Unit
+                case _ => throw new IllegalStateException("Not possible")
+              }
+            }
+          }
         }
       }
     }

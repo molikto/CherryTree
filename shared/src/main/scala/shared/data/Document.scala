@@ -57,6 +57,7 @@ object Node extends IdGenerator {
             }
           case (None, _) =>
             ref.replaceAt(common.size - 1, ref.v(common.size - 1) + 1)
+          case _ => throw new IllegalStateException("Not possible")
         }
       }
     }
@@ -80,6 +81,7 @@ object Node extends IdGenerator {
             }
           case (None, _) =>
             None
+          case _ => throw new IllegalStateException("Not possible")
         }
       }
     }
