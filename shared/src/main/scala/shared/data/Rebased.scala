@@ -2,6 +2,9 @@ package shared.data
 
 
 sealed class RebaseType {
+}
+
+object RebaseType {
   object Free extends RebaseType
   /**
     * in favor of winner, e.g. insert at same position, winner's text is treated as fire first
@@ -21,8 +24,16 @@ sealed class RebaseType {
   object WinnerDeletesLoser extends Conflict
 }
 
+object Rebased {
+  def Free[T](t: T): Rebased[T] = Rebased(t, RebaseType.Free)
+  def Asymmetry[T](t: T): Rebased[T] = Rebased(t, RebaseType.Asymmetry)
+  def LoserDeletesWinner[T](t: T): Rebased[T] = Rebased(t, RebaseType.LoserDeletesWinner)
+  def WinnerDeletesLoser[T](t: T): Rebased[T] = Rebased(t, RebaseType.WinnerDeletesLoser)
+}
+
 
 
 case class Rebased[T](result: T, ty: RebaseType) {
 
+  def map[U](a: T => U): Rebased[U] = Rebased(a(result), ty)
 }

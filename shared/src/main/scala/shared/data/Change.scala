@@ -43,7 +43,7 @@ sealed trait Change {
   /**
     * @return None if this is destructive, even partially
     */
-  def rebase(o: Change): Option[Change]
+  def rebase(loser: Change): Rebased[Change]
 }
 
 object Change {
@@ -55,7 +55,7 @@ object Change {
 
     override def map(ref: N.SegmentRef) = Some(ref)
 
-    override def rebase(o: Change) = Some(o)
+    override def rebase(loser: Change): Rebased[Change] = Rebased.Free(loser)
   }
 
   sealed trait Node extends Change
@@ -74,25 +74,27 @@ object Change {
       override def map(ref: N.SegmentRef): Option[N.SegmentRef] =
         map(ref.node).map(c => N.SegmentRef(c, ref.content))
 
-      override def rebase(o: Change): Option[Change] =
-        o match {
+      override def rebase(loser: Change): Rebased[Change] =
+        loser match {
           case d: Node.Delete =>
             // if we cannot find the deleted node, then we are fine!
-            map(d.position).map(c => Delete(c)).orElse(Some(Id))
+            Rebased.Free(map(d.position).map(c => Delete(c)).getOrElse(Id))
           case i: Node.Insert =>
             if (i.position == position) {
-              Some(i)
+              Rebased.Free(i)
             } else {
-              map(i.position).map(c => Insert(c, i.node))
+              map(i.position).map(c => Rebased.Free[Change](Insert(c, i.node)))
+                .getOrElse(Rebased.WinnerDeletesLoser(Id))
             }
           case d: Content.Delete =>
             // if we cannot find the deleted segment, we are fine!
-            map(d.segment.node)
+            Rebased.Free(map(d.segment.node)
               .map(c => d.copy(segment = d.segment.copy(node = c)))
-              .orElse(Some(Id))
+              .getOrElse(Id))
           case i: Content.Insert =>
-            map(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
-          case Id => Some(Id)
+            map(i.point.node).map(c => Rebased.Free[Change](i.copy(point = i.point.copy(node = c))))
+              .getOrElse(Rebased.WinnerDeletesLoser(Id))
+          case Id => Rebased.Free(Id)
         }
     }
 
@@ -108,22 +110,23 @@ object Change {
       override def map(ref: N.SegmentRef): Option[N.SegmentRef] =
         map(ref.node).map(c => N.SegmentRef(c, ref.content))
 
-      override def rebase(o: Change): Option[Change] =
-        o match {
+      override def rebase(loser: Change): Rebased[Change] =
+        loser match {
           case d: Node.Delete =>
             if (position.childOf(d.position)) {
-              None
+              Rebased.LoserDeletesWinner(d)
             } else {
-              map(d.position).map(c => Delete(c))
+              Rebased.Free(map(d.position).map(c => Delete(c)).get)
             }
           case i: Node.Insert =>
             // weak conflict
-            map(i.position).map(c => Insert(c, i.node))
+            val conflictType = if (position == i.position) RebaseType.Asymmetry else RebaseType.Free
+            Rebased(map(i.position).map(c => Insert(c, i.node)).get, conflictType)
           case d: Content.Delete =>
-            map(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c)))
+            Rebased.Free(map(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c))).get)
           case i: Content.Insert =>
-            map(i.point.node).map(c => i.copy(point = i.point.copy(node = c)))
-          case Id => Some(Id)
+            Rebased.Free(map(i.point.node).map(c => i.copy(point = i.point.copy(node = c))).get)
+          case Id => Rebased.Free(Id)
         }
     }
 
@@ -157,32 +160,33 @@ object Change {
         Some(res)
       }
 
-      override def rebase(o: Change): Option[Change] =
-        o match {
+      override def rebase(loser: Change): Rebased[Change] =
+        loser match {
           case d: Node.Delete =>
             if (point.node.eqOrChildOf(d.position)) {
-              None
+              Rebased.LoserDeletesWinner(Id)
             } else {
-              Some(d)
+              Rebased.Free(d)
             }
-          case i: Node.Insert => Some(i)
+          case i: Node.Insert => Rebased.Free(i)
           case d: Content.Delete =>
             if (d.segment.node == point.node) {
               if (d.segment.content.contains(point.content)) {
-                None
+                Rebased.LoserDeletesWinner(Id)
               } else {
-                map(d.segment).map(s => d.copy(segment = s))
+                Rebased.Free(map(d.segment).map(s => d.copy(segment = s)).get)
               }
             } else {
-              Some(d)
+              Rebased.Free(d)
             }
           case i: Content.Insert =>
             if (i.point.node == point.node) {
-              map(i.point).map(s => i.copy(point = s))
+              val conflictType = if (point.content== i.point.content) RebaseType.Asymmetry else RebaseType.Free
+              Rebased(map(i.point).map(s => i.copy(point = s)).get, conflictType)
             } else {
-              Some(i)
+              Rebased.Free(i)
             }
-          case Id => Some(Id)
+          case Id => Rebased.Free(Id)
         }
     }
 
@@ -201,18 +205,19 @@ object Change {
         else Some(ref)
       }
 
-      override def rebase(o: Change): Option[Change] =
-        o match {
-          case d: Node.Delete => Some(d)
-          case i: Node.Insert => Some(i)
+      override def rebase(loser: Change): Rebased[Change] =
+        loser match {
+          case d: Node.Delete => Rebased.Free(d)
+          case i: Node.Insert => Rebased.Free(i)
           case d: Content.Delete =>
             if (segment.node == d.segment.node)
-              C.transformDeletingSegmentAfterDeleted(segment.content, d.segment.content).map(s =>
-                d.copy(segment = d.segment.copy(content = s))).orElse(Some(Id))
-            else Some(d)
+              Rebased.Free(C.transformDeletingSegmentAfterDeleted(segment.content, d.segment.content).map(s =>
+                d.copy(segment = d.segment.copy(content = s))).getOrElse(Id))
+            else Rebased.Free(d)
           case i: Content.Insert =>
-            map(i.point).map(it => i.copy(point = it))
-          case Id => Some(Id)
+            map(i.point).map(it => Rebased.Free(i.copy(point = it)).asInstanceOf[Rebased[Change]])
+              .getOrElse(Rebased.WinnerDeletesLoser(Id))
+          case Id => Rebased.Free(Id)
         }
     }
 
