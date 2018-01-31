@@ -5,6 +5,8 @@ import boopickle.Default._
 import shared.data
 import shared.data.Node.{Content => C}
 import shared.data.{Node => N}
+import com.softwaremill.quicklens._
+
 
 trait ChangeImplicits {
 
@@ -101,10 +103,10 @@ object Change {
           case d: Content.Delete =>
             // if we cannot find the deleted segment, we are fine!
             Rebased.Free(map(d.segment.node)
-              .map(c => d.copy(segment = d.segment.copy(node = c)))
+              .map(c => d.modify(_.segment.node).using(_ => c))
               .getOrElse(Id))
           case i: Content.Insert =>
-            map(i.point.node).map(c => Rebased.Free[Change](i.copy(point = i.point.copy(node = c))))
+            map(i.point.node).map(c => Rebased.Free[Change](i.modify(_.point.node).using(_ => c)))
               .getOrElse(Rebased.WinnerDeletesLoser(Id))
           case Id => Rebased.Free(Id)
         }
@@ -137,9 +139,9 @@ object Change {
               Rebased.Free(map(i.position).map(c => Insert(c, i.node)).get)
             }
           case d: Content.Delete =>
-            Rebased.Free(map(d.segment.node).map(c => d.copy(segment = d.segment.copy(node = c))).get)
+            Rebased.Free(map(d.segment.node).map(c => d.modify(_.segment.node).using(_ => c)).get)
           case i: Content.Insert =>
-            Rebased.Free(map(i.point.node).map(c => i.copy(point = i.point.copy(node = c))).get)
+            Rebased.Free(map(i.point.node).map(c => i.modify(_.point.node).using(_ => c)).get)
           case Id => Rebased.Free(Id)
         }
       }
@@ -196,9 +198,7 @@ object Change {
             if (d.segment.node == point.node) {
               if (d.segment.content.leftOpenContains(point.content)) {
                 Rebased.LoserDeletesWinner(
-                  d.copy(segment = d.segment.copy(
-                    content = d.segment.content.copy(
-                      to = d.segment.content.to + content.length))))
+                  d.modify(_.segment.content.to).using(_ + content.length))
               } else {
                 Rebased.Free(map(d.segment).map(s => d.copy(segment = s)).get)
               }
@@ -223,7 +223,7 @@ object Change {
         loser match {
           case i: Content.Insert if point == i.point =>
             // no change our side!!!
-            Rebased((copy(point = point.copy(content = point.content + i.content.size)), i), Set(RebaseType.Asymmetry))
+            Rebased((this.modify(_.point.content).using(_ + i.content.size), i), Set(RebaseType.Asymmetry))
           case _ => super.rebasePair(loser)
         }
       }

@@ -9,13 +9,16 @@ import shared.data._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
-class ClientMain(val root: dom.html.Div) {
+class ClientInitializerView(val root: dom.html.Div) {
 
   {
+
+    // TODO show loading view
     ClientInitializer.init(Authentication.Token("")).onComplete {
       case Success(client) =>
-        root.textContent = "created client"
+
       case Failure(exception) =>
+        // TODO show retry button
         throw exception
     }
   }

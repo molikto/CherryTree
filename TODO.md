@@ -2,7 +2,7 @@
 ## top most (at most 5 tasks here)
 
 * ~~rebase~~
-* fix rebase -- again! it is tricky
+* ~~fix rebase -- again! it is tricky~~
 * ~~chain rebase~~
 * server communication
 * basic editor ui

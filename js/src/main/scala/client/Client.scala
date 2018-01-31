@@ -27,6 +27,9 @@ class Client(initial: ClientState) {
     */
   private val _state = BehaviorSubject[ClientState](initial)
   def state: Observable[ClientState] = _state
+  /**
+    * a ref of a server state
+    */
   private var committed: ClientState = initial
   private var uncommitted: Seq[Transaction] = Seq.empty
 
