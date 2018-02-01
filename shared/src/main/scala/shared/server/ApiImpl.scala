@@ -12,6 +12,9 @@ class ApiImpl extends Api {
   private var changes = Seq.empty[Transaction]
   private val clients: mutable.Map[Authentication.Token, ClientStateSnapshot] = mutable.Map.empty
 
+  def debugDocument = document
+  def debugChanges = changes
+
   override def init(token: Authentication.Token): ClientState = synchronized {
     val state = ClientState(token, document)
     clients.update(token, ClientStateSnapshot(state))

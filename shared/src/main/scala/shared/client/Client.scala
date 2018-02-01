@@ -60,10 +60,12 @@ class Client(server: Server, initial: ClientState) {
 
   private def tryTopRequest(): Unit = {
     if (!requesting) {
-      val head: Unit = requests.head
-      requests = requests.tail
-      server.test().call()
-      request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
+      requests match {
+        case head :: tail =>
+          requests = tail
+          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
+        case _ =>
+      }
     }
   }
 
