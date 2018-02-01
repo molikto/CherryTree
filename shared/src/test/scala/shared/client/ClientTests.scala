@@ -84,8 +84,8 @@ object ClientTests extends TestSuite  {
       }
       'randomSingleChangeSync - {
         val count = 1000
-        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
-          // sadly our tests is not one thread.
+        for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+          // sadly our tests is not one thread
           clients(j).synchronized {
             clients(j).change(randomSingleChangeTransaction(clients(j).root.get))
           }
