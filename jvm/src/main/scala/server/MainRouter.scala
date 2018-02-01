@@ -28,6 +28,7 @@ class MainRouter() extends Directives {
                 |<html>
                 |  <head>
                 |    <title>Cherry Tree Dev Test</title>
+                |    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap-reboot.min.css" rel="stylesheet" type="text/css" />
                 |  </head>
                 |  <body>
                 |   <div id="${Ids.main}"></div>
