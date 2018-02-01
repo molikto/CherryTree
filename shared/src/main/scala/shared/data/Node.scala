@@ -7,7 +7,7 @@ import scala.util.{Random, Try}
 
 object Node extends IdGenerator {
 
-  case class Ref(private[Node] val v: Seq[Int]) {
+  case class Ref(v: Seq[Int]) {
     def replaceAt(size: Int, i: Int): Ref = Ref(v.take(size) ++ Seq(i) ++ v.drop(size + 1))
     def disjoint(to: Ref): Boolean = !to.v.startsWith(v) && !v.startsWith(to.v)
     def intersect(to: Ref): Boolean = !disjoint(to)

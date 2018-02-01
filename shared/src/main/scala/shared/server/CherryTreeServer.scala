@@ -5,7 +5,7 @@ import shared.data._
 
 import scala.collection.mutable
 
-class ApiImpl extends Api {
+class CherryTreeServer extends Api {
 
   // states, now in single thread fashion
   private var document = Document.empty
@@ -36,7 +36,7 @@ class ApiImpl extends Api {
         Left(ApiError.InvalidToken)
       case Some(cached) =>
         val diff = snapshot.document.version - cached.document.version
-         if (diff < 1) {
+         if (diff < 0) {
           Left(ApiError.ClientVersionIsOlderThanServerCache)
         } else {
           Right(changes.drop(snapshot.document.version))

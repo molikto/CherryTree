@@ -16,7 +16,7 @@ object RebaseTests extends TestSuite {
         val nContent = r.head
         val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
         val r0 = r.tail.drop(childs.size)
-        val n = Node(newId(), nContent, rec2(Seq.empty, childs)._1)
+        val n = Node(Node.newId(), nContent, rec2(Seq.empty, childs)._1)
         rec2(left :+ n, r0)
       }
     }

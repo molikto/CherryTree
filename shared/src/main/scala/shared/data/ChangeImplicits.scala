@@ -1,7 +1,7 @@
 package shared.data
 
 import boopickle.CompositePickler
-import boopickle.Default.compositePickler
+import boopickle.Default._
 
 
 trait ChangeImplicits {

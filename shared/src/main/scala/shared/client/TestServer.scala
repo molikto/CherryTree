@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import boopickle.Default._
 import shared.Api
-import shared.server.ApiImpl
+import shared.server.CherryTreeServer
 
 import scala.concurrent.Future
 import shared.data._
@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TestServer extends autowire.Client[ByteBuffer, Pickler, Pickler] {
 
-  val service = new ApiImpl()
+  val service = new CherryTreeServer()
 
   object server extends autowire.Server[ByteBuffer, Pickler, Pickler] {
     override def read[R: Pickler](p: ByteBuffer) = Unpickle[R].fromBytes(p)

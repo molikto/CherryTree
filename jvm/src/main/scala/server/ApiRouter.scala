@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import shared._
 import shared.data._
-import shared.server.ApiImpl
+import shared.server.CherryTreeServer
 
 class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
 
