@@ -8,7 +8,8 @@ import scala.collection.mutable
 class CherryTreeServer extends Api {
 
   // states, now in single thread fashion
-  private var document = Document.empty
+  private val emptyDocument = Document.empty(Node.newId())
+  private var document = emptyDocument
   private var changes = Seq.empty[Transaction]
   private val clients: mutable.Map[Authentication.Token, ClientStateSnapshot] = mutable.Map.empty
 
@@ -46,11 +47,20 @@ class CherryTreeServer extends Api {
 
   override def change(snapshot: ClientStateSnapshot, ts: Seq[Transaction]): ErrorT[ClientStateUpdate] = synchronized {
     checkWriteStateConsistency(snapshot).map { ws =>
-      val transformed = Transaction.rebase(ws, ts, RebaseConflict.all)._2
-      val versionMore = transformed.size
-      document = Document(document.version + versionMore, Transaction.apply(document.root, transformed))
-      changes = changes ++ transformed
-      ClientStateUpdate(DocumentUpdate(ws, versionMore))
+      snapshot.document.debugRoot.foreach(root => {
+        if (root != Transaction.apply(emptyDocument.root, changes.take(snapshot.document.version))) {
+          new IllegalStateException("Client server state diverged")
+        }
+      })
+      try {
+        val transformed = Transaction.rebase(ws, ts, RebaseConflict.all)._2
+        val versionMore = transformed.size
+        document = Document(document.version + versionMore, Transaction.apply(document.root, transformed))
+        changes = changes ++ transformed
+        ClientStateUpdate(DocumentUpdate(ws, versionMore))
+      } catch {
+        case e: Throwable => throw e
+      }
     }
   }
 

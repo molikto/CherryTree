@@ -1,6 +1,7 @@
 package shared.client
 
 import shared._
+import shared.test._
 import shared.data._
 import shared.server.CherryTreeServer
 import utest._
@@ -34,31 +35,18 @@ object ClientTests extends TestSuite  {
       val client = clients.head
 
       def insertTop = Transaction(Seq(Change.Content.Insert(Node.PointRef(Node.Ref.root, 0), Random.nextLong() + " ")))
-      def insertTop0(i: String) = Transaction(Seq(Change.Content.Insert(Node.PointRef(Node.Ref.root, 0), i + " ")))
+      def insertTop0(i: String) =
+        Transaction(Seq(Change.Content.Insert(Node.PointRef(Node.Ref.root, 0), i + " ")))
 
       def waitAssertStateSyncBetweenClientsAndServer(): Unit = {
         val debug = false
-        clients.map(c => {
-          val t = new Thread() {
-            override def run(): Unit = {
-              c.sync()
-              while (c.hasUncommited || c.updating) {
-                Thread.sleep(100)
-              }
-              if (debug) println(s"client ${c.debugCommited.authentication} updated")
-              c.sync()
-              while (c.hasUncommited || c.updating) {
-                Thread.sleep(100)
-              }
-              Thread.sleep(100)
-              c.sync()
-              Thread.sleep(100)
-              c.sync()
-            }
-          }
-          t.start()
-          t
-        }).foreach(_.join())
+        while (clients.exists(a => a.hasUncommited)) {
+          Thread.sleep(100)
+        }
+        clients.foreach(_.sync())
+        while (clients.exists(a => a.updating)) {
+          Thread.sleep(100)
+        }
         if (debug) {
           println("Server doc " + serverDoc.root)
           clients.foreach(c => {
@@ -80,8 +68,8 @@ object ClientTests extends TestSuite  {
         waitAssertStateSyncBetweenClientsAndServer()
       }
 
-      'randomTwoClientInsertionsSync - {
-        val count = 2000
+      'randomTwoClientTopInsertionsSync - {
+        val count = 100
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           clients(j).change(insertTop0(s"${('a' + j).toChar}$i"))
         }
@@ -89,10 +77,20 @@ object ClientTests extends TestSuite  {
         val str = serverDoc.root.content
         val ts = str.split(" ").filter(_.nonEmpty)
         assert(ts.size == count)
-        def decreasing(a: Seq[Int]) = a.sliding(2, 1).forall(a => a.head > a(1))
+        def decreasing(a: Seq[Int]) = a.sliding(2, 1).forall(a => a.size < 2 || a.head > a(1))
         val vs = clients.indices.map(i => ts.filter(_.startsWith(('a' + i).toChar.toString)).map(_.drop(1).toInt).toSeq)
         assert(vs.forall(decreasing))
         assert(vs.flatten.toSet == (0 until count).toSet)
+      }
+      'randomSingleChangeSync - {
+        val count = 1000
+        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+          // sadly our tests is not one thread.
+          clients(j).synchronized {
+            clients(j).change(randomSingleChangeTransaction(clients(j).root.get))
+          }
+        }
+        waitAssertStateSyncBetweenClientsAndServer()
       }
     }
   }

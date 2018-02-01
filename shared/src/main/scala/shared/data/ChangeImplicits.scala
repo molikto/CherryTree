@@ -18,6 +18,7 @@ trait ChangeImplicits {
 
   implicit val changePickler: CompositePickler[Change] =
     compositePickler[Change]
+        .addConcreteType[Change.Id.type]
       .join[Change.Node](changeNodePickler)
       .join[Change.Content](changeContentPickler)
 }

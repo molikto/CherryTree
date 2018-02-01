@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class Client(server: Server, initial: ClientState) {
+class Client(server: Server, initial: ClientState) { self =>
 
   /**
     * connection state
@@ -19,7 +19,7 @@ class Client(server: Server, initial: ClientState) {
   /**
     * out facing state
     */
-  val state = ObservableProperty(initial)
+  val root = ObservableProperty(initial.document.root)
 
   private var committed: ClientState = initial
   private var uncommitted = Seq.empty[Transaction]
@@ -40,14 +40,15 @@ class Client(server: Server, initial: ClientState) {
     requesting = true
     a.onComplete {
       case Success(Right(r)) =>
-        synchronized {
+        self.synchronized {
           requesting = false
           onSuccess(r)
           tryTopRequest()
         }
       case Success(Left(error)) =>
-        synchronized {
+        self.synchronized {
           requesting = false
+          new IllegalStateException(error.toString).printStackTrace()
           error match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
               // ignore this
@@ -57,7 +58,8 @@ class Client(server: Server, initial: ClientState) {
           }
         }
       case Failure(t) =>
-        synchronized {
+        self.synchronized {
+          t.printStackTrace()
           requesting = false
           putBackAndMarkNotConnected(head)
         }
@@ -71,7 +73,10 @@ class Client(server: Server, initial: ClientState) {
       requests match {
         case head :: tail =>
           requests = tail
-          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
+          val submit = uncommitted
+          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), submit).call(), succsss => {
+            updateFromServer(succsss)
+          })
         case _ =>
       }
     }
@@ -80,12 +85,17 @@ class Client(server: Server, initial: ClientState) {
   def updating: Boolean = requesting
   def hasUncommited: Boolean = uncommitted.nonEmpty
 
-  def sync(): Boolean = synchronized {
+  def sync(): Boolean = self.synchronized {
     if (requests.isEmpty) {
       requests = requests ++ Seq[Unit](Unit)
       tryTopRequest()
       true
-    } else false
+    } else {
+      if (!requesting) {
+        throw new IllegalStateException("Not possible")
+      }
+      false
+    }
   }
 
 
@@ -98,12 +108,14 @@ class Client(server: Server, initial: ClientState) {
     val doc = committed.document.modify(_.root).using { a => Transaction.apply(Transaction.apply(a, winners), lp)}
         .modify(_.version).using(_ + winners.size + take)
     committed = committed.copy(document = doc)
-    uncommitted = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)._2
+    val (wp0, uc) = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)
+    uncommitted = uc
+    root.update(Transaction.apply(root.get, Seq(Transaction(wp0))))
   }
 
 
-  def change(changes: Transaction): Unit = synchronized {
-    state.update(state.get.modify(_.document.root).using(r => Transaction.apply(r, Seq(changes))))
+  def change(changes: Transaction): Unit = self.synchronized {
+    root.update(Transaction.apply(root.get, Seq(changes)))
     uncommitted = uncommitted :+ changes
     sync()
   }

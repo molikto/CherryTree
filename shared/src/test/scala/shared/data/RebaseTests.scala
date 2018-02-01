@@ -1,6 +1,7 @@
 package shared.data
 
 import utest._
+import shared.test._
 
 import scala.util.{Failure, Success, Try}
 
@@ -56,11 +57,11 @@ object RebaseTests extends TestSuite {
     val delete01 = Change.Node.Delete(Node.Ref.root.withChilds(0,1))
     val delete02 = Change.Node.Delete(Node.Ref.root.withChilds(0,2))
     val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(2,0))
-    val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
-    val insert0t1 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), Node.Content.testRandom())
-    val insert0t1c = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), Node.Content.testRandom())
-    val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), Node.Content.testRandom())
-    val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), Node.Content.testRandom())
+    val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), randomContent())
+    val insert0t1 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), randomContent())
+    val insert0t1c = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), randomContent())
+    val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), randomContent())
+    val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), randomContent())
     val delete0t = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(3))
     val delete0t2 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 5).to(3))
     val delete0t3 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(4))

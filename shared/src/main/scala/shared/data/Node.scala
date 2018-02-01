@@ -129,6 +129,9 @@ object Node extends IdGenerator {
     }
 
     def insert(content: Content, contentPoint: PointRef, c: Content): Content = {
+      if (contentPoint > content.size) {
+        val mustThrow = content.substring(contentPoint)
+      }
       content.substring(0, contentPoint) ++ c ++ content.substring(contentPoint)
     }
 
@@ -145,6 +148,7 @@ object Node extends IdGenerator {
       * @param to inclusive
       */
     case class SegmentRef(from: PointRef, to: PointRef) {
+      assert(from >= 0)
       assert(to >= from)
 
       def leftOpenContains(content: PointRef): Boolean = content > from && content <= to
@@ -155,7 +159,6 @@ object Node extends IdGenerator {
 
     }
     def empty: Content = ""
-    def testRandom(): Content = Random.nextLong() + ""
   }
 
   case class PointRef(node: Node.Ref, content: Content.PointRef) {
@@ -178,7 +181,7 @@ case class Node(id: String, content: Node.Content, childs: Seq[Node]) extends (N
 
   def toString(margin: Int): String =
     "                                          ".take(margin) ++
-      content.take(10) ++ "\n" ++
+      content.take(100) ++ "\n" ++
       childs.map(a => a.toString(margin + 2)).mkString("")
   /**
     * only for test purpose
