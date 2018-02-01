@@ -1,22 +1,22 @@
 package server
-import shared.Ids
-import akka.http.scaladsl.model.{ ContentType, ContentTypes, HttpCharset, HttpEntity }
+import shared.{Api, Ids}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharset, HttpEntity}
 import akka.http.scaladsl.model.StatusCodes.Success
-import akka.http.scaladsl.model.{ HttpHeader, HttpResponse }
-import akka.http.scaladsl.model.headers.{ `Cache-Control` }
+import akka.http.scaladsl.model.{HttpHeader, HttpResponse}
+import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.model.headers.`Content-Type`
 import akka.http.scaladsl.model.headers.CacheDirectives._
-
-
 import akka.http.scaladsl.server.Directives
+
 import scala.concurrent.ExecutionContext
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
 
-class MainRouter() extends Directives {
+class MainRouter(val service: Api) extends Directives {
 
+  val apiRouter = new ApiRouter(service)
 
   def apply()(implicit s: ActorSystem, m: Materializer, e: ExecutionContext): Route = {
 
@@ -44,7 +44,7 @@ class MainRouter() extends Directives {
       getFromResource("public/" + file)
     } ~
     path("api" / Segments) { segments =>
-      post(ApiRouter.dispatch(segments))
+      post(apiRouter.dispatch(segments))
     }
   }
 }

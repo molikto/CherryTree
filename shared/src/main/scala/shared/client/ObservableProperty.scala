@@ -1,8 +1,4 @@
-package client
-
-import rxscalajs.Observable
-
-
+package shared.client
 
 trait ObservableProperty[T] {
   def update(t: T)

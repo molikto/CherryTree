@@ -2,7 +2,7 @@ package shared.data
 
 
 
-sealed class ApiError
+sealed abstract class ApiError
 object ApiError {
 
 

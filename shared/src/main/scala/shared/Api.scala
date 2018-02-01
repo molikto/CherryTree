@@ -18,14 +18,16 @@ trait Api {
     */
   def init(token: Authentication.Token): ClientState
 
+
+  def test(): ApiError
   /**
     * post a diff to the server
     */
   def change(snapshot: ClientStateSnapshot,
-    changes: Seq[Transaction]): ErrorT[ClientStateUpdate]
+    changes: Seq[Transaction]): Either[ApiError, ClientStateUpdate]
 
   /**
     *
     */
-  def diffSince(snapshot: ClientStateSnapshot): ErrorT[ClientStateUpdate]
+  def diffSince(snapshot: ClientStateSnapshot): Either[ApiError, ClientStateUpdate]
 }

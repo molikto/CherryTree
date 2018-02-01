@@ -1,5 +1,5 @@
 package shared.data
 
-case class ClientStateUpdate(
+final case class ClientStateUpdate(
   document: DocumentUpdate
 )

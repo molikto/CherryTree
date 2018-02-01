@@ -1,19 +1,13 @@
-package client
+package shared.client
 
+import autowire._
 import com.softwaremill.quicklens._
-import autowire._
-import client.net.AutowireServer
-
-import autowire._
+import shared.data._
 import boopickle.Default._
 
-import scala.util.Failure
 import scala.concurrent.ExecutionContext.Implicits.global
-import shared._
-import shared.data._
-
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class Client(server: Server, initial: ClientState) {
 
@@ -68,6 +62,7 @@ class Client(server: Server, initial: ClientState) {
     if (!requesting) {
       val head: Unit = requests.head
       requests = requests.tail
+      server.test().call()
       request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
     }
   }

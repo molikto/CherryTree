@@ -1,5 +1,6 @@
-package shared
+package shared.server
 
+import shared.Api
 import shared.data._
 
 import scala.collection.mutable
@@ -55,4 +56,6 @@ class ApiImpl extends Api {
       ClientStateUpdate(DocumentUpdate(ws, 0))
     }
   }
+
+  override def test(): ApiError = ApiError.InvalidToken
 }
