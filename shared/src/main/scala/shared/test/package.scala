@@ -34,6 +34,12 @@ package object test {
 
   def randomSingleChangeTransaction(root: Node): Transaction = Transaction(Seq(randomChange(root)))
 
+  def randomTwoChangeTransaction(root: Node): Transaction = {
+    val change1 = randomChange(root)
+    val change2 = randomChange(Change.apply(root, change1)._1)
+    Transaction(Seq(change1, change2))
+  }
+
   def randomPoint(root: Node): Node.PointRef = {
     val n = randomChild(root)
     val c = root(n)

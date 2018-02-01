@@ -82,12 +82,23 @@ object ClientTests extends TestSuite  {
         assert(vs.forall(decreasing))
         assert(vs.flatten.toSet == (0 until count).toSet)
       }
-      'randomSingleChangeSync - {
+      'randomSingleChangeTransactionSync - {
         val count = 1000
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
             clients(j).change(randomSingleChangeTransaction(clients(j).root.get))
+          }
+        }
+        waitAssertStateSyncBetweenClientsAndServer()
+      }
+
+      'randomTwoChangeTransactionSync - {
+        val count = 1000
+        for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+          // sadly our tests is not one thread
+          clients(j).synchronized {
+            clients(j).change(randomTwoChangeTransaction(clients(j).root.get))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
