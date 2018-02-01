@@ -1,29 +1,21 @@
 package client
 
 import com.softwaremill.quicklens._
-import shared.data._
 import autowire._
 import client.net.AutowireServer
-import boopickle.Default._
-import org.scalajs.dom
 
-import scala.scalajs.js
 import autowire._
 import boopickle.Default._
-import client.net.AutowireServer
 
-import scala.util.{Failure, Success}
+import scala.util.Failure
 import scala.concurrent.ExecutionContext.Implicits.global
-import org.scalajs.dom
-import rxscalajs.{Observable, Subject}
-import rxscalajs.subjects.BehaviorSubject
 import shared._
 import shared.data._
 
 import scala.concurrent.Future
 import scala.util.Success
 
-class Client(initial: ClientState) {
+class Client(server: Server, initial: ClientState) {
 
   /**
     * connection state
@@ -43,9 +35,6 @@ class Client(initial: ClientState) {
     */
   private var requesting = false
   private var requests: Seq[Unit] = Seq.empty
-
-  private def putAndDo(work: Unit): Unit = {
-  }
 
   def putBackAndMarkNotConnected(head: Unit) = {
     requests = head +: requests
@@ -79,14 +68,14 @@ class Client(initial: ClientState) {
     if (!requesting) {
       val head: Unit = requests.head
       requests = requests.tail
-      request[ClientStateUpdate](head, api.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
+      request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), uncommitted).call(), updateFromServer)
     }
   }
 
 
   private def sync(): Unit = {
     if (requests.isEmpty) {
-      requests = requests :+ Unit
+      requests = requests ++ Seq[Unit](Unit)
       tryTopRequest()
     }
   }
@@ -96,11 +85,11 @@ class Client(initial: ClientState) {
     val take = success.document.acceptedLosersCount
     val winners = success.document.winners
     val loser = uncommitted.take(take)
+    // TODO modal handling of winner deletes loser
     val (wp, lp) = Transaction.rebase(winners, loser, RebaseConflict.all)
     val doc = committed.document.modify(_.root).using { a => Transaction.apply(Transaction.apply(a, winners), lp)}
         .modify(_.version).using(_ + winners.size + take)
     committed = committed.copy(document = doc)
-    // TODO handle rebase error
     uncommitted = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)._2
   }
 

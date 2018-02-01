@@ -1,10 +1,10 @@
-package server
-import shared._
+package shared
+
 import shared.data._
 
 import scala.collection.mutable
 
-object ApiImpl extends Api {
+class ApiImpl extends Api {
 
   // states, now in single thread fashion
   private var document = Document.empty
