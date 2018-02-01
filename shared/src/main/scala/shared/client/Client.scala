@@ -77,6 +77,7 @@ class Client(server: Server, initial: ClientState) {
     }
   }
 
+  def updating: Boolean = requesting
   def hasUncommited: Boolean = uncommitted.nonEmpty
 
   def sync(): Boolean = synchronized {
