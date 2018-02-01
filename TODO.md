@@ -1,12 +1,8 @@
 
-## top most (at most 5 tasks here)
 
-* ~~rebase~~
-* ~~fix rebase -- again! it is tricky~~
-* ~~chain rebase~~
+## top most (at most 5 tasks here)
 * server communication
 * basic editor ui
-* rebase with partial success
 
 ## build
 * production build?
@@ -34,3 +30,11 @@
     * unique id collision detection
     * ~~make logic all total, no exceptions~~
 
+
+
+## done
+
+* ~~rebase~~
+* ~~fix rebase -- again! it is tricky~~
+* ~~chain rebase~~
+* ~~rebase with partial success~~
