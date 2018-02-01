@@ -8,10 +8,25 @@ import scala.util.{Failure, Success, Try}
 object RebaseTests extends TestSuite {
 
 
+  def testNodeFromText(str: String): Node = {
+    def rec2(left: Seq[Node], r: Seq[String]): (Seq[Node], Seq[String]) = {
+      if (r.isEmpty) {
+        (left, r)
+      } else {
+        val nContent = r.head
+        val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
+        val r0 = r.tail.drop(childs.size)
+        val n = Node(newId(), nContent, rec2(Seq.empty, childs)._1)
+        rec2(left :+ n, r0)
+      }
+    }
+    rec2(Seq.empty, str.split('\n'))._1.head
+  }
+
   val tests = Tests {
 
     val randomText = "fdlksf lkasdfjklsa dfklds fjdsklf djsklf dslkfj slfjksla fjdsalfshgdsljfk"
-    val node: Node = Node.testFromText(
+    val node: Node = testNodeFromText(
       s""" $randomText
          |  0 $randomText
          |    0.0 $randomText
