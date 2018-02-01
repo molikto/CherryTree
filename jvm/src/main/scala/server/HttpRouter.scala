@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
 
-class MainRouter(val service: Api) extends Directives {
+class HttpRouter(val service: Api) extends Directives {
 
   val apiRouter = new ApiRouter(service)
 

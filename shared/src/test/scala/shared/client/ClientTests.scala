@@ -82,6 +82,7 @@ object ClientTests extends TestSuite  {
         assert(vs.forall(decreasing))
         assert(vs.flatten.toSet == (0 until count).toSet)
       }
+
       'randomSingleChangeTransactionSync - {
         val count = 1000
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {

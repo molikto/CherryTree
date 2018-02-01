@@ -11,7 +11,7 @@ class HttpServer() {
 
 
   val api = new CherryTreeServer()
-  val service = new MainRouter(api)
+  val router = new HttpRouter(api)
   def run() {
     implicit val system = ActorSystem("server-system")
     implicit val materializer = ActorMaterializer()
@@ -21,7 +21,7 @@ class HttpServer() {
     val port = config.getInt("http.port")
 
     import system.dispatcher
-    Http().bindAndHandle(service.apply(), interface, port)
+    Http().bindAndHandle(router.apply(), interface, port)
     println(s"Server online at http://$interface:$port")
   }
 }
