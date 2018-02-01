@@ -11,8 +11,9 @@
 ## build
 * production build?
 
+## core
 
-## shared
+* references
 * multi-sort node type: it is **never** ending story to abstract stuff
 * branching
     * offline branch
@@ -24,8 +25,10 @@
 
 ## server
 
+* possible split read and write?
 * users and authentication
 * db
+* concurrency control
 * user input validation
     * we only assume user input is valid
     * unique id collision detection

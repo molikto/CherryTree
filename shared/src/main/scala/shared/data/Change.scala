@@ -51,9 +51,9 @@ sealed trait Change {
     (rebase(loser), loser.rebase(this)) match {
       case (Rebased(b, sb), Rebased(a, sa)) if sa.isEmpty && sb.isEmpty =>
         Rebased.Free((a, b))
-      case (Rebased(b, sb), Rebased(a, sa)) if sb == Set(RebaseType.WinnerDeletesLoser) && sa == Set(RebaseType.LoserDeletesWinner) =>
+      case (Rebased(b, sb), Rebased(a, sa)) if sb == Set(RebaseConflict.WinnerDeletesLoser) && sa == Set(RebaseConflict.LoserDeletesWinner) =>
         Rebased.WinnerDeletesLoser((a, b))
-      case (Rebased(b, sb), Rebased(a, sa)) if sb == Set(RebaseType.LoserDeletesWinner) && sa == Set(RebaseType.WinnerDeletesLoser) =>
+      case (Rebased(b, sb), Rebased(a, sa)) if sb == Set(RebaseConflict.LoserDeletesWinner) && sa == Set(RebaseConflict.WinnerDeletesLoser) =>
         Rebased.LoserDeletesWinner((a, b))
       case _ => throw new IllegalStateException("You should override this!!!")
     }
@@ -149,7 +149,7 @@ object Change {
       override def rebasePair(loser: Change): Rebased[(Change, Change)] = {
         loser match {
           case i: Node.Insert if position == i.position =>
-            Rebased((Insert(position.next, node), i), Set(RebaseType.Asymmetry))
+            Rebased((Insert(position.next, node), i), Set(RebaseConflict.Asymmetry))
           case _ => super.rebasePair(loser)
         }
       }
@@ -223,7 +223,7 @@ object Change {
         loser match {
           case i: Content.Insert if point == i.point =>
             // no change our side!!!
-            Rebased((this.modify(_.point.content).using(_ + i.content.size), i), Set(RebaseType.Asymmetry))
+            Rebased((this.modify(_.point.content).using(_ + i.content.size), i), Set(RebaseConflict.Asymmetry))
           case _ => super.rebasePair(loser)
         }
       }
@@ -328,11 +328,11 @@ object Change {
     * @return (wp, lp)
     */
   def rebaseSquare(winner: Seq[Change], loser: Seq[Change]): Rebased[(Seq[Change], Seq[Change])] = {
-    winner.foldLeft(Rebased.Free(Seq.empty[Change], loser)) { (pair, ww) =>
+    loser.foldLeft(Rebased.Free(winner, Seq.empty[Change])) { (pair, ll) =>
       pair match {
-        case Rebased((wp, li), t) =>
-          val Rebased((wp0, li0), t0) = rebaseLine(ww, li)
-          Rebased((wp :+ wp0, li0), t ++ t0)
+        case Rebased((wi, lp), t) =>
+          val Rebased((wi0, lp0), t0) = rebaseLine(wi, ll)
+          Rebased((wi0, lp :+ lp0), t ++ t0)
       }
     }
   }

@@ -96,11 +96,11 @@ object RebaseTests extends TestSuite {
           val j = b.rebasePair(a)
           (k, j) match {
             case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
-              val mirrored = RebaseType.mirror(js)
+              val mirrored = RebaseConflict.mirror(js)
               if (ks != mirrored) {
                 throw new IllegalArgumentException(s"Wrong mirror $a, $b $mirrored, $ks")
               }
-              if (!ks.contains(RebaseType.Asymmetry)) {
+              if (!ks.contains(RebaseConflict.Asymmetry)) {
                 assert(kap == jap)
                 assert(kbp == jbp)
               }
@@ -127,8 +127,8 @@ object RebaseTests extends TestSuite {
               val j = Change.rebaseSquare(b, a)
               (k, j) match {
                 case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
-                  val mirrored = RebaseType.mirror(js)
-                  if (!ks.contains(RebaseType.Asymmetry) && !js.contains(RebaseType.Asymmetry)) {
+                  val mirrored = RebaseConflict.mirror(js)
+                  if (!ks.contains(RebaseConflict.Asymmetry) && !js.contains(RebaseConflict.Asymmetry)) {
                     // there are cases where asymmetry causes one path is conflict one is not
                     // for example
                     // left one is insert(4, len = 9) delete(0, 9)
