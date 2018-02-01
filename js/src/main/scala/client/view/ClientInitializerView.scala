@@ -2,7 +2,7 @@ package client.view
 
 import autowire._
 import client._
-import client.net.AutowireServer
+import client.net.JsAutowireAdapter
 import org.scalajs.dom
 import shared.Api
 import shared.client.ClientInitializer
@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 class ClientInitializerView(val root: dom.html.Div) {
 
-  private val server = new AutowireServer()[Api]
+  private val server = new JsAutowireAdapter()[Api]
 
   {
     // TODO show loading view

@@ -13,9 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 
-class TestServer extends autowire.Client[ByteBuffer, Pickler, Pickler] {
-
-  val service = new CherryTreeServer()
+class TestApiAdapter(service: Api) extends autowire.Client[ByteBuffer, Pickler, Pickler] {
 
   object server extends autowire.Server[ByteBuffer, Pickler, Pickler] {
     override def read[R: Pickler](p: ByteBuffer) = Unpickle[R].fromBytes(p)

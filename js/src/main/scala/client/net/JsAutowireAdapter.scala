@@ -11,7 +11,7 @@ import scala.scalajs.js.typedarray._
 
 
 
-class AutowireServer extends autowire.Client[ByteBuffer, Pickler, Pickler] {
+class JsAutowireAdapter extends autowire.Client[ByteBuffer, Pickler, Pickler] {
   override def doCall(req: Request): Future[ByteBuffer] = {
     dom.ext.Ajax.post(
       url = "/api/" + req.path.mkString("/"),

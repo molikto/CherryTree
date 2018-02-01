@@ -2,9 +2,10 @@ package shared.client
 
 import shared._
 import shared.data._
+import shared.server.CherryTreeServer
 import utest._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.{Random, Try}
 
@@ -12,16 +13,17 @@ import scala.util.{Random, Try}
 object ClientTests extends TestSuite  {
 
   val tests = Tests {
-    val (server, api) = {
-      val s = new TestServer()
-      (s[Api], s.service)
+    val server = new CherryTreeServer()
+    val api = {
+      val s = new TestApiAdapter(server)
+      s[Api]
     }
 
-    def serverDoc = api.debugDocument
-    def serverChanges = api.debugChanges
+    def serverDoc = server.debugDocument
+    def serverChanges = server.debugChanges
 
 
-    def cl(name: String) = ClientInitializer.init(server, Authentication.Token(name))
+    def cl(name: String) = ClientInitializer.init(api, Authentication.Token(name))
 
     'init - {
       Await.result(cl("client"), 1.seconds)
