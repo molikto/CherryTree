@@ -23,6 +23,7 @@ class Client(server: Server, initial: ClientState) {
 
   private var committed: ClientState = initial
   private var uncommitted = Seq.empty[Transaction]
+  def debugCommited = committed
 
   /**
     * request queue
@@ -30,7 +31,7 @@ class Client(server: Server, initial: ClientState) {
   private var requesting = false
   private var requests: Seq[Unit] = Seq.empty
 
-  def putBackAndMarkNotConnected(head: Unit) = {
+  private def putBackAndMarkNotConnected(head: Unit) = {
     requests = head +: requests
     connected.update(false)
   }
@@ -39,27 +40,34 @@ class Client(server: Server, initial: ClientState) {
     requesting = true
     a.onComplete {
       case Success(Right(r)) =>
-        requesting = false
-        onSuccess(r)
-        tryTopRequest()
+        synchronized {
+          requesting = false
+          onSuccess(r)
+          tryTopRequest()
+        }
       case Success(Left(error)) =>
-        requesting = false
-        error match {
-          case ApiError.ClientVersionIsOlderThanServerCache =>
-            // ignore this
-            tryTopRequest()
-          case ApiError.InvalidToken =>
-            putBackAndMarkNotConnected(head)
+        synchronized {
+          requesting = false
+          error match {
+            case ApiError.ClientVersionIsOlderThanServerCache =>
+              // ignore this
+              tryTopRequest()
+            case ApiError.InvalidToken =>
+              putBackAndMarkNotConnected(head)
+          }
         }
       case Failure(t) =>
-        requesting = false
-        putBackAndMarkNotConnected(head)
+        synchronized {
+          requesting = false
+          putBackAndMarkNotConnected(head)
+        }
     }
   }
 
 
   private def tryTopRequest(): Unit = {
     if (!requesting) {
+      connected.update(true)
       requests match {
         case head :: tail =>
           requests = tail
@@ -69,12 +77,14 @@ class Client(server: Server, initial: ClientState) {
     }
   }
 
+  def hasUncommited: Boolean = uncommitted.nonEmpty
 
-  private def sync(): Unit = {
+  def sync(): Boolean = synchronized {
     if (requests.isEmpty) {
       requests = requests ++ Seq[Unit](Unit)
       tryTopRequest()
-    }
+      true
+    } else false
   }
 
 
@@ -91,7 +101,7 @@ class Client(server: Server, initial: ClientState) {
   }
 
 
-  def change(changes: Transaction): Unit = {
+  def change(changes: Transaction): Unit = synchronized {
     state.update(state.get.modify(_.document.root).using(r => Transaction.apply(r, Seq(changes))))
     uncommitted = uncommitted :+ changes
     sync()
