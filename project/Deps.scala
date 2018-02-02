@@ -17,10 +17,9 @@ object Deps {
   val shared = Def.setting(
     "com.lihaoyi" %%% "autowire" % Version.autowire ::
     "com.lihaoyi" %%% "scalatags" % Version.scalatags  ::
-    "com.github.julien-truffaut" %%%  "monocle-core"  % Version.monocle ::
-    "com.github.julien-truffaut" %%%  "monocle-macro" % Version.monocle ::
     "io.suzaku" %%% "boopickle" % Version.boopickle ::
     "com.lihaoyi" %%% "utest" % "0.6.0" % "test" ::
+    "io.monix" %%% "monix" % "2.3.3" ::
       Nil)
 
   val server = Def.setting(shared.value ++ (

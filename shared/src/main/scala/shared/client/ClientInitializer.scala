@@ -12,6 +12,6 @@ import scala.util.{Failure, Success}
 
 object ClientInitializer {
   def init(server: Server, token: Authentication.Token): Future[Client] = {
-    server.init(token).call().map { it =>new Client(server, it) }
+    server.init(token).call().map { it => new Client(server, it) }
   }
 }

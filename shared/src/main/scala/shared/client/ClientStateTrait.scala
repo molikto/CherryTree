@@ -5,8 +5,13 @@ import autowire._
 import com.softwaremill.quicklens._
 import shared.data._
 import boopickle.Default._
+import monix.execution.Cancelable
+import monix.reactive.Observable
+import monix.execution.rstreams.Subscription
+import monix.reactive._
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import concurrent.duration._
+import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -21,6 +26,19 @@ trait ClientStateTrait { self =>
     */
   val connected = ObservableProperty(true)
 
+
+  private var subscription: Cancelable = null
+
+  def start(): Unit = {
+    subscription = Observable.interval(300.millis).map(_ => sync()).subscribe()
+  }
+
+  def stop(): Unit = {
+    if (subscription != null) {
+      subscription.cancel()
+      subscription = null
+    }
+  }
   /**
     * out facing state
     */

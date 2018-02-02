@@ -14,7 +14,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 
-class ClientInitializerView($: BackendScope[Authentication.Token, Option[Client]]) extends ClientViewDef {
+object ClientInitializerView {
+
+  private val creator = ScalaComponent
+    .builder[Authentication.Token]("ClientInitializerView")
+    .initialState(None.asInstanceOf[Option[Client]])
+    .renderBackend[ClientInitializerView]
+    .componentDidMount(_.backend.start)
+    .componentWillUnmount(_.backend.stop)
+    .build
+  def apply(token: Authentication.Token) = creator(token)
+}
+
+class ClientInitializerView($: BackendScope[Authentication.Token, Option[Client]]) {
 
   private val server = new JsAutowireAdapter()[Api]
 

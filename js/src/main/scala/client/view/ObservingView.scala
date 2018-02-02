@@ -4,7 +4,9 @@ import japgolly.scalajs.react.{Callback, Children}
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.component.builder.Builder
 import japgolly.scalajs.react.vdom.VdomElement
-import shared.client.{ObservableProperty, Subscription}
+import monix.execution.Cancelable
+import shared.client.ObservableProperty
+import monix.execution.Scheduler.Implicits.global
 
 trait ObservingView[C, T] {
   val $: BackendScope[C, T]
@@ -15,14 +17,22 @@ object ObservingView {
 
   def apply[C, T, B <: ObservingView[C, T]](builder: Builder.Step1[C],
     backendBuilder: BackendScope[C, T] => B,
-    modeler: C => ObservableProperty[T]): Builder.Step4[C, Children.None, T, B] = {
-    var subscription: Subscription = null
+    modeler: C => ObservableProperty[T],
+    onStart: C => Unit = (_: C) => Unit,
+    onStop: C => Unit = (_: C) => Unit): Builder.Step4[C, Children.None, T, B] = {
+    var subscription: Cancelable = null
     builder.initialStateFromProps[T](c => modeler(c).get)
       .backend[B](c => backendBuilder(c))
       .render(a => a.backend.render(a.props, a.state))
       .componentDidMount(data => Callback {
-        subscription = modeler(data.props).subscribe({a => data.backend.$.setState(a).runNow()})
+        subscription = modeler(data.props).map({a =>
+          onStart(data.props)
+          data.backend.$.setState(a).runNow()
+        }).subscribe()
       })
-      .componentWillUnmount(_ => Callback { subscription.dispose() })
+      .componentWillUnmount(a => Callback {
+        subscription.cancel()
+        onStop(a.props)
+      })
   }
 }

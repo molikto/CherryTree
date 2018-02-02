@@ -45,7 +45,7 @@ val sharedSettings = Seq(
   autoCompilerPlugins := true,
   addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.7"),
   // lengs
-  libraryDependencies += "com.softwaremill.quicklens" %% "quicklens" % "1.4.11"
+  libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens" % "1.4.11"
 )
 
 // loads the server project at sbt startup
