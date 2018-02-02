@@ -18,12 +18,17 @@ object DevMain {
       div(
         width := "100%",
         height := "100%",
+        display := "flex",
+        flexDirection := "row",
+        justifyContent := "center",
+        alignItems := "flex-start",
         div(
           width := "40%",
           height := "100%",
           display.`inline-block`,
           ClientInitializerView(Authentication.Token("client 0"))
         ),
+
         div(
           width := "40%",
           height := "100%",
@@ -31,6 +36,7 @@ object DevMain {
           ClientInitializerView(Authentication.Token("client 1"))
         )
       )
-    ).build.apply().renderIntoDOM(mainDiv)
+    ).build.apply()
+      .renderIntoDOM(mainDiv)
   }
 }
