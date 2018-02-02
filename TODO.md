@@ -1,10 +1,10 @@
 
 
 ## top most (at most 5 tasks here)
+
+* basic viewing ui
 * basic editor ui
 
-## build
-* production build?
 
 ## core
 
@@ -29,7 +29,9 @@
     * unique id collision detection
     * ~~make logic all total, no exceptions~~
 
+## build
 
+* production build?
 
 ## done
 
