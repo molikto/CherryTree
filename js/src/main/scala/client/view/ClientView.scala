@@ -33,7 +33,7 @@ class ClientView(override val $: BackendScope[Client, ClientState]) extends Obse
 
   def render(client: Client, state: ClientState): VdomElement = {
     div(
-      button("change content", onClick ==> (e =>  Callback {
+      button("change content", onClick ==> (_ => Callback {
         client.change(shared.test.randomTwoChangeTransaction(client.state.get.document.root))
       })),
       SimpleTreeView(state.document.root)
