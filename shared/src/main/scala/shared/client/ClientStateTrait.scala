@@ -52,14 +52,14 @@ trait ClientStateTrait { self =>
     * request queue
     */
   private var requesting = false
-  private var requests: Seq[Unit] = Seq.empty
+  private var requests: Seq[Int] = Seq.empty[Int]
 
-  private def putBackAndMarkNotConnected(head: Unit): Unit = {
+  private def putBackAndMarkNotConnected(head: Int): Unit = {
     requests = head +: requests
     connected.update(false)
   }
 
-  private def request[T](head: Unit, a: Future[ErrorT[T]], onSuccess: T => Unit): Unit = {
+  private def request[T](head: Int, a: Future[ErrorT[T]], onSuccess: T => Unit): Unit = {
     requesting = true
     a.onComplete {
       case Success(Right(r)) =>
@@ -109,14 +109,15 @@ trait ClientStateTrait { self =>
   def hasUncommited: Boolean = uncommitted.nonEmpty
 
   def sync(): Boolean = self.synchronized {
-    if (requests.isEmpty) {
-      requests = requests ++ Seq[Unit](Unit)
+    if (!requesting) {
+      if (requests.isEmpty) {
+        requests = Seq(0)
+      } else {
+        println("Having request but not requesting")
+      }
       tryTopRequest()
       true
     } else {
-      if (!requesting) {
-        throw new IllegalStateException("Not possible")
-      }
       false
     }
   }
@@ -133,7 +134,10 @@ trait ClientStateTrait { self =>
     committed = committed.copy(document = doc)
     val (wp0, uc) = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)
     uncommitted = uc
-    state.modify(_.modify(_.document.root).using(a => Transaction.apply(a, Transaction(wp0))))
+    state.modify(
+      _.modify(_.document.root).using(a => Transaction.apply(a, Transaction(wp0)))
+        .modify(_.document.version).setTo(doc.version)
+    )
   }
 
 

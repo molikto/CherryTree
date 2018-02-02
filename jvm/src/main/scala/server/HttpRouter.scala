@@ -31,8 +31,7 @@ class HttpRouter(val service: Api) extends Directives {
                 |    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap-reboot.min.css" rel="stylesheet" type="text/css" />
                 |  </head>
                 |  <body>
-                |   <div id="${Ids.main}"></div>
-                |   <img src="/assets/images/test.png" />
+                |   <div style="height:100vh" id="${Ids.main}"></div>
                 |   <script src="/assets/client-fastopt-bundle.js" type="text/javascript"></script>
                 |  </body>
                 |</html>""".stripMargin)

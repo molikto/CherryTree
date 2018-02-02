@@ -16,12 +16,18 @@ object DevMain {
     val mainDiv = el[dom.html.Div](Ids.main)
     ScalaComponent.builder.static("TestPanel")(
       div(
+        width := "100%",
+        height := "100%",
         div(
-          width := "50%",
+          width := "40%",
+          height := "100%",
+          display.`inline-block`,
           ClientInitializerView(Authentication.Token("client 0"))
         ),
         div(
-          width := "50%",
+          width := "40%",
+          height := "100%",
+          display.`inline-block`,
           ClientInitializerView(Authentication.Token("client 1"))
         )
       )

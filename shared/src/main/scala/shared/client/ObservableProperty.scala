@@ -21,7 +21,7 @@ class ObservableProperty[T](initial: T) extends Observable[T] {
 
   def get: T = t
 
-  override def unsafeSubscribeFn(subscriber: Subscriber[T]): Cancelable = subject.unsafeSubscribeFn(subscriber)
+  override def unsafeSubscribeFn(subscriber: Subscriber[T]): Cancelable = subject.distinctUntilChanged.unsafeSubscribeFn(subscriber)
 }
 
 object ObservableProperty {
