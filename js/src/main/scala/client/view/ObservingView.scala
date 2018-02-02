@@ -25,7 +25,7 @@ object ObservingView {
       .backend[B](c => backendBuilder(c))
       .render(a => a.backend.render(a.props, a.state))
       .componentDidMount(data => Callback {
-        subscription = modeler(data.props).map({a =>
+        subscription = modeler(data.props).doOnNext({a =>
           onStart(data.props)
           data.backend.$.setState(a).runNow()
         }).subscribe()

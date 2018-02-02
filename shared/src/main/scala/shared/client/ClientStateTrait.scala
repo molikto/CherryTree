@@ -30,7 +30,7 @@ trait ClientStateTrait { self =>
   private var subscription: Cancelable = null
 
   def start(): Unit = {
-    subscription = Observable.interval(300.millis).map(_ => sync()).subscribe()
+    subscription = Observable.interval(300.millis).doOnNext(_ => sync()).subscribe()
   }
 
   def stop(): Unit = {
