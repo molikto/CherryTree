@@ -109,12 +109,10 @@ trait ClientStateTrait { self =>
   def hasUncommited: Boolean = uncommitted.nonEmpty
 
   def sync(): Boolean = self.synchronized {
+    if (requests.isEmpty) {
+      requests = requests :+ 0
+    }
     if (!requesting) {
-      if (requests.isEmpty) {
-        requests = Seq(0)
-      } else {
-        println("Having request but not requesting")
-      }
       tryTopRequest()
       true
     } else {

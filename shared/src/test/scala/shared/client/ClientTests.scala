@@ -28,6 +28,7 @@ object ClientTests extends TestSuite  {
 
     'init - {
       Await.result(cl("client"), 1.seconds)
+      Unit
     }
 
     'client - {
@@ -40,8 +41,14 @@ object ClientTests extends TestSuite  {
 
       def waitAssertStateSyncBetweenClientsAndServer(): Unit = {
         val debug = false
+        if (debug) {
+          println("waiting for clients to commit")
+        }
         while (clients.exists(a => a.hasUncommited)) {
           Thread.sleep(100)
+        }
+        if (debug) {
+          println("clients updates finished")
         }
         clients.foreach(_.sync())
         while (clients.exists(a => a.updating)) {
