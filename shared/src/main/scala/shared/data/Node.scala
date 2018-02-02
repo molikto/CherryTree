@@ -85,6 +85,7 @@ object Node extends IdGenerator {
       }
     }
   }
+  //class Content(val str: String) extends AnyVal {}
   type Content = String
   object Content {
     def transformAfterInserted(point: PointRef, size: Int, p: PointRef): PointRef = {

@@ -13,6 +13,7 @@
 * branching
     * offline branch
 * non-destructive manual conflict resolving
+* abstract away Content class
 
 ## client
 
