@@ -50,11 +50,11 @@ object ClientTests extends TestSuite  {
         if (debug) {
           println("Server doc " + serverDoc.root)
           clients.foreach(c => {
-            println(c.debugCommited.authentication + " " + c.debugCommited.document.root)
+            println(c.debugCommitted.authentication + " " + c.debugCommitted.document.root)
           })
         }
         clients.foreach(c => {
-          assert(c.debugCommited.document == serverDoc)
+          assert(c.debugCommitted.document == serverDoc)
         })
       }
 
@@ -88,7 +88,7 @@ object ClientTests extends TestSuite  {
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(randomSingleChangeTransaction(clients(j).root.get))
+            clients(j).change(randomSingleChangeTransaction(clients(j).state.get.document.root))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
@@ -99,7 +99,7 @@ object ClientTests extends TestSuite  {
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(randomTwoChangeTransaction(clients(j).root.get))
+            clients(j).change(randomTwoChangeTransaction(clients(j).state.get.document.root))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()

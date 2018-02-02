@@ -24,7 +24,7 @@ trait ClientStateTrait { self =>
   /**
     * out facing state
     */
-  val root = ObservableProperty(initial.document.root)
+  val state = ObservableProperty(initial)
 
   private var committed: ClientState = initial
   private var uncommitted = Seq.empty[Transaction]
@@ -115,12 +115,12 @@ trait ClientStateTrait { self =>
     committed = committed.copy(document = doc)
     val (wp0, uc) = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)
     uncommitted = uc
-    root.update(Transaction.apply(root.get, Seq(Transaction(wp0))))
+    state.modify(_.modify(_.document.root).using(a => Transaction.apply(a, Transaction(wp0))))
   }
 
 
   def change(changes: Transaction): Unit = self.synchronized {
-    root.update(Transaction.apply(root.get, Seq(changes)))
+    state.modify(_.modify(_.document.root).using(a => Transaction.apply(a, changes)))
     uncommitted = uncommitted :+ changes
     sync()
   }

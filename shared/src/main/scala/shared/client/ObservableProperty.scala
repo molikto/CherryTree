@@ -1,6 +1,7 @@
 package shared.client
 
 trait ObservableProperty[T] {
+  def modify(a: T => T) = update(a(get))
   def update(t: T)
   def get: T
   def subscribe(a: T => Unit): Subscription

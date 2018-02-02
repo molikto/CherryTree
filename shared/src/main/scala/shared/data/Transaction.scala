@@ -8,6 +8,9 @@ case class Transaction(transforms: Seq[Change]) {
 
 object Transaction {
 
+  def apply(root: Node, changes: Transaction): Node = {
+    Change.apply(root, changes.transforms)._1
+  }
   def apply(root: Node, changes: Seq[Transaction]): Node = {
     changes.foldLeft(root) { (nodep, c) =>
       Change.apply(nodep, c.transforms)._1

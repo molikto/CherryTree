@@ -30,13 +30,15 @@ object Deps {
 
   val client = Def.setting(shared.value ++ (
     "org.scala-js" %%% "scalajs-dom" % Version.scalajsDom ::
-    "com.github.lukajcb" %%% "rxscala-js" % "0.15.0" ::
-    //"com.github.japgolly.scalajs-react" %%% "core" % "1.1.1" ::
-     Nil))
+    // "com.github.lukajcb" %%% "rxscala-js" % "0.15.0" ::
+    "com.github.japgolly.scalajs-react" %%% "core" % "1.1.1" ::
+    "com.github.japgolly.scalajs-react" %%% "extra" % "1.1.1" ::
+      Nil))
 
   val clientJs = Seq(
+    // "rxjs" -> "5.5.6",
     "react" -> "15.6.1",
-    "react-dom" -> "15.6.1",
-    "rxjs" -> "5.5.6")
+    "react-dom" -> "15.6.1"
+  )
 
 }
