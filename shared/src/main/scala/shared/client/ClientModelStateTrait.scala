@@ -17,11 +17,13 @@ import shared.util._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait ClientStateModelTrait { self =>
+trait ClientModelStateTrait { self =>
 
   def lockObject: AnyRef  = self
   protected def initial: ClientState
   protected def server: Server
+
+  val commands = Seq[Command]
 
   /**
     * connection state

@@ -12,4 +12,4 @@ import scala.util.{Failure, Success}
 class ClientModel(
   protected override val server: Server,
   protected override val initial: ClientState
-) extends ClientStateModelTrait
+) extends ClientModelNodeLevelCommandTrait
