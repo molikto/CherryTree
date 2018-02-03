@@ -5,8 +5,8 @@ import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.component.builder.Builder
 import japgolly.scalajs.react.vdom.VdomElement
 import monix.execution.Cancelable
-import shared.client.ObservableProperty
 import monix.execution.Scheduler.Implicits.global
+import shared.util.ObservableProperty
 
 trait ObservingView[C, T] {
   val $: BackendScope[C, T]

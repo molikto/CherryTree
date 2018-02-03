@@ -4,7 +4,7 @@ import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.{BackendScope, Unmounted}
 import shared.client._
 import shared.data.ClientState
-import shared.client.Client
+import shared.client.ClientModel
 import client.net.JsAutowireAdapter
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
@@ -21,11 +21,11 @@ import scala.util.{Failure, Success}
 object ClientView {
 
 
-  private implicit val reusabilityClient = Reusability.always[Client]
+  private implicit val reusabilityClient = Reusability.always[ClientModel]
   private implicit val reusabilityClientState = Reusability.by_==[ClientState]
 
-  private val creator = ObservingView[Client, ClientState, ClientView](
-    ScalaComponent.builder[Client]("ClientView"),
+  private val creator = ObservingView[ClientModel, ClientState, ClientView](
+    ScalaComponent.builder[ClientModel]("ClientView"),
     s => new ClientView(s),
     client => client.state,
     onStart = _.start(),
@@ -33,13 +33,12 @@ object ClientView {
   ).configure(Reusability.shouldComponentUpdate)
     .build
 
-  def apply(c: Client): Unmounted[Client, ClientState, ClientView] = creator(c)
+  def apply(c: ClientModel): Unmounted[ClientModel, ClientState, ClientView] = creator(c)
 }
 
-class ClientView(override val $: BackendScope[Client, ClientState]) extends ObservingView[Client, ClientState] {
+class ClientView(override val $: BackendScope[ClientModel, ClientState]) extends ObservingView[ClientModel, ClientState] {
 
-
-  def render(client: Client, state: ClientState): VdomElement = {
+  def render(client: ClientModel, state: ClientState): VdomElement = {
     div(
       div(s"client ${state.authentication}, version ${state.document.version}"),
       button("change content", onClick ==> (_ => Callback {

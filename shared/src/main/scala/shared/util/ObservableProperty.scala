@@ -1,7 +1,6 @@
-package shared.client
+package shared.util
 
 import monix.execution.Cancelable
-import monix.execution.rstreams.Subscription
 import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
 import monix.reactive.subjects.BehaviorSubject
@@ -21,7 +20,7 @@ class ObservableProperty[T](initial: T) extends Observable[T] {
 
   def get: T = t
 
-  override def unsafeSubscribeFn(subscriber: Subscriber[T]): Cancelable = subject.distinctUntilChanged.unsafeSubscribeFn(subscriber)
+  final override def unsafeSubscribeFn(subscriber: Subscriber[T]): Cancelable = subject.distinctUntilChanged.unsafeSubscribeFn(subscriber)
 }
 
 object ObservableProperty {

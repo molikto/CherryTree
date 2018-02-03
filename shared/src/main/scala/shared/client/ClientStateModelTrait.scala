@@ -12,10 +12,12 @@ import monix.reactive._
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
+import shared.util.ObservableProperty
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait ClientStateTrait { self =>
+trait ClientStateModelTrait { self =>
 
   def lockObject: AnyRef  = self
   protected def initial: ClientState
