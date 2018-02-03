@@ -2,9 +2,7 @@
 
 ## top most (at most 5 tasks here)
 
-* basic viewing ui
 * basic editor ui
-
 
 ## core
 
@@ -17,7 +15,8 @@
 
 ## client
 
-* how move UI works?
+* how drag to move UI works?
+* scrolling
 
 ## server
 
@@ -26,9 +25,8 @@
 * db
 * concurrency control
 * user input validation
-    * we only assume user input is valid
     * unique id collision detection
-    * ~~make logic all total, no exceptions~~
+    * make logic all total, no exceptions
 
 ## build
 
@@ -41,3 +39,4 @@
 * ~~chain rebase~~
 * ~~rebase with partial success~~
 * ~~server communication~~
+* ~~basic viewing ui~~

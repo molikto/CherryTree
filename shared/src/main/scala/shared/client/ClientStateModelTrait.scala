@@ -12,7 +12,7 @@ import monix.reactive._
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
-import shared.util.ObservableProperty
+import shared.util._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -41,14 +41,15 @@ trait ClientStateModelTrait { self =>
       subscription = null
     }
   }
+
   /**
     * out facing state
     */
   val state = ObservableProperty(initial)
 
-  private var committed: ClientState = initial
+  private var committed: Document = initial.document
   private var uncommitted = Seq.empty[Transaction]
-  def debugCommitted: ClientState = committed
+  def debugCommitted: Document = committed
 
   /**
     * request queue
@@ -99,7 +100,7 @@ trait ClientStateModelTrait { self =>
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(committed), submit).call(), succsss => {
+          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(state.authentication, committed), submit).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>
@@ -129,14 +130,13 @@ trait ClientStateModelTrait { self =>
     val loser = uncommitted.take(take)
     // TODO modal handling of winner deletes loser
     val (wp, lp) = Transaction.rebase(winners, loser, RebaseConflict.all)
-    val doc = committed.document.modify(_.root).using { a => Transaction.apply(Transaction.apply(a, winners), lp)}
+    committed = committed.modify(_.root).using { a => Transaction.apply(Transaction.apply(a, winners), lp)}
       .modify(_.version).using(_ + winners.size + take)
-    committed = committed.copy(document = doc)
     val (wp0, uc) = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)
     uncommitted = uc
     state.modify(
       _.modify(_.document.root).using(a => Transaction.apply(a, Transaction(wp0)))
-        .modify(_.document.version).setTo(doc.version)
+        .modify(_.document.version).setTo(committed.version)
     )
   }
 

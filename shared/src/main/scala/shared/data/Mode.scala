@@ -2,7 +2,7 @@ package shared.data
 
 
 
-sealed class Mode {
+sealed trait Mode {
 }
 object Mode {
   case class Normal(segment: Node.SegmentRef) extends Mode

@@ -10,10 +10,10 @@ import japgolly.scalajs.react.extra.Reusability
 
 object SimpleTreeView {
 
-  implicit val nodeReuse = Reusability.by_==[Node]
+  implicit val nodeReuse: Reusability[Node] = Reusability.by_==[Node]
 
   private val creator = ScalaComponent.builder[Node]("Line")
-    .render_P(r => div(p(r.content), ol(r.childs.map(a => li(key := a.id, SimpleTreeView(a))): _*)))
+    .render_P(r => div(p(r.content), ul(r.childs.map(a => li(key := a.id, SimpleTreeView(a))): _*)))
     .configure(Reusability.shouldComponentUpdate)
     .configure(Reusability.shouldComponentUpdateWithOverlay)
     .build

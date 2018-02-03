@@ -17,7 +17,7 @@ class CherryTreeServer extends Api {
   def debugChanges = changes
 
   override def init(token: Authentication.Token): ClientState = synchronized {
-    val state = ClientState(token, document)
+    val state = ClientState(token, document, document.initialMode)
     clients.update(token, ClientStateSnapshot(state))
     state
   }
