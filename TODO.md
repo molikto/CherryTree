@@ -2,7 +2,7 @@
 
 ## top most (at most 5 tasks here)
 
-* basic editor ui
+* keyboard editor ui and data sync
 
 ## core
 
@@ -12,11 +12,18 @@
     * offline branch
 * non-destructive manual conflict resolving
 * abstract away Content class
+* time traveling
+* strings length is not well defined
 
 ## client
 
-* how drag to move UI works?
-* scrolling
+
+* keyboard and content editable
+* mouse - I think I know what this does now, but consider now we only have a mouse-free experience
+    * drag to move
+    * text selection
+    * node selection -- will handle like workflowy
+* infinite scrolling -- currently we just use browser default
 
 ## server
 

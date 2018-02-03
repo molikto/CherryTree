@@ -24,7 +24,7 @@ object ClientView {
   private implicit val reusabilityClient = Reusability.always[ClientModel]
   private implicit val reusabilityClientState = Reusability.by_==[ClientState]
 
-  private val creator = ObservingView[ClientModel, ClientState, ClientView](
+  private val creator = ObserverView[ClientModel, ClientState, ClientView](
     ScalaComponent.builder[ClientModel]("ClientView"),
     s => new ClientView(s),
     client => client.state,
@@ -36,10 +36,11 @@ object ClientView {
   def apply(c: ClientModel): Unmounted[ClientModel, ClientState, ClientView] = creator(c)
 }
 
-class ClientView(override val $: BackendScope[ClientModel, ClientState]) extends ObservingView[ClientModel, ClientState] {
+class ClientView(override val $: BackendScope[ClientModel, ClientState]) extends ObserverView[ClientModel, ClientState] {
 
   def render(client: ClientModel, state: ClientState): VdomElement = {
     div(
+      contentEditable := true,
       div(s"client ${state.authentication}, version ${state.document.version}"),
       button("change content", onClick ==> (_ => Callback {
         client.change(shared.test.randomTwoChangeTransaction(client.state.document.root))

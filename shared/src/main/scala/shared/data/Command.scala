@@ -15,6 +15,5 @@ object Command {
     object Append
   }
   object Content {
-    object
   }
 }

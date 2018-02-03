@@ -23,7 +23,7 @@ trait ClientModelStateTrait { self =>
   protected def initial: ClientState
   protected def server: Server
 
-  val commands = Seq[Command]
+  val commands: Seq[Command] = Seq.empty
 
   /**
     * connection state
