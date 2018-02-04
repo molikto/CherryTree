@@ -40,12 +40,14 @@ class ClientView(override val $: BackendScope[ClientModel, ClientState]) extends
 
   def render(client: ClientModel, state: ClientState): VdomElement = {
     div(
-      contentEditable := true,
       div(s"client ${state.authentication}, version ${state.document.version}"),
       button("change content", onClick ==> (_ => Callback {
         client.change(shared.test.randomTwoChangeTransaction(client.state.document.root))
       })),
-      SimpleTreeView(state.document.root)
+      div(
+        contentEditable := true,
+        SimpleTreeView(state.document.root)
+      )
     )
   }
 }

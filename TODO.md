@@ -2,7 +2,10 @@
 
 ## top most (at most 5 tasks here)
 
+* semantically data???
 * keyboard editor ui and data sync
+    * make typing works
+    * make cursor and selection in sync in text mode
 
 ## core
 
@@ -24,6 +27,8 @@
     * text selection
     * node selection -- will handle like workflowy
 * infinite scrolling -- currently we just use browser default
+* settings: implement as also a document!
+* rich text
 
 ## server
 
