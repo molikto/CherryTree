@@ -8,7 +8,6 @@ object SeqOt {
 
 class SeqOt(val b: Ot) extends Ot {
 
-  override val ty: OtType = OtType.Composite(OtType.Atomic("Seq"), Seq(b.ty))
 
   override type Data = Seq[b.Data]
 

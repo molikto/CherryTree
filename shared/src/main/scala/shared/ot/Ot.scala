@@ -10,8 +10,6 @@ object Ot {
 
 trait Ot {
 
-  val ty: OtType
-
   type Data
 
   type Operation
