@@ -10,3 +10,6 @@ where metadata contains logic in `plslang`
 * insert: is a one value [.., b)
 * visual: like normal
 * visual line: simple
+
+
+a composition event start will actually block the whole state update cycle. this is a good choice

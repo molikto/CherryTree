@@ -2,25 +2,31 @@ package shared.ot
 
 
 
-object SeqOt {
-
-}
-
 class SeqOt(val b: Ot) extends Ot {
 
 
   override type Data = Seq[b.Data]
 
+  override def dataSerializer: Serializer[Data] = b.dataSerializer.seq
+
   /**
     * change
     */
   override type Operation = O
-  trait O
-  case class Insert(a: Int, content: Seq[Data]) extends O
+
+  override def optionSerializer: Serializer[O] = ???
+
+  trait O extends OtOperation
+  case class Insert(a: Int, content: Seq[b.Data]) extends O {
+    override def isDeletion: Boolean = false
+  }
   case class Delete(from: Int, to: Int) extends O {
     assert(to >= 0 && to >= from)
+    override def isDeletion: Boolean = true
   }
-  case class Child(i: Int, c: b.Operation) extends O
+  case class Child(i: Int, c: b.Operation) extends O {
+    override def isDeletion: Boolean = c.isDeletion
+  }
 
   /**
     * Change2
@@ -39,4 +45,5 @@ class SeqOt(val b: Ot) extends Ot {
 
   override def rebase(winner: O, loser: O): Rebased[O] = ???
 
+  override def empty: Seq[b.Data] = Seq.empty
 }

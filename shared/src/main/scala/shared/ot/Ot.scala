@@ -9,10 +9,12 @@ object Ot {
 }
 
 trait Ot {
-
+  /**
+    * main types
+    */
   type Data
 
-  type Operation
+  type Operation <: OtOperation
 
   type Conflict
 
@@ -20,10 +22,15 @@ trait Ot {
     def map[G](map: T => G) = Rebased(map(t), conflicts)
   }
 
+  def empty: Data
+
   def apply(c: Operation, data: Data): Data
 
   def rebase(winner: Operation, loser: Operation): Rebased[Operation]
 
+
+  def dataSerializer: Serializer[Data]
+  def optionSerializer: Serializer[Operation]
 }
 
 

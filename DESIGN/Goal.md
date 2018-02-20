@@ -1,4 +1,29 @@
 
+
+a OT editor such that:
+
+all data is cached locally, visible to all users, maybe with modification control
+
+ot with rich semantics
+
+simple backend - live query is something fancy, but too hard for now
+
+goal will be cover usage of:
+
+* org mode
+* paper manager
+* it's own settings?
+  or should we have a embedded language,
+   and this language will 
+   handle all settings?
+
+=========
+
+
+new order:
+* a ot gen library
+* a doc gen library
+
 basic goals, in order of importance
 * plain text editing
 * vim supported navigation and editing
