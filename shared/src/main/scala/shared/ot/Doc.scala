@@ -3,6 +3,6 @@ package shared.ot
 
 
 
-trait Doc extends Ot {
-  type Selection
+trait Doc[DATA, OPERATION <: OtOperation, CONFLICT, SELECTION] extends Ot[DATA, OPERATION, CONFLICT] {
+
 }

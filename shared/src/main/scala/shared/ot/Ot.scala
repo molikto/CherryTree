@@ -4,33 +4,26 @@ package shared.ot
 
 
 
-object Ot {
-
+trait OtOperation {
+  def isDeletion: Boolean
 }
 
-trait Ot {
-  /**
-    * main types
-    */
-  type Data
 
-  type Operation <: OtOperation
+case class Rebased[T, CONFLICT](t: T, conflicts: Set[CONFLICT]) {
+  def map[G](map: T => G) = Rebased(map(t), conflicts)
+}
 
-  type Conflict
-
-  case class Rebased[T](t: T, conflicts: Set[Conflict]) {
-    def map[G](map: T => G) = Rebased(map(t), conflicts)
-  }
-
-  def empty: Data
-
-  def apply(c: Operation, data: Data): Data
-
-  def rebase(winner: Operation, loser: Operation): Rebased[Operation]
+trait Ot[DATA, OPERATION <: OtOperation, CONFLICT] {
 
 
-  def dataSerializer: Serializer[Data]
-  def optionSerializer: Serializer[Operation]
+  def empty: DATA
+
+  def apply(c: OPERATION, data: DATA): DATA
+
+  def rebase(winner: OPERATION, loser: OPERATION): Rebased[OPERATION, CONFLICT]
+
+  val dataSerializer: Serializer[DATA]
+  val operationSerializer: Serializer[OPERATION]
 }
 
 
