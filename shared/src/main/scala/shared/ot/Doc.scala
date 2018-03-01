@@ -3,6 +3,6 @@ package shared.ot
 
 
 
-trait Doc[DATA, OPERATION <: OtOperation, CONFLICT, SELECTION] extends Ot[DATA, OPERATION, CONFLICT] {
+trait Doc[DATA, OPERATION <: OtOperation[DATA], CONFLICT, SELECTION] extends Ot[DATA, OPERATION, CONFLICT] {
 
 }

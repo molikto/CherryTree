@@ -13,12 +13,10 @@ object Settings {
 
   type Data = Settings
 
-  sealed trait Operation extends OtOperation {
-    val child: OtOperation
-    override def isDestructive: Boolean = child.isDestructive
+  sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Keys(override val child: SetOperation[KeySetting.Operation]) extends Operation
+    case class Keys(child: SetOperation[KeySetting.Operation]) extends Operation { override def isDestructive: Boolean = child.isDestructive}
   }
 
   sealed trait Conflict {}

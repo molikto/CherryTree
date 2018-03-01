@@ -3,7 +3,7 @@ package shared.ot
 
 
 object AtomicOt {
-  final case class Operation[T](a: T) extends OtOperation {
+  final case class Operation[T](a: T) extends OtOperation[T] {
     override def isDestructive: Boolean = true
   }
   final case class Conflict[T](winner: T, loser: T)

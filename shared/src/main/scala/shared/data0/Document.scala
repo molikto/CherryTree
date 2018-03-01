@@ -13,12 +13,10 @@ object Document {
 
   type Data = Document
 
-  sealed trait Operation extends OtOperation {
-    val child: OtOperation
-    override def isDestructive: Boolean = child.isDestructive
+  sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Root(override val child: Node.Operation) extends Operation
+    case class Root(child: Node.Operation) extends Operation { override def isDestructive: Boolean = child.isDestructive}
   }
 
   sealed trait Conflict {}

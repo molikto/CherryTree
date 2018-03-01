@@ -13,13 +13,11 @@ object Node {
 
   type Data = Node
 
-  sealed trait Operation extends OtOperation {
-    val child: OtOperation
-    override def isDestructive: Boolean = child.isDestructive
+  sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Content(override val child: Content.Operation) extends Operation
-    case class Childs(override val child: SeqOperation[Node.Operation]) extends Operation
+    case class Content(child: Content.Operation) extends Operation { override def isDestructive: Boolean = child.isDestructive}
+    case class Childs(child: SeqOperation[Node.Operation]) extends Operation { override def isDestructive: Boolean = child.isDestructive}
   }
 
   sealed trait Conflict {}

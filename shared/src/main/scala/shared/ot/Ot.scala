@@ -1,7 +1,7 @@
 package shared.ot
 
 
-trait OtOperation {
+trait OtOperation[T] {
   def isDestructive: Boolean
 }
 
@@ -10,7 +10,7 @@ case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
   def map[G](map: T => G) = Rebased(conflicts, map(t))
 }
 
-trait Ot[DATA, OPERATION <: OtOperation, CONFLICT] {
+trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
 
   //def empty: DATA
