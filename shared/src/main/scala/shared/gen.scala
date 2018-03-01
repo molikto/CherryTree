@@ -1,23 +1,23 @@
 package shared
 
-object gen extends shared.ot.gen.Gen {
+object gen extends shared.ot.gen.Gen("shared.data0") {
 
   /**
     * document
     */
 
-  val content = coproduct("content",
+  val Content = coproduct("Content",
     "text" -> string
   )
 
-  val node = recursive(a => product("node",
-    "content" -> content,
+  val Node = recursive(a => product("Node",
+    "content" -> Content,
     "childs" -> seq(a)
   ))
 
 
-  val document = product("document",
-    "root" -> node
+  val Document = product("Document",
+    "root" -> Node
   )
 
 
@@ -25,12 +25,12 @@ object gen extends shared.ot.gen.Gen {
     * node
     */
 
-  val key_setting = product("key setting",
+  val KeySetting = product("KeySetting",
     "name" -> string
   )
 
-  val settings = product("settings",
-    "keys" -> set(key_setting)
+  val Settings = product("Settings",
+    "keys" -> set(KeySetting)
   )
 
 }
