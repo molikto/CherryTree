@@ -58,7 +58,7 @@ class Gen(val pkg: String) {
  |
  |  sealed trait Operation extends OtOperation {
  |    val child: OtOperation
- |    override def isDeletion: Boolean = child.isDeletion
+ |    override def isDestructive: Boolean = child.isDestructive
  |  }
  |  object Operation {
  |${childs.map(a => s"    case class ${a.opName}(override val child: ${a.ty.op}) extends Operation").mkString("\n")}

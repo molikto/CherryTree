@@ -2,7 +2,7 @@ package shared.ot
 
 
 trait OtOperation {
-  def isDeletion: Boolean
+  def isDestructive: Boolean
 }
 
 

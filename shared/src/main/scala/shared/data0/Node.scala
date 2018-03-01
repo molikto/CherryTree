@@ -15,7 +15,7 @@ object Node {
 
   sealed trait Operation extends OtOperation {
     val child: OtOperation
-    override def isDeletion: Boolean = child.isDeletion
+    override def isDestructive: Boolean = child.isDestructive
   }
   object Operation {
     case class Content(override val child: Content.Operation) extends Operation

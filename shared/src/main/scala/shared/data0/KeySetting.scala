@@ -15,7 +15,7 @@ object KeySetting {
 
   sealed trait Operation extends OtOperation {
     val child: OtOperation
-    override def isDeletion: Boolean = child.isDeletion
+    override def isDestructive: Boolean = child.isDestructive
   }
   object Operation {
     case class Name(override val child: StringOperation) extends Operation
