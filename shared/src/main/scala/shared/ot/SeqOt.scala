@@ -64,11 +64,18 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       Rebased(Set.empty, (Some(add), Some(child.copy(at = lat0))))
     }
 
-    def deleteChild(delete: SeqOperation.Delete[T, O], child: SeqOperation.Child[T, O]): RebaseResult = {
+    def deleteChild(delete: SeqOperation.Delete[T, O], child: SeqOperation.Child[T, O], deleteIsWinner: Boolean): RebaseResult = {
       if (child.at < delete.from) {
-        Rebased(Set.empty, (Some(delete), Some(add)))
+        Rebased(Set.empty, (Some(delete), Some(child)))
+      } else if (child.at >= delete.from && child.at <= delete.to) {
+        Rebased(
+          Set(if (deleteIsWinner) SeqConflict.WinnerDeletesLoser() else SeqConflict.LoserDeletesWinner()),
+          (
+            Some(delete),
+            None
+          ))
       } else {
-
+        Rebased(Set.empty, (Some(delete), Some(child.copy(at = child.at - delete.count))))
       }
     }
     def reverse(res: RebaseResult) = Rebased(res.conflicts, (res.t._2, res.t._1))
@@ -95,11 +102,11 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       case (SeqOperation.Delete(wfrom, wto), SeqOperation.Delete(lfrom, lto)) =>
         ???
       case (d@SeqOperation.Delete(_, _), c@SeqOperation.Child(_, _)) =>
-        deleteChild(d, c)
+        deleteChild(d, c, deleteIsWinner = true)
       case (c@SeqOperation.Child(_, _), a@SeqOperation.Add(_, _)) =>
         reverse(addChild(a, c))
       case (c@SeqOperation.Child(_, _), d@SeqOperation.Delete(_, _)) =>
-        reverse(deleteChild(d, c))
+        reverse(deleteChild(d, c, deleteIsWinner = false))
       case (w@SeqOperation.Child(wat, wop), l@SeqOperation.Child(lat, lop)) =>
         if (wat == lat) {
           val c = cot.rebase(wop, lop)
