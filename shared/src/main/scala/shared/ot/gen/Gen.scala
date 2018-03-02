@@ -59,7 +59,7 @@ class Gen(val pkg: String) {
  |  sealed trait Operation extends OtOperation[Data] {
  |  }
  |  object Operation {
- |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.op}) extends Operation { override def isDestructive: Boolean = child.isDestructive}").mkString("\n")}
+ |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.op}) extends Operation { override def information: Int = child.information}").mkString("\n")}
  |  }
  |
  |  sealed trait Conflict {}

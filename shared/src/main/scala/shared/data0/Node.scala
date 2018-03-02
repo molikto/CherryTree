@@ -16,8 +16,8 @@ object Node {
   sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Content(child: Content.Operation) extends Operation { override def isDestructive: Boolean = child.isDestructive}
-    case class Childs(child: SeqOperation[Node.Operation]) extends Operation { override def isDestructive: Boolean = child.isDestructive}
+    case class Content(child: Content.Operation) extends Operation { override def information: Int = child.information}
+    case class Childs(child: SeqOperation[Node.Operation]) extends Operation { override def information: Int = child.information}
   }
 
   sealed trait Conflict {}

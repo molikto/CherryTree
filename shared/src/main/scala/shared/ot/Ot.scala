@@ -1,8 +1,15 @@
 package shared.ot
 
 
+
 trait OtOperation[T] {
-  def isDestructive: Boolean
+  def information: Int
+}
+
+object Information {
+  val Add = 1
+  val Delete = 2
+  val AddDelete = 3
 }
 
 

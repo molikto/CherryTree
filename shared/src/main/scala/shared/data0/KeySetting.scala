@@ -16,7 +16,7 @@ object KeySetting {
   sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Name(child: StringOperation) extends Operation { override def isDestructive: Boolean = child.isDestructive}
+    case class Name(child: StringOperation) extends Operation { override def information: Int = child.information}
   }
 
   sealed trait Conflict {}

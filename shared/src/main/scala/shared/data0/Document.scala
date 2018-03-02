@@ -16,7 +16,7 @@ object Document {
   sealed trait Operation extends OtOperation[Data] {
   }
   object Operation {
-    case class Root(child: Node.Operation) extends Operation { override def isDestructive: Boolean = child.isDestructive}
+    case class Root(child: Node.Operation) extends Operation { override def information: Int = child.information}
   }
 
   sealed trait Conflict {}
