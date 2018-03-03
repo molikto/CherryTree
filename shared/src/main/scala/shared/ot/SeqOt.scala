@@ -100,7 +100,11 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       case (d@SeqOperation.Delete(_, _), a@SeqOperation.Add(_, _)) =>
         reverse(addDelete(a, d, addIsWinner = false))
       case (SeqOperation.Delete(wfrom, wto), SeqOperation.Delete(lfrom, lto)) =>
-        ???
+        val ws = Segment(wfrom, wto)
+        val ls = Segment(lfrom, lto)
+        val wp = transformAfterDeleted(ls, ws).map(a => SeqOperation.Delete[T, O](a.from, a.to))
+        val lp = transformAfterDeleted(ws, ls).map(a => SeqOperation.Delete[T, O](a.from, a.to))
+        Rebased(Set.empty, (wp, lp))
       case (d@SeqOperation.Delete(_, _), c@SeqOperation.Child(_, _)) =>
         deleteChild(d, c, deleteIsWinner = true)
       case (c@SeqOperation.Child(_, _), a@SeqOperation.Add(_, _)) =>
