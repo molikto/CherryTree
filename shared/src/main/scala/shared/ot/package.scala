@@ -5,19 +5,21 @@ package shared
 package object ot {
 
 
-  object StringOt extends AtomicOt[String] {
+  object StringOt extends AtomicDoc[String] {
     override val dataSerializer: Serializer[String] = ???
     override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
   }
   type StringOperation = AtomicOt.Operation[String]
   type StringConflict = AtomicOt.Conflict[String]
+  type StringSelection = AtomicDoc.Selection
 
-  object IntOt extends AtomicOt[Int] {
+  object IntOt extends AtomicDoc[Int] {
     override val dataSerializer: Serializer[Int] = ???
     override val operationSerializer: Serializer[AtomicOt.Operation[Int]] = ???
   }
   type IntOperation = AtomicOt.Operation[Int]
   type IntConflict = AtomicOt.Conflict[Int]
+  type IntSelection = AtomicDoc.Selection
 
 
   case class Segment(from: Int, to: Int) {

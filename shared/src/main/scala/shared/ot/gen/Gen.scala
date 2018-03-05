@@ -25,6 +25,7 @@ class Gen(val pkg: String) {
   }
 
   sealed trait Ot {
+    def isDoc: Boolean
     def ot: String
     def name: String
     def op: String
@@ -37,6 +38,7 @@ class Gen(val pkg: String) {
 
   case class ProductOt(var name0: String, var childs: Seq[Field]) extends Ot {
 
+    override def isDoc: Boolean = childs.forall(_.ty.isDoc)
     override def name: String = name0
     override def ot: String = s"$name.Ot"
     override def op: String = s"$name.Operation"
@@ -93,36 +95,42 @@ class Gen(val pkg: String) {
 
 
   case class CoproductOt(name0: String, cases: Seq[(String, Ot)]) extends Ot {
+    override def isDoc: Boolean = cases.forall(_._2.isDoc)
     override def name: String = name0
     override def ot: String = s"$name.Ot"
     override def op: String = s"$name.Operation"
     override def conflict: String = s"$name.Conflict"
   }
   case object string extends Ot {
-    override def ot: String = "StringOt"
+    override def isDoc: Boolean = true
+    override def ot: String = "StringDoc"
     override def name: String = "String"
     override def op: String = "StringOperation"
     override def conflict: String = "StringConflict"
   }
   case object ot_string extends Ot {
-    override def ot: String = "OtStringOt"
+    override def isDoc: Boolean = true
+    override def ot: String = "OtStringDoc"
     override def name: String = "String"
     override def op: String = "OtStringOperation"
     override def conflict: String = "OtStringConflict"
   }
   case object int extends Ot {
-    override def ot: String = "IntOt"
+    override def isDoc: Boolean = true
+    override def ot: String = "IntDoc"
     override def name: String = "Int"
     override def op: String = "IntOperation"
     override def conflict: String = "IntConflict"
   }
   case class SeqOt(c: Ot) extends Ot {
+    override def isDoc: Boolean = true
     override def ot: String = s"${c.ot}.seqOt"
     override def name: String = s"Seq[${c.name}]"
     override def op: String = s"SeqOperation[${c.op}]"
     override def conflict: String = s"SeqConflict[${c.conflict}]"
   }
   case class SetOt(c: Ot) extends Ot {
+    override def isDoc: Boolean = true
     override def ot: String = s"${c.ot}.setOt"
     override def name: String = s"Set[${c.name}]"
     override def op: String = s"SetOperation[${c.op}]"
