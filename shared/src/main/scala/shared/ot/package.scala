@@ -1,6 +1,7 @@
 package shared
 
 
+
 package object ot {
 
 
@@ -24,6 +25,14 @@ package object ot {
     def size = to - from + 1
   }
 
+
+  def transformAfterAdded(point: Int, size: Int, p: Int): Int = {
+    if (p < point) {
+      p
+    } else {
+      p + size
+    }
+  }
 
   def transformAfterDeleted(s: Segment, p: Int): Option[Int] = {
     if (p < s.from) {
