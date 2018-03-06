@@ -69,4 +69,13 @@ package object ot {
       case (None, None) =>  None
     }
   }
+
+  // temp code
+  object OtStringDoc extends AtomicDoc[String] {
+    override val dataSerializer: Serializer[String] = ???
+    override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
+  }
+  type OtStringOperation = AtomicOt.Operation[String]
+  type OtStringConflict = AtomicOt.Conflict[String]
+  type OtStringSelection = AtomicDoc.Selection
 }
