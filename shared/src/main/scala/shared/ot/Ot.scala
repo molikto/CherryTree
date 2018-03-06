@@ -1,7 +1,6 @@
 package shared.ot
 
 
-
 trait OtOperation[T] {
   def information: Int
 }
@@ -19,6 +18,9 @@ case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
 
 trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
+
+  lazy val seqOt: Ot[Seq[DATA], SeqOperation[DATA, OPERATION], SeqConflict[DATA, CONFLICT]] =
+    new SeqOt(this)
 
   //def empty: DATA
 

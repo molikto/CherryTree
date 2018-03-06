@@ -126,8 +126,8 @@ class Gen(val pkg: String) {
     override def isDoc: Boolean = true
     override def ot: String = s"${c.ot}.seqOt"
     override def name: String = s"Seq[${c.name}]"
-    override def op: String = s"SeqOperation[${c.op}]"
-    override def conflict: String = s"SeqConflict[${c.conflict}]"
+    override def op: String = s"SeqOperation[${c.name}, ${c.op}]"
+    override def conflict: String = s"SeqConflict[${c.name}, ${c.conflict}]"
   }
   case class SetOt(c: Ot) extends Ot {
     override def isDoc: Boolean = true

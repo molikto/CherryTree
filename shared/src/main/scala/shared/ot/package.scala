@@ -5,7 +5,8 @@ package shared
 package object ot {
 
 
-  object StringOt extends AtomicDoc[String] {
+
+  object StringDoc extends AtomicDoc[String] {
     override val dataSerializer: Serializer[String] = ???
     override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
   }
