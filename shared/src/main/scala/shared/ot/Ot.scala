@@ -24,6 +24,11 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
   //def empty: DATA
 
+  def apply(c: Option[OPERATION], data: DATA): DATA = c match {
+    case None => data
+    case Some(a) => apply(a, data)
+  }
+
   def apply(c: OPERATION, data: DATA): DATA
 
   def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]

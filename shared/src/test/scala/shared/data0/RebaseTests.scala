@@ -1,7 +1,8 @@
-package shared.data
+package shared.data0
 
-import utest._
+import shared.ot.Rebased
 import shared.test._
+import utest._
 
 import scala.util.{Failure, Success, Try}
 
@@ -17,7 +18,7 @@ object RebaseTests extends TestSuite {
         val nContent = r.head
         val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
         val r0 = r.tail.drop(childs.size)
-        val n = Node(Node.newId(), nContent, rec2(Seq.empty, childs)._1)
+        val n = Node(nContent, rec2(Seq.empty, childs)._1)
         rec2(left :+ n, r0)
       }
     }
@@ -44,33 +45,33 @@ object RebaseTests extends TestSuite {
 
     val id = Change.Id
     val insert0 =
-      Change.Node.Insert(Node.Ref.root.withChild(0), Node(Node.newId(), "insert0", Seq.empty))
+      NodeOps.insertNode(Seq(0), "insert0")
     val insert0c =
-      Change.Node.Insert(Node.Ref.root.withChild(0), Node(Node.newId(), "insert0", Seq.empty))
+      NodeOps.insertNode(Seq(0), "insert0")
     val insert02 =
-      Change.Node.Insert(Node.Ref.root.withChilds(0,2), Node(Node.newId(), "insert02", Seq.empty))
+      NodeOps.insertNode(Seq(0,2), "insert02")
     val insert020 =
-      Change.Node.Insert(Node.Ref.root.withChilds(0,2,0), Node(Node.newId(), "insert020", Seq.empty))
-    val delete0 = Change.Node.Delete(Node.Ref.root.withChild(0))
-    val delete00 = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
-    val delete00c = Change.Node.Delete(Node.Ref.root.withChilds(0,0))
-    val delete01 = Change.Node.Delete(Node.Ref.root.withChilds(0,1))
-    val delete02 = Change.Node.Delete(Node.Ref.root.withChilds(0,2))
-    val delete20 = Change.Node.Delete(Node.Ref.root.withChilds(2,0))
-    val insert0t = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), randomContent())
-    val insert0t1 = Change.Content.Insert(Node.PointRef(Node.Ref.root, 4), randomContent())
-    val insert0t1c = Change.Content.Insert(Node.PointRef(Node.Ref.root, 6), randomContent())
-    val insert03t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,3), 20), randomContent())
-    val insert02t = Change.Content.Insert(Node.PointRef(Node.Ref.root.withChilds(0,2), 20), randomContent())
-    val delete0t = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(3))
-    val delete0t2 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 5).to(3))
-    val delete0t3 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 4).to(4))
-    val delete0t4 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 5).to(4))
-    val delete0t5 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 10).to(4))
-    val delete0t6 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 0).to(2))
-    val delete0t7 = Change.Content.Delete(Node.PointRef(Node.Ref.root, 0).to(10))
-    val delete03t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,3), 20).to(10))
-    val delete02t = Change.Content.Delete(Node.PointRef(Node.Ref.root.withChilds(0,2), 20).to(10))
+      NodeOps.insertNode(Seq(0, 2, 0), "insert020")
+    val delete0 = NodeOps.deleteNode(Seq(0))
+    val delete00 = NodeOps.deleteNode(Seq(0, 0))
+    val delete00c = NodeOps.deleteNode(Seq(0, 0))
+    val delete01 = NodeOps.deleteNode(Seq(0, 1))
+    val delete02 = NodeOps.deleteNode(Seq(0, 2))
+    val delete20 = NodeOps.deleteNode(Seq(2, 0))
+    val insert0t = NodeOps.insertContent(Seq.empty, 4, randomContent())
+    val insert0t1 = NodeOps.insertContent(Seq.empty, 6, randomContent())
+    val insert0t1c = NodeOps.insertContent(Seq.empty, 6, randomContent())
+    val insert03t = NodeOps.insertContent(Seq(0, 3), 20, randomContent())
+    val insert02t = NodeOps.insertContent(Seq(0, 2), 20, randomContent())
+    val delete0t = NodeOps.deleteContent(Seq.empty, 4, 3)
+    val delete0t2 = NodeOps.deleteContent(Seq.empty, 5, 3)
+    val delete0t3 = NodeOps.deleteContent(Seq.empty, 4, 4)
+    val delete0t4 = NodeOps.deleteContent(Seq.empty, 5, 4)
+    val delete0t5 = NodeOps.deleteContent(Seq.empty, 10, 4)
+    val delete0t6 = NodeOps.deleteContent(Seq.empty, 0, 2)
+    val delete0t7 = NodeOps.deleteContent(Seq.empty, 0, 10)
+    val delete03t = NodeOps.deleteContent(Seq(0, 3), 20, 10)
+    val delete02t = NodeOps.deleteContent(Seq(0, 2), 20, 10)
 
     val changes = Seq(id, insert0, insert0c, insert02, insert020,
       delete0, delete00, delete00c, delete01, delete02, delete20,
@@ -80,17 +81,17 @@ object RebaseTests extends TestSuite {
       delete03t, delete02t)
 
 
-    def assertRebase(a: Change, b: Change): Unit = {
+    def assertRebase(a: Node.Operation, b: Node.Operation): Unit = {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      a.rebasePair(b) match {
-        case Rebased((ap, bp), s) =>
+      Node.Ot.rebase(a, b) match {
+        case Rebased(s, (ap, bp)) =>
           if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 = Change.apply(Change.apply(node, a)._1, bp)._1
-          val app1 = Change.apply(Change.apply(node, b)._1, ap)._1
+          val app0 = Node.Ot.apply(bp, Node.Ot.apply(a, node))
+          val app1 = Node.Ot.apply(ap, Node.Ot.apply(b, node))
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {
