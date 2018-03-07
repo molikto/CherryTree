@@ -147,10 +147,7 @@ class Gen(val pkg: String) {
  """.stripMargin)
     }
 
-
-
-  case class CoproductOt(name0: String, cases: Seq[(String, Ot)]) extends Ot {
-    override def isDoc: Boolean = cases.forall(_._2.isDoc)
+    override def isDoc: Boolean = cases.forall(_.ty.isDoc)
     override def name: String = name0
     override def ot: String = s"$name.Ot"
     override def op: String = s"$name.Operation"
