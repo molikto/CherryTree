@@ -1,22 +1,26 @@
 package shared
 
 
+
 package object ot {
 
 
-  object StringOt extends AtomicOt[String] {
+
+  object StringDoc extends AtomicDoc[String] {
     override val dataSerializer: Serializer[String] = ???
     override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
   }
   type StringOperation = AtomicOt.Operation[String]
   type StringConflict = AtomicOt.Conflict[String]
+  type StringSelection = AtomicDoc.Selection
 
-  object IntOt extends AtomicOt[Int] {
+  object IntOt extends AtomicDoc[Int] {
     override val dataSerializer: Serializer[Int] = ???
     override val operationSerializer: Serializer[AtomicOt.Operation[Int]] = ???
   }
   type IntOperation = AtomicOt.Operation[Int]
   type IntConflict = AtomicOt.Conflict[Int]
+  type IntSelection = AtomicDoc.Selection
 
 
   case class Segment(from: Int, to: Int) {
@@ -24,6 +28,14 @@ package object ot {
     def size = to - from + 1
   }
 
+
+  def transformAfterAdded(point: Int, size: Int, p: Int): Int = {
+    if (p < point) {
+      p
+    } else {
+      p + size
+    }
+  }
 
   def transformAfterDeleted(s: Segment, p: Int): Option[Int] = {
     if (p < s.from) {
@@ -57,4 +69,13 @@ package object ot {
       case (None, None) =>  None
     }
   }
+
+  // temp code
+  object OtStringDoc extends AtomicDoc[String] {
+    override val dataSerializer: Serializer[String] = ???
+    override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
+  }
+  type OtStringOperation = AtomicOt.Operation[String]
+  type OtStringConflict = AtomicOt.Conflict[String]
+  type OtStringSelection = AtomicDoc.Selection
 }

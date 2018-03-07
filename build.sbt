@@ -41,7 +41,7 @@ val sharedSettings = Seq(
   // acyclic
   libraryDependencies += "com.lihaoyi" %% "acyclic" % "0.1.7" % "provided",
   resolvers += Resolver.sonatypeRepo("releases"),
-  scalacOptions += "-P:acyclic:force",
+//  scalacOptions += "-P:acyclic:force",
   autoCompilerPlugins := true,
   addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.7"),
   // lengs
