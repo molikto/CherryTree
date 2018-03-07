@@ -16,12 +16,13 @@ object gen extends shared.ot.gen.Gen("shared.data0") {
     "root" -> Node
   )
 
-  val KeySetting = product("KeySetting",
-    "name" -> string
-  )
-
-  val Settings = product("Settings",
-    "keys" -> set(KeySetting)
-  )
+//
+//  val KeySetting = product("KeySetting",
+//    "name" -> string
+//  )
+//
+//  val Settings = product("Settings",
+//    "keys" -> set(KeySetting)
+//  )
 
 }
