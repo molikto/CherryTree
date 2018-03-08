@@ -26,7 +26,11 @@ object OtStringConflict {
   case class LoserDeletesWinner() extends OtStringConflict
 }
 
-object OtStringOt extends Ot[String, OtStringOperation, OtStringConflict]{
+case class OtStringSelection(from: Int, to: Int) {
+  assert(from >= 0 && to >= from)
+}
+
+object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtStringSelection] {
 
   override def apply(c: OtStringOperation, data: String): String = c match {
     case OtStringOperation.Add(at, cs) => data.take(at) ++ cs ++ data.drop(at)
@@ -84,6 +88,8 @@ object OtStringOt extends Ot[String, OtStringOperation, OtStringConflict]{
 
   override val dataSerializer: Serializer[String] = ???
   override val operationSerializer: Serializer[OtStringOperation] = ???
+
+  override def apply(op: OtStringOperation, sel: OtStringSelection): Option[OtStringSelection] = ???
 }
 
 

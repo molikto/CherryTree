@@ -100,6 +100,8 @@ class Gen(val pkg: String) {
 
   case class CoproductOt(name0: String, cases: Seq[Case]) extends Ot {
 
+    def gen() =  ClassFile(name0, "")
+/*
     def gen(): ClassFile = {
       ClassFile(name, s"""
  |package $pkg
@@ -147,6 +149,7 @@ class Gen(val pkg: String) {
  """.stripMargin)
     }
 
+*/
     override def isDoc: Boolean = cases.forall(_.ty.isDoc)
     override def name: String = name0
     override def ot: String = s"$name.Ot"
@@ -160,7 +163,7 @@ class Gen(val pkg: String) {
     override def op: String = "StringOperation"
     override def conflict: String = "StringConflict"
   }
-  case object ot_string extends Ot {
+  case object otString extends Ot {
     override def isDoc: Boolean = true
     override def ot: String = "OtStringDoc"
     override def name: String = "String"

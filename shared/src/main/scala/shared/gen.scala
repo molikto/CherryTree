@@ -4,7 +4,7 @@ object gen extends shared.ot.gen.Gen("shared.data0") {
 
 
   val Node = recursive(a => product("Node",
-    "content" -> ot_string,
+    "content" -> otString,
     "childs" -> seq(a)
   ))
 
