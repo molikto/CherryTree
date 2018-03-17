@@ -1,12 +1,30 @@
 package shared
 
-import shared.ot.{AtomicOt, OtStringOperation, SeqOperation}
+import shared.ot._
 
 package object data0 {
 
 
 
   object NodeOps {
+
+
+    def isAsymmetry(n: SeqConflict[Node, Node.Conflict]): Boolean = n match {
+      case SeqConflict.Asymmetry() => true
+      case SeqConflict.Child(k) => isAsymmetry(k)
+      case _ => false
+    }
+
+    def isAsymmetry(a: Node.Conflict): Boolean = a match {
+      case Node.Conflict.Content(c) => c match {
+        case OtStringConflict.Asymmetry() => true
+        case _ => false
+      }
+      case Node.Conflict.Childs(n) => isAsymmetry(n)
+    }
+
+    def isAsymmetry(op: Set[Node.Conflict]): Boolean = op.exists(a => isAsymmetry(a))
+
 
     def insertNode(at: Seq[Int], content: String): Node.Operation = {
       if (at.isEmpty) {
