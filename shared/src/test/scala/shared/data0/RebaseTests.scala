@@ -82,7 +82,7 @@ object RebaseTests extends TestSuite {
 
 
     def assertRebase(a: Node.Operation, b: Node.Operation): Unit = {
-      val debug = true
+      val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
       Node.Ot.rebase(a, b) match {
@@ -102,10 +102,7 @@ object RebaseTests extends TestSuite {
         case _ =>
       }
     }
-
-    'insertOnDelete - {
-      assert(Node.Ot.rebase(delete0t, insert0t) == Rebased(Set.empty[Node.Conflict], (Some(delete0t), Some(insert0t))))
-    }
+    
     'simpleSymmetry - {
       for (a <- changes) {
         for (b <- changes) {

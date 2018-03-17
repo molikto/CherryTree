@@ -82,8 +82,8 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
       case (OtStringOperation.Delete(wfrom, wto), OtStringOperation.Delete(lfrom, lto)) =>
         val ws = Segment(wfrom, wto)
         val ls = Segment(lfrom, lto)
-        val wp = transformAfterDeleted(ls, ws).map(a => OtStringOperation.Delete(a.from, a.to))
-        val lp = transformAfterDeleted(ws, ls).map(a => OtStringOperation.Delete(a.from, a.to))
+        val wp = transformDeletingSegmentAfterDeleted(ls, ws).map(a => OtStringOperation.Delete(a.from, a.to))
+        val lp = transformDeletingSegmentAfterDeleted(ws, ls).map(a => OtStringOperation.Delete(a.from, a.to))
         Rebased(Set.empty, (wp, lp))
     }
   }
