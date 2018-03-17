@@ -33,11 +33,11 @@ class Gen(val pkg: String) {
   }
 
   case class Field(name: String, ty: Ot) {
-    val opName = name.take(1).toUpperCase + name.drop(1)
+    val opName: String = name.take(1).toUpperCase + name.drop(1)
   }
 
   case class Case(name: String, ty: Ot) {
-    val opName = name.take(1).toUpperCase + name.drop(1)
+    val opName: String = name.take(1).toUpperCase + name.drop(1)
   }
 
   case class ProductOt(var name0: String, var childs: Seq[Field]) extends Ot {

@@ -1,6 +1,6 @@
 package shared
 
-import shared.ot.{AtomicOt, SeqOperation}
+import shared.ot.{AtomicOt, OtStringOperation, SeqOperation}
 
 package object data0 {
 
@@ -20,7 +20,7 @@ package object data0 {
 
     def insertContent(at: Seq[Int], p: Int, content: String): Node.Operation = {
       if (at.isEmpty) {
-        Node.Operation.Content(???)
+        Node.Operation.Content(OtStringOperation.Add(p, content))
       } else {
         Node.Operation.Childs(SeqOperation.Child(at.head, insertContent(at.tail, p, content)))
       }
@@ -28,7 +28,7 @@ package object data0 {
 
     def deleteContent(at: Seq[Int], from: Int, len: Int): Node.Operation = {
       if (at.isEmpty) {
-        Node.Operation.Content(???)
+        Node.Operation.Content(OtStringOperation.Delete(from, from + len))
       } else {
         Node.Operation.Childs(SeqOperation.Child(at.head, deleteContent(at.tail, from, from + len - 1)))
       }

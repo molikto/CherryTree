@@ -124,9 +124,6 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
         }
     }
   }
-
-  override val dataSerializer: Serializer[Seq[T]] = ???
-  override val operationSerializer: Serializer[SeqOperation[T, O]] = ???
 }
 
 

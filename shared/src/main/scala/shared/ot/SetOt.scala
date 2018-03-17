@@ -124,9 +124,6 @@
 //        }
 //    }
 //  }
-//
-//  override val dataSerializer: Serializer[Set[T]] = ???
-//  override val operationSerializer: Serializer[SetOperation[T, O]] = ???
 //}
 //
 //

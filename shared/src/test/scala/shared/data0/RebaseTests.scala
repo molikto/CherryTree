@@ -43,7 +43,7 @@ object RebaseTests extends TestSuite {
          |  4 $randomText
          |  """.stripMargin)
 
-    val id = Change.Id
+    val id = NodeOps.insertContent(Seq.empty, 0, "")
     val insert0 =
       NodeOps.insertNode(Seq(0), "insert0")
     val insert0c =
@@ -104,13 +104,13 @@ object RebaseTests extends TestSuite {
     }
 
     'insertOnDelete - {
-      assert(delete0t.rebase(insert0t) == Rebased.Free(insert0t))
+      assert(Node.Ot.rebase(delete0t, insert0t) == Rebased(Set.empty[Node.Conflict], (Some(delete0t), Some(insert0t))))
     }
     'simpleSymmetry - {
       for (a <- changes) {
         for (b <- changes) {
-          val k = a.rebasePair(b)
-          val j = b.rebasePair(a)
+          val k = Node.Ot.rebase(a, b)
+          val j = Node.Ot.rebase(b, a)
           (k, j) match {
             case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
               val mirrored = RebaseConflict.mirror(js)

@@ -7,16 +7,12 @@ package object ot {
 
 
   object StringDoc extends AtomicDoc[String] {
-    override val dataSerializer: Serializer[String] = ???
-    override val operationSerializer: Serializer[AtomicOt.Operation[String]] = ???
   }
   type StringOperation = AtomicOt.Operation[String]
   type StringConflict = AtomicOt.Conflict[String]
   type StringSelection = AtomicDoc.Selection
 
   object IntOt extends AtomicDoc[Int] {
-    override val dataSerializer: Serializer[Int] = ???
-    override val operationSerializer: Serializer[AtomicOt.Operation[Int]] = ???
   }
   type IntOperation = AtomicOt.Operation[Int]
   type IntConflict = AtomicOt.Conflict[Int]
@@ -24,8 +20,8 @@ package object ot {
 
 
   case class Segment(from: Int, to: Int) {
-    def contains(p: Int) = p >= from && p <= to
-    def size = to - from + 1
+    def contains(p: Int): Boolean = p >= from && p <= to
+    def size: Int = to - from + 1
   }
 
 

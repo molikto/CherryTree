@@ -42,9 +42,6 @@ object Node {
         case _ => Rebased(Set.empty, (Some(winner), Some(loser)))
       }
     }
-
-    override val dataSerializer: Serializer[Data] = _
-    override val operationSerializer: Serializer[Operation] = _
   }
 }
        

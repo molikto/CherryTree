@@ -19,6 +19,19 @@ case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
 trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
 
+
+  def apply(c: OPERATION, data: DATA): DATA
+
+  // TODO should here be a data: DATA??
+  def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
+
+
+  /****
+    *
+    */
+
+
+
   lazy val seqOt: Ot[Seq[DATA], SeqOperation[DATA, OPERATION], SeqConflict[DATA, CONFLICT]] =
     new SeqOt(this)
 
@@ -29,12 +42,8 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     case Some(a) => apply(a, data)
   }
 
-  def apply(c: OPERATION, data: DATA): DATA
-
-  def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
-
-  val dataSerializer: Serializer[DATA]
-  val operationSerializer: Serializer[OPERATION]
+//  val dataSerializer: Serializer[DATA]
+//  val operationSerializer: Serializer[OPERATION]
 }
 
 

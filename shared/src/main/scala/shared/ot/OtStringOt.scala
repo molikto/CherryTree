@@ -9,12 +9,14 @@ sealed trait OtStringOperation extends OtOperation[String] {
 
 object OtStringOperation {
   case class Add(at: Int, childs: String) extends OtStringOperation {
+    // TODO should we allow this??
+    //assert(childs.length > 0)
     override def information: Int = Information.Add
   }
   case class Delete(from: Int, to: Int) extends OtStringOperation {
     assert(from >= 0 && to >= from)
     override def information: Int = Information.Delete
-    def count = to - from + 1
+    def count: Int = to - from + 1
   }
 }
 
@@ -85,9 +87,6 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
         Rebased(Set.empty, (wp, lp))
     }
   }
-
-  override val dataSerializer: Serializer[String] = ???
-  override val operationSerializer: Serializer[OtStringOperation] = ???
 
   override def apply(op: OtStringOperation, sel: OtStringSelection): Option[OtStringSelection] = ???
 }
