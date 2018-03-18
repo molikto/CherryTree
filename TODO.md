@@ -1,8 +1,17 @@
 
+## current constraint
+
+* closed system - no over generalization
+    * server part stays monolith, no generalization - there is not too much good of this yet
+* no fancy UI performance tweaks for now. UI is the part that is easier to change
+    
 
 ## top most (at most 5 tasks here)
 
 * semantically data???
+    * wire up with old code, non-generalized static server part
+    * union type
+    * reference type
 * keyboard editor ui and data sync
     * make typing works
     * make cursor and selection in sync in text mode
@@ -44,6 +53,11 @@
 
 * production build?
 
+## open system?
+
+* a big big open problem...
+    * communication protocol can be made dynamic, but storage most of time cannot, also c/s plugin is hard to maintain
+
 ## done
 
 * ~~rebase~~
@@ -52,3 +66,4 @@
 * ~~rebase with partial success~~
 * ~~server communication~~
 * ~~basic viewing ui~~
+* ~~basic generated ot - replace old Node and Change class~~

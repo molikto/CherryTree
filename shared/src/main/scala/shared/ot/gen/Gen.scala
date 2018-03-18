@@ -68,7 +68,7 @@ class Gen(val pkg: String) {
  |  object Operation {
  |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.op}) extends Operation { override def information: Int = child.information}").mkString("\n")}
  |  }
- |
+ |  type Transaction = Seq[Operation]
  |  sealed trait Conflict {}
  |  object Conflict {
  |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.conflict}) extends Conflict").mkString("\n")}

@@ -57,11 +57,11 @@ object ClientTests extends TestSuite  {
         if (debug) {
           println("Server doc " + serverDoc.root)
           clients.foreach(c => {
-            println(c.state.authentication + " " + c.debugCommitted.root)
+            println(c.state.authentication + " " + c.debug_committed.root)
           })
         }
         clients.foreach(c => {
-          assert(c.debugCommitted== serverDoc)
+          assert(c.debug_committed== serverDoc)
         })
       }
 

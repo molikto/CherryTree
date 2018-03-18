@@ -21,6 +21,8 @@ object Node {
     case class Childs(child: SeqOperation[Node, Node.Operation]) extends Operation { override def information: Int = child.information}
   }
 
+  type Transaction = Seq[Operation]
+
   sealed trait Conflict {}
   object Conflict {
     case class Content(child: OtStringConflict) extends Conflict
@@ -59,4 +61,3 @@ object Node {
  //   override val operationSerializer: Serializer[Operation] = _
   }
 }
-       

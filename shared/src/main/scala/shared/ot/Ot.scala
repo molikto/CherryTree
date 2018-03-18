@@ -24,6 +24,7 @@ case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
 trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
 
+  type TRANSACTION = Seq[OPERATION]
 
   def apply(c: OPERATION, data: DATA): DATA
 
@@ -76,7 +77,7 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     }
   }
 
-  def rebase(winner: OPERATION, loser: Seq[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Seq[OPERATION])] = {
+  def rebase(winner: OPERATION, loser: TRANSACTION): Rebased[CONFLICT, (Option[OPERATION], Seq[OPERATION])] = {
     loser.foldLeft(Rebased(Set.empty[CONFLICT], (Some(winner): Option[OPERATION], Seq.empty[OPERATION]))) { (pair, ll) =>
       pair match {
         case Rebased(t, (wi, lp)) =>

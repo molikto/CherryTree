@@ -23,8 +23,6 @@ trait ClientModelStateTrait { self =>
   protected def initial: ClientState
   protected def server: Server
 
-  val commands: Seq[Command] = Seq.empty
-
   /**
     * connection state
     */
@@ -51,7 +49,7 @@ trait ClientModelStateTrait { self =>
 
   private var committed: Document = initial.document
   private var uncommitted = Seq.empty[Transaction]
-  def debugCommitted: Document = committed
+  def debug_committed: Document = committed
 
   /**
     * request queue
@@ -111,8 +109,12 @@ trait ClientModelStateTrait { self =>
   }
 
   def updating: Boolean = requesting
+
   def hasUncommited: Boolean = uncommitted.nonEmpty
 
+  /**
+    * sync with remote server
+    */
   def sync(): Boolean = self.synchronized {
     if (requests.isEmpty) {
       requests = requests :+ 0
@@ -143,10 +145,13 @@ trait ClientModelStateTrait { self =>
   }
 
 
-  def change(changes: Transaction): Unit = self.synchronized {
+  /**
+    * submit a change to local state, a sync might follow
+    */
+  def change(changes: Transaction, sync: Boolean = true): Unit = self.synchronized {
     state.modify(_.modify(_.document.root).using(a => Transaction.apply(a, changes)))
     uncommitted = uncommitted :+ changes
-    sync()
+    if (sync) self.sync()
   }
 
 }
