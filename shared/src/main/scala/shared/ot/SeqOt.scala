@@ -2,6 +2,9 @@ package shared.ot
 
 
 import com.softwaremill.quicklens._
+import shared.util.maxMin
+
+import scala.util.Random
 
 
 sealed trait SeqOperation[T, OP <: OtOperation[T]] extends OtOperation[Seq[T]] {
@@ -37,6 +40,7 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
     case SeqOperation.Delete(from, to) => data.take(from) ++ data.drop(to + 1)
     case SeqOperation.Child(at, op) => data.take(at) ++ Seq(cot.apply(op, data(at))) ++ data.drop(at + 1)
   }
+
 
   type RebaseResult = Rebased[SeqConflict[T, C], (Option[SeqOperation[T, O]], Option[SeqOperation[T, O]])]
 
@@ -122,6 +126,23 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
         } else {
           Rebased(Set.empty, (Some(w), Some(l)))
         }
+    }
+  }
+
+
+  override def generateRandomData(random: Random): Seq[T] =
+    (0 to random.nextInt(10)).map(_ => cot.generateRandomData(random))
+
+  override def generateRandomChange(data: Seq[T], random: Random): SeqOperation[T, O] = {
+    if (random.nextBoolean()) {
+      val i = random.nextInt(data.size)
+      val d = data(i)
+      SeqOperation.Child(i, cot.generateRandomChange(d, random))
+    } else if (random.nextBoolean() || data.isEmpty) {
+      SeqOperation.Add(random.nextInt(data.length), generateRandomData(random))
+    } else {
+      val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
+      SeqOperation.Delete(start, end)
     }
   }
 }

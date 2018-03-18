@@ -2,6 +2,9 @@ package shared.ot
 
 
 import com.softwaremill.quicklens._
+import shared.util._
+
+import scala.util.Random
 
 
 sealed trait OtStringOperation extends OtOperation[String] {
@@ -89,6 +92,17 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
   }
 
   override def apply(op: OtStringOperation, sel: OtStringSelection): Option[OtStringSelection] = ???
+
+  override def generateRandomChange(data: String, random: Random): OtStringOperation = {
+    if (random.nextBoolean() || data.isEmpty) {
+      OtStringOperation.Add(random.nextInt(data.length), random.nextString(random.nextInt(10)))
+    } else {
+      val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
+      OtStringOperation.Delete(start, end)
+    }
+  }
+
+  override def generateRandomData(random: Random): String = random.nextString(10)
 }
 
 

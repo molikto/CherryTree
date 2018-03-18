@@ -5,6 +5,8 @@ package shared.data0
 
 import shared.ot._
 
+import scala.util.Random
+
 
 case class Node(content: String, childs: Seq[Node])
 
@@ -42,6 +44,10 @@ object Node {
         case _ => Rebased(Set.empty, (Some(winner), Some(loser)))
       }
     }
+
+    override def generateRandomChange(data: Data, random: Random): Operation = ???
+
+    override def generateRandomData(random: Random): Data = ???
   }
 }
        

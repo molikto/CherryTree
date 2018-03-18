@@ -1,4 +1,5 @@
 package shared
+import scala.util.Random
 
 
 
@@ -7,12 +8,20 @@ package object ot {
 
 
   object StringDoc extends AtomicDoc[String] {
+    override def generateRandomChange(data: String, random: Random): AtomicOt.Operation[String] =
+      AtomicOt.Operation(generateRandomData(random))
+    override def generateRandomData(random: Random): String =
+      random.nextString(10)
   }
   type StringOperation = AtomicOt.Operation[String]
   type StringConflict = AtomicOt.Conflict[String]
   type StringSelection = AtomicDoc.Selection
 
   object IntOt extends AtomicDoc[Int] {
+    override def generateRandomChange(data: Int, random: Random): AtomicOt.Operation[Int] =
+      AtomicOt.Operation(generateRandomData(random))
+    override def generateRandomData(random: Random): Int =
+      random.nextInt()
   }
   type IntOperation = AtomicOt.Operation[Int]
   type IntConflict = AtomicOt.Conflict[Int]

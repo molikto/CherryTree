@@ -88,8 +88,9 @@ class Gen(val pkg: String) {
  |      }
  |    }
  |
- |    override val dataSerializer: Serializer[Data] = _
- |    override val operationSerializer: Serializer[Operation] = _
+ |    override def generateRandomData(random: Random) = $name(${childs.map(c => s"${c.ty.ot}.generateRandomData(random)").mkString(", ")})
+ | //   override val dataSerializer: Serializer[Data] = _
+ | //   override val operationSerializer: Serializer[Operation] = _
  |  }
  |}
        """.stripMargin)

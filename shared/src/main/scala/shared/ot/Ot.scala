@@ -3,6 +3,8 @@ package shared.ot
 import shared.data
 import shared.data.Change
 
+import scala.util.Random
+
 
 trait OtOperation[T] {
   def information: Int
@@ -28,6 +30,9 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
   // TODO should here be a data: DATA??
   def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
+
+  def generateRandomChange(data: DATA, random: Random): OPERATION
+  def generateRandomData(random: Random): DATA
 
   /****
     *
