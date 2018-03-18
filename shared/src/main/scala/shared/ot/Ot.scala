@@ -1,5 +1,8 @@
 package shared.ot
 
+import shared.data
+import shared.data.Change
+
 
 trait OtOperation[T] {
   def information: Int
@@ -40,6 +43,10 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
   def apply(c: Option[OPERATION], data: DATA): DATA = c match {
     case None => data
     case Some(a) => apply(a, data)
+  }
+
+  def apply(cs: Seq[OPERATION], data: DATA): DATA = {
+    cs.foldLeft(data) { (data, c) => apply(c, data) }
   }
 
   def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {

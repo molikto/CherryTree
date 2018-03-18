@@ -154,17 +154,16 @@ object RebaseTests extends TestSuite {
       }
     }
 
-    /*
-    def assertRebaseSquare(a: Seq[], b: Seq[Change]): Unit = {
+    def assertRebaseSquare(a: Seq[Node.Operation], b: Seq[Node.Operation]): Unit = {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      Change.rebaseSquare(a, b) match {
-        case Rebased((ap, bp), _) =>
+      Node.Ot.rebase(a, b) match {
+        case Rebased(_, (ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 =  Try { Change.apply(Change.apply(node, a)._1, bp)._1 }
-          val app1 = Try { Change.apply(Change.apply(node, b)._1, ap)._1 }
+          val app0 =  Try { Node.Ot.apply(bp, Node.Ot.apply(a, node)) }
+          val app1 =  Try { Node.Ot.apply(ap, Node.Ot.apply(b, node)) }
           (app0, app1) match {
             case (Success(aaa), Success(bbb)) =>
               if (aaa == bbb) {
@@ -191,9 +190,9 @@ object RebaseTests extends TestSuite {
           for (b1 <- changes) {
             for (b2 <- changes) {
               val a = Seq(a1, a2)
-              val r1 = Try { Change.apply(node, a) }
+              val r1 = Try { Node.Ot.apply(a, node) }
               val b = Seq(b1, b2)
-              val r2 = Try { Change.apply(node, b) }
+              val r2 = Try { Node.Ot.apply(b, node) }
               // for invalid sequences, rebasing might just make the sequence valid
               if (r1.isSuccess && r2.isSuccess) {
                 assertRebaseSquare(a, b)
@@ -203,6 +202,5 @@ object RebaseTests extends TestSuite {
         }
       }
     }
-    */
   }
 }
