@@ -4,8 +4,7 @@
 package shared.data0
 
 import shared.ot._
-
-import scala.util.Random
+import scala.util._
 
 
 case class Node(content: String, childs: Seq[Node])
@@ -45,9 +44,19 @@ object Node {
       }
     }
 
-    override def generateRandomChange(data: Data, random: Random): Operation = ???
+    override def generateRandomData(random: Random) = Node(OtStringDoc.generateRandomData(random), Node.Ot.seqOt.generateRandomData(random))
 
-    override def generateRandomData(random: Random): Data = ???
+    override def generateRandomChange(data: Data, random: Random): Operation = {
+      val i = random.nextInt(2)
+      i match {
+        case 0 => Operation.Content(OtStringDoc.generateRandomChange(data.content, random))
+        case 1 => Operation.Childs(Node.Ot.seqOt.generateRandomChange(data.childs, random))
+        case _ => throw new IllegalStateException("Not possible")
+      }
+    }
+
+ //   override val dataSerializer: Serializer[Data] = _
+ //   override val operationSerializer: Serializer[Operation] = _
   }
 }
        

@@ -53,6 +53,7 @@ class Gen(val pkg: String) {
  |package $pkg
  |
  |import shared.ot._
+ |import scala.util._
  |
  |
  |case class $name(${childs.map(a => a.name + ": " + a.ty.name).mkString(", ")})
@@ -89,6 +90,15 @@ class Gen(val pkg: String) {
  |    }
  |
  |    override def generateRandomData(random: Random) = $name(${childs.map(c => s"${c.ty.ot}.generateRandomData(random)").mkString(", ")})
+ |
+ |    override def generateRandomChange(data: Data, random: Random): Operation = {
+ |      val i = random.nextInt(${childs.size})
+ |      i match {
+ |${childs.zipWithIndex.map(p => s"        case ${p._2} => Operation.${p._1.opName}(${p._1.ty.ot}.generateRandomChange(data.${p._1.name}, random))").mkString("\n")}
+ |        case _ => throw new IllegalStateException("Not possible")
+ |      }
+ |    }
+ |
  | //   override val dataSerializer: Serializer[Data] = _
  | //   override val operationSerializer: Serializer[Operation] = _
  |  }
