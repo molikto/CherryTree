@@ -42,6 +42,58 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     case Some(a) => apply(a, data)
   }
 
+  def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+    winner match {
+      case Some(a) => rebase(winner, loser)
+      case None => Rebased(Set.empty, (None, Some(loser)))
+    }
+  }
+
+  def rebase(winner: Option[OPERATION], loser: Option[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+    (winner, loser) match {
+      case (None, None) => Rebased(Set.empty, (None, None))
+      case (Some(a), _) => rebase(a, loser)
+      case (None, Some(b)) => rebase(None, b)
+    }
+  }
+
+  def rebase(winner: OPERATION, loser: Option[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+    loser match {
+      case Some(l) => rebase(winner, l)
+      case None => Rebased(Set.empty, (Some(winner), None))
+    }
+  }
+
+  def rebase(winner: OPERATION, loser: Seq[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Seq[OPERATION])] = {
+    loser.foldLeft(Rebased(Set.empty[CONFLICT], (Some(winner): Option[OPERATION], Seq.empty[OPERATION]))) { (pair, ll) =>
+      pair match {
+        case Rebased(t, (wi, lp)) =>
+          val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+          Rebased(t ++ t0, (wi0, lp ++ lp0))
+      }
+    }
+  }
+
+  def rebase(winner: Seq[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Option[OPERATION])] = {
+    winner.foldLeft(Rebased(Set.empty[CONFLICT], (Seq.empty[OPERATION], Some(loser) : Option[OPERATION]))) { (pair, ww) =>
+      pair match {
+        case Rebased(t, (wp, li)) =>
+          val Rebased(t0, (wp0, li0)) = rebase(ww, li)
+          Rebased(t ++ t0, (wp ++ wp0, li0))
+      }
+    }
+  }
+
+  def rebase(winner: Seq[OPERATION], loser: Seq[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
+    loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[OPERATION]))) { (pair, ll) =>
+      pair match {
+        case Rebased(t, (wi, lp)) =>
+          val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+          Rebased(t ++ t0, (wi0, lp ++ lp0))
+      }
+    }
+  }
+
 //  val dataSerializer: Serializer[DATA]
 //  val operationSerializer: Serializer[OPERATION]
 }

@@ -102,7 +102,7 @@ object RebaseTests extends TestSuite {
         case _ =>
       }
     }
-    
+
     'simpleSymmetry - {
       for (a <- changes) {
         for (b <- changes) {
@@ -126,7 +126,6 @@ object RebaseTests extends TestSuite {
         }
       }
     }
-    /*
     'squareSymmetry - {
       for (a1 <- changes) {
         for (a2 <- changes) {
@@ -134,21 +133,17 @@ object RebaseTests extends TestSuite {
             for (b2 <- changes) {
               val a = Seq(a1, a2)
               val b = Seq(b1, b2)
-              val k = Change.rebaseSquare(a, b)
-              val j = Change.rebaseSquare(b, a)
+              val k = Node.Ot.rebase(a, b)
+              val j = Node.Ot.rebase(b, a)
               (k, j) match {
-                case (Rebased((kap, kbp), ks), Rebased((jbp, jap), js)) =>
-                  val mirrored = RebaseConflict.mirror(js)
-                  if (!ks.contains(RebaseConflict.Asymmetry) && !js.contains(RebaseConflict.Asymmetry)) {
-                    // there are cases where asymmetry causes one path is conflict one is not
-                    // for example
-                    // left one is insert(4, len = 9) delete(0, 9)
-                    // right is insert(4)
-                    // if right is performed after left, it's insertion point is gone
-                    // but otherwise it is ok
-                    if (ks != mirrored) {
-                      throw new IllegalArgumentException(s"Wrong mirror $a, $b $mirrored, $ks")
-                    }
+                case (Rebased(ks, (kap, kbp)), Rebased(js, (jbp, jap))) =>
+                  // there are cases where asymmetry causes one path is conflict one is not
+                  // for example
+                  // left one is insert(4, len = 9) delete(0, 9)
+                  // right is insert(4)
+                  // if right is performed after left, it's insertion point is gone
+                  // but otherwise it is ok
+                  if (!NodeOps.isAsymmetry(ks) && !NodeOps.isAsymmetry(js)) {
                     assert(kap == jap)
                     assert(kbp == jbp)
                   }
@@ -159,7 +154,8 @@ object RebaseTests extends TestSuite {
       }
     }
 
-    def assertRebaseSquare(a: Seq[Change], b: Seq[Change]): Unit = {
+    /*
+    def assertRebaseSquare(a: Seq[], b: Seq[Change]): Unit = {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
