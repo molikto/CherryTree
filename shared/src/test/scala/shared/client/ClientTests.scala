@@ -1,6 +1,7 @@
 package shared.client
 
 import shared._
+import shared.api.{Api, Authentication}
 import shared.test._
 import shared.data._
 import shared.server.CherryTreeServer

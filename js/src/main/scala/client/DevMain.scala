@@ -4,9 +4,9 @@ import client.view._
 import org.scalajs.dom
 import shared._
 import japgolly.scalajs.react._
-import shared.data.Authentication
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
+import shared.api.Authentication
 
 
 object DevMain {

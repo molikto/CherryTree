@@ -1,6 +1,4 @@
-package shared.data
-
-
+package shared.api
 
 sealed abstract class ApiError
 object ApiError {

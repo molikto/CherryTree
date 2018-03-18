@@ -8,11 +8,11 @@ import shared.client.ClientModel
 import client.net.JsAutowireAdapter
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
-import shared.Api
 import shared.data._
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
+import shared.api.Api
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}

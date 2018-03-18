@@ -1,5 +1,5 @@
 package server
-import shared.{Api, Ids}
+import shared.Ids
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharset, HttpEntity}
 import akka.http.scaladsl.model.StatusCodes.Success
 import akka.http.scaladsl.model.{HttpHeader, HttpResponse}
@@ -13,6 +13,7 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
+import shared.api.Api
 
 class HttpRouter(val service: Api) extends Directives {
 

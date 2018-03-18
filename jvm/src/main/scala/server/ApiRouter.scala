@@ -8,6 +8,7 @@ import java.nio.ByteBuffer
 
 import scala.concurrent.{ExecutionContext, Future}
 import shared._
+import shared.api.Api
 import shared.data._
 import shared.server.CherryTreeServer
 

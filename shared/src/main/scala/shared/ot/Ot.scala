@@ -1,6 +1,6 @@
 package shared.ot
 
-import shared.data
+import shared.api
 import shared.data.Change
 
 import scala.util.Random

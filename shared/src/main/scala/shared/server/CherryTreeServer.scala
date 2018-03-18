@@ -1,6 +1,6 @@
 package shared.server
 
-import shared.Api
+import shared.api.{Api, ApiError, Authentication}
 import shared.data._
 
 import scala.collection.mutable

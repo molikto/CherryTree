@@ -12,6 +12,8 @@ import monix.reactive._
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
+import shared.api._
+import shared.data0.Node
 import shared.util._
 
 import scala.concurrent.Future
@@ -20,8 +22,9 @@ import scala.util.{Failure, Success}
 trait ClientModelStateTrait { self =>
 
   def lockObject: AnyRef  = self
-  protected def initial: ClientState
+  protected def initial: ClientInit
   protected def server: Server
+  protected val authentication: Authentication.Token
 
   /**
     * connection state
@@ -42,14 +45,15 @@ trait ClientModelStateTrait { self =>
     }
   }
 
+
+  private var committedVersion: Int = initial.version
+  private var committed: Node = initial.node
+  private var uncommitted = Seq.empty[Node.Transaction]
+
   /**
     * out facing state
     */
-  val state = ObservableProperty(initial)
-
-  private var committed: Document = initial.document
-  private var uncommitted = Seq.empty[Transaction]
-  def debug_committed: Document = committed
+  val state = ObservableProperty(committed)
 
   /**
     * request queue
@@ -100,7 +104,7 @@ trait ClientModelStateTrait { self =>
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientStateUpdate](head, server.change(ClientStateSnapshot(state.authentication, committed), submit).call(), succsss => {
+          request[ClientUpdate](head, server.change(authentication, committedVersion, submit).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>
@@ -128,9 +132,9 @@ trait ClientModelStateTrait { self =>
   }
 
 
-  private def updateFromServer(success: ClientStateUpdate): Unit = {
-    val take = success.document.acceptedLosersCount
-    val winners = success.document.winners
+  private def updateFromServer(success: ClientUpdate): Unit = {
+    val take = success.acceptedLosersCount
+    val winners = success.winners
     val loser = uncommitted.take(take)
     // TODO modal handling of winner deletes loser
     val (wp, lp) = Transaction.rebase(winners, loser, RebaseConflict.all)
@@ -148,10 +152,9 @@ trait ClientModelStateTrait { self =>
   /**
     * submit a change to local state, a sync might follow
     */
-  def change(changes: Transaction, sync: Boolean = true): Unit = self.synchronized {
-    state.modify(_.modify(_.document.root).using(a => Transaction.apply(a, changes)))
+  def change(changes: Node.Transaction, sync: Boolean = true): Unit = self.synchronized {
+    state.modify(a => Node.Ot.apply(changes, a))
     uncommitted = uncommitted :+ changes
     if (sync) self.sync()
   }
-
 }

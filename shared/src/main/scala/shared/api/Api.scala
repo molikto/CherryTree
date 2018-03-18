@@ -1,6 +1,6 @@
-package shared
+package shared.api
 
-import shared.data._
+import shared.data0._
 
 trait Api {
 
@@ -16,18 +16,27 @@ trait Api {
     * the client version is used to track the version the user is in, so network errors don't cause duplicated
     * edits
     */
-  def init(token: Authentication.Token): ClientState
+  def init(
+    token: Authentication.Token
+  ): Either[ApiError, ClientInit]
 
 
-  def test(): ApiError
   /**
     * post a diff to the server
     */
-  def change(snapshot: ClientStateSnapshot,
-    changes: Seq[Transaction]): Either[ApiError, ClientStateUpdate]
+  def change(
+    authentication: Authentication.Token,
+    version: Int,
+    changes: Seq[Node.Transaction]
+  ): Either[ApiError, ClientUpdate]
 
-  /**
-    *
-    */
-  def diffSince(snapshot: ClientStateSnapshot): Either[ApiError, ClientStateUpdate]
+
+  // TODO separate change and diff since
+//  /**
+//    *
+//    */
+//  def diffSince(
+//    authentication: Authentication.Token,
+//    version: Int
+//  ): Either[ApiError, ClientUpdate]
 }

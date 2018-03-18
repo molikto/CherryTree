@@ -1,8 +1,5 @@
-package shared.data
-
-
+package shared.api
 
 object Authentication {
-  case class Pass(uid: String)
   case class Token(stuff: String)
 }

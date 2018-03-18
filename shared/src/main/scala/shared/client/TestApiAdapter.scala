@@ -3,7 +3,7 @@ package shared.client
 import java.nio.ByteBuffer
 
 import boopickle.Default._
-import shared.Api
+import shared.api.Api
 import shared.server.CherryTreeServer
 
 import scala.concurrent.Future
