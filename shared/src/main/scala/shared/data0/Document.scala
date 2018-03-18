@@ -19,13 +19,21 @@ object Document {
   object Operation {
     case class Root(child: Node.Operation) extends Operation { override def information: Int = child.information}
   }
+  type Transaction = Seq[Operation]
+
+  sealed trait Selection
+  object Selection {
+    case class Root(child: Node.Selection) extends Selection
+  }
 
   sealed trait Conflict {}
   object Conflict {
     case class Root(child: Node.Conflict) extends Conflict
   }
 
-  object Ot extends shared.ot.Ot[Data, Operation, Conflict] {
+
+  object Ot extends shared.ot.Doc[Data, Operation, Conflict, Selection] {
+
 
     override def apply(c: Operation, data: Data): Data = {
       c match {
@@ -39,6 +47,16 @@ object Document {
         case _ => Rebased(Set.empty, (Some(winner), Some(loser)))
       }
     }
+
+
+    override def apply(op: Operation, sel: Selection): Option[Selection] = {
+      (op, sel) match {
+        case (Operation.Root(wc), Selection.Root(lc)) => Node.Ot.apply(wc, lc).map(a => Selection.Root(a))
+        case _ => Some(sel)
+      }
+    }
+
+
 
     override def generateRandomData(random: Random) = Document(Node.Ot.generateRandomData(random))
 
@@ -54,4 +72,3 @@ object Document {
  //   override val operationSerializer: Serializer[Operation] = _
   }
 }
-       

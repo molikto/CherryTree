@@ -36,7 +36,7 @@ class SeqDoc[T, O <: OtOperation[T], C, S](
           case c@SeqSelection.Child(cpos, csel) =>
             transformAfterDeleted(seg, cpos).map(a => SeqSelection.Child(a, csel))
           case i@SeqSelection.Current(f, t) =>
-            transformAfterDeleted(seg, Segment(f, t)).map(a => SeqSelection.Current(a.from, a.to))
+            transformDeletingSegmentAfterDeleted(seg, Segment(f, t)).map(a => SeqSelection.Current(a.from, a.to))
         }
       case SeqOperation.Child(at, cop) =>
         sel match {

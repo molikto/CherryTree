@@ -20,8 +20,13 @@ object Node {
     case class Content(child: OtStringOperation) extends Operation { override def information: Int = child.information}
     case class Childs(child: SeqOperation[Node, Node.Operation]) extends Operation { override def information: Int = child.information}
   }
-
   type Transaction = Seq[Operation]
+
+  sealed trait Selection
+  object Selection {
+    case class Content(child: OtStringSelection) extends Selection
+    case class Childs(child: SeqSelection[Node.Selection]) extends Selection
+  }
 
   sealed trait Conflict {}
   object Conflict {
@@ -29,7 +34,9 @@ object Node {
     case class Childs(child: SeqConflict[Node, Node.Conflict]) extends Conflict
   }
 
-  object Ot extends shared.ot.Ot[Data, Operation, Conflict] {
+
+  object Ot extends shared.ot.Doc[Data, Operation, Conflict, Selection] {
+
 
     override def apply(c: Operation, data: Data): Data = {
       c match {
@@ -45,6 +52,17 @@ object Node {
         case _ => Rebased(Set.empty, (Some(winner), Some(loser)))
       }
     }
+
+
+    override def apply(op: Operation, sel: Selection): Option[Selection] = {
+      (op, sel) match {
+        case (Operation.Content(wc), Selection.Content(lc)) => OtStringDoc.apply(wc, lc).map(a => Selection.Content(a))
+        case (Operation.Childs(wc), Selection.Childs(lc)) => Node.Ot.seqOt.apply(wc, lc).map(a => Selection.Childs(a))
+        case _ => Some(sel)
+      }
+    }
+
+
 
     override def generateRandomData(random: Random) = Node(OtStringDoc.generateRandomData(random), Node.Ot.seqOt.generateRandomData(random))
 

@@ -8,7 +8,7 @@
 
 ## top most (at most 5 tasks here)
 
-* semantically data???
+* semantically data?
     * wire up with old code, non-generalized static server part
     * union type
     * reference type

@@ -26,6 +26,7 @@ class Gen(val pkg: String) {
 
   sealed trait Ot {
     def isDoc: Boolean
+    def sel: String
     def ot: String
     def name: String
     def op: String
@@ -43,12 +44,14 @@ class Gen(val pkg: String) {
   case class ProductOt(var name0: String, var childs: Seq[Field]) extends Ot {
 
     override def isDoc: Boolean = childs.forall(_.ty.isDoc)
+    override def sel: String = if (isDoc) s"$name.Selection" else throw new IllegalStateException("Not allowed")
     override def name: String = name0
     override def ot: String = s"$name.Ot"
     override def op: String = s"$name.Operation"
     override def conflict: String = s"$name.Conflict"
 
     def gen(): ClassFile = {
+
  ClassFile(name, s"""
  |package $pkg
  |
@@ -69,12 +72,25 @@ class Gen(val pkg: String) {
  |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.op}) extends Operation { override def information: Int = child.information}").mkString("\n")}
  |  }
  |  type Transaction = Seq[Operation]
+ |""".stripMargin + (if (isDoc)
+s"""
+ |  sealed trait Selection
+ |  object Selection {
+ |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.sel}) extends Selection").mkString("\n")}
+ |  }
+""".stripMargin else "") + s"""
  |  sealed trait Conflict {}
  |  object Conflict {
  |${childs.map(a => s"    case class ${a.opName}(child: ${a.ty.conflict}) extends Conflict").mkString("\n")}
  |  }
  |
+ |""".stripMargin + (if (isDoc)
+s"""
+ |  object Ot extends shared.ot.Doc[Data, Operation, Conflict, Selection] {
+""".stripMargin else
+  s"""
  |  object Ot extends shared.ot.Ot[Data, Operation, Conflict] {
+   """.stripMargin) + s"""
  |
  |    override def apply(c: Operation, data: Data): Data = {
  |      c match {
@@ -88,6 +104,17 @@ class Gen(val pkg: String) {
  |        case _ => Rebased(Set.empty, (Some(winner), Some(loser)))
  |      }
  |    }
+ |
+ |""".stripMargin + (if (isDoc)
+s"""
+ |    override def apply(op: Operation, sel: Selection): Option[Selection] = {
+ |      (op, sel) match {
+ |${childs.map(a => s"        case (Operation.${a.opName}(wc), Selection.${a.opName}(lc)) => ${a.ty.ot}.apply(wc, lc).map(a => Selection.${a.opName}(a))").mkString("\n")}
+ |        case _ => Some(sel)
+ |      }
+ |    }
+""".stripMargin else "") + s"""
+ |
  |
  |    override def generateRandomData(random: Random) = $name(${childs.map(c => s"${c.ty.ot}.generateRandomData(random)").mkString(", ")})
  |
@@ -103,7 +130,7 @@ class Gen(val pkg: String) {
  | //   override val operationSerializer: Serializer[Operation] = _
  |  }
  |}
-       """.stripMargin)
+""".stripMargin)
     }
 
   }
@@ -162,14 +189,17 @@ class Gen(val pkg: String) {
 
 */
     override def isDoc: Boolean = cases.forall(_.ty.isDoc)
+    override def sel: String = if (isDoc) s"$name.Selection" else throw new IllegalStateException("Not allowed")
     override def name: String = name0
     override def ot: String = s"$name.Ot"
     override def op: String = s"$name.Operation"
     override def conflict: String = s"$name.Conflict"
+
   }
   case object string extends Ot {
     override def isDoc: Boolean = true
     override def ot: String = "StringDoc"
+    override def sel: String = "StringSelection"
     override def name: String = "String"
     override def op: String = "StringOperation"
     override def conflict: String = "StringConflict"
@@ -178,18 +208,22 @@ class Gen(val pkg: String) {
     override def isDoc: Boolean = true
     override def ot: String = "OtStringDoc"
     override def name: String = "String"
+    override def sel: String = "OtStringSelection"
     override def op: String = "OtStringOperation"
     override def conflict: String = "OtStringConflict"
+
   }
   case object int extends Ot {
     override def isDoc: Boolean = true
     override def ot: String = "IntDoc"
+    override def sel: String = "IntSelection"
     override def name: String = "Int"
     override def op: String = "IntOperation"
     override def conflict: String = "IntConflict"
   }
   case class SeqOt(c: Ot) extends Ot {
     override def isDoc: Boolean = true
+    override def sel: String = if (isDoc) s"SeqSelection[${c.sel}]" else throw new IllegalStateException("not allowed")
     override def ot: String = s"${c.ot}.seqOt"
     override def name: String = s"Seq[${c.name}]"
     override def op: String = s"SeqOperation[${c.name}, ${c.op}]"
@@ -197,6 +231,7 @@ class Gen(val pkg: String) {
   }
   case class SetOt(c: Ot) extends Ot {
     override def isDoc: Boolean = true
+    override def sel: String = if (isDoc) s"SetSelection[${c.sel}]" else throw new IllegalStateException("not allowed")
     override def ot: String = s"${c.ot}.setOt"
     override def name: String = s"Set[${c.name}]"
     override def op: String = s"SetOperation[${c.op}]"

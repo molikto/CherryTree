@@ -91,7 +91,23 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
     }
   }
 
-  override def apply(op: OtStringOperation, sel: OtStringSelection): Option[OtStringSelection] = ???
+  override def apply(op: OtStringOperation, sel: OtStringSelection): Option[OtStringSelection] = {
+    op match {
+      case OtStringOperation.Add(at, cs) =>
+        sel match {
+          case OtStringSelection(from, to) =>
+            Some(OtStringSelection(
+              transformAfterAdded(at, cs.size, from),
+              transformAfterAdded(at, cs.size, to)))
+        }
+      case OtStringOperation.Delete(from, to) =>
+        val seg = Segment(from, to)
+        sel match {
+          case OtStringSelection(f, t) =>
+            transformDeletingSegmentAfterDeleted(seg, Segment(f, t)).map(a => OtStringSelection(a.from, a.to))
+        }
+    }
+  }
 
   override def generateRandomChange(data: String, random: Random): OtStringOperation = {
     if (random.nextBoolean() || data.isEmpty) {
