@@ -1,4 +1,6 @@
 package shared
+import boopickle.{PickleState, Pickler, UnpickleState}
+
 import scala.util.Random
 
 
@@ -12,6 +14,15 @@ package object ot {
       AtomicOt.Operation(generateRandomData(random))
     override def generateRandomData(random: Random): String =
       random.nextString(10)
+
+
+    override val dataPickler: Pickler[String] = new Pickler[String] {
+      override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)
+      override def unpickle(implicit state: UnpickleState): String = state.dec.readString
+    }
+    override val operationPickler: Pickler[AtomicOt.Operation[String]] = {
+
+    }
   }
   type StringOperation = AtomicOt.Operation[String]
   type StringConflict = AtomicOt.Conflict[String]

@@ -1,6 +1,7 @@
 package shared.ot
 
 
+import boopickle.{PickleState, Pickler, UnpickleState}
 import com.softwaremill.quicklens._
 import shared.util._
 
@@ -119,6 +120,16 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
   }
 
   override def generateRandomData(random: Random): String = random.nextString(10)
+
+  override val dataPickler: Pickler[String] = new Pickler[String] {
+
+    override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)
+    override def unpickle(implicit state: UnpickleState): String = state.dec.readString
+  }
+  override val operationPickler: Pickler[OtStringOperation] = new Pickler[OtStringOperation] {
+    override def pickle(obj: OtStringOperation)(implicit state: PickleState): Unit = ???
+    override def unpickle(implicit state: UnpickleState): OtStringOperation = ???
+  }
 }
 
 

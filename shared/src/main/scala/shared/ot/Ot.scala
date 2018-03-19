@@ -1,5 +1,6 @@
 package shared.ot
 
+import boopickle.Pickler
 import shared.api
 
 import scala.util.Random
@@ -126,8 +127,8 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     }
   }
 
-//  val dataSerializer: Serializer[DATA]
-//  val operationSerializer: Serializer[OPERATION]
+  val dataPickler: Pickler[DATA]
+  val operationPickler: Pickler[OPERATION]
 }
 
 
