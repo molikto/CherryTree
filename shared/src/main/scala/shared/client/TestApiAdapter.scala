@@ -7,7 +7,6 @@ import shared.api.Api
 import shared.server.CherryTreeServer
 
 import scala.concurrent.Future
-import shared.data._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

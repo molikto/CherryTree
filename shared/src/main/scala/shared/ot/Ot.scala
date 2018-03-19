@@ -1,7 +1,6 @@
 package shared.ot
 
 import shared.api
-import shared.data.Change
 
 import scala.util.Random
 
@@ -52,6 +51,10 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
   }
 
   def apply(cs: Seq[OPERATION], data: DATA): DATA = {
+    cs.foldLeft(data) { (data, c) => apply(c, data) }
+  }
+
+  def applyT(cs: Seq[TRANSACTION], data: DATA): DATA = {
     cs.foldLeft(data) { (data, c) => apply(c, data) }
   }
 
@@ -107,8 +110,20 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     }
   }
 
-  def rebase(winner: Seq[TRANSACTION], loser: Seq[TRANSACTION]): Rebased[CONFLICT, (Seq[TRANSACTION], Seq[TRANSACTION]) = {
-    
+  /**
+    * we take a winner seq op, because we know winner will always win, and get applied,
+    *
+    * for loser, we return a seq. not necessarily the same length
+    */
+  def rebaseT(winner: Seq[OPERATION], loser: Seq[TRANSACTION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[TRANSACTION])] = {
+    loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[TRANSACTION]))) { (pair, ll) =>
+      pair match {
+        case Rebased(t, (wi, lp)) =>
+          val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+          val ret = if (lp0.isEmpty) lp else lp :+ lp0
+          Rebased(t ++ t0, (wi0, ret))
+      }
+    }
   }
 
 //  val dataSerializer: Serializer[DATA]

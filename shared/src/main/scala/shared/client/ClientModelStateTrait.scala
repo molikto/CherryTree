@@ -130,16 +130,13 @@ trait ClientModelStateTrait { self =>
     val take = success.acceptedLosersCount
     val winners = success.winners
     val loser = uncommitted.take(take)
-    // TODO modal handling of winner deletes loser
-    val (wp, lp) = Node.Ot.rebase(winners, loser, RebaseConflict.all)
-    committed = committed.modify(_.root).using { a => Transaction.apply(Transaction.apply(a, winners), lp)}
-      .modify(_.version).using(_ + winners.size + take)
-    val (wp0, uc) = Transaction.rebase(Seq(Transaction(wp)), uncommitted.drop(take), RebaseConflict.all)
+    // TODO handle conflict, modal handling of winner deletes loser
+    val (wp, lp) = Node.Ot.rebaseT(winners.flatten, loser)
+    committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
+    committedVersion += winners.size + take
+    val (wp0, uc) = Node.Ot.rebaseT(wp, uncommitted.drop(take))
     uncommitted = uc
-    state.modify(
-      _.modify(_.document.root).using(a => Transaction.apply(a, Transaction(wp0)))
-        .modify(_.document.version).setTo(committed.version)
-    )
+    state.modify(a => Node.Ot.apply(wp0, a))
   }
 
 
