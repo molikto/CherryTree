@@ -107,6 +107,10 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     }
   }
 
+  def rebase(winner: Seq[TRANSACTION], loser: Seq[TRANSACTION]): Rebased[CONFLICT, (Seq[TRANSACTION], Seq[TRANSACTION]) = {
+    
+  }
+
 //  val dataSerializer: Serializer[DATA]
 //  val operationSerializer: Serializer[OPERATION]
 }

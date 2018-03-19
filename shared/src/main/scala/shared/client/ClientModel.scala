@@ -2,7 +2,6 @@ package shared.client
 
 import autowire._
 import com.softwaremill.quicklens._
-import shared.data._
 import boopickle.Default._
 import shared.api.{Authentication, ClientInit}
 

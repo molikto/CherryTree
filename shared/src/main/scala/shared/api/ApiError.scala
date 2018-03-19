@@ -1,6 +1,6 @@
 package shared.api
 
-sealed abstract class ApiError
+sealed abstract class ApiError extends Exception
 object ApiError {
 
 

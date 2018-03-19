@@ -6,6 +6,7 @@ import shared.data._
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
+import shared.data0.Node
 
 
 object SimpleTreeView {
