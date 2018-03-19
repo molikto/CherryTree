@@ -13,6 +13,7 @@ import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import shared.api._
 import shared.data0.Node
+import shared.ot.Rebased
 import shared.util._
 
 import scala.concurrent.Future
@@ -131,10 +132,10 @@ trait ClientModelStateTrait { self =>
     val winners = success.winners
     val loser = uncommitted.take(take)
     // TODO handle conflict, modal handling of winner deletes loser
-    val (wp, lp) = Node.Ot.rebaseT(winners.flatten, loser)
+    val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
     committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
     committedVersion += winners.size + take
-    val (wp0, uc) = Node.Ot.rebaseT(wp, uncommitted.drop(take))
+    val Rebased(cs1, (wp0, uc)) = Node.Ot.rebaseT(wp, uncommitted.drop(take))
     uncommitted = uc
     state.modify(a => Node.Ot.apply(wp0, a))
   }

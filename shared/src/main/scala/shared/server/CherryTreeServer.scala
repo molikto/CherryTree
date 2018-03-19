@@ -2,6 +2,7 @@ package shared.server
 
 import shared.api.{Api, ApiError, Authentication, ClientInit, ClientUpdate, ErrorT}
 import shared.data0.Node
+import shared.ot.Rebased
 
 import scala.collection.mutable
 
@@ -49,11 +50,12 @@ class CherryTreeServer extends Api {
   override def change(authentication: Authentication.Token, version: Int, ts: Seq[Node.Transaction]): ErrorT[ClientUpdate] = synchronized {
     checkWriteStateConsistency(authentication, version).map { ws =>
       try {
-        val transformed = Transaction.rebase(ws, ts, RebaseConflict.all)._2
+        val Rebased(conflicts, (wws, transformed)) = Node.Ot.rebaseT(ws.flatten, ts)
         val versionMore = transformed.size
-        document = Document(document.version + versionMore, Transaction.apply(document.root, transformed))
+        document = Node.Ot.applyT(transformed, document)
         changes = changes ++ transformed
-        ClientStateUpdate(DocumentUpdate(ws, versionMore))
+        // TODO don't accept conflicting items
+        ClientUpdate(ws, ts.size)
       } catch {
         case e: Throwable => throw e
       }
