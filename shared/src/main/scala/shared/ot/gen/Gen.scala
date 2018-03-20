@@ -291,7 +291,21 @@ s"""
   def set(a: Ot): Ot = SetOt(a)
 
   def gen(): Unit = {
-    val classes = products.map(_.gen()) ++ recursives.map(_.gen()) ++ coproducts.map(_.gen())
+    val genClases =
+      products.map(a => a.name) ++ coproducts.map(a => a.name)
+    val picklers = ClassFile("Picklers",
+      s"""
+        |package $pkg
+        |
+        |import shared.ot._
+        |import scala.util._
+        |import boopickle._
+        |
+        |trait Picklers extends shared.ot.OtPicklers {
+        |${genClases.map(a => s"  implicit val pickler_$a: Pickler[$a] = $a.Ot.dataPickler\n  implicit val operationPickler_$a: Pickler[$a.Operation] = $a.Ot.operationPickler").mkString("\n")}
+        |}
+      """.stripMargin)
+    val classes = products.map(_.gen()) ++ recursives.map(_.gen()) ++ coproducts.map(_.gen()) ++ Seq(picklers)
     classes.foreach(_.write())
   }
 

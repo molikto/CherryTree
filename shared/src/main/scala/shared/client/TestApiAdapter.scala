@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import boopickle.Default._
 import shared.api.Api
-import shared.data0.Node
+import shared.data0._
 import shared.server.CherryTreeServer
 
 import scala.concurrent.Future
@@ -19,7 +19,6 @@ class TestApiAdapter(service: Api) extends autowire.Client[ByteBuffer, Pickler, 
     override def write[R: Pickler](r: R) = Pickle.intoBytes(r)
     def route(url: Seq[String], byteBuffer: ByteBuffer): Future[ByteBuffer] = {
       val body = Unpickle[Map[String, ByteBuffer]].fromBytes(byteBuffer)
-      implicit val a: Pickler[Seq[Node.Transaction]] = ???
       route[Api](service)(autowire.Core.Request(url, body))
     }
   }

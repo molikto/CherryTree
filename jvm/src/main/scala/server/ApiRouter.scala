@@ -21,7 +21,6 @@ class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, P
   def dispatch(url: Seq[String])(implicit ec: ExecutionContext): RequestContext => Future[RouteResult] =
     entity(as[ByteString]) { entity =>
       val body = Unpickle[Map[String, ByteBuffer]].fromBytes(entity.asByteBuffer)
-      implicit val a: Pickler[Seq[Node.Transaction]] = ???
       val request: Future[ByteBuffer] = route[Api](service)(autowire.Core.Request(url, body))
       onSuccess(request)(buffer => complete(ByteString(buffer)))
     }

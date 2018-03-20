@@ -12,7 +12,7 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import shared.api._
-import shared.data0.Node
+import shared.data0._
 import shared.ot.Rebased
 import shared.util._
 
@@ -102,7 +102,6 @@ trait ClientModelStateTrait { self =>
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          implicit val a: Pickler[Seq[Node.Transaction]] = ???
           request[ClientUpdate](head, server.change(authentication, committedVersion, submit).call(), succsss => {
             updateFromServer(succsss)
           })
