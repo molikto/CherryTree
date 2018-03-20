@@ -112,14 +112,14 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
 
   override def generateRandomChange(data: String, random: Random): OtStringOperation = {
     if (random.nextBoolean() || data.isEmpty) {
-      OtStringOperation.Add(random.nextInt(data.length + 1), random.nextString(random.nextInt(10)))
+      OtStringOperation.Add(random.nextInt(data.length + 1), random.nextLong().toString)
     } else {
       val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
       OtStringOperation.Delete(start, end)
     }
   }
 
-  override def generateRandomData(random: Random): String = random.nextString(10)
+  override def generateRandomData(random: Random): String = random.nextLong().toString
 
   override val dataPickler: Pickler[String] = new Pickler[String] {
     override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)

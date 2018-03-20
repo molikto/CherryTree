@@ -37,6 +37,19 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
   def generateRandomData(): DATA = generateRandomData(new Random())
   def generateRandomData(random: Random): DATA
 
+  def generateRandomTransaction(size: Int, data: DATA): TRANSACTION = {
+    var a = data
+    var i = 0
+    val r = new Random()
+    var cs = Seq.empty[OPERATION]
+    while (i < size) {
+      val c = generateRandomChange(data, r)
+      a = apply(c, a)
+      cs = cs :+ c
+    }
+    cs
+  }
+
   /****
     *
     */

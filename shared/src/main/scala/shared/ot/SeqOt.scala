@@ -23,6 +23,7 @@ object SeqOperation {
   case class Child[T, OP <: OtOperation[T]](at: Int, op: OP) extends SeqOperation[T, OP] {
     override def information: Int = op.information
   }
+
 }
 
 sealed trait SeqConflict[T, C] {}
@@ -32,6 +33,13 @@ object SeqConflict {
   case class WinnerDeletesLoser[T, C]() extends SeqConflict[T, C]
   case class LoserDeletesWinner[T, C]() extends SeqConflict[T, C]
   case class Child[T, C](c: C) extends SeqConflict[T, C]
+}
+
+object SeqOt {
+
+  val stackDepth = new ThreadLocal[Int] {
+    override def initialValue(): Int = 0
+  }
 }
 
 class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], SeqOperation[T, O], SeqConflict[T, C]]{
@@ -131,11 +139,16 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
   }
 
 
-  override def generateRandomData(random: Random): Seq[T] =
-    if (random.nextInt(10) < 5) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
+  override def generateRandomData(random: Random): Seq[T] = {
+    import SeqOt._
+    stackDepth.set(stackDepth.get() + 1)
+    val res = if (random.nextInt(6) < stackDepth.get() * 3) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
+    stackDepth.set(stackDepth.get() - 1)
+    res
+  }
 
   override def generateRandomChange(data: Seq[T], random: Random): SeqOperation[T, O] = {
-    if (random.nextBoolean()) {
+    if (random.nextBoolean() && data.nonEmpty) {
       val i = random.nextInt(data.size)
       val d = data(i)
       SeqOperation.Child(i, cot.generateRandomChange(d, random))

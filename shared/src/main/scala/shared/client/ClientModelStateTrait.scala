@@ -52,6 +52,7 @@ trait ClientModelStateTrait { self =>
   private var uncommitted = Seq.empty[Node.Transaction]
 
   def debug_committedVersion = committedVersion
+  def debug_committed = committed
 
   /**
     * out facing state

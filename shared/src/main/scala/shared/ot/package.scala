@@ -13,7 +13,7 @@ package object ot {
     override def generateRandomChange(data: String, random: Random): AtomicOt.Operation[String] =
       AtomicOt.Operation(generateRandomData(random))
     override def generateRandomData(random: Random): String =
-      random.nextString(10)
+      random.nextLong().toString
 
 
     override val dataPickler: Pickler[String] = new Pickler[String] {

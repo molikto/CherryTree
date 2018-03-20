@@ -2,7 +2,7 @@ package shared
 
 import shared.ot._
 
-package object data0  extends Picklers {
+package object data0 extends Picklers {
 
   object NodeOps {
 
