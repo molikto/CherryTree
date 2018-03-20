@@ -140,7 +140,7 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       val d = data(i)
       SeqOperation.Child(i, cot.generateRandomChange(d, random))
     } else if (random.nextBoolean() || data.isEmpty) {
-      SeqOperation.Add(random.nextInt(data.length), generateRandomData(random))
+      SeqOperation.Add(random.nextInt(data.length + 1), generateRandomData(random))
     } else {
       val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
       SeqOperation.Delete(start, end)

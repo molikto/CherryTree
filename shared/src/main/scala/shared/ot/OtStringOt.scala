@@ -112,7 +112,7 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
 
   override def generateRandomChange(data: String, random: Random): OtStringOperation = {
     if (random.nextBoolean() || data.isEmpty) {
-      OtStringOperation.Add(random.nextInt(data.length), random.nextString(random.nextInt(10)))
+      OtStringOperation.Add(random.nextInt(data.length + 1), random.nextString(random.nextInt(10)))
     } else {
       val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
       OtStringOperation.Delete(start, end)
