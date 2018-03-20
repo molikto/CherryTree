@@ -132,7 +132,7 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
 
 
   override def generateRandomData(random: Random): Seq[T] =
-    if (random.nextInt(10) < 8) Seq.empty[T] else (0 to random.nextInt(10)).map(_ => cot.generateRandomData(random))
+    if (random.nextInt(10) < 5) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
 
   override def generateRandomChange(data: Seq[T], random: Random): SeqOperation[T, O] = {
     if (random.nextBoolean()) {
