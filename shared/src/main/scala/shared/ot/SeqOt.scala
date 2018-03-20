@@ -1,6 +1,7 @@
 package shared.ot
 
 
+import boopickle.{PickleState, Pickler, UnpickleState}
 import com.softwaremill.quicklens._
 import shared.util.maxMin
 
@@ -143,6 +144,48 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
     } else {
       val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
       SeqOperation.Delete(start, end)
+    }
+  }
+
+  override val dataPickler: Pickler[Seq[T]] = new Pickler[Seq[T]] {
+    override def pickle(obj: Seq[T])(implicit state: PickleState): Unit = {
+      state.enc.writeInt(obj.size)
+      obj.foreach(a => cot.dataPickler.pickle(a))
+    }
+    override def unpickle(implicit state: UnpickleState): Seq[T] = {
+      (0 until state.dec.readInt).map(_ => cot.dataPickler.unpickle)
+    }
+  }
+
+  override val operationPickler: Pickler[SeqOperation[T, O]] = new Pickler[SeqOperation[T, O]] {
+    override def pickle(obj: SeqOperation[T, O])(implicit state: PickleState): Unit = {
+      import state.enc._
+      obj match {
+        case SeqOperation.Add(at, childs) =>
+          writeInt(-1)
+          writeInt(at)
+          dataPickler.pickle(childs)
+        case SeqOperation.Delete(from, to) =>
+          writeInt(-2)
+          writeInt(from)
+          writeInt(to)
+        case SeqOperation.Child(at, op) =>
+          writeInt(at)
+          cot.operationPickler.pickle(op)
+      }
+    }
+
+    override def unpickle(implicit state: UnpickleState): SeqOperation[T, O] = {
+      import state.dec._
+      val a = readInt
+      a match {
+        case -1 =>
+          SeqOperation.Add(readInt, dataPickler.unpickle)
+        case -2 =>
+          SeqOperation.Delete(readInt, readInt)
+        case _ =>
+          SeqOperation.Child(a, cot.operationPickler.unpickle)
+      }
     }
   }
 }

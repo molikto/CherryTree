@@ -126,8 +126,8 @@ s"""
  |      }
  |    }
  |
- | //   override val dataSerializer: Serializer[Data] = _
- | //   override val operationSerializer: Serializer[Operation] = _
+ |    override val dataSerializer: Serializer[Data] = _
+ |    override val operationSerializer: Serializer[Operation] = _
  |  }
  |}
 """.stripMargin)

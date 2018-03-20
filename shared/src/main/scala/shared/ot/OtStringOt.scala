@@ -122,13 +122,33 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
   override def generateRandomData(random: Random): String = random.nextString(10)
 
   override val dataPickler: Pickler[String] = new Pickler[String] {
-
     override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)
     override def unpickle(implicit state: UnpickleState): String = state.dec.readString
   }
+
   override val operationPickler: Pickler[OtStringOperation] = new Pickler[OtStringOperation] {
-    override def pickle(obj: OtStringOperation)(implicit state: PickleState): Unit = ???
-    override def unpickle(implicit state: UnpickleState): OtStringOperation = ???
+    override def pickle(obj: OtStringOperation)(implicit state: PickleState): Unit = {
+      import state.enc._
+      obj match {
+        case OtStringOperation.Add(at, childs) =>
+          writeInt(0)
+          writeInt(at)
+          writeString(childs)
+        case OtStringOperation.Delete(from, to) =>
+          writeInt(1)
+          writeInt(from)
+          writeInt(to)
+      }
+    }
+    override def unpickle(implicit state: UnpickleState): OtStringOperation = {
+      import state.dec._
+      readInt match {
+        case 0 =>
+          OtStringOperation.Add(readInt, readString)
+        case 1 =>
+          OtStringOperation.Delete(readInt, readInt)
+      }
+    }
   }
 }
 

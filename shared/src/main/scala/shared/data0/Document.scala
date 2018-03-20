@@ -3,7 +3,9 @@
          
 package shared.data0
 
+import boopickle.{PickleState, Pickler, UnpickleState}
 import shared.ot._
+
 import scala.util._
 
 
@@ -67,8 +69,14 @@ object Document {
         case _ => throw new IllegalStateException("Not possible")
       }
     }
+    override val dataPickler: Pickler[Data] = new Pickler[Data] {
+      override def pickle(obj: Data)(implicit state: PickleState): Unit = ???
+      override def unpickle(implicit state: UnpickleState): Data = ???
+    }
 
- //   override val dataSerializer: Serializer[Data] = _
- //   override val operationSerializer: Serializer[Operation] = _
+    override val operationPickler: Pickler[Operation] = new Pickler[Operation] {
+      override def pickle(obj: Operation)(implicit state: PickleState): Unit = ???
+      override def unpickle(implicit state: UnpickleState): Operation = ???
+    }
   }
 }

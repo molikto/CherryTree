@@ -20,8 +20,13 @@ package object ot {
       override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)
       override def unpickle(implicit state: UnpickleState): String = state.dec.readString
     }
-    override val operationPickler: Pickler[AtomicOt.Operation[String]] = {
-
+    override val operationPickler: Pickler[AtomicOt.Operation[String]] = new Pickler[AtomicOt.Operation[String]] {
+      override def pickle(obj: AtomicOt.Operation[String])(implicit state: PickleState): Unit = {
+        state.enc.writeString(obj.a)
+      }
+      override def unpickle(implicit state: UnpickleState): AtomicOt.Operation[String] = {
+        AtomicOt.Operation(state.dec.readString)
+      }
     }
   }
   type StringOperation = AtomicOt.Operation[String]
@@ -33,6 +38,19 @@ package object ot {
       AtomicOt.Operation(generateRandomData(random))
     override def generateRandomData(random: Random): Int =
       random.nextInt()
+
+    override val dataPickler: Pickler[Int] = new Pickler[Int] {
+      override def pickle(obj: Int)(implicit state: PickleState): Unit = state.enc.writeInt(obj)
+      override def unpickle(implicit state: UnpickleState): Int = state.dec.readInt
+    }
+    override val operationPickler: Pickler[AtomicOt.Operation[Int]] = new Pickler[AtomicOt.Operation[Int]] {
+      override def pickle(obj: AtomicOt.Operation[Int])(implicit state: PickleState): Unit = {
+        state.enc.writeInt(obj.a)
+      }
+      override def unpickle(implicit state: UnpickleState): AtomicOt.Operation[Int] = {
+        AtomicOt.Operation(state.dec.readInt)
+      }
+    }
   }
   type IntOperation = AtomicOt.Operation[Int]
   type IntConflict = AtomicOt.Conflict[Int]
