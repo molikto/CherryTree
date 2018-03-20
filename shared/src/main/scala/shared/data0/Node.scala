@@ -5,6 +5,7 @@ package shared.data0
 
 import shared.ot._
 import scala.util._
+import boopickle._
 
 
 case class Node(content: String, childs: Seq[Node])
@@ -75,7 +76,29 @@ object Node {
       }
     }
 
- //   override val dataSerializer: Serializer[Data] = _
- //   override val operationSerializer: Serializer[Operation] = _
+    override val dataPickler: Pickler[Data] = new Pickler[Data] {
+      override def pickle(obj: Data)(implicit state: PickleState): Unit = {
+        OtStringDoc.dataPickler.pickle(obj.content)
+        Node.Ot.seqOt.dataPickler.pickle(obj.childs)
+      }
+      override def unpickle(implicit state: UnpickleState): Data = {
+        Node(OtStringDoc.dataPickler.unpickle, Node.Ot.seqOt.dataPickler.unpickle)
+      }
+    }
+
+    override val operationPickler: Pickler[Operation] = new Pickler[Operation] {
+      override def pickle(obj: Operation)(implicit state: PickleState): Unit = {
+        obj match {
+          case Operation.Content(child) => state.enc.writeInt(0); OtStringDoc.operationPickler.pickle(child)
+          case Operation.Childs(child) => state.enc.writeInt(1); Node.Ot.seqOt.operationPickler.pickle(child)
+        }
+      }
+      override def unpickle(implicit state: UnpickleState): Operation = {
+        state.dec.readInt match {
+          case 0 => Operation.Content(OtStringDoc.operationPickler.unpickle)
+          case 1 => Operation.Childs(Node.Ot.seqOt.operationPickler.unpickle)
+        }
+      }
+    }
   }
 }

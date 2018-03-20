@@ -18,10 +18,10 @@ class CherryTreeServer extends Api {
   def debugDocument = document
   def debugChanges = changes
 
-  override def init(token: Authentication.Token): ClientInit = synchronized {
+  override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     val state = ClientInit(document, version)
     clients.update(token, version)
-    state
+    Right(state)
   }
 
   private def checkReadStateConsistency(authentication: Authentication.Token, version: Int): ErrorT[Seq[Node.Transaction]] = synchronized {

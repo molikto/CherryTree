@@ -1,14 +1,17 @@
 package shared.data0
 
 import shared.ot.Rebased
-import shared.test._
 import utest._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 
 object RebaseTests extends TestSuite {
 
+
+  val rand = new Random()
+
+  def randomContent() = rand.nextLong().toString
 
   def testNodeFromText(str: String): Node = {
     def rec2(left: Seq[Node], r: Seq[String]): (Seq[Node], Seq[String]) = {

@@ -32,7 +32,9 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
   def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
 
+  def generateRandomChange(data: DATA): OPERATION = generateRandomChange(data, new Random())
   def generateRandomChange(data: DATA, random: Random): OPERATION
+  def generateRandomData(): DATA = generateRandomData(new Random())
   def generateRandomData(random: Random): DATA
 
   /****

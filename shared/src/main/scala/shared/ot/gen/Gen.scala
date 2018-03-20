@@ -31,6 +31,9 @@ class Gen(val pkg: String) {
     def name: String
     def op: String
     def conflict: String
+
+    def pickler: String = ot + ".dataPickler"
+    def operationPickler: String = ot + ".operationPickler"
   }
 
   case class Field(name: String, ty: Ot) {
@@ -57,6 +60,7 @@ class Gen(val pkg: String) {
  |
  |import shared.ot._
  |import scala.util._
+ |import boopickle._
  |
  |
  |case class $name(${childs.map(a => a.name + ": " + a.ty.name).mkString(", ")})
@@ -126,8 +130,27 @@ s"""
  |      }
  |    }
  |
- |    override val dataSerializer: Serializer[Data] = _
- |    override val operationSerializer: Serializer[Operation] = _
+ |    override val dataPickler: Pickler[Data] = new Pickler[Data] {
+ |      override def pickle(obj: Data)(implicit state: PickleState): Unit = {
+ |${childs.map(p => s"        ${p.ty.pickler}.pickle(obj.${p.name})").mkString("\n")}
+ |      }
+ |      override def unpickle(implicit state: UnpickleState): Data = {
+ |        $name(${childs.map(a => s"${a.ty.pickler}.unpickle").mkString(", ")})
+ |      }
+ |    }
+ |
+ |    override val operationPickler: Pickler[Operation] = new Pickler[Operation] {
+ |      override def pickle(obj: Operation)(implicit state: PickleState): Unit = {
+ |        obj match {
+ |${childs.zipWithIndex.map(a => s"          case Operation.${a._1.opName}(child) => state.enc.writeInt(${a._2}); ${a._1.ty.operationPickler}.pickle(child)").mkString("\n")}
+ |        }
+ |      }
+ |      override def unpickle(implicit state: UnpickleState): Operation = {
+ |        state.dec.readInt match {
+ |${childs.zipWithIndex.map(a => s"          case ${a._2} => Operation.${a._1.opName}(${a._1.ty.operationPickler}.unpickle)").mkString("\n")}
+ |        }
+ |      }
+ |    }
  |  }
  |}
 """.stripMargin)

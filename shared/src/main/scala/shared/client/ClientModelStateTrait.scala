@@ -25,6 +25,7 @@ trait ClientModelStateTrait { self =>
   protected def initial: ClientInit
   protected def server: Server
   protected val authentication: Authentication.Token
+  def debug_authentication: Authentication.Token = authentication
 
   /**
     * connection state
@@ -49,6 +50,8 @@ trait ClientModelStateTrait { self =>
   private var committedVersion: Int = initial.version
   private var committed: Node = initial.node
   private var uncommitted = Seq.empty[Node.Transaction]
+
+  def debug_committedVersion = committedVersion
 
   /**
     * out facing state
@@ -99,6 +102,7 @@ trait ClientModelStateTrait { self =>
         case head :: tail =>
           requests = tail
           val submit = uncommitted
+          implicit val a: Pickler[Seq[Node.Transaction]] = ???
           request[ClientUpdate](head, server.change(authentication, committedVersion, submit).call(), succsss => {
             updateFromServer(succsss)
           })
