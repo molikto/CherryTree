@@ -82,7 +82,7 @@ object Node {
         Node.Ot.seqOt.dataPickler.pickle(obj.childs)
       }
       override def unpickle(implicit state: UnpickleState): Data = {
-        Node(OtStringDoc.dataPickler.unpickle, Node.Ot.seqOt.dataPickler.unpickle)
+        Node(OtStringDoc.dataPickler.unpickle(state), Node.Ot.seqOt.dataPickler.unpickle(state))
       }
     }
 
@@ -95,8 +95,8 @@ object Node {
       }
       override def unpickle(implicit state: UnpickleState): Operation = {
         state.dec.readInt match {
-          case 0 => Operation.Content(OtStringDoc.operationPickler.unpickle)
-          case 1 => Operation.Childs(Node.Ot.seqOt.operationPickler.unpickle)
+          case 0 => Operation.Content(OtStringDoc.operationPickler.unpickle(state))
+          case 1 => Operation.Childs(Node.Ot.seqOt.operationPickler.unpickle(state))
         }
       }
     }

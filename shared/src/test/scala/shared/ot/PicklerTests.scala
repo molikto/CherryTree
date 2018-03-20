@@ -1,8 +1,8 @@
 package shared.ot
 
 import utest._
-import boopickle.Default._
-import shared.api.ClientInit
+
+import shared.api.{ApiError, ClientInit, ErrorT}
 import shared.data0.Node
 
 object PicklerTests extends TestSuite {
@@ -32,10 +32,10 @@ object PicklerTests extends TestSuite {
     'implicitlyGenerated - {
       val ot = Node.Ot
       for (i <- 0 until 10) {
-        val a = ClientInit(ot.generateRandomData(), i)
+        val a: ErrorT[ClientInit] = Right(ClientInit(ot.generateRandomData(), i))
         implicit val pickler = ot.dataPickler
         val bytes = Pickle.intoBytes(a)
-        val b = Unpickle[ClientInit].fromBytes(bytes)
+        val b = Unpickle[Either[ApiError, ClientInit]].fromBytes(bytes)
         assert(a == b)
       }
     }

@@ -153,7 +153,8 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       obj.foreach(a => cot.dataPickler.pickle(a))
     }
     override def unpickle(implicit state: UnpickleState): Seq[T] = {
-      (0 until state.dec.readInt).map(_ => cot.dataPickler.unpickle)
+      val a = state.dec.readInt
+      (0 until a).map(_ => cot.dataPickler.unpickle(state))
     }
   }
 
@@ -180,11 +181,11 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       val a = readInt
       a match {
         case -1 =>
-          SeqOperation.Add(readInt, dataPickler.unpickle)
+          SeqOperation.Add(readInt, dataPickler.unpickle(state))
         case -2 =>
           SeqOperation.Delete(readInt, readInt)
         case _ =>
-          SeqOperation.Child(a, cot.operationPickler.unpickle)
+          SeqOperation.Child(a, cot.operationPickler.unpickle(state))
       }
     }
   }

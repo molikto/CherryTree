@@ -3,7 +3,7 @@ package shared.client
 
 import autowire._
 import com.softwaremill.quicklens._
-import boopickle.Default._
+
 import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.execution.rstreams.Subscription

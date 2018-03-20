@@ -2,13 +2,14 @@ package client.net
 
 import java.nio.ByteBuffer
 
-import boopickle.Default._
+
 import org.scalajs.dom
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.scalajs.js
 import scala.scalajs.js.typedarray._
-
+import shared.util._
 
 
 class JsAutowireAdapter extends autowire.Client[ByteBuffer, Pickler, Pickler] {
@@ -21,6 +22,6 @@ class JsAutowireAdapter extends autowire.Client[ByteBuffer, Pickler, Pickler] {
     ).map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
   }
 
-  override def read[Result: Pickler](p: ByteBuffer): Result = Unpickle[Result].fromBytes(p)
+  override def read[Result: Pickler](p: ByteBuffer): Result =  Unpickle[Result].fromBytes(debugged(p))
   override def write[Result: Pickler](r: Result): ByteBuffer = Pickle.intoBytes(r)
 }

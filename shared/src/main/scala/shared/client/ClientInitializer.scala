@@ -3,7 +3,8 @@ package shared.client
 import autowire._
 import com.softwaremill.quicklens._
 
-import boopickle.Default._
+
+import shared.data0._
 import shared.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global

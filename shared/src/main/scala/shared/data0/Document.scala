@@ -74,7 +74,7 @@ object Document {
         Node.Ot.dataPickler.pickle(obj.root)
       }
       override def unpickle(implicit state: UnpickleState): Data = {
-        Document(Node.Ot.dataPickler.unpickle)
+        Document(Node.Ot.dataPickler.unpickle(state))
       }
     }
 
@@ -86,7 +86,7 @@ object Document {
       }
       override def unpickle(implicit state: UnpickleState): Operation = {
         state.dec.readInt match {
-          case 0 => Operation.Root(Node.Ot.operationPickler.unpickle)
+          case 0 => Operation.Root(Node.Ot.operationPickler.unpickle(state))
         }
       }
     }

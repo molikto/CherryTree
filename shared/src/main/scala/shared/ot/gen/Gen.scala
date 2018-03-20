@@ -135,7 +135,7 @@ s"""
  |${childs.map(p => s"        ${p.ty.pickler}.pickle(obj.${p.name})").mkString("\n")}
  |      }
  |      override def unpickle(implicit state: UnpickleState): Data = {
- |        $name(${childs.map(a => s"${a.ty.pickler}.unpickle").mkString(", ")})
+ |        $name(${childs.map(a => s"${a.ty.pickler}.unpickle(state)").mkString(", ")})
  |      }
  |    }
  |
@@ -147,7 +147,7 @@ s"""
  |      }
  |      override def unpickle(implicit state: UnpickleState): Operation = {
  |        state.dec.readInt match {
- |${childs.zipWithIndex.map(a => s"          case ${a._2} => Operation.${a._1.opName}(${a._1.ty.operationPickler}.unpickle)").mkString("\n")}
+ |${childs.zipWithIndex.map(a => s"          case ${a._2} => Operation.${a._1.opName}(${a._1.ty.operationPickler}.unpickle(state))").mkString("\n")}
  |        }
  |      }
  |    }

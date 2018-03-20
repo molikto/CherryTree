@@ -2,7 +2,7 @@ package shared.client
 
 import autowire._
 import com.softwaremill.quicklens._
-import boopickle.Default._
+
 import shared.api.{Authentication, ClientInit}
 
 import scala.concurrent.ExecutionContext.Implicits.global
