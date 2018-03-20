@@ -16,7 +16,7 @@ import shared.server.CherryTreeServer
 
 class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
 
-  implicit val debug = true
+  implicit val debug = false
 
   override def read[R: Pickler](p: ByteBuffer) = boopickle.Default.Unpickle[R].fromBytes(debugged(p))
   override def write[R: Pickler](r: R) = boopickle.Default.Pickle.intoBytes(debugged(r))

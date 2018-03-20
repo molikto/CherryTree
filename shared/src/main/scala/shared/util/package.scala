@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 package object util extends ObservablePropertyImplicits  {
 
-  private val debugOn = true
+  private val debugOn = false
 
 
   def debugged[T](a: T)(implicit debug: Boolean = debugOn): T = {

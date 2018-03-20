@@ -10,7 +10,7 @@ import shared.ot._
 import scala.util._
 import boopickle._
 
-trait Picklers extends shared.ot.OtPicklers {
+trait Picklers extends shared.ot.OtPicklers with Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers with MaterializePicklerFallback {
 
   implicit val pickler_Document: Pickler[Document] = Document.Ot.dataPickler
   implicit val operationPickler_Document: Pickler[Document.Operation] = Document.Ot.operationPickler
