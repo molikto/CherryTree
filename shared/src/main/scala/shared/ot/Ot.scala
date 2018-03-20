@@ -43,7 +43,7 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
     val r = new Random()
     var cs = Seq.empty[OPERATION]
     while (i < size) {
-      val c = generateRandomChange(data, r)
+      val c = generateRandomChange(a, r)
       a = apply(c, a)
       cs = cs :+ c
       i += 1

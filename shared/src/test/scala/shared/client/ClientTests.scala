@@ -93,8 +93,8 @@ object ClientTests extends TestSuite  {
       }
 
       'randomSingleChangeTransactionSync - {
-        val count = 100
-        for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+        val count = 1000
+        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
             clients(j).change(Node.Ot.generateRandomTransaction(1, clients(j).state.get))
@@ -104,7 +104,7 @@ object ClientTests extends TestSuite  {
       }
 
       'randomTwoChangeTransactionSync - {
-        val count = 100
+        val count = 1000
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {

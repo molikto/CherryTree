@@ -8,8 +8,8 @@
 
 ## top most (at most 5 tasks here)
 
+* FIX THE CLIENT TEST
 * semantically data?
-    * wire up with old code, non-generalized static server part
     * union type
     * reference type
 * keyboard editor ui and data sync
@@ -67,3 +67,4 @@
 * ~~server communication~~
 * ~~basic viewing ui~~
 * ~~basic generated ot - replace old Node and Change class~~
+* ~~wire up with old code, non-generalized static server part~~
