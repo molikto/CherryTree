@@ -46,6 +46,7 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
       val c = generateRandomChange(data, r)
       a = apply(c, a)
       cs = cs :+ c
+      i += 1
     }
     cs
   }

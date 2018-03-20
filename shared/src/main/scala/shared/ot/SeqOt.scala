@@ -142,7 +142,7 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
   override def generateRandomData(random: Random): Seq[T] = {
     import SeqOt._
     stackDepth.set(stackDepth.get() + 1)
-    val res = if (random.nextInt(6) < stackDepth.get() * 3) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
+    val res = if (random.nextInt(4) < stackDepth.get()) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
     stackDepth.set(stackDepth.get() - 1)
     res
   }

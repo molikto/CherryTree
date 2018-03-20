@@ -3,13 +3,12 @@
 //import utest._
 //
 //
-// TODO fix simple change tests
+// LATER make this recover
 //object ChangeTests extends TestSuite {
 //
 //  def assertChange(root: Node, change: Node.Operation, after: Node): Unit = {
 //    val changed = Node.Ot.apply(change, root)
 //    assert(after == changed)
-//    // TODO reverse change and applier?
 ////    val reversed = Node.Ot.apply(changed._1, changed._2)
 ////    assert(reversed._2 == change)
 ////    assert(root == reversed._1)
