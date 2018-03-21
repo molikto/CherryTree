@@ -145,7 +145,7 @@ trait ClientModelStateTrait { self =>
       // TODO handle conflict, modal handling of winner deletes loser
       val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
       committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
-      val altVersion = committedVersion + winners.size + loser.size
+      val altVersion = committedVersion + winners.size + lp.size
       committedVersion = success.finalVersion
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = Node.Ot.rebaseT(wp, remaining)
