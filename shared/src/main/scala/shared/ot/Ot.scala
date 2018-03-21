@@ -28,7 +28,7 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
   def apply(c: OPERATION, data: DATA): DATA
 
-  // TODO should here be a data: DATA??
+  // LATER should here be a data: DATA??
   def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
 

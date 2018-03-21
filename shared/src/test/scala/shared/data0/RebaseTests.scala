@@ -46,7 +46,6 @@ object RebaseTests extends TestSuite {
          |  4 $randomText
          |  """.stripMargin)
 
-    val id = NodeOps.insertContent(Seq.empty, 0, "")
     val insert0 =
       NodeOps.insertNode(Seq(0), "insert0")
     val insert0c =
@@ -76,7 +75,7 @@ object RebaseTests extends TestSuite {
     val delete03t = NodeOps.deleteContent(Seq(0, 3), 20, 10)
     val delete02t = NodeOps.deleteContent(Seq(0, 2), 20, 10)
 
-    val changes = Seq(id, insert0, insert0c, insert02, insert020,
+    val changes = Seq(insert0, insert0c, insert02, insert020,
       delete0, delete00, delete00c, delete01, delete02, delete20,
       insert0t, insert0t1, insert0t1c,
       insert03t, insert02t,

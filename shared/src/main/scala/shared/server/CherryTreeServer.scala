@@ -65,7 +65,7 @@ class CherryTreeServer extends Api {
         document = Node.Ot.applyT(transformed, document)
         changes = changes ++ transformed
         clients.update(authentication, version)
-        // TODO don't accept conflicting items
+        // LATER don't accept conflicting items
         ClientUpdate(ws, ts.size, version)
       } catch {
         case e: Throwable => throw e
