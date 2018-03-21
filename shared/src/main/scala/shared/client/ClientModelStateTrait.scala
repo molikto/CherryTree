@@ -85,10 +85,12 @@ trait ClientModelStateTrait { self =>
           t.printStackTrace()
           t match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
+              // TODO properly handle this!
+              putBackAndMarkNotConnected(head)
             case ApiError.InvalidToken =>
+              // TODO properly handle this!
               putBackAndMarkNotConnected(head)
             case _ =>
-              requesting = false
               putBackAndMarkNotConnected(head)
           }
         }
@@ -131,17 +133,28 @@ trait ClientModelStateTrait { self =>
   }
 
 
+  /**
+    * update committed, committed version, uncommited, state
+    */
   private def updateFromServer(success: ClientUpdate): Unit = {
-    val take = success.acceptedLosersCount
-    val winners = success.winners
-    val loser = uncommitted.take(take)
-    // TODO handle conflict, modal handling of winner deletes loser
-    val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
-    committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
-    committedVersion += winners.size + take
-    val Rebased(cs1, (wp0, uc)) = Node.Ot.rebaseT(wp, uncommitted.drop(take))
-    uncommitted = uc
-    state.modify(a => Node.Ot.apply(wp0, a))
+    try {
+      val take = success.acceptedLosersCount
+      val winners = success.winners
+      val loser = uncommitted.take(take)
+      val remaining = uncommitted.drop(take)
+      // TODO handle conflict, modal handling of winner deletes loser
+      val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
+      committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
+      val altVersion = committedVersion + winners.size + loser.size
+      committedVersion = success.finalVersion
+      assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
+      val Rebased(cs1, (wp0, uc)) = Node.Ot.rebaseT(wp, remaining)
+      uncommitted = uc
+      state.modify(it => Node.Ot.apply(wp0, it))
+    } catch {
+      case e: Exception =>
+        throw new Exception(s"Apply update from server failed $success #### $committed", e)
+    }
   }
 
 

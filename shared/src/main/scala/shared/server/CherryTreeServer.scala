@@ -9,10 +9,10 @@ import scala.collection.mutable
 class CherryTreeServer extends Api {
 
   // states, now in single thread fashion
-  private val emptyDocument = Node("", Seq.empty)
+  def emptyDocument = Node("", Seq.empty)
   private var document = emptyDocument
-  private var version: Int = 0
   private var changes = Seq.empty[Node.Transaction]
+  def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
 
   def debugDocument = document
@@ -24,15 +24,24 @@ class CherryTreeServer extends Api {
     Right(state)
   }
 
-  private def checkReadStateConsistency(authentication: Authentication.Token, version: Int): ErrorT[Seq[Node.Transaction]] = synchronized {
-    clients.get(authentication) match {
-      case None =>
-        Left(ApiError.InvalidToken)
-      case Some(cached) =>
-        Right(changes.drop(version))
-    }
-  }
+  /**
+    * @return unread transactions
+    */
+//  private def checkReadStateConsistency(authentication: Authentication.Token, version: Int): ErrorT[Seq[Node.Transaction]] = synchronized {
+//    clients.get(authentication) match {
+//      case None =>
+//        Left(ApiError.InvalidToken)
+//      case Some(cached) =>
+//        Right(changes.drop(version))
+//    }
+//  }
 
+
+  /**
+    *
+    * @param version current client version
+    * @return
+    */
   private def checkWriteStateConsistency(authentication: Authentication.Token, version: Int): ErrorT[Seq[Node.Transaction]] = synchronized {
     clients.get(authentication) match {
       case None =>
@@ -40,22 +49,24 @@ class CherryTreeServer extends Api {
       case Some(cached) =>
         val diff = version - cached
          if (diff < 0) {
-          Left(ApiError.ClientVersionIsOlderThanServerCache)
+           Left(ApiError.ClientVersionIsOlderThanServerCache)
+        } else if (diff > 0) {
+           Left(ApiError.ClientVersionIsHigherThanServerCache)
         } else {
           Right(changes.drop(version))
         }
     }
   }
 
-  override def change(authentication: Authentication.Token, version: Int, ts: Seq[Node.Transaction]): ErrorT[ClientUpdate] = synchronized {
-    checkWriteStateConsistency(authentication, version).map { ws =>
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[Node.Transaction]): ErrorT[ClientUpdate] = synchronized {
+    checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
         val Rebased(conflicts, (wws, transformed)) = Node.Ot.rebaseT(ws.flatten, ts)
-        val versionMore = transformed.size
         document = Node.Ot.applyT(transformed, document)
         changes = changes ++ transformed
+        clients.update(authentication, version)
         // TODO don't accept conflicting items
-        ClientUpdate(ws, ts.size)
+        ClientUpdate(ws, ts.size, version)
       } catch {
         case e: Throwable => throw e
       }
