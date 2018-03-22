@@ -8,13 +8,13 @@
 
 ## top most (at most 5 tasks here)
 
-* FIX THE CLIENT TEST
-* semantically data?
-    * union type
-    * reference type
+* looks into https://github.com/facebook/yoga
 * keyboard editor ui and data sync
     * make typing works
     * make cursor and selection in sync in text mode
+* semantically data?
+    * union type
+    * reference type
 
 ## core
 
@@ -68,3 +68,4 @@
 * ~~basic viewing ui~~
 * ~~basic generated ot - replace old Node and Change class~~
 * ~~wire up with old code, non-generalized static server part~~
+* ~~FIX THE CLIENT TEST~~
