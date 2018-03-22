@@ -12,4 +12,4 @@ the exact meaning of these bs is only got in the client renderer
 
 with one thing: a continuous selection in renderer is a continuous selection in the b[]
 
-also notice the case with bi-directional text, the selection might be cut off in two parts
+~~also notice the case with bi-directional text, the selection might be cut off in two parts~~

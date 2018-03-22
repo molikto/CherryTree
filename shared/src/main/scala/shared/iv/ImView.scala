@@ -19,7 +19,7 @@ class ClientInitializer {
     // cleanup state
   }
 
-  def render(state: Option(Client)) {
+  def render(state: Option[ClientModel]) {
 
   }
 }
