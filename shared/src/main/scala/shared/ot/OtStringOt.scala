@@ -13,8 +13,7 @@ sealed trait OtStringOperation extends OtOperation[String] {
 
 object OtStringOperation {
   case class Add(at: Int, childs: String) extends OtStringOperation {
-    // TODO should we allow this??
-    //assert(childs.length > 0)
+    assert(childs.length > 0)
     override def information: Int = Information.Add
   }
   case class Delete(from: Int, to: Int) extends OtStringOperation {

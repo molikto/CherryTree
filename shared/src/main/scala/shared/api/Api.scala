@@ -31,7 +31,7 @@ trait Api {
   ): Either[ApiError, ClientUpdate]
 
 
-  // TODO separate change and diff since
+  // LATER separate change and diff since
 //  /**
 //    *
 //    */

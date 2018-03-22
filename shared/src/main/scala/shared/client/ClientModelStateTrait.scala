@@ -85,10 +85,10 @@ trait ClientModelStateTrait { self =>
           t.printStackTrace()
           t match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
-              // TODO properly handle this!
+              // LATER properly handle this!
               putBackAndMarkNotConnected(head)
             case ApiError.InvalidToken =>
-              // TODO properly handle this!
+              // LATER properly handle this!
               putBackAndMarkNotConnected(head)
             case _ =>
               putBackAndMarkNotConnected(head)
@@ -142,7 +142,7 @@ trait ClientModelStateTrait { self =>
       val winners = success.winners
       val loser = uncommitted.take(take)
       val remaining = uncommitted.drop(take)
-      // TODO handle conflict, modal handling of winner deletes loser
+      // LATER handle conflict, modal handling of winner deletes loser
       val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
       committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
       val altVersion = committedVersion + winners.size + lp.size
