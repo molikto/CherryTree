@@ -12,7 +12,8 @@
 
 ## top most (at most 5 tasks here)
 
-* looks into https://github.com/facebook/yoga
+* hack up a rich text editor can expose (custom data model, editor state), also can expose interface for changes, also can apply changes
+* what the hack with React exactly???
 * keyboard editor ui and data sync
     * make typing works
     * make cursor and selection in sync in text mode

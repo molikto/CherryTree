@@ -39,13 +39,11 @@ autoCompilerPlugins := true
 
 val sharedSettings = Seq(
   // acyclic
-  libraryDependencies += "com.lihaoyi" %% "acyclic" % "0.1.7" % "provided",
+  libraryDependencies += "com.lihaoyi" %% "acyclic" % Version.acyclic % "provided",
   resolvers += Resolver.sonatypeRepo("releases"),
 //  scalacOptions += "-P:acyclic:force",
   autoCompilerPlugins := true,
-  addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.7"),
-  // lengs
-  libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens" % "1.4.11"
+  addCompilerPlugin("com.lihaoyi" %% "acyclic" % Version.acyclic)
 )
 
 // loads the server project at sbt startup
