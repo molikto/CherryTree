@@ -1,5 +1,7 @@
 
 
+WYSWYG rich text editor with vim key, collaborative, markdown like syntax
+
 a OT editor such that:
 
 all data is cached locally, visible to all users, maybe with modification control
