@@ -27,7 +27,7 @@ object ClientView {
   private val creator = ObserverView[ClientModel, Node, ClientView](
     ScalaComponent.builder[ClientModel]("ClientView"),
     s => new ClientView(s),
-    client => client.state,
+    client => client.doc,
     onStart = _.start(),
     onStop = _.stop()
   ).configure(Reusability.shouldComponentUpdate)

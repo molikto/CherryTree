@@ -8,13 +8,13 @@
 
 ## top most (at most 5 tasks here)
 
+* keyboard editor ui and data sync
+    * make typing works
+    * make cursor and selection in sync in text mode
 * FIX THE CLIENT TEST
 * semantically data?
     * union type
     * reference type
-* keyboard editor ui and data sync
-    * make typing works
-    * make cursor and selection in sync in text mode
 
 ## core
 
@@ -25,7 +25,7 @@
 * non-destructive manual conflict resolving
 * abstract away Content class
 * time traveling
-* strings length is not well defined
+* use code point count in otString type and other string type
 
 ## client
 

@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
 
 trait ClientModelStateTrait { self =>
 
-  def lockObject: AnyRef  = self
+  protected def lockObject: AnyRef  = self
   protected def initial: ClientInit
   protected def server: Server
   protected val authentication: Authentication.Token
@@ -48,16 +48,15 @@ trait ClientModelStateTrait { self =>
 
 
   private var committedVersion: Int = initial.version
+  def debug_committedVersion = committedVersion
   private var committed: Node = initial.node
+  def debug_committed = committed
   private var uncommitted = Seq.empty[Node.Transaction]
 
-  def debug_committedVersion = committedVersion
-  def debug_committed = committed
-
   /**
-    * out facing state
+    * document observable
     */
-  val state = ObservableProperty(committed)
+  val doc = ObservableProperty(committed)
 
   /**
     * request queue
@@ -142,7 +141,7 @@ trait ClientModelStateTrait { self =>
       val winners = success.winners
       val loser = uncommitted.take(take)
       val remaining = uncommitted.drop(take)
-      // LATER handle conflict, modal handling of winner deletes loser
+      // TODO handle conflict, modal handling of winner deletes loser
       val Rebased(cs0, (wp, lp)) = Node.Ot.rebaseT(winners.flatten, loser)
       committed = Node.Ot.applyT(lp, Node.Ot.applyT(winners, committed))
       val altVersion = committedVersion + winners.size + lp.size
@@ -150,7 +149,7 @@ trait ClientModelStateTrait { self =>
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = Node.Ot.rebaseT(wp, remaining)
       uncommitted = uc
-      state.modify(it => Node.Ot.apply(wp0, it))
+      doc.modify(it => Node.Ot.apply(wp0, it))
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -162,7 +161,7 @@ trait ClientModelStateTrait { self =>
     * submit a change to local state, a sync might follow
     */
   def change(changes: Node.Transaction, sync: Boolean = true): Unit = self.synchronized {
-    state.modify(a => Node.Ot.apply(changes, a))
+    doc.modify(a => Node.Ot.apply(changes, a))
     uncommitted = uncommitted :+ changes
     if (sync) self.sync()
   }
