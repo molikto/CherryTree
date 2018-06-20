@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 
 object ClientInitializer {
-  def init(server: autowire.Server, token: Authentication.Token): Future[ClientModel] = {
+  def init(server: Server, token: Authentication.Token): Future[ClientModel] = {
     transform(server.init(token).call()).map { it => new ClientModel(server, it, token) }
   }
 }

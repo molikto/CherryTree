@@ -1,9 +1,10 @@
 
 package controller.client
 
+import controller.TestApiAdapter
+import controller.api.{Api, Authentication}
+import controller.server.CherryTreeServer
 import model._
-import controller.client.TestApiAdapter
-import controller.client.api.{Api, Authentication}
 import utest._
 
 import scala.concurrent.duration._

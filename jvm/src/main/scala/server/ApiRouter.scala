@@ -6,11 +6,11 @@ import akka.util.ByteString
 import java.nio.ByteBuffer
 
 import boopickle.Pickler
+import controller.api.Api
 
 import scala.concurrent.{ExecutionContext, Future}
 import model._
 import util._
-import controller.client.api.Api
 
 class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
 

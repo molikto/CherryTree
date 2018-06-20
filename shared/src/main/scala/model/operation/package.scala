@@ -14,5 +14,4 @@ package object operation {
     def ty: Type
     def apply(data: MODEL): MODEL
   }
-
 }

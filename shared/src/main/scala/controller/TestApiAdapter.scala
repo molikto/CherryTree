@@ -5,7 +5,11 @@ import java.nio.ByteBuffer
 import boopickle.Pickler
 import controller.api.Api
 
+import model._
+
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 
 

@@ -76,14 +76,14 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
   }
 
 
-  override def generateRandomChange(data: data.Unicode, random: Random): operation.Unicode = {
+  override def generateRandomChange(d: data.Unicode, random: Random): operation.Unicode = {
 
-    import data.{model, operation}
+    import model.{data, operation}
 
-    if (random.nextBoolean() || data.isEmpty) {
-      operation.Unicode.Insert(random.nextInt(data.size + 1), data.Unicode(random.nextLong().toString))
+    if (random.nextBoolean() || d.isEmpty) {
+      operation.Unicode.Insert(random.nextInt(d.size + 1), data.Unicode(random.nextLong().toString))
     } else {
-      val (end, start) = maxMin(random.nextInt(data.size), random.nextInt(data.size))
+      val (end, start) = maxMin(random.nextInt(d.size), random.nextInt(d.size))
       operation.Unicode.Delete(start, end)
     }
   }

@@ -1,8 +1,8 @@
 package model
 
 import boopickle.Pickler
-import data._
-import data.ot._
+import model._
+import model.ot._
 import util._
 
 
