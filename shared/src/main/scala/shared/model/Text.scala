@@ -5,7 +5,17 @@ abstract sealed class Text {
   def size: Int
 }
 
+
 object Text {
+
+  def serialize(content: Paragraph): Unicode = {
+
+  }
+
+  def parse(unicode: Unicode): Paragraph = {
+
+  }
+
   case class Emphasis(content: Seq[Text]) extends Text {
     override def size: Int = content.map(_.size).sum + 2
   }

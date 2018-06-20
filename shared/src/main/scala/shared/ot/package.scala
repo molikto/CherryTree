@@ -1,106 +1,136 @@
 package shared
-import boopickle.{PickleState, Pickler, UnpickleState}
+
+import boopickle.Pickler
+import shared._
+import shared.ot._
+import util._
+
 
 import scala.util.Random
 
 
-
 package object ot {
+  
+  trait Ot[MODEL, OPERATION <: operation.Operation[MODEL], CONFLICT] {
+    type TRANSACTION = Seq[OPERATION]
+
+    // LATER should here be a MODEL: MODEL??
+    def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
 
+    def generateRandomChange(MODEL: MODEL): OPERATION = generateRandomChange(MODEL, new Random())
 
-  object StringDoc extends AtomicDoc[String] {
-    override def generateRandomChange(data: String, random: Random): AtomicOt.Operation[String] =
-      AtomicOt.Operation(generateRandomModel(random))
-    override def generateRandomModel(random: Random): String =
-      random.nextLong().toString
+    def generateRandomChange(MODEL: MODEL, random: Random): OPERATION
 
+    def generateRandomModel(): MODEL = generateRandomModel(new Random())
 
-    override val dataPickler: Pickler[String] = new Pickler[String] {
-      override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)
-      override def unpickle(implicit state: UnpickleState): String = state.dec.readString
-    }
-    override val operationPickler: Pickler[AtomicOt.Operation[String]] = new Pickler[AtomicOt.Operation[String]] {
-      override def pickle(obj: AtomicOt.Operation[String])(implicit state: PickleState): Unit = {
-        state.enc.writeString(obj.a)
+    def generateRandomModel(random: Random): MODEL
+
+    def generateRandomTransaction(size: Int, MODEL: MODEL): TRANSACTION = {
+      var a = MODEL
+      var i = 0
+      val r = new Random()
+      var cs = Seq.empty[OPERATION]
+      while (i < size) {
+        val c = generateRandomChange(a, r)
+        a = c.apply(a)
+        cs = cs :+ c
+        i += 1
       }
-      override def unpickle(implicit state: UnpickleState): AtomicOt.Operation[String] = {
-        AtomicOt.Operation(state.dec.readString)
+      cs
+    }
+
+
+    def apply(c: Option[OPERATION], model: MODEL): MODEL = c match {
+      case None => model
+      case Some(a) => a.apply(model)
+    }
+
+    def apply(cs: TRANSACTION, model: MODEL): MODEL = {
+      cs.foldLeft(model) { (model, c) => c.apply(model) }
+    }
+
+    def applyT(cs: Seq[TRANSACTION], model: MODEL): MODEL = {
+      cs.foldLeft(model) { (model, c) => apply(c, model) }
+    }
+
+    def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+      winner match {
+        case Some(a) => rebase(winner, loser)
+        case None => Rebased(Set.empty, (None, Some(loser)))
       }
     }
-  }
-  type StringOperation = AtomicOt.Operation[String]
-  type StringConflict = AtomicOt.Conflict[String]
-  type StringSelection = AtomicDoc.Selection
 
-  object IntOt extends AtomicDoc[Int] {
-    override def generateRandomChange(data: Int, random: Random): AtomicOt.Operation[Int] =
-      AtomicOt.Operation(generateRandomModel(random))
-    override def generateRandomModel(random: Random): Int =
-      random.nextInt()
-
-    override val dataPickler: Pickler[Int] = new Pickler[Int] {
-      override def pickle(obj: Int)(implicit state: PickleState): Unit = state.enc.writeInt(obj)
-      override def unpickle(implicit state: UnpickleState): Int = state.dec.readInt
-    }
-    override val operationPickler: Pickler[AtomicOt.Operation[Int]] = new Pickler[AtomicOt.Operation[Int]] {
-      override def pickle(obj: AtomicOt.Operation[Int])(implicit state: PickleState): Unit = {
-        state.enc.writeInt(obj.a)
-      }
-      override def unpickle(implicit state: UnpickleState): AtomicOt.Operation[Int] = {
-        AtomicOt.Operation(state.dec.readInt)
+    def rebase(winner: Option[OPERATION], loser: Option[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+      (winner, loser) match {
+        case (None, None) => Rebased(Set.empty, (None, None))
+        case (Some(a), _) => rebase(a, loser)
+        case (None, Some(b)) => rebase(None, b)
       }
     }
-  }
-  type IntOperation = AtomicOt.Operation[Int]
-  type IntConflict = AtomicOt.Conflict[Int]
-  type IntSelection = AtomicDoc.Selection
 
-
-  case class Segment(from: Int, to: Int) {
-    def contains(p: Int): Boolean = p >= from && p <= to
-    def size: Int = to - from + 1
-  }
-
-
-  def transformAfterAdded(point: Int, size: Int, p: Int): Int = {
-    if (p < point) {
-      p
-    } else {
-      p + size
+    def rebase(winner: OPERATION, loser: Option[OPERATION]): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
+      loser match {
+        case Some(l) => rebase(winner, l)
+        case None => Rebased(Set.empty, (Some(winner), None))
+      }
     }
+
+    def rebase(winner: OPERATION, loser: TRANSACTION): Rebased[CONFLICT, (Option[OPERATION], TRANSACTION)] = {
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (Some(winner): Option[OPERATION], Seq.empty[OPERATION]))) { (pair, ll) =>
+        pair match {
+          case Rebased(t, (wi, lp)) =>
+            val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+            Rebased(t ++ t0, (wi0, lp ++ lp0))
+        }
+      }
+    }
+
+    def rebase(winner: TRANSACTION, loser: OPERATION): Rebased[CONFLICT, (TRANSACTION, Option[OPERATION])] = {
+      winner.foldLeft(Rebased(Set.empty[CONFLICT], (Seq.empty[OPERATION], Some(loser): Option[OPERATION]))) { (pair, ww) =>
+        pair match {
+          case Rebased(t, (wp, li)) =>
+            val Rebased(t0, (wp0, li0)) = rebase(ww, li)
+            Rebased(t ++ t0, (wp ++ wp0, li0))
+        }
+      }
+    }
+
+    def rebase(winner: TRANSACTION, loser: TRANSACTION): Rebased[CONFLICT, (TRANSACTION, TRANSACTION)] = {
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[OPERATION]))) { (pair, ll) =>
+        pair match {
+          case Rebased(t, (wi, lp)) =>
+            val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+            Rebased(t ++ t0, (wi0, lp ++ lp0))
+        }
+      }
+    }
+
+    /**
+      * we take a winner seq op, because we know winner will always win, and get applied,
+      *
+      * for loser, we return a seq. not necessarily the same length
+      */
+    def rebaseT(winner: TRANSACTION, loser: Seq[TRANSACTION]): Rebased[CONFLICT, (TRANSACTION, Seq[TRANSACTION])] = {
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[TRANSACTION]))) { (pair, ll) =>
+        pair match {
+          case Rebased(t, (wi, lp)) =>
+            val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
+            val ret = if (lp0.isEmpty) lp else lp :+ lp0
+            Rebased(t ++ t0, (wi0, ret))
+        }
+      }
+    }
+
+    val dataPickler: Pickler[MODEL]
+    val operationPickler: Pickler[OPERATION]
   }
 
-  def transformAfterDeleted(s: Segment, p: Int): Option[Int] = {
-    if (p < s.from) {
-      Some(p)
-    } else if (s.contains(p)) {
-      None
-    } else {
-      Some(p - s.size)
-    }
+  case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
+    def map[G](map: T => G) = Rebased(conflicts, map(t))
   }
 
-  /**
-    * @return None if either side of `s` is deleted
-    */
-  def transformAfterDeleted(d: Segment, f: Segment): Option[Segment] = {
-    val l = transformAfterDeleted(d, f.from)
-    val r = transformAfterDeleted(d, f.to)
-    (l, r) match {
-      case (Some(ll), Some(rr)) => Some(Segment(ll, rr))
-      case _ => None
-    }
-  }
+  val unicode = new Unicode()
 
-  def transformDeletingSegmentAfterDeleted(d: Segment, f: Segment): Option[Segment] = {
-    val l = transformAfterDeleted(d, f.from)
-    val r = transformAfterDeleted(d, f.to)
-    (l, r) match {
-      case (Some(ll), Some(rr)) => Some(Segment(ll, rr))
-      case (Some(ll), None) => Some(Segment(ll, d.from - 1))
-      case (None, Some(rr)) => Some(Segment(d.from, rr))
-      case (None, None) =>  None
-    }
-  }
+  val node = new Node()
 }

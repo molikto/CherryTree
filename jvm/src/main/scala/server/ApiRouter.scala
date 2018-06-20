@@ -9,10 +9,8 @@ import boopickle.Pickler
 
 import scala.concurrent.{ExecutionContext, Future}
 import shared._
-import shared.util._
-import shared.api.Api
-import shared.data0._
-import shared.server.CherryTreeServer
+import util._
+import controller.client.api.Api
 
 class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
 

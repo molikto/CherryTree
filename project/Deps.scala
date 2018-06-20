@@ -1,9 +1,9 @@
 object Version {
-  val akka = "10.0.10"
+  val akka = "10.0.11"
   val autowire = "0.2.6"
-  val boopickle = "1.2.6"
+  val boopickle = "1.3.0"
   val monocle = "1.4.0"
-  val scala = "2.12.4"
+  val scala = "2.12.6"
   val scalajsDom = "0.9.3"
   val scalajsScripts = "1.1.1"
   val scalatags = "0.6.7"
@@ -16,7 +16,10 @@ object Version {
 object Deps {
   import sbt._
   import org.scalajs.sbtplugin.ScalaJSPlugin
-  import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+  import org.scalajs.sbtplugin.ScalaJSPlugin._
+  import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
+
 
   val shared = Def.setting(
     "com.lihaoyi" %%% "autowire" % Version.autowire ::

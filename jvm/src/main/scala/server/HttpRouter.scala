@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
-import shared.api.Api
+import controller.api.Api
 
 class HttpRouter(val service: Api) extends Directives {
 

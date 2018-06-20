@@ -47,11 +47,11 @@ object Content {
     }
   }
   object Paragraph {
-    case class Content(op: operation.Paragraph) extends operation.Content {
+    case class Content(op: operation.Unicode) extends operation.Content {
       override def ty: Type = op.ty
       override def apply(data: model.Content): model.Content = {
         data match {
-          case c: model.Content.Text => c.copy(paragraph = op(c.paragraph))
+          case c: model.Content.Paragraph => c.copy(paragraph = model.Text.parse(op(model.Text.serialize(c.paragraph))))
         }
       }
     }

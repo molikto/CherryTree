@@ -47,4 +47,4 @@ val sharedSettings = Seq(
 )
 
 // loads the server project at sbt startup
-onLoad in Global := (Command.process("project server", _: State)) compose (onLoad in Global).value
+onLoad in Global ~= (_ andThen ("project server" :: _))
