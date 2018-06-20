@@ -16,9 +16,8 @@ package object range {
     def touch(cursor: Int) = cursor >= start && cursor <= endInclusive
   }
 
-  case class Unicode(override val start: Int, override val endInclusive: Int) extends IntRange  {
-    assertSize()
-  }
+
+  type Unicode = IntRange
 
   abstract sealed class Node {
   }

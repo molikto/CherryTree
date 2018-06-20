@@ -11,7 +11,7 @@ import shared.util._
 package object ot2 {
   
   trait Ot[MODEL, OPERATION <: operation.Operation[MODEL], CONFLICT] {
-    type TRANSACTION = scala.Seq[OPERATION]
+    type TRANSACTION = Seq[OPERATION]
 
     // LATER should here be a MODEL: MODEL??
     def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
@@ -29,7 +29,7 @@ package object ot2 {
       var a = MODEL
       var i = 0
       val r = new Random()
-      var cs = scala.Seq.empty[OPERATION]
+      var cs = Seq.empty[OPERATION]
       while (i < size) {
         val c = generateRandomChange(a, r)
         a = c.apply(a)
@@ -49,7 +49,7 @@ package object ot2 {
       cs.foldLeft(model) { (model, c) => c.apply(model) }
     }
 
-    def applyT(cs: scala.Seq[TRANSACTION], model: MODEL): MODEL = {
+    def applyT(cs: Seq[TRANSACTION], model: MODEL): MODEL = {
       cs.foldLeft(model) { (model, c) => apply(c, model) }
     }
 
@@ -76,7 +76,7 @@ package object ot2 {
     }
 
     def rebase(winner: OPERATION, loser: TRANSACTION): Rebased[CONFLICT, (Option[OPERATION], TRANSACTION)] = {
-      loser.foldLeft(Rebased(Set.empty[CONFLICT], (Some(winner): Option[OPERATION], scala.Seq.empty[OPERATION]))) { (pair, ll) =>
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (Some(winner): Option[OPERATION], Seq.empty[OPERATION]))) { (pair, ll) =>
         pair match {
           case Rebased(t, (wi, lp)) =>
             val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
@@ -86,7 +86,7 @@ package object ot2 {
     }
 
     def rebase(winner: TRANSACTION, loser: OPERATION): Rebased[CONFLICT, (TRANSACTION, Option[OPERATION])] = {
-      winner.foldLeft(Rebased(Set.empty[CONFLICT], (scala.Seq.empty[OPERATION], Some(loser): Option[OPERATION]))) { (pair, ww) =>
+      winner.foldLeft(Rebased(Set.empty[CONFLICT], (Seq.empty[OPERATION], Some(loser): Option[OPERATION]))) { (pair, ww) =>
         pair match {
           case Rebased(t, (wp, li)) =>
             val Rebased(t0, (wp0, li0)) = rebase(ww, li)
@@ -96,7 +96,7 @@ package object ot2 {
     }
 
     def rebase(winner: TRANSACTION, loser: TRANSACTION): Rebased[CONFLICT, (TRANSACTION, TRANSACTION)] = {
-      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, scala.Seq.empty[OPERATION]))) { (pair, ll) =>
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[OPERATION]))) { (pair, ll) =>
         pair match {
           case Rebased(t, (wi, lp)) =>
             val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
@@ -110,8 +110,8 @@ package object ot2 {
       *
       * for loser, we return a seq. not necessarily the same length
       */
-    def rebaseT(winner: TRANSACTION, loser: scala.Seq[TRANSACTION]): Rebased[CONFLICT, (TRANSACTION, scala.Seq[TRANSACTION])] = {
-      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, scala.Seq.empty[TRANSACTION]))) { (pair, ll) =>
+    def rebaseT(winner: TRANSACTION, loser: Seq[TRANSACTION]): Rebased[CONFLICT, (TRANSACTION, Seq[TRANSACTION])] = {
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[TRANSACTION]))) { (pair, ll) =>
         pair match {
           case Rebased(t, (wi, lp)) =>
             val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)

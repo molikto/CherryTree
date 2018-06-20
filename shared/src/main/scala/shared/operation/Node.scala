@@ -14,7 +14,7 @@ object Node {
   case class Replace(cursor: cursor.Node, content: model.Content) extends Node {
     override def ty: Type = Type.AddDelete
   }
-  case class Insert(cursor: cursor.Node, childs: scala.Seq[Node]) extends Node {
+  case class Insert(cursor: cursor.Node, childs: Seq[Node]) extends Node {
     override def ty: Type = Type.Add
   }
   case class Delete(range: range.Node) extends Node {

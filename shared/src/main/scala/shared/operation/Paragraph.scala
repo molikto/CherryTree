@@ -3,7 +3,7 @@ package shared.operation
 
 import shared._
 
-abstract sealed class Paragraph extends Operation[scala.Seq[model.Text]] {
+abstract sealed class Paragraph extends Operation[Seq[model.Text]] {
 
 }
 
