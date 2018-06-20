@@ -1,8 +1,7 @@
 package shared.ot2
 
 import boopickle.{PickleState, Pickler, UnpickleState}
-import shared.model
-import shared.operation
+import shared._
 import com.softwaremill.quicklens._
 
 import scala.util.Random
@@ -68,10 +67,10 @@ class Unicode extends Ot[model.Unicode, operation.Unicode, Unicode.Conflict] {
       case (d@operation.Unicode.Delete(_, _), a@operation.Unicode.Insert(_, _)) =>
         reverse(addDelete(a, d, addIsWinner = false))
       case (operation.Unicode.Delete(wfrom, wto), operation.Unicode.Delete(lfrom, lto)) =>
-        val ws = Segment(wfrom, wto)
-        val ls = Segment(lfrom, lto)
-        val wp = transformDeletingSegmentAfterDeleted(ls, ws).map(a => operation.Unicode.Delete(a.from, a.to))
-        val lp = transformDeletingSegmentAfterDeleted(ws, ls).map(a => operation.Unicode.Delete(a.from, a.to))
+        val ws = range.IntRange(wfrom, wto)
+        val ls = range.IntRange(lfrom, lto)
+        val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => operation.Unicode.Delete(a.start, a.endInclusive))
+        val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => operation.Unicode.Delete(a.start, a.endInclusive))
         Rebased(Set.empty, (wp, lp))
     }
   }

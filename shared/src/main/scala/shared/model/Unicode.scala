@@ -13,9 +13,9 @@ case class Unicode(str: Array[Int]) {
   def isEmpty = str.isEmpty
   def size = str.size
   def slice(range: range.Unicode): Unicode = {
-    Unicode(str.slice(range.start, range.endInclusive + 1))
+    Unicode(str.slice(range.start, range.until))
   }
-  def insert(at: cursor.Unicode, u: Unicode): Unicode = {
+  def insert(at: Int, u: Unicode): Unicode = {
     if (at > str.size) throw new IllegalArgumentException()
     Unicode(str.take(at) ++ u.str ++ str.drop(at))
   }
@@ -23,13 +23,7 @@ case class Unicode(str: Array[Int]) {
     Unicode(str.take(range.start) ++ str.drop(range.endInclusive + 1))
   }
   def move(range: range.Unicode, at: Int): Unicode = {
-    val s= slice(range)
-    if (at < range.start) {
-      delete(range).insert(at, s)
-    } else if (at > range.endInclusive) {
-      delete(range).insert(at - s.size, s)
-    } else {
-      throw new AssertionError()
-    }
+    val s = slice(range)
+    delete(range).insert(range.transformInsertionPointAfterDeleted(at), s)
   }
 }

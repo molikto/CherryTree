@@ -7,25 +7,83 @@ package object range {
     val start: Int
     val endInclusive: Int
 
-    def size = endInclusive - start + 1
+    def size: Int = endInclusive - start + 1
+
+    def until: Int = endInclusive + 1
 
     def assertSize(): Unit = {
       assert(start >= 0 && endInclusive >= start)
     }
-    def inside(cursor: Int)= cursor > start && cursor < endInclusive
-    def touch(cursor: Int) = cursor >= start && cursor <= endInclusive
+    def contains(cursor: Int): Boolean = cursor > start && cursor < endInclusive
+    def touch(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
+
+
+
+
+    def transformCursorAfterDeleted(p: Int): Option[Int] = {
+      if (p < start) {
+        Some(p)
+      } else if (contains(p)) {
+        None
+      } else {
+        Some(p - size)
+      }
+    }
+
+    def transformInsertionPointAfterDeleted(p: Int): Int = {
+      if (p < start) {
+        p
+      } else if (contains(p)) {
+        start
+      } else {
+        p - size
+      }
+    }
+
+    /**
+      * @return None if either side of `s` is deleted
+      */
+    def transformAfterDeleted(f: range.IntRange): Option[range.IntRange] = {
+      val l = transformCursorAfterDeleted(f.start)
+      val r = transformCursorAfterDeleted(f.endInclusive)
+      (l, r) match {
+        case (Some(ll), Some(rr)) => Some(range.IntRange(ll, rr))
+        case _ => None
+      }
+    }
+
+    def transformDeletingRangeAfterDeleted(f: range.IntRange): Option[range.IntRange] = {
+      val l = transformCursorAfterDeleted(f.start)
+      val r = transformCursorAfterDeleted(f.endInclusive)
+      (l, r) match {
+        case (Some(ll), Some(rr)) => Some(range.IntRange(ll, rr))
+        case (Some(ll), None) => Some(range.IntRange(ll, start - 1))
+        case (None, Some(rr)) => Some(range.IntRange(endInclusive, rr))
+        case (None, None) =>  None
+      }
+    }
+  }
+
+  private case class DefaultIntRange(override val start: Int, override val endInclusive: Int) extends IntRange
+
+  object IntRange {
+    def apply(start: Int, end: Int) = DefaultIntRange(start, end)
   }
 
 
   type Unicode = IntRange
 
-  abstract sealed class Node {
-  }
+  /**
+    * unable to represent a range of the node itself, our app doesn't has this functionality
+    */
+  case class Node(parent: cursor.Node,
+    override val start: Int,
+    override val endInclusive: Int) extends IntRange {
+    def transformInsertionPointAfterDeleted(at: cursor.Node): cursor.Node =
+      if (contains(at)) parent :+ start
+      else if (at.startsWith(parent) && at(parent.size) > endInclusive) parent ++ Seq(at(parent.size) - 1) ++ at.drop(parent.size + 1)
+      else at
 
-  object Node {
-    object Self extends Node
-    case class Childs(parent: cursor.Node,
-      override val start: Int,
-      override val endInclusive: Int) extends Node with IntRange
+    def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && contains(at(parent.size))
   }
 }

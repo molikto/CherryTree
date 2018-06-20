@@ -1,12 +1,13 @@
 package shared
 
 import boopickle.Pickler
+import shared._
 import shared.ot._
+import shared.util._
 
 
 import scala.util.Random
 
-import shared.util._
 
 package object ot2 {
   
@@ -127,54 +128,5 @@ package object ot2 {
 
   case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
     def map[G](map: T => G) = Rebased(conflicts, map(t))
-  }
-
-
-
-  case class Segment(from: Int, to: Int) {
-    def contains(p: Int): Boolean = p >= from && p <= to
-    def size: Int = to - from + 1
-  }
-
-
-  def transformAfterAdded(point: Int, size: Int, p: Int): Int = {
-    if (p < point) {
-      p
-    } else {
-      p + size
-    }
-  }
-
-  def transformAfterDeleted(s: Segment, p: Int): Option[Int] = {
-    if (p < s.from) {
-      Some(p)
-    } else if (s.contains(p)) {
-      None
-    } else {
-      Some(p - s.size)
-    }
-  }
-
-  /**
-    * @return None if either side of `s` is deleted
-    */
-  def transformAfterDeleted(d: Segment, f: Segment): Option[Segment] = {
-    val l = transformAfterDeleted(d, f.from)
-    val r = transformAfterDeleted(d, f.to)
-    (l, r) match {
-      case (Some(ll), Some(rr)) => Some(Segment(ll, rr))
-      case _ => None
-    }
-  }
-
-  def transformDeletingSegmentAfterDeleted(d: Segment, f: Segment): Option[Segment] = {
-    val l = transformAfterDeleted(d, f.from)
-    val r = transformAfterDeleted(d, f.to)
-    (l, r) match {
-      case (Some(ll), Some(rr)) => Some(Segment(ll, rr))
-      case (Some(ll), None) => Some(Segment(ll, d.from - 1))
-      case (None, Some(rr)) => Some(Segment(d.from, rr))
-      case (None, None) =>  None
-    }
   }
 }
