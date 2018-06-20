@@ -6,6 +6,7 @@ package object util extends ObservablePropertyImplicits  {
   private val debugOn = false
 
 
+
   def debugged[T](a: T)(implicit debug: Boolean = debugOn): T = {
     if (debug) {
       a match {

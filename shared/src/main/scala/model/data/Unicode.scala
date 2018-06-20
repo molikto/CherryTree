@@ -17,10 +17,10 @@ case class Unicode(str: Array[Int]) {
   }
   def insert(at: Int, u: Unicode): Unicode = {
     if (at > str.size) throw new IllegalArgumentException()
-    Unicode(str.take(at) ++ u.str ++ str.drop(at))
+    Unicode(str.patch(at, u.str, 0))
   }
   def delete(range: range.Unicode): Unicode = {
-    Unicode(str.take(range.start) ++ str.drop(range.endInclusive + 1))
+    Unicode(str.patch(range.start, Seq.empty, range.size))
   }
   def move(range: range.Unicode, at: Int): Unicode = {
     val s = slice(range)
