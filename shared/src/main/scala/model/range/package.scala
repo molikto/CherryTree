@@ -1,5 +1,7 @@
 package model
 
+import boopickle.{PickleState, Pickler, UnpickleState}
+
 package object range {
 
 
@@ -64,10 +66,23 @@ package object range {
     }
   }
 
-  private case class DefaultIntRange(override val start: Int, override val endInclusive: Int) extends IntRange
+  case class DefaultIntRange(override val start: Int, override val endInclusive: Int) extends IntRange
 
   object IntRange {
     def apply(start: Int, end: Int) = DefaultIntRange(start, end)
+
+    val pickler: Pickler[IntRange] = new Pickler[IntRange] {
+      override def pickle(obj: IntRange)(implicit state: PickleState): Unit = {
+        import state.enc._
+        writeInt(obj.start)
+        writeInt(obj.endInclusive)
+      }
+
+      override def unpickle(implicit state: UnpickleState): IntRange = {
+        import state.dec._
+        IntRange(readInt, readInt)
+      }
+    }
   }
 
 
@@ -85,5 +100,22 @@ package object range {
       else at
 
     def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && contains(at(parent.size))
+  }
+
+  object Node {
+    val pickler: Pickler[Node] = new Pickler[Node] {
+
+      override def pickle(obj: Node)(implicit state: PickleState): Unit = {
+        import state.enc._
+        writeIntArray(obj.parent)
+        writeInt(obj.start)
+        writeInt(obj.endInclusive)
+      }
+
+      override def unpickle(implicit state: UnpickleState): Node = {
+        import state.dec._
+        Node(readIntArray(), readInt, readInt)
+      }
+    }
   }
 }

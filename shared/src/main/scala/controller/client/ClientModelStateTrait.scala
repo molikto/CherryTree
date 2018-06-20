@@ -140,7 +140,7 @@ trait ClientModelStateTrait { self =>
       val take = success.acceptedLosersCount
       val winners = success.winners
       val (loser, remaining) = uncommitted.splitAt(take)
-      // TODO handle conflict, modal handling of winner deletes loser
+      // LATER handle conflict, modal handling of winner deletes loser
       val Rebased(cs0, (wp, lp)) = ot.node.rebaseT(winners.flatten, loser)
       committed = ot.node.applyT(lp, ot.node.applyT(winners, committed))
       val altVersion = committedVersion + winners.size + lp.size

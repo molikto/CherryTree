@@ -11,23 +11,23 @@ import scala.util.Random
 
 package object ot {
   
-  trait Ot[MODEL, OPERATION <: operation.Operation[MODEL], CONFLICT] {
+  trait Ot[DATA, OPERATION <: operation.Operation[DATA], CONFLICT] {
     type TRANSACTION = Seq[OPERATION]
 
-    // LATER should here be a MODEL: MODEL??
+    // LATER should here be a data: DATA??
     def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
 
-    def generateRandomChange(MODEL: MODEL): OPERATION = generateRandomChange(MODEL, new Random())
+    def generateRandomChange(data: DATA): OPERATION = generateRandomChange(data, new Random())
 
-    def generateRandomChange(MODEL: MODEL, random: Random): OPERATION
+    def generateRandomChange(data: DATA, random: Random): OPERATION
 
-    def generateRandomModel(): MODEL = generateRandomModel(new Random())
+    def generateRandomData(): DATA = generateRandomData(new Random())
 
-    def generateRandomModel(random: Random): MODEL
+    def generateRandomData(random: Random): DATA
 
-    def generateRandomTransaction(size: Int, MODEL: MODEL): TRANSACTION = {
-      var a = MODEL
+    def generateRandomTransaction(size: Int, data: DATA): TRANSACTION = {
+      var a = data
       var i = 0
       val r = new Random()
       var cs = Seq.empty[OPERATION]
@@ -41,16 +41,16 @@ package object ot {
     }
 
 
-    def apply(c: Option[OPERATION], model: MODEL): MODEL = c match {
+    def apply(c: Option[OPERATION], model: DATA): DATA = c match {
       case None => model
       case Some(a) => a.apply(model)
     }
 
-    def apply(cs: TRANSACTION, model: MODEL): MODEL = {
+    def apply(cs: TRANSACTION, model: DATA): DATA = {
       cs.foldLeft(model) { (model, c) => c.apply(model) }
     }
 
-    def applyT(cs: Seq[TRANSACTION], model: MODEL): MODEL = {
+    def applyT(cs: Seq[TRANSACTION], model: DATA): DATA = {
       cs.foldLeft(model) { (model, c) => apply(c, model) }
     }
 
@@ -122,7 +122,7 @@ package object ot {
       }
     }
 
-    val dataPickler: Pickler[MODEL]
+    val dataPickler: Pickler[DATA]
     val operationPickler: Pickler[OPERATION]
   }
 

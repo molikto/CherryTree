@@ -22,7 +22,7 @@ class Node extends Ot[data.Node, operation.Node, Node.Conflict] {
 
   override def generateRandomChange(MODEL: data.Node, random: Random): operation.Node = ???
 
-  override def generateRandomModel(random: Random): data.Node = ???
+  override def generateRandomData(random: Random): data.Node = ???
 
   override val dataPickler: Pickler[data.Node] = ???
   override val operationPickler: Pickler[operation.Node] = ???

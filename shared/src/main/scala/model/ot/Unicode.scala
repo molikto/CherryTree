@@ -49,6 +49,7 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
 
     def reverse(res: RebaseResult) = Rebased(res.conflicts, (res.t._2, res.t._1))
 
+    // TODO [warn] It would fail on the following inputs: (Delete(_, _), Move(_, _)), (Insert(_, _), Move(_, _)), (Move(_, _), Delete(_, _)), (Move(_, _), Insert(_, _)), (Move(_, _), Move(_, _))
     (winner, loser) match {
       case (w@operation.Unicode.Insert(wat, wc), l@operation.Unicode.Insert(lat, lc)) =>
         if (wat == lat) {
@@ -88,11 +89,11 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
     }
   }
 
-  override def generateRandomModel(random: Random): data.Unicode = data.Unicode(random.nextLong().toString)
+  override def generateRandomData(random: Random): data.Unicode = data.Unicode(random.nextLong().toString)
 
   override val dataPickler: Pickler[data.Unicode] = new Pickler[data.Unicode] {
     override def pickle(obj: data.Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
-    override def unpickle(implicit state: UnpickleState): data.Unicode = Unicode(state.dec.readString)
+    override def unpickle(implicit state: UnpickleState): data.Unicode = data.Unicode(state.dec.readString)
   }
 
   override val operationPickler: Pickler[operation.Unicode] = new Pickler[operation.Unicode] {
@@ -107,15 +108,21 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
           writeInt(1)
           writeInt(from)
           writeInt(to)
+        case operation.Unicode.Move(r, at) =>
+          writeInt(2)
+          range.IntRange.pickler.pickle(r)
+          writeInt(at)
       }
     }
     override def unpickle(implicit state: UnpickleState): operation.Unicode = {
       import state.dec._
       readInt match {
         case 0 =>
-          operation.Unicode.Insert(readInt, Unicode(readString))
+          operation.Unicode.Insert(readInt, data.Unicode(readString))
         case 1 =>
           operation.Unicode.Delete(readInt, readInt)
+        case 2 =>
+          operation.Unicode.Move(range.IntRange.pickler.unpickle, readInt)
       }
     }
   }

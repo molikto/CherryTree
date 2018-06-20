@@ -3,25 +3,28 @@ package model.data
 import model._
 
 
-object Unicode {
-  def apply(str: String): Unicode = Unicode(str.codePoints().toArray)
-}
-case class Unicode(str: Array[Int]) {
+case class Unicode(private val str: String) {
 
-  override def toString: String = new String(str, 0, str.length)
+  override def toString: String = str
 
   def isEmpty: Boolean = str.isEmpty
-  def size: Int = str.size
+  lazy val size: Int = str.codePointCount(0, str.size)
   def slice(r: range.Unicode): Unicode = {
-    Unicode(str.slice(r.start, r.until))
+    val start = str.offsetByCodePoints(0, r.start)
+    val end = str.offsetByCodePoints(start, r.size)
+    Unicode(str.substring(start, end))
   }
   def insert(at: Int, u: Unicode): Unicode = {
-    if (at > str.size) throw new IllegalArgumentException()
-    Unicode(str.patch(at, u.str, 0))
+    if (at > size) throw new IllegalArgumentException()
+    val index = str.offsetByCodePoints(0, at)
+    Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}")
   }
   def delete(r: range.Unicode): Unicode = {
-    Unicode(str.patch(r.start, Seq.empty, r.size))
+    val start = str.offsetByCodePoints(0, r.start)
+    val end = str.offsetByCodePoints(start, r.size)
+    Unicode(s"${str.substring(0, start)}${str.substring(end)}")
   }
+
   def move(r: range.Unicode, at: Int): Unicode = {
     val s = slice(r)
     delete(r).insert(r.transformInsertionPointAfterDeleted(at), s)

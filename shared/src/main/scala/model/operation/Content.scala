@@ -14,6 +14,7 @@ object Content {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Code => c.copy(unicode = op(c.unicode))
+          case _ => throw new AssertionError()
         }
       }
     }
@@ -22,6 +23,7 @@ object Content {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Code => c.copy(lang = lang)
+          case _ => throw new AssertionError()
         }
       }
     }
@@ -32,6 +34,7 @@ object Content {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Html => c.copy(unicode = op(c.unicode))
+          case _ => throw new AssertionError()
         }
       }
     }
@@ -42,6 +45,7 @@ object Content {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.LaTeX => c.copy(unicode = op(c.unicode))
+          case _ => throw new AssertionError()
         }
       }
     }
@@ -52,6 +56,7 @@ object Content {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Paragraph => c.copy(paragraph = data.Paragraph.parse(op(data.Paragraph.serialize(c.paragraph))))
+          case _ => throw new AssertionError()
         }
       }
     }

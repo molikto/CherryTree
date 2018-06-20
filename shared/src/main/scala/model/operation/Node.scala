@@ -8,21 +8,21 @@ abstract sealed class Node extends Operation[data.Node] {
 }
 
 object Node {
-  case class Content(cursor: cursor.Node, content: operation.Content) extends Node {
+  case class Content(c: cursor.Node, content: operation.Content) extends Node {
     override def ty: Type = content.ty
     override def apply(d: data.Node): data.Node = {
-      d.map(cursor, a => a.copy(content = content(a.content)))
+      d.map(c, a => a.copy(content = content(a.content)))
     }
   }
-  case class Replace(cursor: cursor.Node, content: data.Content) extends Node {
+  case class Replace(c: cursor.Node, content: data.Content) extends Node {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = {
-      d.map(cursor, a => a.copy(content = content))
+      d.map(c, a => a.copy(content = content))
     }
   }
-  case class Insert(cursor: cursor.Node, childs: Seq[data.Node]) extends Node {
+  case class Insert(c: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
-    override def apply(d: data.Node): data.Node = d.insert(cursor, childs)
+    override def apply(d: data.Node): data.Node = d.insert(c, childs)
   }
   case class Delete(r: range.Node) extends Node {
     override def ty: Type = Type.AddDelete

@@ -5,6 +5,7 @@ import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
 import model._
+import model.data
 
 
 object SimpleTreeView {
@@ -13,7 +14,7 @@ object SimpleTreeView {
 
   private val creator = ScalaComponent.builder[data.Node]("Line")
     // TODO a.hashCode is not a proper id
-    .render_P(r => div(p(r.content), ul(r.childs.map(a => li(key := a.hashCode(), SimpleTreeView(a))): _*)))
+    .render_P(r => div(p(r.content.toString), ul(r.childs.map(a => li(key := a.hashCode(), SimpleTreeView(a))): _*)))
     .configure(Reusability.shouldComponentUpdate)
     .configure(Reusability.shouldComponentUpdateWithOverlay)
     .build

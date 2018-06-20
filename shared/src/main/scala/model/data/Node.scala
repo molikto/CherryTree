@@ -15,15 +15,15 @@ case class Node(content: Content, childs: Seq[Node]) {
 
   def apply(c: cursor.Node): Node = if (c.isEmpty) this else childs(c.head)(c.tail)
 
-  def apply(range: range.Node): Seq[Node] = apply(range.parent).childs.slice(range.start, range.until)
+  def apply(r: range.Node): Seq[Node] = apply(r.parent).childs.slice(r.start, r.until)
 
   def delete(d: range.Node): Node = map(d.parent, a => a.copy(childs = a.childs.patch(d.start, Seq.empty, d.size)))
 
   private def insert(i: Int, childs: Seq[Node]): Node =
     copy(childs = childs.patch(i, childs, 0))
 
-  def insert(cursor: cursor.Node, childs: Seq[Node]): data.Node =
-    map(cursor.dropRight(1), a => a.insert(cursor.last, childs))
+  def insert(c: cursor.Node, childs: Seq[Node]): data.Node =
+    map(c.dropRight(1), a => a.insert(c.last, childs))
 
   def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = apply(r)

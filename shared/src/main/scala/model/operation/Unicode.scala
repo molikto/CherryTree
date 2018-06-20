@@ -15,8 +15,8 @@ object Unicode {
     override def ty: Type = Type.Delete
     override def apply(d: data.Unicode): data.Unicode = d.delete(this)
   }
-  case class Move(range: range.Unicode, at: Int) extends Unicode {
+  case class Move(r: range.Unicode, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
-    override def apply(d: data.Unicode): data.Unicode = d.move(range, at)
+    override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
   }
 }
