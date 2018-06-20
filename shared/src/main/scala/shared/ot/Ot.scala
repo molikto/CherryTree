@@ -34,8 +34,8 @@ trait Ot[DATA, OPERATION <: OtOperation[DATA], CONFLICT] {
 
   def generateRandomChange(data: DATA): OPERATION = generateRandomChange(data, new Random())
   def generateRandomChange(data: DATA, random: Random): OPERATION
-  def generateRandomData(): DATA = generateRandomData(new Random())
-  def generateRandomData(random: Random): DATA
+  def generateRandomModel(): DATA = generateRandomModel(new Random())
+  def generateRandomModel(random: Random): DATA
 
   def generateRandomTransaction(size: Int, data: DATA): TRANSACTION = {
     var a = data

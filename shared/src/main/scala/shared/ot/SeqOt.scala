@@ -139,10 +139,10 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
   }
 
 
-  override def generateRandomData(random: Random): Seq[T] = {
+  override def generateRandomModel(random: Random): Seq[T] = {
     import SeqOt._
     stackDepth.set(stackDepth.get() + 1)
-    val res = if (random.nextInt(4) < stackDepth.get()) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomData(random))
+    val res = if (random.nextInt(4) < stackDepth.get()) Seq.empty[T] else (0 to random.nextInt(3)).map(_ => cot.generateRandomModel(random))
     stackDepth.set(stackDepth.get() - 1)
     res
   }
@@ -153,7 +153,7 @@ class SeqOt[T, O <: OtOperation[T], C](val cot: Ot[T, O, C]) extends Ot[Seq[T], 
       val d = data(i)
       SeqOperation.Child(i, cot.generateRandomChange(d, random))
     } else if (random.nextBoolean() || data.isEmpty) {
-      SeqOperation.Add(random.nextInt(data.length + 1), generateRandomData(random))
+      SeqOperation.Add(random.nextInt(data.length + 1), generateRandomModel(random))
     } else {
       val (end, start) = maxMin(random.nextInt(data.length), random.nextInt(data.length))
       SeqOperation.Delete(start, end)

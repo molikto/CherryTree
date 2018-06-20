@@ -59,7 +59,7 @@ object Document {
 
 
 
-    override def generateRandomData(random: Random) = Document(Node.Ot.generateRandomData(random))
+    override def generateRandomModel(random: Random) = Document(Node.Ot.generateRandomModel(random))
 
     override def generateRandomChange(data: Data, random: Random): Operation = {
       val i = random.nextInt(1)

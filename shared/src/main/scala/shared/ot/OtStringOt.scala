@@ -118,7 +118,7 @@ object OtStringDoc extends Doc[String, OtStringOperation, OtStringConflict, OtSt
     }
   }
 
-  override def generateRandomData(random: Random): String = random.nextLong().toString
+  override def generateRandomModel(random: Random): String = random.nextLong().toString
 
   override val dataPickler: Pickler[String] = new Pickler[String] {
     override def pickle(obj: String)(implicit state: PickleState): Unit = state.enc.writeString(obj)

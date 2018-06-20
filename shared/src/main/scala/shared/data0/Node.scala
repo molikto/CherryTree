@@ -65,7 +65,7 @@ object Node {
 
 
 
-    override def generateRandomData(random: Random) = Node(OtStringDoc.generateRandomData(random), Node.Ot.seqOt.generateRandomData(random))
+    override def generateRandomModel(random: Random) = Node(OtStringDoc.generateRandomModel(random), Node.Ot.seqOt.generateRandomModel(random))
 
     override def generateRandomChange(data: Data, random: Random): Operation = {
       val i = random.nextInt(2)
