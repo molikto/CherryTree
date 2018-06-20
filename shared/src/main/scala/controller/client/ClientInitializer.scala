@@ -4,7 +4,7 @@ import autowire._
 import com.softwaremill.quicklens._
 
 
-import shared._
+import model._
 import controller.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -1,15 +1,15 @@
 package controller.server
 
-import shared._
+import model._
 import controller.api._
-import shared.ot.Rebased
+import data.ot.Rebased
 
 import scala.collection.mutable
 
 class CherryTreeServer extends Api {
 
   // states, now in single thread fashion
-  def emptyDocument = model.Node("", Seq.empty)
+  def emptyDocument = data.Node("", Seq.empty)
   private var document = emptyDocument
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size

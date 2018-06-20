@@ -1,7 +1,8 @@
 package web
 
+import controller.Ids
 import org.scalajs.dom
-import shared._
+import model._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._

@@ -1,4 +1,4 @@
-package shared
+package controller
 
 object Ids {
   val main = "main"

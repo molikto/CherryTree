@@ -1,9 +1,9 @@
-package shared.ot
+package model.ot
 
 import utest._
 
 import controller.api.{ApiError, ClientInit, ErrorT}
-import shared._
+import model._
 import boopickle._
 
 object PicklerTests extends TestSuite {

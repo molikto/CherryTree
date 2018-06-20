@@ -1,7 +1,7 @@
-package shared.model
+package model.data
 
-import shared._
-import shared.range.{IntRange, Node}
+import model._
+import data.range.{IntRange, Node}
 
 case class Node(content: Content, childs: Seq[Node]) {
 
@@ -25,10 +25,10 @@ case class Node(content: Content, childs: Seq[Node]) {
 
   def delete(d: range.Node): Node = map(d.parent, a => a.copy(childs = a.childs.take(d.start) ++ a.childs.drop(d.endInclusive + 1)))
 
-  def insert(cursor: cursor.Node, childs: Seq[Node]): model.Node =
+  def insert(cursor: cursor.Node, childs: Seq[Node]): data.Node =
     map(cursor.dropRight(1), a => a.insert(cursor.last, childs))
 
-  def move(r: range.Node, at: cursor.Node): model.Node = {
+  def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = apply(r)
     delete(r).insert(r.transformInsertionPointAfterDeleted(at), a)
   }

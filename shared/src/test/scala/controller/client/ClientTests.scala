@@ -1,7 +1,7 @@
 
 package controller.client
 
-import shared._
+import model._
 import controller.client.TestApiAdapter
 import controller.client.api.{Api, Authentication}
 import utest._

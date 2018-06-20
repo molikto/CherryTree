@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 import boopickle.Pickler
 
 import scala.concurrent.{ExecutionContext, Future}
-import shared._
+import model._
 import util._
 import controller.client.api.Api
 

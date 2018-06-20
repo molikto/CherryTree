@@ -1,7 +1,7 @@
-package shared.ot
+package model.ot
 
 import boopickle.{PickleState, Pickler, UnpickleState}
-import shared._
+import model._
 import com.softwaremill.quicklens._
 
 import scala.util.Random
@@ -23,7 +23,7 @@ object Unicode {
 
 }
 
-class Unicode extends Ot[model.Unicode, operation.Unicode, Unicode.Conflict] {
+class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
 
   type RebaseResult = Rebased[Unicode.Conflict, (Option[operation.Unicode], Option[operation.Unicode])]
 
@@ -76,23 +76,23 @@ class Unicode extends Ot[model.Unicode, operation.Unicode, Unicode.Conflict] {
   }
 
 
-  override def generateRandomChange(data: model.Unicode, random: Random): operation.Unicode = {
+  override def generateRandomChange(data: data.Unicode, random: Random): operation.Unicode = {
 
-    import shared.{model, operation}
+    import data.{model, operation}
 
     if (random.nextBoolean() || data.isEmpty) {
-      operation.Unicode.Insert(random.nextInt(data.size + 1), model.Unicode(random.nextLong().toString))
+      operation.Unicode.Insert(random.nextInt(data.size + 1), data.Unicode(random.nextLong().toString))
     } else {
       val (end, start) = maxMin(random.nextInt(data.size), random.nextInt(data.size))
       operation.Unicode.Delete(start, end)
     }
   }
 
-  override def generateRandomModel(random: Random): model.Unicode = model.Unicode(random.nextLong().toString)
+  override def generateRandomModel(random: Random): data.Unicode = data.Unicode(random.nextLong().toString)
 
-  override val dataPickler: Pickler[model.Unicode] = new Pickler[model.Unicode] {
-    override def pickle(obj: model.Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
-    override def unpickle(implicit state: UnpickleState): model.Unicode = Unicode(state.dec.readString)
+  override val dataPickler: Pickler[data.Unicode] = new Pickler[data.Unicode] {
+    override def pickle(obj: data.Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
+    override def unpickle(implicit state: UnpickleState): data.Unicode = Unicode(state.dec.readString)
   }
 
   override val operationPickler: Pickler[operation.Unicode] = new Pickler[operation.Unicode] {

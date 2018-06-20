@@ -1,4 +1,4 @@
-package shared.model
+package model.data
 
 
 abstract sealed class Text {

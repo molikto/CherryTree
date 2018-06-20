@@ -1,9 +1,9 @@
-package shared.operation
+package model.operation
 
-import shared._
-import shared.operation.Type.Type
+import model._
+import data.operation.Type.Type
 
-abstract sealed class Content extends Operation[model.Content] {
+abstract sealed class Content extends Operation[data.Content] {
 }
 
 object Content {
@@ -11,17 +11,17 @@ object Content {
   object Code {
     case class Content(op: operation.Unicode) extends operation.Content {
       override def ty: Type = op.ty
-      override def apply(data: model.Content): model.Content = {
+      override def apply(data: data.Content): data.Content = {
         data match {
-          case c: model.Content.Code => c.copy(unicode = op(c.unicode))
+          case c: data.Content.Code => c.copy(unicode = op(c.unicode))
         }
       }
     }
     case class Lang(lang: Option[String]) extends operation.Content {
       override def ty: Type = Type.AddDelete
-      override def apply(data: model.Content): model.Content = {
+      override def apply(data: data.Content): data.Content = {
         data match {
-          case c: model.Content.Code => c.copy(lang = lang)
+          case c: data.Content.Code => c.copy(lang = lang)
         }
       }
     }
@@ -29,9 +29,9 @@ object Content {
   object Html {
     case class Content(op: operation.Unicode) extends operation.Content {
       override def ty: Type = op.ty
-      override def apply(data: model.Content): model.Content = {
+      override def apply(data: data.Content): data.Content = {
         data match {
-          case c: model.Content.Html => c.copy(unicode = op(c.unicode))
+          case c: data.Content.Html => c.copy(unicode = op(c.unicode))
         }
       }
     }
@@ -39,9 +39,9 @@ object Content {
   object LaTeX {
     case class Content(op: operation.Unicode) extends operation.Content {
       override def ty: Type = op.ty
-      override def apply(data: model.Content): model.Content = {
+      override def apply(data: data.Content): data.Content = {
         data match {
-          case c: model.Content.LaTeX => c.copy(unicode = op(c.unicode))
+          case c: data.Content.LaTeX => c.copy(unicode = op(c.unicode))
         }
       }
     }
@@ -49,9 +49,9 @@ object Content {
   object Paragraph {
     case class Content(op: operation.Unicode) extends operation.Content {
       override def ty: Type = op.ty
-      override def apply(data: model.Content): model.Content = {
+      override def apply(data: data.Content): data.Content = {
         data match {
-          case c: model.Content.Paragraph => c.copy(paragraph = model.Text.parse(op(model.Text.serialize(c.paragraph))))
+          case c: data.Content.Paragraph => c.copy(paragraph = data.Text.parse(op(data.Text.serialize(c.paragraph))))
         }
       }
     }

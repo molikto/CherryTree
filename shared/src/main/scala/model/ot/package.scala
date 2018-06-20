@@ -1,8 +1,8 @@
-package shared
+package model
 
 import boopickle.Pickler
-import shared._
-import shared.ot._
+import data._
+import data.ot._
 import util._
 
 

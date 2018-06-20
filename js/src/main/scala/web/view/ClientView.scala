@@ -12,7 +12,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
 import controller.api.{Api, Authentication}
 import sun.text.normalizer.ICUBinary.Authenticate
-import shared._
+import model._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
@@ -22,9 +22,9 @@ object ClientView {
 
 
   private implicit val reusabilityClient = Reusability.always[ClientModel]
-  private implicit val reusabilityClientState = Reusability.by_==[model.Node]
+  private implicit val reusabilityClientState = Reusability.by_==[data.Node]
 
-  private val creator = ObserverView[ClientModel, model.Node, ClientView](
+  private val creator = ObserverView[ClientModel, data.Node, ClientView](
     ScalaComponent.builder[ClientModel]("ClientView"),
     s => new ClientView(s),
     client => client.doc,
@@ -33,12 +33,12 @@ object ClientView {
   ).configure(Reusability.shouldComponentUpdate)
     .build
 
-  def apply(c: ClientModel): Unmounted[ClientModel, model.Node, ClientView] = creator(c)
+  def apply(c: ClientModel): Unmounted[ClientModel, data.Node, ClientView] = creator(c)
 }
 
-class ClientView(override val $: BackendScope[ClientModel, model.Node]) extends ObserverView[ClientModel, model.Node] {
+class ClientView(override val $: BackendScope[ClientModel, data.Node]) extends ObserverView[ClientModel, data.Node] {
 
-  def render(client: ClientModel, state: model.Node): VdomElement = {
+  def render(client: ClientModel, state: data.Node): VdomElement = {
     div(
       div(s"client ${client.debug_authentication}, version ${client.debug_committedVersion}"),
       button("change content", onClick ==> (_ => Callback {

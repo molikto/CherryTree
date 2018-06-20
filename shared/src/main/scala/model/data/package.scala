@@ -1,8 +1,8 @@
-package shared
+package model
 
 import boopickle._
 
-package object model {
+package object data {
   type Paragraph = Seq[Text]
 
 }

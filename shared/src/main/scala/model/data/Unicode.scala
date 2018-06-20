@@ -1,6 +1,6 @@
-package shared.model
+package model.data
 
-import shared._
+import model._
 
 
 object Unicode {

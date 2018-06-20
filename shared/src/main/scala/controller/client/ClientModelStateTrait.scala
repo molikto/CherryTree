@@ -12,9 +12,9 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import controller.api._
-import shared.ot.Rebased
+import model.ot.Rebased
 import util._
-import shared._
+import model._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -49,7 +49,7 @@ trait ClientModelStateTrait { self =>
 
   private var committedVersion: Int = initial.version
   def debug_committedVersion = committedVersion
-  private var committed: model.Node = initial.node
+  private var committed: data.Node = initial.node
   def debug_committed = committed
   private var uncommitted = Seq.empty[transaction.Node]
 

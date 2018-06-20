@@ -1,6 +1,6 @@
 package controller.api
 
-import shared._
+import model._
 
 
 final case class ClientUpdate(

@@ -1,6 +1,6 @@
-package shared.model
+package model.data
 
-import shared.model
+import model.data
 
 
 abstract sealed class Content {
@@ -10,5 +10,5 @@ object Content {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content
   case class Html(unicode: Unicode) extends Content
   case class LaTeX(unicode: Unicode) extends Content
-  case class Paragraph(paragraph: model.Paragraph) extends Content
+  case class Paragraph(paragraph: data.Paragraph) extends Content
 }

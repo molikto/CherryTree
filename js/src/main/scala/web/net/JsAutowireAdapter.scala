@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.typedarray._
 import util._
-import shared._
+import model._
 
 
 class JsAutowireAdapter extends autowire.Client[ByteBuffer, Pickler, Pickler] {

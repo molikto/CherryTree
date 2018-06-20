@@ -1,5 +1,5 @@
 package controller.api
 
-import shared._
+import model._
 
-case class ClientInit(node: model.Node, version: Int)
+case class ClientInit(node: data.Node, version: Int)
