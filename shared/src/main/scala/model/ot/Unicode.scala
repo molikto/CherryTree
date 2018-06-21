@@ -9,26 +9,12 @@ import scala.util.Random
 import util._
 import operation.Unicode._
 
-object Unicode {
+// TODO we currently don't generate any move operations, and we haven't handle it in our code
+object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
-  class Conflict
 
-  object Conflict {
+  type RebaseResult = Rebased[conflict.Unicode, (Option[operation.Unicode], Option[operation.Unicode])]
 
-    case class Asymmetry() extends Conflict
-
-    case class WinnerDeletesLoser() extends Conflict
-
-    case class LoserDeletesWinner() extends Conflict
-
-    case class WinnerMovesLoser() extends Conflict
-  }
-
-}
-
-class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
-
-  type RebaseResult = Rebased[Unicode.Conflict, (Option[operation.Unicode], Option[operation.Unicode])]
 
   override def rebase(winner: operation.Unicode, loser: operation.Unicode): RebaseResult = {
     def addDelete(add: Insert, delete: Delete, addIsWinner: Boolean): RebaseResult = {
@@ -37,7 +23,7 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
       val lfrom = delete.r.start
       val lto = delete.r.endInclusive
       if (lfrom < wat && lto >= wat) {
-        Rebased(Set(if (addIsWinner) Unicode.Conflict.LoserDeletesWinner() else Unicode.Conflict.WinnerDeletesLoser()), (
+        Rebased(Set(if (addIsWinner) conflict.Unicode.LoserDeletesWinner() else conflict.Unicode.WinnerDeletesLoser()), (
           None,
           Some(Delete(lfrom, lto + wc.size))
         ))
@@ -56,7 +42,7 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
       case (w@Insert(wat, wc), l@Insert(lat, lc)) =>
         if (wat == lat) {
           val at = wat
-          Rebased(Set(Unicode.Conflict.Asymmetry()), (
+          Rebased(Set(conflict.Unicode.Asymmetry()), (
             Some(Insert(at + lc.size, wc)),
             Some(loser)
           ))

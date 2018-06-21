@@ -7,9 +7,9 @@
 //object ChangeTests extends TestSuite {
 //
 //  def assertChange(root: Node, change: Node.Operation, after: Node): Unit = {
-//    val changed = ot.node.apply(change, root)
+//    val changed = ot.Node.apply(change, root)
 //    assert(after == changed)
-////    val reversed = ot.node.apply(changed._1, changed._2)
+////    val reversed = ot.Node.apply(changed._1, changed._2)
 ////    assert(reversed._2 == change)
 ////    assert(root == reversed._1)
 //  }

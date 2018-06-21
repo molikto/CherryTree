@@ -42,7 +42,7 @@ class ClientView(override val $: BackendScope[ClientModel, data.Node]) extends O
     div(
       div(s"client ${client.debug_authentication}, version ${client.debug_committedVersion}"),
       button("change content", onClick ==> (_ => Callback {
-        client.change(ot.node.generateRandomTransaction(3, state))
+        client.change(ot.Node.generateRandomTransaction(3, state))
       })),
       div(
         contentEditable := true,

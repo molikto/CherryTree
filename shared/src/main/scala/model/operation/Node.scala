@@ -2,6 +2,7 @@ package model.operation
 
 import model._
 import Type.Type
+import boopickle._
 
 
 abstract sealed class Node extends Operation[data.Node] {
@@ -31,5 +32,49 @@ object Node {
   case class Move(r: range.Node, at: cursor.Node) extends Node {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, at)
+  }
+
+  val pickler: Pickler[Node] = new Pickler[Node] {
+    override def pickle(obj: Node)(implicit state: PickleState): Unit = {
+      import state.enc._
+      obj match {
+        case Content(c, content) =>
+          writeInt(0)
+          writeIntArray(c)
+          operation.Content.pickler.pickle(content)
+        case Replace(c, content) =>
+          writeInt(1)
+          writeIntArray(c)
+          data.Content.pickler.pickle(content)
+        case Insert(c, childs) =>
+          writeInt(2)
+          writeIntArray(c)
+          writeInt(childs.size)
+          childs.foreach(a => data.Node.pickler.pickle(a))
+        case Delete(r) =>
+          writeInt(3)
+          range.Node.pickler.pickle(r)
+        case Move(r, a) =>
+          writeInt(4)
+          range.Node.pickler.pickle(r)
+          writeIntArray(a)
+      }
+    }
+
+    override def unpickle(implicit state: UnpickleState): Node = {
+      import state.dec._
+      readInt match {
+        case 0 =>
+          Content(readIntArray, operation.Content.pickler.unpickle)
+        case 1 =>
+          Replace(readIntArray, data.Content.pickler.unpickle)
+        case 2 =>
+          Insert(readIntArray, (0 until readInt).map(_ => data.Node.pickler.unpickle))
+        case 3 =>
+          Delete(range.Node.pickler.unpickle)
+        case 4 =>
+          Move(range.Node.pickler.unpickle, readIntArray)
+      }
+    }
   }
 }

@@ -4,8 +4,6 @@ import boopickle._
 import model._
 import model.range.IntRange
 
-import scala.scalajs.runtime.IntegerReflectiveCall
-
 // TODO simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(content: Content, childs: Seq[Node]) {
 

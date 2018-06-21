@@ -141,14 +141,14 @@ trait ClientModelStateTrait { self =>
       val winners = success.winners
       val (loser, remaining) = uncommitted.splitAt(take)
       // LATER handle conflict, modal handling of winner deletes loser
-      val Rebased(cs0, (wp, lp)) = ot.node.rebaseT(winners.flatten, loser)
-      committed = ot.node.applyT(lp, ot.node.applyT(winners, committed))
+      val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(winners.flatten, loser)
+      committed = ot.Node.applyT(lp, ot.Node.applyT(winners, committed))
       val altVersion = committedVersion + winners.size + lp.size
       committedVersion = success.finalVersion
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
-      val Rebased(cs1, (wp0, uc)) = ot.node.rebaseT(wp, remaining)
+      val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
-      doc.modify(it => ot.node.apply(wp0, it))
+      doc.modify(it => ot.Node.apply(wp0, it))
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -160,7 +160,7 @@ trait ClientModelStateTrait { self =>
     * submit a change to local state, a sync might follow
     */
   def change(changes: transaction.Node, sync: Boolean = true): Unit = self.synchronized {
-    doc.modify(a => ot.node.apply(changes, a))
+    doc.modify(a => ot.Node.apply(changes, a))
     uncommitted = uncommitted :+ changes
     if (sync) self.sync()
   }

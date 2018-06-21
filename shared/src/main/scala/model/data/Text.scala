@@ -1,7 +1,5 @@
 package model.data
 
-import model.data.Content.Paragraph
-
 
 abstract sealed class Text {
   val size: Int

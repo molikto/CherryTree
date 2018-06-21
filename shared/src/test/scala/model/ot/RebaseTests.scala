@@ -86,13 +86,13 @@ object RebaseTests extends TestSuite {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      ot.node.rebase(a, b) match {
+      ot.Node.rebase(a, b) match {
         case Rebased(s, (ap, bp)) =>
           if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 = ot.node.apply(bp, ot.node.apply(a, node))
-          val app1 = ot.node.apply(ap, ot.node.apply(b, node))
+          val app0 = ot.Node.apply(bp, ot.Node.apply(a, node))
+          val app1 = ot.Node.apply(ap, ot.Node.apply(b, node))
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {
@@ -107,8 +107,8 @@ object RebaseTests extends TestSuite {
     'simpleSymmetry - {
       for (a <- changes) {
         for (b <- changes) {
-          val k = ot.node.rebase(a, b)
-          val j = ot.node.rebase(b, a)
+          val k = ot.Node.rebase(a, b)
+          val j = ot.Node.rebase(b, a)
           (k, j) match {
             case (Rebased(ks, (kap, kbp)), Rebased(js, (jbp, jap))) =>
               if (!NodeOps.isAsymmetry(ks) && !NodeOps.isAsymmetry(js)) {
@@ -134,8 +134,8 @@ object RebaseTests extends TestSuite {
             for (b2 <- changes) {
               val a = Seq(a1, a2)
               val b = Seq(b1, b2)
-              val k = ot.node.rebase(a, b)
-              val j = ot.node.rebase(b, a)
+              val k = ot.Node.rebase(a, b)
+              val j = ot.Node.rebase(b, a)
               (k, j) match {
                 case (Rebased(ks, (kap, kbp)), Rebased(js, (jbp, jap))) =>
                   // there are cases where asymmetry causes one path is conflict one is not
@@ -159,12 +159,12 @@ object RebaseTests extends TestSuite {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
-      ot.node.rebase(a, b) match {
+      ot.Node.rebase(a, b) match {
         case Rebased(_, (ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 =  Try { ot.node.apply(bp, ot.node.apply(a, node)) }
-          val app1 =  Try { ot.node.apply(ap, ot.node.apply(b, node)) }
+          val app0 =  Try { ot.Node.apply(bp, ot.Node.apply(a, node)) }
+          val app1 =  Try { ot.Node.apply(ap, ot.Node.apply(b, node)) }
           (app0, app1) match {
             case (Success(aaa), Success(bbb)) =>
               if (aaa == bbb) {
@@ -191,9 +191,9 @@ object RebaseTests extends TestSuite {
           for (b1 <- changes) {
             for (b2 <- changes) {
               val a = Seq(a1, a2)
-              val r1 = Try { ot.node.apply(a, node) }
+              val r1 = Try { ot.Node.apply(a, node) }
               val b = Seq(b1, b2)
-              val r2 = Try { ot.node.apply(b, node) }
+              val r2 = Try { ot.Node.apply(b, node) }
               // for invalid sequences, rebasing might just make the sequence valid
               if (r1.isSuccess && r2.isSuccess) {
                 assertRebaseSquare(a, b)

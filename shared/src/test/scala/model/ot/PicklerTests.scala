@@ -10,7 +10,7 @@ object PicklerTests extends TestSuite {
 
   val tests = Tests {
     'listOfListOfString - {
-      val o = ot.unicode
+      val o = ot.Unicode
       for (i <- 0 until 10) {
         val a = o.generateRandomData()
         val bytes = Pickle.intoBytes(a)
@@ -19,7 +19,7 @@ object PicklerTests extends TestSuite {
       }
     }
     'listOfListOfNode - {
-      val o = ot.node
+      val o = ot.Node
       for (i <- 0 until 10) {
         val a = o.generateRandomData()
         val bytes = Pickle.intoBytes(a)
@@ -29,7 +29,7 @@ object PicklerTests extends TestSuite {
     }
 
     'implicitlyGenerated - {
-      val o = ot.node
+      val o = ot.Node
       for (i <- 0 until 10) {
         val a: ErrorT[ClientInit] = Right(ClientInit(o.generateRandomData(), i))
         val bytes = Pickle.intoBytes(a)

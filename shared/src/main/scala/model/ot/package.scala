@@ -129,8 +129,4 @@ package object ot {
   case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
     def map[G](map: T => G) = Rebased(conflicts, map(t))
   }
-
-  val unicode = new Unicode()
-
-  val node = new Node()
 }
