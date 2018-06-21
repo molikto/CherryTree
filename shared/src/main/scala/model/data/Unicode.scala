@@ -1,8 +1,15 @@
 package model.data
 
+import boopickle._
 import model._
 
 
+object Unicode {
+  val pickler: Pickler[Unicode] = new Pickler[Unicode] {
+    override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
+    override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
+  }
+}
 case class Unicode(private val str: String) {
 
   override def toString: String = str

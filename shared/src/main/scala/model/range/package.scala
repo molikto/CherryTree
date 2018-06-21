@@ -45,22 +45,22 @@ package object range {
     /**
       * @return None if either side of `s` is deleted
       */
-    def transformAfterDeleted(f: range.IntRange): Option[range.IntRange] = {
+    def transformAfterDeleted(f: IntRange): Option[IntRange] = {
       val l = transformCursorAfterDeleted(f.start)
       val r = transformCursorAfterDeleted(f.endInclusive)
       (l, r) match {
-        case (Some(ll), Some(rr)) => Some(range.IntRange(ll, rr))
+        case (Some(ll), Some(rr)) => Some(IntRange(ll, rr))
         case _ => None
       }
     }
 
-    def transformDeletingRangeAfterDeleted(f: range.IntRange): Option[range.IntRange] = {
+    def transformDeletingRangeAfterDeleted(f: IntRange): Option[IntRange] = {
       val l = transformCursorAfterDeleted(f.start)
       val r = transformCursorAfterDeleted(f.endInclusive)
       (l, r) match {
-        case (Some(ll), Some(rr)) => Some(range.IntRange(ll, rr))
-        case (Some(ll), None) => Some(range.IntRange(ll, start - 1))
-        case (None, Some(rr)) => Some(range.IntRange(endInclusive, rr))
+        case (Some(ll), Some(rr)) => Some(IntRange(ll, rr))
+        case (Some(ll), None) => Some(IntRange(ll, start - 1))
+        case (None, Some(rr)) => Some(IntRange(endInclusive, rr))
         case (None, None) =>  None
       }
     }
@@ -85,8 +85,6 @@ package object range {
     }
   }
 
-
-  type Unicode = IntRange
 
   /**
     * unable to represent a range of the node itself, our app doesn't has this functionality
