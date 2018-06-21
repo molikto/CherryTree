@@ -1,5 +1,6 @@
 package model.data
 
+import boopickle._
 import model._
 
 // TODO simple type of node, so that it can be article, ordered list, unordered list, quote
@@ -28,5 +29,21 @@ case class Node(content: Content, childs: Seq[Node]) {
   def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = apply(r)
     delete(r).insert(r.transformInsertionPointAfterDeleted(at), a)
+  }
+}
+
+object Node {
+  val pickler: Pickler[Node] = new Pickler[Node] {
+    override def pickle(obj: Node)(implicit state: PickleState): Unit = {
+      import state.enc._
+      Content.pickler.pickle(obj.content)
+      writeInt(obj.childs.size)
+      for (c <- obj.childs) Node.pickler.pickle(c)
+    }
+
+    override def unpickle(implicit state: UnpickleState): Node = {
+      import state.dec._
+      Node(Content.pickler.unpickle, (0 until readInt).map(_ => Node.pickler.unpickle))
+    }
   }
 }

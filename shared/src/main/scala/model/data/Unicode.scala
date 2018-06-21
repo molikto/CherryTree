@@ -2,6 +2,7 @@ package model.data
 
 import boopickle._
 import model._
+import model.range.IntRange
 
 
 object Unicode {
@@ -16,7 +17,7 @@ case class Unicode(private val str: String) {
 
   def isEmpty: Boolean = str.isEmpty
   lazy val size: Int = str.codePointCount(0, str.size)
-  def slice(r: range.Unicode): Unicode = {
+  def slice(r: IntRange): Unicode = {
     val start = str.offsetByCodePoints(0, r.start)
     val end = str.offsetByCodePoints(start, r.size)
     Unicode(str.substring(start, end))
@@ -26,13 +27,13 @@ case class Unicode(private val str: String) {
     val index = str.offsetByCodePoints(0, at)
     Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}")
   }
-  def delete(r: range.Unicode): Unicode = {
+  def delete(r: IntRange): Unicode = {
     val start = str.offsetByCodePoints(0, r.start)
     val end = str.offsetByCodePoints(start, r.size)
     Unicode(s"${str.substring(0, start)}${str.substring(end)}")
   }
 
-  def move(r: range.Unicode, at: Int): Unicode = {
+  def move(r: IntRange, at: Int): Unicode = {
     val s = slice(r)
     delete(r).insert(r.transformInsertionPointAfterDeleted(at), s)
   }
