@@ -5,9 +5,7 @@ import boopickle.{PickleState, Pickler, UnpickleState}
 package object range {
 
 
-  trait IntRange {
-    val start: Int
-    val endInclusive: Int
+  case class IntRange(start: Int, endInclusive: Int) {
 
     def size: Int = endInclusive - start + 1
 
@@ -66,10 +64,8 @@ package object range {
     }
   }
 
-  case class DefaultIntRange(override val start: Int, override val endInclusive: Int) extends IntRange
 
   object IntRange {
-    def apply(start: Int, end: Int) = DefaultIntRange(start, end)
 
     val pickler: Pickler[IntRange] = new Pickler[IntRange] {
       override def pickle(obj: IntRange)(implicit state: PickleState): Unit = {
@@ -90,14 +86,13 @@ package object range {
     * unable to represent a range of the node itself, our app doesn't has this functionality
     */
   case class Node(parent: cursor.Node,
-    override val start: Int,
-    override val endInclusive: Int) extends IntRange {
+    childs: IntRange) {
     def transformInsertionPointAfterDeleted(at: cursor.Node): cursor.Node =
-      if (contains(at)) parent :+ start
-      else if (at.startsWith(parent) && at(parent.size) > endInclusive) parent ++ Seq(at(parent.size) - 1) ++ at.drop(parent.size + 1)
+      if (contains(at)) parent :+ childs.start
+      else if (at.startsWith(parent) && at(parent.size) > childs.endInclusive) parent ++ Seq(at(parent.size) - 1) ++ at.drop(parent.size + 1)
       else at
 
-    def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && contains(at(parent.size))
+    def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
   }
 
   object Node {
@@ -106,13 +101,12 @@ package object range {
       override def pickle(obj: Node)(implicit state: PickleState): Unit = {
         import state.enc._
         writeIntArray(obj.parent)
-        writeInt(obj.start)
-        writeInt(obj.endInclusive)
+        IntRange.pickler.pickle(obj.childs)
       }
 
       override def unpickle(implicit state: UnpickleState): Node = {
         import state.dec._
-        Node(readIntArray(), readInt, readInt)
+        Node(readIntArray(), IntRange.pickler.unpickle)
       }
     }
   }

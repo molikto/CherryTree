@@ -34,15 +34,15 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
     def addDelete(add: Insert, delete: Delete, addIsWinner: Boolean): RebaseResult = {
       val wat = add.at
       val wc = add.unicode
-      val lfrom = delete.start
-      val lto = delete.endInclusive
+      val lfrom = delete.r.start
+      val lto = delete.r.endInclusive
       if (lfrom < wat && lto >= wat) {
         Rebased(Set(if (addIsWinner) Unicode.Conflict.LoserDeletesWinner() else Unicode.Conflict.WinnerDeletesLoser()), (
           None,
           Some(Delete(lfrom, lto + wc.size))
         ))
       } else {
-        val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.size, 0)
+        val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)
         Rebased(Set.empty, (
           Some(Insert(wat0, wc)),
           Some(Delete(lfrom + ld, lto + ld))
@@ -65,21 +65,19 @@ class Unicode extends Ot[data.Unicode, operation.Unicode, Unicode.Conflict] {
         } else {
           Rebased(Set.empty, (Some(w), Some(l.modify(_.at).using(_ + wc.size))))
         }
-      case (a@Insert(_, _), l@Delete(_, _)) =>
+      case (a@Insert(_, _), l@Delete(_)) =>
         addDelete(a, l, addIsWinner = true)
-      case (d@Delete(_, _), a@Insert(_, _)) =>
+      case (d@Delete(_), a@Insert(_, _)) =>
         reverse(addDelete(a, d, addIsWinner = false))
-      case (Delete(wfrom, wto), Delete(lfrom, lto)) =>
-        val ws = IntRange(wfrom, wto)
-        val ls = IntRange(lfrom, lto)
+      case (Delete(ws), Delete(ls)) =>
         val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a.start, a.endInclusive))
         val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => Delete(a.start, a.endInclusive))
         Rebased(Set.empty, (wp, lp))
-      case (Delete(_, _), Move(_, _)) =>
+      case (Delete(_), Move(_, _)) =>
         ???
       case (Insert(_, _), Move(_, _)) =>
         ???
-      case (Move(_, _), Delete(_, _)) =>
+      case (Move(_, _), Delete(_)) =>
         ???
       case (Move(_, _), Insert(_, _)) =>
         ???

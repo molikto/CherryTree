@@ -2,6 +2,9 @@ package model.data
 
 import boopickle._
 import model._
+import model.range.IntRange
+
+import scala.scalajs.runtime.IntegerReflectiveCall
 
 // TODO simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(content: Content, childs: Seq[Node]) {
@@ -16,9 +19,14 @@ case class Node(content: Content, childs: Seq[Node]) {
 
   def apply(c: cursor.Node): Node = if (c.isEmpty) this else childs(c.head)(c.tail)
 
-  def apply(r: range.Node): Seq[Node] = apply(r.parent).childs.slice(r.start, r.until)
+  def apply(r: range.Node): Seq[Node] = this(r.parent)(r.childs)
 
-  def delete(d: range.Node): Node = map(d.parent, a => a.copy(childs = a.childs.patch(d.start, Seq.empty, d.size)))
+  def apply(r: IntRange): Seq[Node] = childs.slice(r.start, r.until)
+
+  def delete(d: range.Node): Node = map(d.parent, _.delete(d.childs))
+
+  private def delete(r: IntRange): Node =
+    copy(childs = childs.patch(r.start, Seq.empty, r.size))
 
   private def insert(i: Int, childs: Seq[Node]): Node =
     copy(childs = childs.patch(i, childs, 0))
@@ -27,7 +35,7 @@ case class Node(content: Content, childs: Seq[Node]) {
     map(c.dropRight(1), a => a.insert(c.last, childs))
 
   def move(r: range.Node, at: cursor.Node): data.Node = {
-    val a = apply(r)
+    val a = this(r)
     delete(r).insert(r.transformInsertionPointAfterDeleted(at), a)
   }
 }

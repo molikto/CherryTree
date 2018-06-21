@@ -13,9 +13,12 @@ object Unicode {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
   }
-  case class Delete(override val start: Int, override val endInclusive: Int) extends IntRange with Unicode {
+  object Delete {
+    def apply(l: Int, r: Int): Delete = Delete(IntRange(l, r))
+  }
+  case class Delete(r: IntRange) extends Unicode {
     override def ty: Type = Type.Delete
-    override def apply(d: data.Unicode): data.Unicode = d.delete(this)
+    override def apply(d: data.Unicode): data.Unicode = d.delete(r)
   }
   case class Move(r: IntRange, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
@@ -30,10 +33,9 @@ object Unicode {
           writeInt(0)
           writeInt(at)
           writeString(childs.toString)
-        case Delete(from, to) =>
+        case Delete(range) =>
           writeInt(1)
-          writeInt(from)
-          writeInt(to)
+          IntRange.pickler.pickle(range)
         case Move(r, at) =>
           writeInt(2)
           IntRange.pickler.pickle(r)
@@ -46,7 +48,7 @@ object Unicode {
         case 0 =>
           Insert(readInt, data.Unicode(readString))
         case 1 =>
-          Delete(readInt, readInt)
+          Delete(IntRange.pickler.unpickle)
         case 2 =>
           Move(IntRange.pickler.unpickle, readInt)
       }
