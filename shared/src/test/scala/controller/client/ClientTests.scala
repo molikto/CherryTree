@@ -5,6 +5,7 @@ import controller.TestApiAdapter
 import controller.api.{Api, Authentication}
 import controller.server.CherryTreeServer
 import model._
+import model.operation.NodeOps
 import utest._
 
 import scala.concurrent.duration._
@@ -83,7 +84,7 @@ object ClientTests extends TestSuite  {
           clients(j).change(insertTop0(s"${('a' + j).toChar}$i"))
         }
         waitAssertStateSyncBetweenClientsAndServer()
-        val str = serverDoc.content
+        val str = serverDoc.content.asInstanceOf[data.Content.Code].unicode.toString
         val ts = str.split(" ").filter(_.nonEmpty)
         assert(ts.size == count)
         def decreasing(a: Seq[Int]) = a.sliding(2, 1).forall(a => a.size < 2 || a.head > a(1))

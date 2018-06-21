@@ -6,7 +6,7 @@
 // LATER make this recover
 //object ChangeTests extends TestSuite {
 //
-//  def assertChange(root: Node, change: Node.Operation, after: Node): Unit = {
+//  def assertChange(root: Node, change: operation.Node, after: Node): Unit = {
 //    val changed = ot.Node.apply(change, root)
 //    assert(after == changed)
 ////    val reversed = ot.Node.apply(changed._1, changed._2)

@@ -4,6 +4,10 @@ import utest._
 
 import scala.util.{Failure, Random, Success, Try}
 
+import model._
+import model.operation.NodeOps
+import model.data.Node
+
 
 object RebaseTests extends TestSuite {
 
@@ -20,7 +24,7 @@ object RebaseTests extends TestSuite {
         val nContent = r.head
         val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
         val r0 = r.tail.drop(childs.size)
-        val n = Node(nContent, rec2(Seq.empty, childs)._1)
+        val n = data.Node(data.Content.Code(data.Unicode(nContent), None), rec2(Seq.empty, childs)._1)
         rec2(left :+ n, r0)
       }
     }
@@ -82,7 +86,7 @@ object RebaseTests extends TestSuite {
       delete03t, delete02t)
 
 
-    def assertRebase(a: Node.Operation, b: Node.Operation): Unit = {
+    def assertRebase(a: operation.Node, b: operation.Node): Unit = {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
@@ -91,8 +95,8 @@ object RebaseTests extends TestSuite {
           if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 = ot.Node.apply(bp, ot.Node.apply(a, node))
-          val app1 = ot.Node.apply(ap, ot.Node.apply(b, node))
+          val app0 = bp(a(node))
+          val app1 = ap(b(node))
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {
@@ -155,7 +159,7 @@ object RebaseTests extends TestSuite {
       }
     }
 
-    def assertRebaseSquare(a: Seq[Node.Operation], b: Seq[Node.Operation]): Unit = {
+    def assertRebaseSquare(a: Seq[operation.Node], b: Seq[operation.Node]): Unit = {
       val debug = false
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")

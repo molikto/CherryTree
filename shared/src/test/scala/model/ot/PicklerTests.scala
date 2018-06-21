@@ -23,7 +23,7 @@ object PicklerTests extends TestSuite {
       for (i <- 0 until 10) {
         val a = o.generateRandomData()
         val bytes = Pickle.intoBytes(a)
-        val b = Unpickle[Node].fromBytes(bytes)
+        val b = Unpickle[data.Node].fromBytes(bytes)
         assert(a == b)
       }
     }
