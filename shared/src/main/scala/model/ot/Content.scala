@@ -17,14 +17,14 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
             Rebased(uc.conflicts.map(conflict.Content.Code.Content),
               (uc.t._1.map(operation.Content.Code.Content), uc.t._2.map(operation.Content.Code.Content)))
           case operation.Content.Code.Lang(l) =>
-            Rebased(Set.empty, (Some(winner), Some(loser)))
+            free(winner, loser)
           case operation.Content.Paragraph.Content(l) =>
             throw new AssertionError()
         }
       case operation.Content.Code.Lang(w) =>
         loser match {
           case operation.Content.Code.Content(l) =>
-            Rebased(Set.empty, (Some(winner), Some(loser)))
+            free(winner, loser)
           case operation.Content.Code.Lang(l) =>
             if (w == l) {
               Rebased(Set.empty, (None, None))

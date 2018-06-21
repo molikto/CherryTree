@@ -54,6 +54,9 @@ package object ot {
       cs.foldLeft(model) { (model, c) => apply(c, model) }
     }
 
+    def free(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] =
+      Rebased(Set.empty, some(winner, loser))
+
     def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] = {
       winner match {
         case Some(a) => rebase(winner, loser)

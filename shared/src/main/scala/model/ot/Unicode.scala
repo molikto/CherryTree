@@ -29,9 +29,9 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         ))
       } else {
         val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)
-        Rebased(Set.empty, (
-          Some(Insert(wat0, wc)),
-          Some(Delete(lfrom + ld, lto + ld))
+        Rebased(Set.empty, some(
+          Insert(wat0, wc),
+          Delete(lfrom + ld, lto + ld)
         ))
       }
     }
@@ -42,14 +42,14 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (w@Insert(wat, wc), l@Insert(lat, lc)) =>
         if (wat == lat) {
           val at = wat
-          Rebased(Set(conflict.Unicode.Asymmetry()), (
-            Some(Insert(at + lc.size, wc)),
-            Some(loser)
+          Rebased(Set(conflict.Unicode.Asymmetry()), some(
+            Insert(at + lc.size, wc),
+            loser
           ))
         } else if (wat > lat) {
-          Rebased(Set.empty, (Some(w.modify(_.at).using(_ + lc.size)), Some(l)))
+          Rebased(Set.empty, some(w.modify(_.at).using(_ + lc.size), l))
         } else {
-          Rebased(Set.empty, (Some(w), Some(l.modify(_.at).using(_ + wc.size))))
+          Rebased(Set.empty, some(w, l.modify(_.at).using(_ + wc.size)))
         }
       case (a@Insert(_, _), l@Delete(_)) =>
         addDelete(a, l, addIsWinner = true)
