@@ -5,7 +5,6 @@ import utest._
 import scala.util.{Failure, Random, Success, Try}
 
 import model._
-import model.operation.NodeOps
 import model.data.Node
 
 

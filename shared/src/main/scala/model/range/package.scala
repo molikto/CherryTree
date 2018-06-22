@@ -14,16 +14,24 @@ package object range {
     def assertSize(): Unit = {
       assert(start >= 0 && endInclusive >= start)
     }
-    def contains(cursor: Int): Boolean = cursor > start && cursor < endInclusive
-    def touch(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
 
+    /**
+      * positions: 0 1 2 3
+      * range: [1, 2]
+      * cursor: 0
+      */
+    def containsCursor(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
+
+    def containsInsertionPoint(cursor: Int): Boolean = cursor > start && cursor <= endInclusive
+
+    def touchesInsertionPoint(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive + 1
 
 
 
     def transformCursorAfterDeleted(p: Int): Option[Int] = {
       if (p < start) {
         Some(p)
-      } else if (contains(p)) {
+      } else if (containsCursor(p)) {
         None
       } else {
         Some(p - size)
@@ -33,7 +41,7 @@ package object range {
     def transformInsertionPointAfterDeleted(p: Int): Int = {
       if (p < start) {
         p
-      } else if (contains(p)) {
+      } else if (touchesInsertionPoint(p)) {
         start
       } else {
         p - size
@@ -88,19 +96,66 @@ package object range {
   case class Node(parent: cursor.Node,
     childs: IntRange) {
     def transformInsertionPointAfterDeleted(at: cursor.Node): cursor.Node =
-      if (contains(at)) parent :+ childs.start
+      if (containsInsertionPoint(at)) parent :+ childs.start
       else if (at.startsWith(parent) && at(parent.size) > childs.endInclusive) parent ++ Seq(at(parent.size) - 1) ++ at.drop(parent.size + 1)
       else at
 
-    def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
+
+    def transformCursorAfterDeleted(at: cursor.Node): cursor.Node = {
+      ???
+    }
+    /**
+      * same parent, same level
+      * 111
+      * 11[3, 4]
+      *
+      *
+      * same parent, different level
+      * 1111
+      * 11[3, 4]
+      */
+    private def sameParent(at: cursor.Node) = at.size > parent.size && at.startsWith(parent)
+
+    def sameLevel(at: cursor.Node): Boolean = at.size == parent.size + 1
+
+    def containsInsertionPoint(at: cursor.Node): Boolean = {
+      if (sameParent(at)) {
+        if (sameLevel(at)) {
+          childs.containsInsertionPoint(at.last)
+        } else {
+          childs.containsCursor(at(parent.size))
+        }
+      } else {
+        false
+      }
+    }
+    def touchesInsertionPoint(at: cursor.Node): Boolean = {
+      if (sameParent(at)) {
+        if (sameLevel(at)) {
+          childs.touchesInsertionPoint(at.last)
+        } else {
+          childs.containsCursor(at(parent.size))
+        }
+      } else {
+        false
+      }
+    }
+
+    def containsCursor(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.containsCursor(at(parent.size))
   }
 
   object Node {
+
+    def apply(t: cursor.Node): Node = {
+      val last = t.last
+      Node(t.dropRight(1), IntRange(last, last))
+    }
+
     val pickler: Pickler[Node] = new Pickler[Node] {
 
       override def pickle(obj: Node)(implicit state: PickleState): Unit = {
         import state.enc._
-        writeIntArray(obj.parent)
+        writeIntArray(obj.parent.toArray)
         IntRange.pickler.pickle(obj.childs)
       }
 

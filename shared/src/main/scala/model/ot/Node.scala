@@ -3,7 +3,6 @@ package model.ot
 
 import boopickle.Pickler
 import model._
-import model.operation.Content
 
 import scala.util.Random
 
@@ -17,31 +16,47 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
       case operation.Node.Content(wc, wo) =>
         loser match {
           case operation.Node.Content(lc, lo) =>
-            if (wc sameElements lc) {
+            if (wc == lc) {
               val r = Content.rebase(wo, lo)
-              Rebased(r.conflicts.map(c => conflict.Node.Content(c)), map(r.t, a => operation.Node.Content(wc, a)))
+              Rebased(r.conflicts.map(c => conflict.Node.Content(c)), map[operation.Content, operation.Node](r.t, a => operation.Node.Content(wc, a)))
             } else {
               free(winner, loser)
             }
           case operation.Node.Replace(lc, lo) =>
-            if (wc sameElements lc) {
+            if (wc == lc) {
               Rebased(Set(conflict.Node.ReplacedByLoser()), (Some(loser), None))
             } else {
               free(winner, loser)
             }
           case operation.Node.Insert(lc, lcs) =>
-            ???
+            free(
+              operation.Node.Content(cursor.Node.transformInsertionPointAfterInserted(lc, lcs.size, wc), wo),
+              loser)
           case operation.Node.Delete(lr) =>
-            ???
+            if (lr.containsCursor(wc)) {
+              Rebased(Set(conflict.Node.LoserDeletesWinner()), (None, Some(loser)))
+            } else {
+              free(
+                operation.Node.Content(lr.transformCursorAfterDeleted(wc), wo),
+                loser)
+            }
           case operation.Node.Move(lr, la) =>
             ???
         }
       case operation.Node.Replace(wc, wo) =>
         loser match {
           case operation.Node.Content(lc, lo) =>
-            ???
+            if (wc == lc) {
+              Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Some(winner), None))
+            } else {
+              free(winner, loser)
+            }
           case operation.Node.Replace(lc, lo) =>
-            ???
+            if (wc == lc) {
+              Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Some(winner), None))
+            } else {
+              free(winner, loser)
+            }
           case operation.Node.Insert(lc, lcs) =>
             ???
           case operation.Node.Delete(lr) =>

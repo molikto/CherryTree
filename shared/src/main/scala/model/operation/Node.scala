@@ -40,15 +40,15 @@ object Node {
       obj match {
         case Content(c, content) =>
           writeInt(0)
-          writeIntArray(c)
+          writeIntArray(c.toArray)
           operation.Content.pickler.pickle(content)
         case Replace(c, content) =>
           writeInt(1)
-          writeIntArray(c)
+          writeIntArray(c.toArray)
           data.Content.pickler.pickle(content)
         case Insert(c, childs) =>
           writeInt(2)
-          writeIntArray(c)
+          writeIntArray(c.toArray)
           writeInt(childs.size)
           childs.foreach(a => data.Node.pickler.pickle(a))
         case Delete(r) =>
@@ -57,7 +57,7 @@ object Node {
         case Move(r, a) =>
           writeInt(4)
           range.Node.pickler.pickle(r)
-          writeIntArray(a)
+          writeIntArray(a.toArray)
       }
     }
 

@@ -5,7 +5,7 @@ import controller.TestApiAdapter
 import controller.api.{Api, Authentication}
 import controller.server.CherryTreeServer
 import model._
-import model.operation.NodeOps
+import model.ot.NodeOps
 import utest._
 
 import scala.concurrent.duration._
