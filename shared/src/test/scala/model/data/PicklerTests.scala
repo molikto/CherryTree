@@ -1,10 +1,8 @@
-package model.ot
-
-import utest._
+package model.data
 
 import controller.api.{ApiError, ClientInit, ErrorT}
 import model._
-import boopickle._
+import utest._
 
 object PicklerTests extends TestSuite {
 

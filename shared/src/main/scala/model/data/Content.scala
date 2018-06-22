@@ -7,6 +7,13 @@ import model.data
 abstract sealed class Content {
 }
 
+/**
+  * the reason that content and paragraph is separate is because we
+  *
+  * HTML, LaTeX and code currently the editing method is all plain text,
+  *
+  * but paragraph it is not, so we need to be sure that the data we are editing is valid
+  */
 object Content {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content
   case class Paragraph(paragraph: data.Paragraph) extends Content {
