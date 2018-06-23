@@ -4,6 +4,8 @@ import boopickle.{PickleState, Pickler, UnpickleState}
 import model.{data, _}
 import model.operation.Type.Type
 
+import scala.util.Random
+
 
 case class Paragraph(u: Unicode) extends Operation[data.Paragraph] {
   override def ty: Type = u.ty
@@ -11,9 +13,9 @@ case class Paragraph(u: Unicode) extends Operation[data.Paragraph] {
     data.Paragraph.parse(u(data.Paragraph.serialize(d)))
 }
 
-object Paragraph {
+object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
 
-  val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
+  override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
     override def pickle(obj: Paragraph)(implicit state: PickleState): Unit = {
       Unicode.pickler.pickle(obj.u)
     }
@@ -22,4 +24,6 @@ object Paragraph {
       Paragraph(Unicode.pickler.unpickle)
     }
   }
+
+  override def generateRandom(d: data.Paragraph, random: Random): Paragraph = ???
 }

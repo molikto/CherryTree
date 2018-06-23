@@ -4,10 +4,12 @@ import model._
 import Type.Type
 import boopickle._
 
+import scala.util.Random
+
 abstract sealed class Content extends Operation[data.Content] {
 }
 
-object Content {
+object Content extends OperationObject[data.Content, Content] {
 
   object Code {
     case class Content(op: operation.Unicode) extends operation.Content {
@@ -41,7 +43,7 @@ object Content {
     }
   }
 
-  val pickler: Pickler[Content] = new Pickler[Content] {
+  override val pickler: Pickler[Content] = new Pickler[Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
@@ -73,4 +75,5 @@ object Content {
     }
   }
 
+  override def generateRandom(d: data.Content, random: Random): Content = ???
 }

@@ -1,8 +1,9 @@
 package model
 
+/**
+  * asymmetry handling, if someone in
+  */
 package object conflict {
-
-
 
   class Unicode
 
@@ -26,8 +27,7 @@ package object conflict {
 
 
 
-  abstract sealed class Node {
-  }
+  abstract sealed class Node
   object Node {
     case class Content(c: conflict.Content) extends Node
     case class ReplacedByWinner() extends Node
@@ -35,6 +35,7 @@ package object conflict {
     case class Asymmetry() extends Node
     case class WinnerDeletesLoser() extends Node
     case class LoserDeletesWinner() extends Node
+    case class WinnerMovesLoser() extends Node
   }
 
 

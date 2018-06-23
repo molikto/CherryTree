@@ -105,11 +105,4 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
         }
     }
   }
-
-  override def generateRandomChange(MODEL: data.Node, random: Random): operation.Node = ???
-
-  override def generateRandomData(random: Random): data.Node = ???
-
-  override val dataPickler: Pickler[data.Node] = data.Node.pickler
-  override val operationPickler: Pickler[operation.Node] = operation.Node.pickler
 }

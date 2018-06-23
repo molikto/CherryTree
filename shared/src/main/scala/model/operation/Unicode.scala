@@ -3,12 +3,15 @@ package model.operation
 import model._
 import Type.Type
 import boopickle._
+import util._
 import model.range.IntRange
+
+import scala.util.Random
 
 
 sealed trait Unicode extends Operation[data.Unicode]
 
-object Unicode {
+object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Insert(at: Int, unicode: data.Unicode) extends Unicode {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
@@ -24,8 +27,17 @@ object Unicode {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
   }
+
+  override def generateRandom(d: data.Unicode, random: Random): Unicode = {
+    if (random.nextBoolean() || d.isEmpty) {
+      Insert(random.nextInt(d.size + 1), data.Unicode(random.nextLong().toString))
+    } else {
+      val (end, start) = maxMin(random.nextInt(d.size), random.nextInt(d.size))
+      Delete(start, end)
+    }
+  }
   
-  val pickler: Pickler[Unicode] = new Pickler[Unicode] {
+  override val pickler: Pickler[Unicode] = new Pickler[Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {

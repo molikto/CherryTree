@@ -8,9 +8,8 @@ object PicklerTests extends TestSuite {
 
   val tests = Tests {
     'listOfListOfString - {
-      val o = ot.Unicode
       for (i <- 0 until 10) {
-        val a = o.generateRandomData()
+        val a = operation.Unicode.generateRandom()
         val bytes = Pickle.intoBytes(a)
         val b = Unpickle[Seq[Seq[String]]].fromBytes(bytes)
         assert(a == b)
@@ -19,7 +18,7 @@ object PicklerTests extends TestSuite {
     'listOfListOfNode - {
       val o = ot.Node
       for (i <- 0 until 10) {
-        val a = o.generateRandomData()
+        val a = operation.Unicode.generateRandom()
         val bytes = Pickle.intoBytes(a)
         val b = Unpickle[data.Node].fromBytes(bytes)
         assert(a == b)
@@ -29,7 +28,7 @@ object PicklerTests extends TestSuite {
     'implicitlyGenerated - {
       val o = ot.Node
       for (i <- 0 until 10) {
-        val a: ErrorT[ClientInit] = Right(ClientInit(o.generateRandomData(), i))
+        val a: ErrorT[ClientInit] = Right(ClientInit(operation.Node.generateRandom(), i))
         val bytes = Pickle.intoBytes(a)
         val b = Unpickle[Either[ApiError, ClientInit]].fromBytes(bytes)
         assert(a == b)

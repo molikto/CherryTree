@@ -43,8 +43,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         if (wat == lat) {
           val at = wat
           Rebased(Set(conflict.Unicode.Asymmetry()), some(
-            Insert(at + lc.size, wc),
-            loser
+            winner,
+            l.modify(_.at).using(_ + wc.size)
           ))
         } else if (wat > lat) {
           Rebased(Set.empty, some(w.modify(_.at).using(_ + lc.size), l))
@@ -68,27 +68,9 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (Move(_, _), Insert(_, _)) =>
         ???
       case (Move(wr, wa), Move(lr, la)) =>
+
         ???
     }
   }
-
-
-  override def generateRandomChange(d: data.Unicode, random: Random): operation.Unicode = {
-
-    import model.{data, operation}
-
-    if (random.nextBoolean() || d.isEmpty) {
-      Insert(random.nextInt(d.size + 1), data.Unicode(random.nextLong().toString))
-    } else {
-      val (end, start) = maxMin(random.nextInt(d.size), random.nextInt(d.size))
-      Delete(start, end)
-    }
-  }
-
-  override def generateRandomData(random: Random): data.Unicode = data.Unicode(random.nextLong().toString)
-
-  override val dataPickler: Pickler[data.Unicode] = data.Unicode.pickler
-
-  override val operationPickler: Pickler[operation.Unicode] = operation.Unicode.pickler
 }
 

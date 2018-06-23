@@ -4,12 +4,16 @@ import boopickle._
 import model._
 import model.range.IntRange
 
+import scala.util.Random
 
-object Unicode {
-  val pickler: Pickler[Unicode] = new Pickler[Unicode] {
+
+object Unicode extends DataObject[Unicode] {
+  override val pickler: Pickler[Unicode] = new Pickler[Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
   }
+
+  override def generateRandom(random: Random): Unicode = Unicode(random.nextLong().toString)
 }
 case class Unicode(private val str: String) {
 

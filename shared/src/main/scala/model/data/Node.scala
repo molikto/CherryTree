@@ -4,6 +4,8 @@ import boopickle._
 import model._
 import model.range.IntRange
 
+import scala.util.Random
+
 // TODO simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(content: Content, childs: Seq[Node]) {
 
@@ -38,7 +40,7 @@ case class Node(content: Content, childs: Seq[Node]) {
   }
 }
 
-object Node {
+object Node extends DataObject[Node] {
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._
@@ -52,4 +54,6 @@ object Node {
       Node(Content.pickler.unpickle, (0 until readInt).map(_ => Node.pickler.unpickle))
     }
   }
+
+  override def generateRandom(random: Random): Node = ???
 }

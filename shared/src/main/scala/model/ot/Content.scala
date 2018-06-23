@@ -45,11 +45,4 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
         }
     }
   }
-
-  override def generateRandomChange(d: data.Content, random: Random): operation.Content = ???
-
-  override def generateRandomData(random: Random): data.Content = ???
-
-  override val dataPickler: Pickler[data.Content] = data.Content.pickler
-  override val operationPickler: Pickler[operation.Content] = operation.Content.pickler
 }

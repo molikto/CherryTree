@@ -4,11 +4,13 @@ import model._
 import Type.Type
 import boopickle._
 
+import scala.util.Random
+
 
 abstract sealed class Node extends Operation[data.Node] {
 }
 
-object Node {
+object Node extends OperationObject[data.Node, Node] {
   case class Content(c: cursor.Node, content: operation.Content) extends Node {
     override def ty: Type = content.ty
     override def apply(d: data.Node): data.Node = {
@@ -34,7 +36,7 @@ object Node {
     override def apply(d: data.Node): data.Node = d.move(r, at)
   }
 
-  val pickler: Pickler[Node] = new Pickler[Node] {
+  override val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
@@ -77,4 +79,6 @@ object Node {
       }
     }
   }
+
+  override def generateRandom(d: data.Node, random: Random): Node = ???
 }

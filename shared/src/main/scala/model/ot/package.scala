@@ -2,9 +2,9 @@ package model
 
 import boopickle.Pickler
 import model._
+import model.operation.OperationObject
 import model.ot._
 import util._
-
 
 import scala.util.Random
 
@@ -12,47 +12,12 @@ import scala.util.Random
 package object ot {
   
   trait Ot[DATA, OPERATION <: operation.Operation[DATA], CONFLICT] {
+
     type TRANSACTION = Seq[OPERATION]
 
     // LATER should here be a data: DATA??
     def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])]
 
-
-    def generateRandomChange(data: DATA): OPERATION = generateRandomChange(data, new Random())
-
-    def generateRandomChange(data: DATA, random: Random): OPERATION
-
-    def generateRandomData(): DATA = generateRandomData(new Random())
-
-    def generateRandomData(random: Random): DATA
-
-    def generateRandomTransaction(size: Int, data: DATA): TRANSACTION = {
-      var a = data
-      var i = 0
-      val r = new Random()
-      var cs = Seq.empty[OPERATION]
-      while (i < size) {
-        val c = generateRandomChange(a, r)
-        a = c.apply(a)
-        cs = cs :+ c
-        i += 1
-      }
-      cs
-    }
-
-
-    def apply(c: Option[OPERATION], model: DATA): DATA = c match {
-      case None => model
-      case Some(a) => a.apply(model)
-    }
-
-    def apply(cs: TRANSACTION, model: DATA): DATA = {
-      cs.foldLeft(model) { (model, c) => c.apply(model) }
-    }
-
-    def applyT(cs: Seq[TRANSACTION], model: DATA): DATA = {
-      cs.foldLeft(model) { (model, c) => apply(c, model) }
-    }
 
     def free(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Option[OPERATION], Option[OPERATION])] =
       Rebased(Set.empty, some(winner, loser))
@@ -124,9 +89,6 @@ package object ot {
         }
       }
     }
-
-    val dataPickler: Pickler[DATA]
-    val operationPickler: Pickler[OPERATION]
   }
 
   case class Rebased[CONFLICT, T](conflicts: Set[CONFLICT], t: T) {
