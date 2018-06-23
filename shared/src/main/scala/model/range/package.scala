@@ -20,31 +20,16 @@ package object range {
       * range: [1, 2]
       * cursor: 0
       */
-    def containsCursor(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
-
-    def containsInsertionPoint(cursor: Int): Boolean = cursor > start && cursor <= endInclusive
-
-    def touchesInsertionPoint(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive + 1
+    def contains(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
 
 
-
-    def transformCursorAfterDeleted(p: Int): Option[Int] = {
+    def transformAfterDeleted(p: Int): Option[Int] = {
       if (p < start) {
         Some(p)
-      } else if (containsCursor(p)) {
+      } else if (contains(p)) {
         None
       } else {
         Some(p - size)
-      }
-    }
-
-    def transformInsertionPointAfterDeleted(p: Int): Int = {
-      if (p < start) {
-        p
-      } else if (touchesInsertionPoint(p)) {
-        start
-      } else {
-        p - size
       }
     }
 
@@ -52,8 +37,8 @@ package object range {
       * @return None if either side of `s` is deleted
       */
     def transformAfterDeleted(f: IntRange): Option[IntRange] = {
-      val l = transformCursorAfterDeleted(f.start)
-      val r = transformCursorAfterDeleted(f.endInclusive)
+      val l = transformAfterDeleted(f.start)
+      val r = transformAfterDeleted(f.endInclusive)
       (l, r) match {
         case (Some(ll), Some(rr)) => Some(IntRange(ll, rr))
         case _ => None
@@ -61,8 +46,8 @@ package object range {
     }
 
     def transformDeletingRangeAfterDeleted(f: IntRange): Option[IntRange] = {
-      val l = transformCursorAfterDeleted(f.start)
-      val r = transformCursorAfterDeleted(f.endInclusive)
+      val l = transformAfterDeleted(f.start)
+      val r = transformAfterDeleted(f.endInclusive)
       (l, r) match {
         case (Some(ll), Some(rr)) => Some(IntRange(ll, rr))
         case (Some(ll), None) => Some(IntRange(ll, start - 1))
@@ -95,14 +80,12 @@ package object range {
     */
   case class Node(parent: cursor.Node,
     childs: IntRange) {
-    def transformInsertionPointAfterDeleted(at: cursor.Node): cursor.Node =
-      if (containsInsertionPoint(at)) parent :+ childs.start
-      else if (at.startsWith(parent) && at(parent.size) > childs.endInclusive) parent ++ Seq(at(parent.size) - 1) ++ at.drop(parent.size + 1)
-      else at
 
 
-    def transformCursorAfterDeleted(at: cursor.Node): cursor.Node = {
-      ???
+    def transformAfterDeleted(at: cursor.Node): Option[cursor.Node] = {
+      if (contains(at)) None
+      else if (at.startsWith(parent) && at(parent.size) > childs.endInclusive) Some(at.patch(parent.size, Seq(at(parent.size + childs.size)), 1))
+      else Some(at)
     }
     /**
       * same parent, same level
@@ -118,30 +101,7 @@ package object range {
 
     def sameLevel(at: cursor.Node): Boolean = at.size == parent.size + 1
 
-    def containsInsertionPoint(at: cursor.Node): Boolean = {
-      if (sameParent(at)) {
-        if (sameLevel(at)) {
-          childs.containsInsertionPoint(at.last)
-        } else {
-          childs.containsCursor(at(parent.size))
-        }
-      } else {
-        false
-      }
-    }
-    def touchesInsertionPoint(at: cursor.Node): Boolean = {
-      if (sameParent(at)) {
-        if (sameLevel(at)) {
-          childs.touchesInsertionPoint(at.last)
-        } else {
-          childs.containsCursor(at(parent.size))
-        }
-      } else {
-        false
-      }
-    }
-
-    def containsCursor(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.containsCursor(at(parent.size))
+    def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
   }
 
   object Node {
