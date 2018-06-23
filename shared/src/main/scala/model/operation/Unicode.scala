@@ -28,7 +28,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
   }
 
-  override def generateRandom(d: data.Unicode, random: Random): Unicode = {
+  override def random(d: data.Unicode, random: Random): Unicode = {
     if (random.nextBoolean() || d.isEmpty) {
       Insert(random.nextInt(d.size + 1), data.Unicode(random.nextLong().toString))
     } else {

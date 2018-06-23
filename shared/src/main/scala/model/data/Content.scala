@@ -50,5 +50,5 @@ object Content extends DataObject[Content] {
     }
   }
 
-  override def generateRandom(random: Random): Content = ???
+  override def random(random: Random): Content = ???
 }

@@ -26,17 +26,17 @@ package object operation {
 
     val pickler: Pickler[OPERATION]
 
-    def generateRandom(data: DATA): OPERATION = generateRandom(data, new Random())
+    def random(data: DATA): OPERATION = random(data, new Random())
 
-    def generateRandom(data: DATA, random: Random): OPERATION
+    def random(data: DATA, random: Random): OPERATION
 
-    def generateRandomTransaction(size: Int, data: DATA): TRANSACTION = {
+    def randomTransaction(size: Int, data: DATA): TRANSACTION = {
       var a = data
       var i = 0
       val r = new Random()
       var cs = Seq.empty[OPERATION]
       while (i < size) {
-        val c = generateRandom(a, r)
+        val c = random(a, r)
         a = c.apply(a)
         cs = cs :+ c
         i += 1

@@ -14,5 +14,5 @@ object Paragraph extends DataObject[Paragraph] {
     override def unpickle(implicit state: UnpickleState): Paragraph = parse(Unicode.pickler.unpickle)
   }
 
-  override def generateRandom(random: Random): Paragraph = ???
+  override def random(random: Random): Paragraph = ???
 }

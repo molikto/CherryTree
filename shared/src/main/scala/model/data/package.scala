@@ -9,8 +9,8 @@ package object data {
 
 
   trait DataObject[T] {
-    def generateRandom(): T = generateRandom(new Random())
-    def generateRandom(random: Random): T
+    def random(): T = random(new Random())
+    def random(random: Random): T
     val pickler: Pickler[T]
   }
 }

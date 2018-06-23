@@ -75,5 +75,5 @@ object Content extends OperationObject[data.Content, Content] {
     }
   }
 
-  override def generateRandom(d: data.Content, random: Random): Content = ???
+  override def random(d: data.Content, random: Random): Content = ???
 }

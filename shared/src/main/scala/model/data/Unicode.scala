@@ -13,7 +13,7 @@ object Unicode extends DataObject[Unicode] {
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
   }
 
-  override def generateRandom(random: Random): Unicode = Unicode(random.nextLong().toString)
+  override def random(random: Random): Unicode = Unicode(random.nextLong().toString)
 }
 case class Unicode(private val str: String) {
 

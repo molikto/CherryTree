@@ -25,5 +25,5 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     }
   }
 
-  override def generateRandom(d: data.Paragraph, random: Random): Paragraph = ???
+  override def random(d: data.Paragraph, random: Random): Paragraph = ???
 }

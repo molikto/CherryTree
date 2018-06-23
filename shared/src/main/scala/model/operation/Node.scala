@@ -80,5 +80,5 @@ object Node extends OperationObject[data.Node, Node] {
     }
   }
 
-  override def generateRandom(d: data.Node, random: Random): Node = ???
+  override def random(d: data.Node, random: Random): Node = ???
 }
