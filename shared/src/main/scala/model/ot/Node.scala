@@ -18,7 +18,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case operation.Node.Content(lc, lo) =>
             if (wc == lc) {
               val r = Content.rebase(wo, lo)
-              Rebased(r.conflicts.map(c => conflict.Node.Content(c)), map(r.t, a => operation.Node.Content(wc, a)))
+              Rebased(r.conflicts.map(c => conflict.Node.Content(c)), map[operation.Content, operation.Node](r.t, a => operation.Node.Content(wc, a)))
             } else {
               free(winner, loser)
             }
@@ -29,7 +29,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               free(winner, loser)
             }
           case operation.Node.Insert(lc, lcs) =>
-            free(w.copy(c = cursor.Node.transformInsertionPointAfterInserted(lc, lcs.size, wc)), loser)
+            free(w.copy(c = cursor.Node.transformAfterInserted(lc, lcs.size, wc)), loser)
           case operation.Node.Delete(lr) =>
             lr.transformAfterDeleted(wc) match {
               case Some(p) => free(w.copy(c = p), loser)
@@ -53,7 +53,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               free(winner, loser)
             }
           case operation.Node.Insert(lc, lcs) =>
-            free(w.copy(c = cursor.Node.transformInsertionPointAfterInserted(lc, lcs.size, wc)), loser)
+            free(w.copy(c = cursor.Node.transformAfterInserted(lc, lcs.size, wc)), loser)
           case operation.Node.Delete(lr) =>
             lr.transformAfterDeleted(wc) match {
               case Some(p) => free(w.copy(c = p), loser)
@@ -65,9 +65,9 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
       case w@operation.Node.Insert(wc, wcs) =>
         loser match {
           case l@operation.Node.Content(lc, _) =>
-            free(winner, l.copy(c = cursor.Node.transformInsertionPointAfterInserted(wc, wcs.size, lc)))
+            free(winner, l.copy(c = cursor.Node.transformAfterInserted(wc, wcs.size, lc)))
           case l@operation.Node.Replace(lc, _) =>
-            free(winner, l.copy(c = cursor.Node.transformInsertionPointAfterInserted(wc, wcs.size, lc)))
+            free(winner, l.copy(c = cursor.Node.transformAfterInserted(wc, wcs.size, lc)))
           case operation.Node.Insert(lc, lcs) =>
             ??? // TODO
           case operation.Node.Delete(lr) =>

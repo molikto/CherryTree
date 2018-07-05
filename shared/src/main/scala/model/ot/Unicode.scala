@@ -1,12 +1,8 @@
 package model.ot
 
-import boopickle.{PickleState, Pickler, UnpickleState}
 import model._
 import com.softwaremill.quicklens._
-import model.range.IntRange
 
-import scala.util.Random
-import util._
 import operation.Unicode._
 
 // TODO we currently don't generate any move operations, and we haven't handle it in our code
@@ -41,7 +37,6 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     (winner, loser) match {
       case (w@Insert(wat, wc), l@Insert(lat, lc)) =>
         if (wat == lat) {
-          val at = wat
           Rebased(Set(conflict.Unicode.Asymmetry()), some(
             winner,
             l.modify(_.at).using(_ + wc.size)
@@ -68,7 +63,6 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (Move(_, _), Insert(_, _)) =>
         ???
       case (Move(wr, wa), Move(lr, la)) =>
-
         ???
     }
   }

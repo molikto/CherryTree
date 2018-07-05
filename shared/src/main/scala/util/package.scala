@@ -1,5 +1,7 @@
 import java.nio.ByteBuffer
 
+import scala.util.Random
+
 
 package object util extends ObservablePropertyImplicits  {
 

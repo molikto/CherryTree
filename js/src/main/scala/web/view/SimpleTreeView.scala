@@ -13,7 +13,7 @@ object SimpleTreeView {
   implicit val nodeReuse: Reusability[data.Node] = Reusability.by_==[data.Node]
 
   private val creator = ScalaComponent.builder[data.Node]("Line")
-    // TODO a.hashCode is not a proper id
+    // LATER a.hashCode is not a proper id
     .render_P(r => div(p(r.content.toString), ul(r.childs.map(a => li(key := a.hashCode(), SimpleTreeView(a))): _*)))
     .configure(Reusability.shouldComponentUpdate)
     .configure(Reusability.shouldComponentUpdateWithOverlay)

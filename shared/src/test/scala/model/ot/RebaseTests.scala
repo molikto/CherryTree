@@ -5,7 +5,6 @@ import utest._
 import scala.util.{Failure, Random, Success, Try}
 
 import model._
-import model.data.Node
 
 
 object RebaseTests extends TestSuite {
@@ -15,8 +14,8 @@ object RebaseTests extends TestSuite {
 
   def randomContent() = rand.nextLong().toString
 
-  def testNodeFromText(str: String): Node = {
-    def rec2(left: Seq[Node], r: Seq[String]): (Seq[Node], Seq[String]) = {
+  def testNodeFromText(str: String): data.Node = {
+    def rec2(left: Seq[data.Node], r: Seq[String]): (Seq[data.Node], Seq[String]) = {
       if (r.isEmpty) {
         (left, r)
       } else {
@@ -33,7 +32,7 @@ object RebaseTests extends TestSuite {
   val tests = Tests {
 
     val randomText = "fdlksf lkasdfjklsa dfklds fjdsklf djsklf dslkfj slfjksla fjdsalfshgdsljfk"
-    val node: Node = testNodeFromText(
+    val node: data.Node = testNodeFromText(
       s""" $randomText
          |  0 $randomText
          |    0.0 $randomText
@@ -94,8 +93,8 @@ object RebaseTests extends TestSuite {
           if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 = bp(a(node))
-          val app1 = ap(b(node))
+          val app0 = bp.map(_(a(node)))
+          val app1 = ap.map(_(b(node)))
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {

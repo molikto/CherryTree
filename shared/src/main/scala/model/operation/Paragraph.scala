@@ -1,6 +1,5 @@
 package model.operation
 
-import boopickle.{PickleState, Pickler, UnpickleState}
 import model.{data, _}
 import model.operation.Type.Type
 

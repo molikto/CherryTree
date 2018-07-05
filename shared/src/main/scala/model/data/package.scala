@@ -11,6 +11,6 @@ package object data {
   trait DataObject[T] {
     def random(): T = random(new Random())
     def random(random: Random): T
-    val pickler: Pickler[T]
+    val pickler: boopickle.Pickler[T]
   }
 }

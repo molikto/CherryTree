@@ -2,7 +2,6 @@ package model.operation
 
 import model._
 import Type.Type
-import boopickle._
 import util._
 import model.range.IntRange
 

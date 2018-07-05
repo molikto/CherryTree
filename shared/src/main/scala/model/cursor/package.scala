@@ -5,7 +5,7 @@ package object cursor {
   type Node = Seq[Int]
 
   object IntSeq {
-    def transformInsertionPointAfterInserted(inserted: Int, len: Int, ref: Int): Int = {
+    def transformAfterInserted(inserted: Int, len: Int, ref: Int): Int = {
       if (ref < inserted) {
         ref
       } else { // so the case of asymmetry is here
@@ -36,7 +36,7 @@ package object cursor {
       * @param ref the current insertion point (not rebased)
       * @return the rebased current insertion point
       */
-    def transformInsertionPointAfterInserted(inserted: Node, len: Int, ref: Node): Node = {
+    def transformAfterInserted(inserted: Node, len: Int, ref: Node): Node = {
       val (common, ii, rr) = destructRelative(inserted, ref)
       // if rr.size < ii.size, the the current insertion happens higher, so not affected by previous one
       // else rr.size >= ii.size

@@ -2,11 +2,28 @@ package model.data
 
 import boopickle._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object Paragraph extends DataObject[Paragraph] {
-  def serialize(content: Paragraph): Unicode = ???
-  def parse(unicode: Unicode): Paragraph = ???
+  def serialize(content: Paragraph): Unicode = {
+    val buffer = new UnicodeWriter()
+    content.foreach(_.serialize(buffer))
+    buffer.toUnicode
+  }
+  def parse(unicode: Unicode): Paragraph = {
+    val reader = new UnicodeReader(unicode)
+    parse(reader, SpecialChar.Nil)
+  }
+
+  def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
+    val buffer = new ArrayBuffer[Text]()
+    while (!reader.isEmpty && !reader.eatOrFalse(until)) {
+      buffer += Text.parse(reader)
+    }
+    buffer.toVector
+  }
+
   def size(paragraph: Paragraph): Int = paragraph.map(_.size).sum
 
   override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
@@ -14,5 +31,37 @@ object Paragraph extends DataObject[Paragraph] {
     override def unpickle(implicit state: UnpickleState): Paragraph = parse(Unicode.pickler.unpickle)
   }
 
-  override def random(random: Random): Paragraph = ???
+
+  override def random(r: Random): Paragraph = randomWithDepth(r, 0)
+
+  def randomWithDepth(r: Random, depth: Int): Paragraph = {
+    val childsAtDepth = depth match {
+      case 0 => 5
+      case 1 => 4
+      case 2 => 4
+      case 3 => 2
+      case _ => 1
+    }
+    val addAtDepth = if (depth == 0) 3 else 0
+    (0 until (addAtDepth + r.nextInt(childsAtDepth))).map(_ => randomText(r, depth + 1))
+  }
+
+  def randomText(r: Random, depth: Int): Text = {
+    r.nextInt(5) match {
+      case 0 => Text.Strong(randomWithDepth(r, depth))
+      case 1 => Text.Emphasis(randomWithDepth(r, depth))
+      case 2 => Text.Plain(Unicode.random(r))
+      case 3 => Text.Code(Unicode.random(r))
+      case 4 => Text.StrikeThrough(randomWithDepth(r, depth))
+      case 5 => Text.LaTeX(Unicode.random(r))
+      case 6 => Text.Image(
+        randomWithDepth(r, depth),
+        Unicode.random(r),
+        if (r.nextBoolean()) Some(Unicode.random(r)) else None)
+      case 7 => Text.Link(
+        randomWithDepth(r, depth),
+        Unicode.random(r),
+        if (r.nextBoolean()) Some(Unicode.random(r)) else None)
+    }
+  }
 }

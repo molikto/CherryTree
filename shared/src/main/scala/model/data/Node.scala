@@ -1,6 +1,5 @@
 package model.data
 
-import boopickle._
 import model._
 import model.range.IntRange
 
@@ -36,7 +35,7 @@ case class Node(content: Content, childs: Seq[Node]) {
 
   def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = this(r)
-    delete(r).insert(r.transformInsertionPointAfterDeleted(at), a)
+    delete(r).insert(r.transformAfterDeleted(at).get, a)
   }
 }
 
@@ -55,5 +54,16 @@ object Node extends DataObject[Node] {
     }
   }
 
-  override def random(random: Random): Node = ???
+  override def random(r: Random): Node = randomWithDepth(r, 0)
+
+  private def randomWithDepth(r: Random, depth: Int): Node = {
+    val childsAtDepth = depth match {
+      case 0 => 5
+      case 1 => 4
+      case 2 => 4
+      case 3 => 2
+      case _ => 1
+    }
+    data.Node(data.Content.random(r), (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
+  }
 }

@@ -3,7 +3,7 @@ package model
 import boopickle._
 
 
-trait Picklers extends BasicImplicitPicklers with TransformPicklers with TuplePicklers with MaterializePicklerFallback {
+trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers with MaterializePicklerFallback {
   implicit val pickler_Node: Pickler[data.Node] = data.Node.pickler
   implicit val operationPickler_Node: Pickler[operation.Node] = operation.Node.pickler
 
