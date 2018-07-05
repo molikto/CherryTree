@@ -2,7 +2,7 @@ package model.operation
 
 import model._
 import Type.Type
-import boopickle._
+import model.range.IntRange
 
 import scala.util.Random
 
@@ -80,5 +80,45 @@ object Node extends OperationObject[data.Node, Node] {
     }
   }
 
-  override def random(d: data.Node, random: Random): Node = ???
+  def randomCursorAndNode(d: data.Node, r: Random): (cursor.Node, data.Node) = {
+    if (d.childs.isEmpty || r.nextInt(3) == 0) {
+      (cursor.Node.Root, d)
+    } else {
+      val c = r.nextInt(d.childs.size)
+      val (aa, bb) = randomCursorAndNode(d.childs(c), r)
+      (c +: aa, bb)
+    }
+  }
+
+  override def random(d: data.Node, r: Random): Node = {
+    // LATER generate MOVE
+    def doInsert(): Node = {
+      val (c, n) = randomCursorAndNode(d, r)
+      val p = r.nextInt(n.childs.size + 1)
+      Insert(c :+ p, (0 until r.nextInt(3)).map(_ => data.Node.random(r)))
+    }
+    r.nextInt(4) match {
+      case 0 =>
+        val (c, n) = randomCursorAndNode(d, r)
+        Content(c, operation.Content.random(n.content, r))
+      case 1 =>
+        val (c, _) = randomCursorAndNode(d, r)
+        Replace(c, data.Content.random(r))
+      case 2 =>
+        val (c, _) = randomCursorAndNode(d, r)
+        if (c != cursor.Node.Root) {
+          var ran = range.Node(c)
+          if (r.nextBoolean() && ran.childs.start > 1) {
+            ran = range.Node(ran.parent, IntRange(ran.childs.start - 2, ran.childs.endInclusive))
+          } else if (r.nextBoolean() && ran.childs.start > 0) {
+            ran = range.Node(ran.parent, IntRange(ran.childs.start - 1, ran.childs.endInclusive))
+          }
+          Delete(ran)
+        } else {
+          doInsert()
+        }
+      case 3 =>
+        doInsert()
+    }
+  }
 }

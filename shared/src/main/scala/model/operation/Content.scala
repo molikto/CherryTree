@@ -2,6 +2,7 @@ package model.operation
 
 import model._
 import Type.Type
+import model.operation.Node.Replace
 
 import scala.util.Random
 
@@ -74,5 +75,15 @@ object Content extends OperationObject[data.Content, Content] {
     }
   }
 
-  override def random(d: data.Content, random: Random): Content = ???
+  override def random(d: data.Content, r: Random): Content = {
+    d match {
+      case data.Content.Paragraph(paragraph) => Paragraph(operation.Paragraph.random(paragraph, r))
+      case data.Content.Code(unicode, lang) =>
+        if (r.nextBoolean()) {
+          Code.Content(operation.Unicode.random(unicode, r))
+        } else {
+          Code.Lang(Some(r.nextInt(10).toString))
+        }
+    }
+  }
 }

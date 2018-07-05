@@ -106,6 +106,10 @@ package object range {
 
   object Node {
 
+    def apply(t: cursor.Node, p: IntRange): Node = {
+      new Node(t, p)
+    }
+
     def apply(t: cursor.Node): Node = {
       val last = t.last
       Node(t.dropRight(1), IntRange(last, last))

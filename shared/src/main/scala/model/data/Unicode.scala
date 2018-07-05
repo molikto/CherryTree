@@ -2,12 +2,9 @@ package model.data
 
 import java.io.IOException
 
-import boopickle._
 import model._
-import model.operation.Type.Value
 import model.range.IntRange
 
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 

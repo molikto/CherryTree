@@ -2,7 +2,6 @@ package model
 
 package object cursor {
   // when used as a insertion point, Seq.empty is generally invalid, because the app will not allow deleting root
-  type Node = Seq[Int]
 
   object IntSeq {
     def transformAfterInserted(inserted: Int, len: Int, ref: Int): Int = {
@@ -14,8 +13,11 @@ package object cursor {
     }
   }
 
+  type Node = Seq[Int]
+
 
   object Node {
+    val Root: Node = Seq.empty
     /**
       * @return common, left unique, right unique
       */
