@@ -13,7 +13,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
 
   override def rebase(winner: operation.Unicode, loser: operation.Unicode): RebaseResult = {
-    def addDelete(add: Insert, delete: Delete, deleteConflict: conflict.Unicode): RebaseResult = {
+    def addDelete(add: Insert, delete: Delete, deleteConflict: => conflict.Unicode): RebaseResult = {
       val wat = add.at
       val wc = add.unicode
       val lfrom = delete.r.start
@@ -32,7 +32,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       }
     }
 
-    def deleteReplaceAtomic(delete: Delete, replace: ReplaceAtomic, deleteConflict: conflict.Unicode): RebaseResult = {
+    def deleteReplaceAtomic(delete: Delete, replace: ReplaceAtomic, deleteConflict: => conflict.Unicode): RebaseResult = {
       if (delete.r.contains(replace.r)) {
         Rebased(Set(deleteConflict), (
           None,

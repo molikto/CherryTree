@@ -86,6 +86,22 @@ package object range {
   case class Node(parent: cursor.Node,
     childs: IntRange) {
 
+    def start: cursor.Node = parent :+ childs.start
+    def endInclusive: cursor.Node = parent :+ childs.endInclusive
+
+    def transformDeletingRangeAfterDeleted(f: Node): Option[Node] = {
+      if (sameParent(f.start)) {
+        childs.transformDeletingRangeAfterDeleted(f.childs).map(a => Node(parent, a))
+      } else {
+        val l = transformAfterDeleted(f.start)
+        val r = transformAfterDeleted(f.endInclusive)
+        (l, r) match {
+          case (Some(ll), Some(rr)) => Some(Node(ll, rr))
+          case (None, None) =>  None
+          case _ => throw new IllegalStateException()
+        }
+      }
+    }
 
     def transformAfterDeleted(at: cursor.Node): Option[cursor.Node] = {
       if (contains(at)) None
@@ -102,22 +118,25 @@ package object range {
       * 1111
       * 11[3, 4]
       */
-    private def sameParent(at: cursor.Node) = at.size > parent.size && at.startsWith(parent)
+    def sameParent(at: cursor.Node) = at.size == parent.size + 1 && at.startsWith(parent)
 
-    def sameLevel(at: cursor.Node): Boolean = at.size == parent.size + 1
 
     def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
   }
 
   object Node {
 
+    def apply(t: cursor.Node, p: cursor.Node): Node = {
+      assert(t.dropRight(1) == p.dropRight(1))
+      Node(t.dropRight(1), IntRange(t.last, p.last))
+    }
     def apply(t: cursor.Node, p: IntRange): Node = {
       new Node(t, p)
     }
 
-    def apply(t: cursor.Node): Node = {
+    def apply(t: cursor.Node, len: Int = 1): Node = {
       val last = t.last
-      Node(t.dropRight(1), IntRange(last, last))
+      Node(t.dropRight(1), IntRange(last, last + len - 1))
     }
 
     val pickler: Pickler[Node] = new Pickler[Node] {
