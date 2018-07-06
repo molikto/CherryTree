@@ -8,7 +8,7 @@ object DataTests extends TestSuite {
 
   val tests = Tests {
     def testDataObject[T](obj: DataObject[T]): Unit = {
-      for (i <- 0 until 10) {
+      for (_ <- 0 until 10) {
         val a = obj.random()
         val bytes = Pickle.intoBytes(a)(implicitly, obj.pickler)
         val b = Unpickle[T](obj.pickler).fromBytes(bytes)
@@ -30,6 +30,14 @@ object DataTests extends TestSuite {
     'paragraph - {
       testDataObject(data.Paragraph)
     }
+
+    'paragraphSize - {
+      for (_ <- 0 until 10) {
+        val a = Paragraph.random()
+        assert(Paragraph.serialize(a).size == Paragraph.size(a))
+      }
+    }
+
 
     'implicitlyGenerated - {
       val o = ot.Node

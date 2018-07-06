@@ -5,6 +5,9 @@ import boopickle._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
+/**
+  * we currently expect all our paragraph object is normalized
+  */
 object Paragraph extends DataObject[Paragraph] {
   private[model] def serialize(content: Paragraph): Unicode = {
     val buffer = new UnicodeWriter()
@@ -43,7 +46,15 @@ object Paragraph extends DataObject[Paragraph] {
       case _ => 1
     }
     val addAtDepth = if (depth == 0) 3 else 0
-    (0 until (addAtDepth + r.nextInt(childsAtDepth))).map(_ => randomText(r, depth + 1))
+    // we normalize this so that parsed result is the same with non-parsed
+    val nonNormalized = (0 until (addAtDepth + r.nextInt(childsAtDepth))).map(_ => randomText(r, depth + 1))
+    nonNormalized.foldRight(Seq.empty[Text]) { (m, seq) =>
+      (m, seq.headOption) match {
+        case (Text.Plain(c), Some(Text.Plain(j))) =>
+          Text.Plain(c.join(j)) +: seq.tail
+        case _ => m +: seq
+      }
+    }
   }
 
   private def randomText(r: Random, depth: Int): Text = {

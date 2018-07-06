@@ -17,6 +17,7 @@ private[model] object SpecialChar extends Enumeration {
 
   // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
   val Char = '\uE700'
+  val Size = 2
   val EmphasisStart = Value
   val EmphasisEnd = Value
   val StrongStart = Value
@@ -35,8 +36,6 @@ private[model] object SpecialChar extends Enumeration {
   val CodeEnd = Value
   val LaTeXStart = Value
   val LaTeXEnd = Value
-  val PlainStart = Value
-  val PlainEnd = Value
   val Nil = Value
 }
 
@@ -93,7 +92,7 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def eatUntilSpecialChar(): Unicode = {
     var index = start
-    while (str.codePointAt(index) != SpecialChar.Char.toInt) {
+    while (index < str.length && str.codePointAt(index) != SpecialChar.Char.toInt) {
       index = str.offsetByCodePoints(index, 1)
     }
     val ret = str.substring(start, index)
@@ -127,6 +126,8 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+  def join(j: Unicode): Unicode = Unicode(str + j.str)
+
 
   override def toString: String = str
 
