@@ -126,6 +126,7 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+
   def join(j: Unicode): Unicode = Unicode(str + j.str)
 
 
@@ -147,6 +148,12 @@ case class Unicode(private var str: String) {
     val start = str.offsetByCodePoints(0, r.start)
     val end = str.offsetByCodePoints(start, r.size)
     Unicode(s"${str.substring(0, start)}${str.substring(end)}")
+  }
+
+  def replace(r: IntRange, unicode: Unicode): Unicode = {
+    val start = str.offsetByCodePoints(0, r.start)
+    val end = str.offsetByCodePoints(start, r.size)
+    Unicode(s"${str.substring(0, start)}${unicode.str}${str.substring(end)}")
   }
 
   def move(r: IntRange, at: Int): Unicode = {

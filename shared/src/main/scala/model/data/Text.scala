@@ -1,7 +1,5 @@
 package model.data
 
-import scala.util.Random
-
 
 abstract sealed class Text {
   private[model] def serialize(buffer: UnicodeWriter)

@@ -15,6 +15,7 @@ case class Paragraph(u: Seq[Unicode], override val ty: Type) extends Operation[d
 }
 
 object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
+  // operations
 
   override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
     override def pickle(obj: Paragraph)(implicit state: PickleState): Unit = {

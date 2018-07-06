@@ -34,6 +34,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
     def reverse(res: RebaseResult) = Rebased(res.conflicts, (res.t._2, res.t._1))
 
+
+
     (winner, loser) match {
       case (w@Insert(wat, wc), l@Insert(lat, lc)) =>
         if (wat == lat) {
