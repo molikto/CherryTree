@@ -2,7 +2,10 @@ package model.data
 
 import controller.api.{ApiError, ClientInit, ErrorT}
 import model._
+import model.range.IntRange
 import utest._
+
+import scala.util.Try
 
 object DataTests extends TestSuite {
 
@@ -38,9 +41,14 @@ object DataTests extends TestSuite {
       }
     }
 
+    'paragraphThrowForInvalidData - {
+      assert(Try {
+        Paragraph.parse(Paragraph.serialize(Paragraph(Text.Emphasis(Paragraph.random()))).delete(IntRange(0, SpecialChar.Size)))
+      }.isFailure)
+    }
+
 
     'implicitlyGenerated - {
-      val o = ot.Node
       for (i <- 0 until 10) {
         val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(), i))
         val bytes = Pickle.intoBytes(a)

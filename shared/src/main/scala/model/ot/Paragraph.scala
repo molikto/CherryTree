@@ -11,7 +11,9 @@ object Paragraph extends Ot[data.Paragraph, operation.Paragraph, conflict.Paragr
   type RebaseResult = Rebased[conflict.Paragraph, (Option[operation.Paragraph], Option[operation.Paragraph])]
   override def rebase(winner: operation.Paragraph, loser: operation.Paragraph): RebaseResult = {
     val a = ot.Unicode.rebase(winner.u, loser.u)
-  //  Rebased(a.conflicts, (a.t._1.map(a => operation.Paragraph(a)), a.t._2.map(b => operation.Paragraph(b))))
-    ???
+    // TODO what's the purpose of ty here? and how is it used?
+    val ww = if (a.t._1.isEmpty) None else Some(operation.Paragraph(a.t._1, winner.ty))
+    val ll = if (a.t._2.isEmpty) None else Some(operation.Paragraph(a.t._2, loser.ty))
+    Rebased(a.conflicts, (ww, ll))
   }
 }

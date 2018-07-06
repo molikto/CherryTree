@@ -13,6 +13,8 @@ package object range {
       assert(start >= 0 && endInclusive >= start)
     }
 
+    def moveBy(a: Int): IntRange = IntRange(start + a, endInclusive + a)
+
     /**
       * positions: 0 1 2 3
       * range: [1, 2]
@@ -20,6 +22,11 @@ package object range {
       */
     def contains(cursor: Int): Boolean = cursor >= start && cursor <= endInclusive
 
+
+    def contains(b: IntRange): Boolean = b.start >= start && b.endInclusive <= endInclusive
+
+    def overlap(b: IntRange): Boolean =
+      contains(b.start) || contains(b.endInclusive) || b.contains(start) || b.contains(b.endInclusive)
 
     def transformAfterDeleted(p: Int): Option[Int] = {
       if (p < start) {

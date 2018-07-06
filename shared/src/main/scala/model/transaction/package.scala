@@ -4,5 +4,5 @@ package object transaction {
 
 
 
-  type Node = Seq[operation.Node]
+  type Node = operation.Node.TRANSACTION
 }

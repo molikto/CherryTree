@@ -12,20 +12,20 @@ import scala.util.Random
 object Paragraph extends DataObject[Paragraph] {
 
   def randomParagraphInsertionPoint(d: Paragraph, r: Random): Int = {
-
+    ???
   }
 
 
   private[model] def randomTitleOrLink(d: Paragraph, r: Random): Option[(IntRange, IntRange)] = {
-
+    ???
   }
 
   private[model] def randomFormatted(d: Paragraph, r: Random): Option[IntRange] = {
-    Paragraph.serialize(d)
+    ???
   }
 
   private[model] def randomCoded(d: Paragraph, r: Random): Option[IntRange] = {
-
+    ???
   }
 
   private[model] def randomSubparagraph(d: Paragraph, r: Random): IntRange = {
@@ -35,6 +35,11 @@ object Paragraph extends DataObject[Paragraph] {
     }
     val a = r.nextInt(s - 1)
     val b = r.nextInt(s - a - 1) + a
+  }
+
+
+  private[model] def collectDepth(d: Paragraph): Array[Int] = {
+
   }
 
   private[model] def serialize(content: Paragraph): Unicode = {

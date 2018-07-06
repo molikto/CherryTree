@@ -35,6 +35,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class ReplaceAtomic(r: IntRange, unicode: data.Unicode) extends Unicode {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Unicode): data.Unicode = d.replace(r, unicode)
+    def sizeDiff: Int =  unicode.size - r.size
   }
   case class Move(r: IntRange, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
