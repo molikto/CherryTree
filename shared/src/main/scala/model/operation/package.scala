@@ -28,7 +28,7 @@ package object operation {
 
     def random(data: DATA): OPERATION = random(data, new Random())
 
-    def random(data: DATA, random: Random): OPERATION
+    def random(data: DATA, r: Random): OPERATION
 
     def randomTransaction(size: Int, data: DATA): TRANSACTION = {
       var a = data

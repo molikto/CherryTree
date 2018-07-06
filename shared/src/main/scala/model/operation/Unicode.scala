@@ -11,7 +11,7 @@ import scala.util.Random
 sealed trait Unicode extends Operation[data.Unicode]
 
 object Unicode extends OperationObject[data.Unicode, Unicode] {
-  case class Insert(at: Int, unicode: data.Unicode) extends Unicode {
+  case class Insert(at: Int, unicode: data.Unicode, leftGlued: Boolean = false) extends Unicode {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
   }
@@ -44,11 +44,11 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   /**
     * replace is not generated for this, because it is used for some structural data
     */
-  override def random(d: data.Unicode, random: Random): Unicode = {
-    if (random.nextBoolean() || d.isEmpty) {
-      Insert(random.nextInt(d.size + 1), data.Unicode(random.nextLong().toString))
+  override def random(d: data.Unicode, r: Random): Unicode = {
+    if (r.nextBoolean() || d.isEmpty) {
+      Insert(r.nextInt(d.size + 1), data.Unicode(r.nextLong().toString))
     } else {
-      val (end, start) = maxMin(random.nextInt(d.size), random.nextInt(d.size))
+      val (end, start) = maxMin(r.nextInt(d.size), r.nextInt(d.size))
       Delete(start, end)
     }
   }
@@ -57,19 +57,19 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
-        case Insert(at, childs) =>
-          writeInt(0)
+        case Insert(at, childs, leftGlued) =>
+          writeInt(if (leftGlued) 1 else 0)
           writeInt(at)
           writeString(childs.toString)
         case Delete(range) =>
-          writeInt(1)
+          writeInt(2)
           IntRange.pickler.pickle(range)
         case ReplaceAtomic(range, unicode) =>
-          writeInt(2)
+          writeInt(3)
           IntRange.pickler.pickle(range)
           writeString(unicode.toString)
         case Move(r, at) =>
-          writeInt(3)
+          writeInt(4)
           IntRange.pickler.pickle(r)
           writeInt(at)
       }
@@ -80,10 +80,12 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         case 0 =>
           Insert(readInt, data.Unicode(readString))
         case 1 =>
-          Delete(IntRange.pickler.unpickle)
+          Insert(readInt, data.Unicode(readString), leftGlued = true)
         case 2 =>
-          ReplaceAtomic(IntRange.pickler.unpickle, data.Unicode(readString))
+          Delete(IntRange.pickler.unpickle)
         case 3 =>
+          ReplaceAtomic(IntRange.pickler.unpickle, data.Unicode(readString))
+        case 4 =>
           Move(IntRange.pickler.unpickle, readInt)
       }
     }

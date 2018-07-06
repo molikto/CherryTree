@@ -5,7 +5,7 @@ import com.softwaremill.quicklens._
 
 import operation.Unicode._
 
-// TODO we currently don't generate any move operations, and we haven't handle it in our code
+// LATER we currently don't generate any move operations, and we haven't handle it in our code
 object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
 
@@ -36,21 +36,24 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
 
 
+    // TODO replaceAtomic
     (winner, loser) match {
-      case (w@Insert(wat, wc), l@Insert(lat, lc)) =>
+      case (w@Insert(wat, wc, wl), l@Insert(lat, lc, ll)) =>
         if (wat == lat) {
-          Rebased(Set(conflict.Unicode.Asymmetry()), some(
-            winner,
-            l.modify(_.at).using(_ + wc.size)
-          ))
+          if (ll) {
+            // if second is left glued, then the first does't matter
+            Rebased(if (wl == ll) Set(conflict.Unicode.Asymmetry()) else Set.empty, some(w.modify(_.at).using(_ + lc.size), l))
+          } else {
+            Rebased(if (wl == ll) Set(conflict.Unicode.Asymmetry()) else Set.empty, some(w, l.modify(_.at).using(_ + wc.size)))
+          }
         } else if (wat > lat) {
           Rebased(Set.empty, some(w.modify(_.at).using(_ + lc.size), l))
         } else {
           Rebased(Set.empty, some(w, l.modify(_.at).using(_ + wc.size)))
         }
-      case (a@Insert(_, _), l@Delete(_)) =>
+      case (a@Insert(_, _, _), l@Delete(_)) =>
         addDelete(a, l, addIsWinner = true)
-      case (d@Delete(_), a@Insert(_, _)) =>
+      case (d@Delete(_), a@Insert(_, _, _)) =>
         reverse(addDelete(a, d, addIsWinner = false))
       case (Delete(ws), Delete(ls)) =>
         val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a.start, a.endInclusive))
@@ -58,11 +61,11 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         Rebased(Set.empty, (wp, lp))
       case (Delete(_), Move(_, _)) =>
         ???
-      case (Insert(_, _), Move(_, _)) =>
+      case (Insert(_, _, _), Move(_, _)) =>
         ???
       case (Move(_, _), Delete(_)) =>
         ???
-      case (Move(_, _), Insert(_, _)) =>
+      case (Move(_, _), Insert(_, _, _)) =>
         ???
       case (Move(wr, wa), Move(lr, la)) =>
         ???

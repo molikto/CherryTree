@@ -1,6 +1,7 @@
 package model.data
 
 import boopickle._
+import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -9,6 +10,33 @@ import scala.util.Random
   * we currently expect all our paragraph object is normalized
   */
 object Paragraph extends DataObject[Paragraph] {
+
+  def randomParagraphInsertionPoint(d: Paragraph, r: Random): Int = {
+
+  }
+
+
+  private[model] def randomTitleOrLink(d: Paragraph, r: Random): Option[(IntRange, IntRange)] = {
+
+  }
+
+  private[model] def randomFormatted(d: Paragraph, r: Random): Option[IntRange] = {
+    Paragraph.serialize(d)
+  }
+
+  private[model] def randomCoded(d: Paragraph, r: Random): Option[IntRange] = {
+
+  }
+
+  private[model] def randomSubparagraph(d: Paragraph, r: Random): IntRange = {
+    val s = size(d)
+    if (s == 0) {
+      return IntRange(0, 0)
+    }
+    val a = r.nextInt(s - 1)
+    val b = r.nextInt(s - a - 1) + a
+  }
+
   private[model] def serialize(content: Paragraph): Unicode = {
     val buffer = new UnicodeWriter()
     content.foreach(_.serialize(buffer))

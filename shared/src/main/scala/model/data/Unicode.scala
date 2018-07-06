@@ -17,6 +17,9 @@ private[model] object SpecialChar extends Enumeration {
 
   // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
   val Char = '\uE700'
+
+  def toUnicode(t: Type): Unicode = Unicode(s"$Char${t.id.toChar}")
+
   val Size = 2
   val EmphasisStart = Value
   val EmphasisEnd = Value
@@ -121,7 +124,7 @@ object Unicode extends DataObject[Unicode] {
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
   }
 
-  override def random(random: Random): Unicode = Unicode(random.nextLong().toString)
+  override def random(r: Random): Unicode = Unicode(r.nextLong().toString)
   val empty = Unicode("")
 }
 

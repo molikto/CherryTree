@@ -6,6 +6,11 @@ abstract sealed class Text {
   val size: Int
 }
 
+/**
+  * for now the tree structure is context insensitive
+  *
+  * context sensitive formats includes no links inside links, etc
+  */
 object Text {
 
 
