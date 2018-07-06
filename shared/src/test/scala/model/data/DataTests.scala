@@ -11,23 +11,16 @@ object DataTests extends TestSuite {
 
   val tests = Tests {
     def testDataObject[T](obj: DataObject[T]): Unit = {
-      for (_ <- 0 until 10) {
+      for (_ <- 0 until 100) {
         val a = obj.random()
         val bytes = Pickle.intoBytes(a)(implicitly, obj.pickler)
         val b = Unpickle[T](obj.pickler).fromBytes(bytes)
         assert(a == b)
       }
     }
-    'node - {
-      testDataObject(data.Node)
-    }
 
     'unicode - {
       testDataObject(data.Unicode)
-    }
-
-    'content - {
-      testDataObject(data.Content)
     }
 
     'paragraph - {
@@ -42,11 +35,22 @@ object DataTests extends TestSuite {
     }
 
     'paragraphThrowForInvalidData - {
+      val org = Paragraph(Text.Emphasis(Paragraph.random()))
       assert(Try {
-        Paragraph.parse(Paragraph.serialize(Paragraph(Text.Emphasis(Paragraph.random()))).delete(IntRange(0, SpecialChar.Size)))
+        Paragraph.parse(Paragraph.serialize(org).delete(IntRange(0, SpecialChar.Size - 1)))
+      }.isFailure)
+      assert(Try {
+        Paragraph.parse(Paragraph.serialize(org).delete(IntRange(org.size - SpecialChar.Size + 1, org.size)))
       }.isFailure)
     }
 
+    'content - {
+      testDataObject(data.Content)
+    }
+
+    'node - {
+      testDataObject(data.Node)
+    }
 
     'implicitlyGenerated - {
       for (i <- 0 until 10) {

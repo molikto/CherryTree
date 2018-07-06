@@ -8,7 +8,7 @@ import model.range.IntRange
 import scala.util.Random
 
 
-class UnicodeParseException extends IOException {
+class UnicodeParseException(msg: String) extends IOException(msg) {
 
 }
 
@@ -21,6 +21,7 @@ private[model] object SpecialChar extends Enumeration {
   def toUnicode(t: Type): Unicode = Unicode(s"$Char${t.id.toChar}")
 
   val Size = 2
+  val NotSpecial = Value
   val EmphasisStart = Value
   val EmphasisEnd = Value
   val StrongStart = Value
@@ -39,7 +40,6 @@ private[model] object SpecialChar extends Enumeration {
   val CodeEnd = Value
   val LaTeXStart = Value
   val LaTeXEnd = Value
-  val Nil = Value
 }
 
 
@@ -71,14 +71,14 @@ private[model] class UnicodeReader(a: Unicode) {
   def eatOrNil(): SpecialChar.Type = {
     if (str.charAt(start) == SpecialChar.Char) {
       val c = str.charAt(start + 1)
-      if (c < SpecialChar.Nil.id) {
+      if (c != SpecialChar.NotSpecial.id && c < SpecialChar.maxId) {
         start = start + 2
         return SpecialChar(c)
       } else {
-        throw new UnicodeParseException()
+        throw new UnicodeParseException("Invalid special char")
       }
     }
-    SpecialChar.Nil
+    SpecialChar.NotSpecial
   }
 
   def eatOrFalse(a: SpecialChar.Type): Boolean = {
@@ -105,7 +105,7 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def eatUntilAndDrop(b: SpecialChar.Type): Unicode = {
     val a = eatUntilSpecialChar()
-    if (!eatOrFalse(b)) throw new UnicodeParseException()
+    if (!eatOrFalse(b)) throw new UnicodeParseException(s"Expecting $b")
     a
   }
 

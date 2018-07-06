@@ -11,6 +11,8 @@ import scala.util.Random
   */
 object Paragraph extends DataObject[Paragraph] {
 
+  def apply(text: Text*): Paragraph = text
+
   // TODO fix all these functions
   def randomParagraphInsertionPoint(d: Paragraph, r: Random): Int = {
     0
@@ -39,7 +41,7 @@ object Paragraph extends DataObject[Paragraph] {
   }
   private[model] def parse(unicode: Unicode): Paragraph = {
     val reader = new UnicodeReader(unicode)
-    parse(reader, SpecialChar.Nil)
+    parse(reader, SpecialChar.NotSpecial)
   }
 
   private[model] def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {

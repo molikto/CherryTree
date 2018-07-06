@@ -30,8 +30,10 @@ object Text {
         Code(reader.eatUntilAndDrop(SpecialChar.CodeEnd))
       case SpecialChar.LaTeXStart =>
         LaTeX(reader.eatUntilAndDrop(SpecialChar.LaTeXEnd))
-      case _ =>
+      case SpecialChar.NotSpecial =>
         Plain(reader.eatUntilSpecialChar())
+      case _ =>
+        throw new UnicodeParseException("Expecting a non-special char or a special start char")
     }
   }
   case class Emphasis(content: Paragraph) extends Text {
