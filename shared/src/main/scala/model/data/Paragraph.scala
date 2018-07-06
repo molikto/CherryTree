@@ -83,10 +83,9 @@ object Paragraph extends DataObject[Paragraph] {
   }
 
   private def randomText(r: Random, depth: Int): Text = {
-    r.nextInt(5) match {
+    r.nextInt(8) match {
       case 0 => Text.Strong(randomWithDepth(r, depth))
       case 1 => Text.Emphasis(randomWithDepth(r, depth))
-      case 2 => Text.Plain(Unicode.random(r))
       case 3 => Text.Code(Unicode.random(r))
       case 4 => Text.StrikeThrough(randomWithDepth(r, depth))
       case 5 => Text.LaTeX(Unicode.random(r))
@@ -98,6 +97,7 @@ object Paragraph extends DataObject[Paragraph] {
         randomWithDepth(r, depth),
         Unicode.random(r),
         if (r.nextBoolean()) Some(Unicode.random(r)) else None)
+      case _ => Text.Plain(Unicode.random(r))
     }
   }
 }

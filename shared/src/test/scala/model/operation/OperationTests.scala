@@ -22,7 +22,6 @@ object OperationTests extends TestSuite {
       }
     }
 
-
     'unicode - {
       testOperationObject(data.Unicode, operation.Unicode)
     }
