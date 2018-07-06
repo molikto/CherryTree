@@ -4,14 +4,14 @@ import scala.util.Random
 
 
 abstract sealed class Text {
-  def serialize(buffer: UnicodeWriter)
+  private[model] def serialize(buffer: UnicodeWriter)
   val size: Int
 }
 
 object Text {
 
 
-  def parse(reader: UnicodeReader): Text = {
+  private[model] def parse(reader: UnicodeReader): Text = {
     reader.eatOrNil() match {
       case SpecialChar.EmphasisStart =>
         Emphasis(Paragraph.parse(reader, SpecialChar.EmphasisEnd))
@@ -45,7 +45,7 @@ object Text {
   case class Strong(content: Seq[Text]) extends Text {
     override val size: Int = Paragraph.size(content)  + 2
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.StrongStart)
       content.foreach(_.serialize(buffer))
       buffer.put(SpecialChar.StrongEnd)
@@ -54,7 +54,7 @@ object Text {
   case class StrikeThrough(content: Seq[Text]) extends Text {
     override val size: Int = Paragraph.size(content) + 2
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.StrikeThroughStart)
       content.foreach(_.serialize(buffer))
       buffer.put(SpecialChar.StrikeThroughEnd)
@@ -63,7 +63,7 @@ object Text {
   case class Link(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Text {
     override val size: Int = Paragraph.size(content) + url.size + title.map(_.size).getOrElse(0) + 4
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.LinkStart)
       content.foreach(_.serialize(buffer))
       buffer.put(SpecialChar.LinkContentEnd)
@@ -76,7 +76,7 @@ object Text {
   case class Image(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Text {
     override val size: Int = Paragraph.size(content) + url.size + title.map(_.size).getOrElse(0) + 4
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.ImageStart)
       content.foreach(_.serialize(buffer))
       buffer.put(SpecialChar.ImageContentEnd)
@@ -89,7 +89,7 @@ object Text {
   case class Code(unicode: Unicode) extends Text {
     override val size: Int = unicode.size + 2
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.CodeStart)
       buffer.put(unicode)
       buffer.put(SpecialChar.CodeEnd)
@@ -98,7 +98,7 @@ object Text {
   case class LaTeX(unicode: Unicode) extends Text {
     override val size: Int = unicode.size + 2
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.LaTeXStart)
       buffer.put(unicode)
       buffer.put(SpecialChar.LaTeXEnd)
@@ -107,7 +107,7 @@ object Text {
   case class Plain(unicode: Unicode) extends Text {
     override val size: Int = unicode.size + 2
 
-    override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.PlainStart)
       buffer.put(unicode)
       buffer.put(SpecialChar.PlainEnd)

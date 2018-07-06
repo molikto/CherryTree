@@ -1,7 +1,5 @@
 package model
 
-import boopickle.{PickleState, Pickler, UnpickleState}
-
 package object range {
 
 

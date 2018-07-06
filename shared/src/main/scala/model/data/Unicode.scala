@@ -12,7 +12,7 @@ class UnicodeParseException extends IOException {
 
 }
 
-object SpecialChar extends Enumeration {
+private[model] object SpecialChar extends Enumeration {
   type Type = Value
 
   // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
@@ -42,7 +42,7 @@ object SpecialChar extends Enumeration {
 
 
 
-class UnicodeWriter {
+private[model] class UnicodeWriter {
 
   private val sb = new StringBuilder()
 
@@ -56,19 +56,21 @@ class UnicodeWriter {
   }
 
   def toUnicode: Unicode = {
-    Unicode(sb.toString(), hasEncoding = true)
+    Unicode(sb.toString())
   }
 }
-class UnicodeReader(a: Unicode) {
-  private var str = a.toString
 
-  def isEmpty = str.isEmpty
+private[model] class UnicodeReader(a: Unicode) {
+  private val str = a.toString
+  private var start = 0
+
+  def isEmpty: Boolean = start >= str.length
 
   def eatOrNil(): SpecialChar.Type = {
-    if (str.charAt(0) == SpecialChar.Char) {
-      val c = str.charAt(1)
+    if (str.charAt(start) == SpecialChar.Char) {
+      val c = str.charAt(start + 1)
       if (c < SpecialChar.Nil.id) {
-        str = str.substring(2)
+        start = start + 2
         return SpecialChar(c)
       } else {
         throw new UnicodeParseException()
@@ -78,9 +80,9 @@ class UnicodeReader(a: Unicode) {
   }
 
   def eatOrFalse(a: SpecialChar.Type): Boolean = {
-    if (str.charAt(0) == SpecialChar.Char) {
-      if (str.charAt(1) == a.id.toChar) {
-        str = str.substring(2)
+    if (str.charAt(start) == SpecialChar.Char) {
+      if (str.charAt(start + 1) == a.id.toChar) {
+        start = start + 2
         return true
       } else {
         return false
@@ -90,13 +92,12 @@ class UnicodeReader(a: Unicode) {
   }
 
   def eatUntilSpecialChar(): Unicode = {
-    val a = 0
-    var index = 0
+    var index = start
     while (str.codePointAt(index) != SpecialChar.Char.toInt) {
       index = str.offsetByCodePoints(index, 1)
     }
-    val ret = str.substring(0, index)
-    str = str.substring(index)
+    val ret = str.substring(start, index)
+    start = index
     Unicode(ret)
   }
 
@@ -125,7 +126,7 @@ object Unicode extends DataObject[Unicode] {
   val empty = Unicode("")
 }
 
-case class Unicode(private var str: String, private val hasEncoding: Boolean = false) {
+case class Unicode(private var str: String) {
 
   override def toString: String = str
 

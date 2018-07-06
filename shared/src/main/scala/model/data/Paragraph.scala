@@ -6,17 +6,17 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object Paragraph extends DataObject[Paragraph] {
-  def serialize(content: Paragraph): Unicode = {
+  private[model] def serialize(content: Paragraph): Unicode = {
     val buffer = new UnicodeWriter()
     content.foreach(_.serialize(buffer))
     buffer.toUnicode
   }
-  def parse(unicode: Unicode): Paragraph = {
+  private[model] def parse(unicode: Unicode): Paragraph = {
     val reader = new UnicodeReader(unicode)
     parse(reader, SpecialChar.Nil)
   }
 
-  def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
+  private[model] def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
     val buffer = new ArrayBuffer[Text]()
     while (!reader.isEmpty && !reader.eatOrFalse(until)) {
       buffer += Text.parse(reader)
@@ -46,7 +46,7 @@ object Paragraph extends DataObject[Paragraph] {
     (0 until (addAtDepth + r.nextInt(childsAtDepth))).map(_ => randomText(r, depth + 1))
   }
 
-  def randomText(r: Random, depth: Int): Text = {
+  private def randomText(r: Random, depth: Int): Text = {
     r.nextInt(5) match {
       case 0 => Text.Strong(randomWithDepth(r, depth))
       case 1 => Text.Emphasis(randomWithDepth(r, depth))

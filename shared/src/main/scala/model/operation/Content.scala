@@ -77,8 +77,8 @@ object Content extends OperationObject[data.Content, Content] {
 
   override def random(d: data.Content, r: Random): Content = {
     d match {
-      case data.Content.Paragraph(paragraph) => Paragraph(operation.Paragraph.random(paragraph, r))
-      case data.Content.Code(unicode, lang) =>
+      case data.Content.Paragraph(paragraph) => Paragraph.Content(operation.Paragraph.random(paragraph, r))
+      case data.Content.Code(unicode, _) =>
         if (r.nextBoolean()) {
           Code.Content(operation.Unicode.random(unicode, r))
         } else {
