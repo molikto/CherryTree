@@ -17,7 +17,7 @@ import scala.util.Random
   */
 case class Paragraph(u: Seq[Unicode], override val ty: Type) extends Operation[data.Paragraph] {
   override def apply(d: data.Paragraph): data.Paragraph =
-    data.Paragraph.parse(Unicode.apply(u, data.Paragraph.serialize(d)))
+    data.Paragraph.parse(Unicode.apply(u, d.serialize()))
 }
 
 object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
@@ -42,7 +42,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   override def random(d: data.Paragraph, r: Random): Paragraph = {
     def fallback(): Paragraph = {
       val a = data.Paragraph.randomParagraphInsertionPoint(d, r)
-      Paragraph(Seq(operation.Unicode.Insert(a, data.Paragraph.serialize(data.Paragraph.random(r)))), Type.Add)
+      Paragraph(Seq(operation.Unicode.Insert(a, data.Paragraph.random(r).serialize())), Type.Add)
     }
     r.nextInt(9) match {
       case 0 =>
@@ -116,13 +116,13 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   }
 
   override def apply(cs: TRANSACTION, model: data.Paragraph): data.Paragraph = {
-    data.Paragraph.parse(cs.foldLeft(data.Paragraph.serialize(model)) { (m, c) =>
+    data.Paragraph.parse(cs.foldLeft(model.serialize()) { (m, c) =>
       Unicode.apply(c.u, m)
     })
   }
 
   override def applyT(cs: Seq[TRANSACTION], model: data.Paragraph): data.Paragraph = {
-    data.Paragraph.parse(cs.foldLeft(data.Paragraph.serialize(model)) { (m, t) =>
+    data.Paragraph.parse(cs.foldLeft(model.serialize()) { (m, t) =>
       t.foldLeft(m) { (m, c) => Unicode.apply(c.u, m) }
     })
   }

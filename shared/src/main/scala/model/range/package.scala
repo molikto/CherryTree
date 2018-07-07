@@ -26,7 +26,7 @@ package object range {
     def contains(b: IntRange): Boolean = b.start >= start && b.endInclusive <= endInclusive
 
     def overlap(b: IntRange): Boolean =
-      contains(b.start) || contains(b.endInclusive) || b.contains(start) || b.contains(b.endInclusive)
+      contains(b.start) || contains(b.endInclusive) || b.contains(start) || b.contains(endInclusive)
 
     def transformAfterDeleted(p: Int): Option[Int] = {
       if (p < start) {
@@ -56,7 +56,7 @@ package object range {
       (l, r) match {
         case (Some(ll), Some(rr)) => Some(IntRange(ll, rr))
         case (Some(ll), None) => Some(IntRange(ll, start - 1))
-        case (None, Some(rr)) => Some(IntRange(endInclusive, rr))
+        case (None, Some(rr)) => Some(IntRange(start, rr))
         case (None, None) =>  None
       }
     }
@@ -93,19 +93,16 @@ package object range {
       if (sameParent(f.start)) {
         childs.transformDeletingRangeAfterDeleted(f.childs).map(a => Node(parent, a))
       } else {
-        val l = transformAfterDeleted(f.start)
-        val r = transformAfterDeleted(f.endInclusive)
-        (l, r) match {
-          case (Some(ll), Some(rr)) => Some(Node(ll, rr))
-          case (None, None) =>  None
-          case _ => throw new IllegalStateException()
+        transformAfterDeleted(f.parent) match {
+          case Some(a) => Some(f.copy(parent = a))
+          case None => None
         }
       }
     }
 
     def transformAfterDeleted(at: cursor.Node): Option[cursor.Node] = {
       if (contains(at)) None
-      else if (at.startsWith(parent) && at(parent.size) > childs.endInclusive) Some(at.patch(parent.size, Seq(at(parent.size + childs.size)), 1))
+      else if (at.startsWith(parent) && at.size > parent.size && at(parent.size) > childs.endInclusive) Some(at.patch(parent.size, Seq(at(parent.size) - childs.size), 1))
       else Some(at)
     }
     /**

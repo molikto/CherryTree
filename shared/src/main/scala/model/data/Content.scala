@@ -19,7 +19,7 @@ abstract sealed class Content {
 object Content extends DataObject[Content] {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content
   case class Paragraph(paragraph: data.Paragraph) extends Content {
-    val size: Int = paragraph.map(_.size).sum
+    val size: Int = paragraph.size
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

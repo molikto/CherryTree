@@ -30,17 +30,17 @@ object DataTests extends TestSuite {
     'paragraphSize - {
       for (_ <- 0 until 10) {
         val a = Paragraph.random()
-        assert(Paragraph.serialize(a).size == Paragraph.size(a))
+        assert(a.serialize().size == a.size)
       }
     }
 
     'paragraphThrowForInvalidData - {
-      val org = Paragraph(Text.Emphasis(Paragraph.random()))
+      val org = Paragraph(Seq(Text.Emphasis(Paragraph.random().text)))
       assert(Try {
-        Paragraph.parse(Paragraph.serialize(org).delete(IntRange(0, SpecialChar.Size - 1)))
+        Paragraph.parse(org.serialize().delete(IntRange(0, SpecialChar.Size - 1)))
       }.isFailure)
       assert(Try {
-        Paragraph.parse(Paragraph.serialize(org).delete(IntRange(org.size - SpecialChar.Size + 1, org.size)))
+        Paragraph.parse(org.serialize().delete(IntRange(org.size - SpecialChar.Size + 1, org.size)))
       }.isFailure)
     }
 

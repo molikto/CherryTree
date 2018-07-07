@@ -9,9 +9,20 @@ import scala.util.Random
 /**
   * we currently expect all our paragraph object is normalized
   */
+case class Paragraph(text: Seq[Text]) {
+
+  private[model] def serialize(): Unicode = {
+    val buffer = new UnicodeWriter()
+    text.foreach(_.serialize(buffer))
+    buffer.toUnicode
+  }
+
+  lazy val size: Int = Text.size(text)
+}
+
 object Paragraph extends DataObject[Paragraph] {
 
-  def apply(text: Text*): Paragraph = text
+  val empty: Paragraph = Paragraph(Seq.empty)
 
   // TODO fix all these functions
   def randomParagraphInsertionPoint(d: Paragraph, r: Random): Int = {
@@ -34,35 +45,22 @@ object Paragraph extends DataObject[Paragraph] {
     IntRange(0, d.size - 1)
   }
 
-  private[model] def serialize(content: Paragraph): Unicode = {
-    val buffer = new UnicodeWriter()
-    content.foreach(_.serialize(buffer))
-    buffer.toUnicode
-  }
   private[model] def parse(unicode: Unicode): Paragraph = {
     val reader = new UnicodeReader(unicode)
-    parse(reader, SpecialChar.NotSpecial)
+    Paragraph(Text.parse(reader, SpecialChar.NotSpecial))
   }
 
-  private[model] def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
-    val buffer = new ArrayBuffer[Text]()
-    while (!reader.isEmpty && !reader.eatOrFalse(until)) {
-      buffer += Text.parse(reader)
-    }
-    buffer.toVector
-  }
 
-  def size(paragraph: Paragraph): Int = paragraph.map(_.size).sum
 
   override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
-    override def pickle(obj: Paragraph)(implicit state: PickleState): Unit = Unicode.pickler.pickle(serialize(obj))
+    override def pickle(obj: Paragraph)(implicit state: PickleState): Unit = Unicode.pickler.pickle(obj.serialize())
     override def unpickle(implicit state: UnpickleState): Paragraph = parse(Unicode.pickler.unpickle)
   }
 
 
-  override def random(r: Random): Paragraph = randomWithDepth(r, 0)
+  override def random(r: Random): Paragraph = Paragraph(randomWithDepth(r, 0))
 
-  def randomWithDepth(r: Random, depth: Int): Paragraph = {
+  private def randomWithDepth(r: Random, depth: Int): Seq[Text] = {
     val childsAtDepth = depth match {
       case 0 => 5
       case 1 => 4
@@ -100,4 +98,6 @@ object Paragraph extends DataObject[Paragraph] {
       case _ => Text.Plain(Unicode.random(r))
     }
   }
+
+
 }

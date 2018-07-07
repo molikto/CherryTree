@@ -1,5 +1,7 @@
 package model.data
 
+import scala.collection.mutable.ArrayBuffer
+
 
 abstract sealed class Text {
   private[model] def serialize(buffer: UnicodeWriter)
@@ -14,18 +16,20 @@ abstract sealed class Text {
 object Text {
 
 
+  def size(paragraph: Seq[Text]): Int = paragraph.map(_.size).sum
+
   private[model] def parse(reader: UnicodeReader): Text = {
     reader.eatOrNil() match {
       case SpecialChar.EmphasisStart =>
-        Emphasis(Paragraph.parse(reader, SpecialChar.EmphasisEnd))
+        Emphasis(parse(reader, SpecialChar.EmphasisEnd))
       case SpecialChar.StrongStart =>
-        Strong(Paragraph.parse(reader, SpecialChar.StrongEnd))
+        Strong(parse(reader, SpecialChar.StrongEnd))
       case SpecialChar.StrikeThroughStart =>
-        StrikeThrough(Paragraph.parse(reader, SpecialChar.StrikeThroughEnd))
+        StrikeThrough(parse(reader, SpecialChar.StrikeThroughEnd))
       case SpecialChar.LinkStart =>
-        Link(Paragraph.parse(reader, SpecialChar.LinkContentEnd), reader.eatUntilAndDrop(SpecialChar.LinkUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.LinkTitleEnd))
+        Link(parse(reader, SpecialChar.LinkContentEnd), reader.eatUntilAndDrop(SpecialChar.LinkUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.LinkTitleEnd))
       case SpecialChar.ImageStart =>
-        Image(Paragraph.parse(reader, SpecialChar.ImageContentEnd), reader.eatUntilAndDrop(SpecialChar.ImageUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.ImageTitleEnd))
+        Image(parse(reader, SpecialChar.ImageContentEnd), reader.eatUntilAndDrop(SpecialChar.ImageUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.ImageTitleEnd))
       case SpecialChar.CodeStart =>
         Code(reader.eatUntilAndDrop(SpecialChar.CodeEnd))
       case SpecialChar.LaTeXStart =>
@@ -36,8 +40,19 @@ object Text {
         throw new UnicodeParseException("Expecting a non-special char or a special start char")
     }
   }
-  case class Emphasis(content: Paragraph) extends Text {
-    override val size: Int = Paragraph.size(content) + 2 * SpecialChar.Size
+
+  private[model] def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
+    val buffer = new ArrayBuffer[Text]()
+    while (!reader.isEmpty && !reader.eatOrFalse(until)) {
+      buffer += Text.parse(reader)
+    }
+    buffer.toVector
+  }
+
+
+
+  case class Emphasis(content: Seq[Text]) extends Text {
+    override val size: Int = Text.size(content) + 2 * SpecialChar.Size
 
     override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.EmphasisStart)
@@ -45,8 +60,8 @@ object Text {
       buffer.put(SpecialChar.EmphasisEnd)
     }
   }
-  case class Strong(content: Paragraph) extends Text {
-    override val size: Int = Paragraph.size(content)  + 2 * SpecialChar.Size
+  case class Strong(content: Seq[Text]) extends Text {
+    override val size: Int = Text.size(content)  + 2 * SpecialChar.Size
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.StrongStart)
@@ -54,8 +69,8 @@ object Text {
       buffer.put(SpecialChar.StrongEnd)
     }
   }
-  case class StrikeThrough(content: Paragraph) extends Text {
-    override val size: Int = Paragraph.size(content) + 2 * SpecialChar.Size
+  case class StrikeThrough(content: Seq[Text]) extends Text {
+    override val size: Int = Text.size(content) + 2 * SpecialChar.Size
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.StrikeThroughStart)
@@ -63,8 +78,8 @@ object Text {
       buffer.put(SpecialChar.StrikeThroughEnd)
     }
   }
-  case class Link(content: Paragraph, url: Unicode, title: Option[Unicode] = None) extends Text {
-    override val size: Int = Paragraph.size(content) + url.size + title.map(_.size).getOrElse(0) + 4 * SpecialChar.Size
+  case class Link(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Text {
+    override val size: Int = Text.size(content) + url.size + title.map(_.size).getOrElse(0) + 4 * SpecialChar.Size
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.LinkStart)
@@ -76,8 +91,8 @@ object Text {
       buffer.put(SpecialChar.LinkTitleEnd)
     }
   }
-  case class Image(content: Paragraph, url: Unicode, title: Option[Unicode] = None) extends Text {
-    override val size: Int = Paragraph.size(content) + url.size + title.map(_.size).getOrElse(0) + 4 * SpecialChar.Size
+  case class Image(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Text {
+    override val size: Int = Text.size(content) + url.size + title.map(_.size).getOrElse(0) + 4 * SpecialChar.Size
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(SpecialChar.ImageStart)
