@@ -40,8 +40,8 @@ object Text {
           Code(reader.eatUntilAndDrop(SpecialChar.CodeEnd))
         case SpecialChar.LaTeXStart =>
           LaTeX(reader.eatUntilAndDrop(SpecialChar.LaTeXEnd))
-        case _ =>
-          throw new UnicodeParseException("Expecting a non-special char or a special start char")
+        case a =>
+          throw new UnicodeParseException(s"Expecting a non-special char or a special start char, but found $a")
       }
       case None =>
         Plain(reader.eatUntilSpecialChar())

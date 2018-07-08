@@ -12,13 +12,13 @@ object OperationTests extends TestSuite {
 
   val tests = Tests {
     def testOperationObject[T, O <: Operation[T]](dobj: DataObject[T], obj: OperationObject[T, O]): Unit = {
-      for (i <- 0 until 100) {
+      for (i <- 0 until 1000) {
         val a = dobj.random()
         val o = obj.random(a)
-        val res = o(a)
 //        println(s"\nTest No. $i")
 //        println(a)
 //        println(o)
+        val res = o(a)
 //        println(res)
         val bytes = Pickle.intoBytes(o)(implicitly, obj.pickler)
         val b = Unpickle[O](obj.pickler).fromBytes(bytes)

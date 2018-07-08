@@ -44,7 +44,8 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       val a = randomParagraphInsertionPoint(d, r)
       Paragraph(Seq(operation.Unicode.Insert(a, data.Paragraph.random(r).serialize())), Type.Add)
     }
-    r.nextInt(9) match {
+    val rc = r.nextInt(9)
+    rc match {
       case 0 =>
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
@@ -77,8 +78,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         // remove title/image to a subparagraph
         randomLinked(d, r) match {
           case Some((a, t)) => Paragraph(Seq(
-            operation.Unicode.Delete(IntRange(a.start)),
-            operation.Unicode.Delete(IntRange(t.start - 1, a.endInclusive))),
+            operation.Unicode.Delete(IntRange(t.start - 1, a.endInclusive)),
+            operation.Unicode.Delete(IntRange(a.start))
+          ),
             Type.Delete)
           case None => fallback()
         }
@@ -100,7 +102,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         randomCoded(d, r) match {
           case Some(a) if a.size > 2 =>
             val len = r.nextInt(a.size - 2)
-            val start = r.nextInt(a.size - 2 - len)
+            val start = a.start + 1 + r.nextInt(a.size - 2 - len)
             Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len - 1))), Type.Add)
           case None => fallback()
         }
@@ -133,9 +135,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Linked]
-      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
-      val urlStart = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.contentEnd)).get._2 + 1
-      val urlEnd = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.urlEnd)).get._2 - 1
+      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
+      val urlStart = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.contentEnd)).get._2 + 1
+      val urlEnd = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.urlEnd)).get._2 - 1
       Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
     }
   }
@@ -151,7 +153,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
+      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
       Some(IntRange(t._2, end))
     }
   }
@@ -167,7 +169,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Coded]
-      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.end)).get._2
+      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.end)).get._2
       Some(IntRange(t._2, end))
     }
   }
