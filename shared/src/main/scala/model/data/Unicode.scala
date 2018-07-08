@@ -5,6 +5,7 @@ import java.io.IOException
 import model._
 import model.range.IntRange
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
@@ -41,7 +42,6 @@ private[model] object SpecialChar extends Enumeration {
   val LaTeXStart = Value
   val LaTeXEnd = Value
 }
-
 
 
 private[model] class UnicodeWriter {

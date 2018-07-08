@@ -1,11 +1,25 @@
 package model.data
 
 import boopickle._
+import model.cursor
 import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
+sealed class InfoType {
+}
+object InfoType {
+  case class Special(a: SpecialChar.Type) extends InfoType
+  case object Plain extends InfoType
+  case object Unicode extends InfoType
+  case object Coded extends InfoType
+}
+case class Info(
+  position: cursor.Node,
+  text: Text,
+  ty: InfoType
+)
 /**
   * we currently expect all our paragraph object is normalized
   */
@@ -18,39 +32,22 @@ case class Paragraph(text: Seq[Text]) {
   }
 
   lazy val size: Int = Text.size(text)
+
+  def info(): Seq[Info] = {
+    val buffer = new ArrayBuffer[Info]()
+    text.zipWithIndex.foreach(a => a._1.info(buffer, Seq(a._2)))
+    buffer.toVector
+  }
 }
 
 object Paragraph extends DataObject[Paragraph] {
 
   val empty: Paragraph = Paragraph(Seq.empty)
 
-  // TODO fix all these functions
-  def randomParagraphInsertionPoint(d: Paragraph, r: Random): Int = {
-    0
-  }
-
-  private[model] def randomTitleOrLink(d: Paragraph, r: Random): Option[(IntRange, IntRange)] = {
-    None
-  }
-
-  private[model] def randomFormatted(d: Paragraph, r: Random): Option[IntRange] = {
-    None
-  }
-
-  private[model] def randomCoded(d: Paragraph, r: Random): Option[IntRange] = {
-    None
-  }
-
-  private[model] def randomSubparagraph(d: Paragraph, r: Random): IntRange = {
-    IntRange(0, d.size - 1)
-  }
-
   private[model] def parse(unicode: Unicode): Paragraph = {
     val reader = new UnicodeReader(unicode)
     Paragraph(Text.parse(reader, SpecialChar.NotSpecial))
   }
-
-
 
   override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {
     override def pickle(obj: Paragraph)(implicit state: PickleState): Unit = Unicode.pickler.pickle(obj.serialize())
