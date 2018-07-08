@@ -20,6 +20,9 @@ package object ot {
     def free(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] =
       Rebased(Set.empty, some(winner, loser))
 
+    def free(winner: Seq[OPERATION], loser: Seq[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] =
+      Rebased(Set.empty, (winner, loser))
+
     def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
       winner match {
         case Some(a) => rebase(winner, loser)

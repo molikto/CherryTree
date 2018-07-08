@@ -56,8 +56,15 @@ private[model] object SpecialChar extends Enumeration {
     (LaTeXStart, LaTeXEnd)
   )
 
+  //** from inner to outter
+  // also inner splits
+  val surroundStartCodeInToOut: Seq[Unicode] = Seq(StrongStart, EmphasisStart, StrikeThroughStart, ImageStart, LinkStart).map(toUnicode)
+  val surroundStartCodeNotSplit: Seq[Unicode] = Seq(ImageStart, LinkStart).map(toUnicode)
+
   val starts = formatted.map(_._1) ++ linked.map(_._1) ++ coded.map(_._1)
   val ends = formatted.map(_._2) ++ linked.map(_._4) ++ coded.map(_._2)
+
+
 }
 
 

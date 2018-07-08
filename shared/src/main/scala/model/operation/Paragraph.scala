@@ -50,8 +50,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
-          operation.Unicode.Insert(range.endInclusive + 1, SpecialChar.toUnicode(randomFormat._2), leftGlued = true),
-          operation.Unicode.Insert(range.start, SpecialChar.toUnicode(randomFormat._1))), Type.Add)
+          operation.Unicode.Surround(range, SpecialChar.toUnicode(randomFormat._1), SpecialChar.toUnicode(randomFormat._2))), Type.Add)
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Paragraph(Seq(
@@ -68,12 +67,13 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         }
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
-          operation.Unicode.Insert(range.endInclusive + 1,
+          operation.Unicode.Surround(range, SpecialChar.toUnicode(randomFormat._1),
             SpecialChar.toUnicode(randomFormat._2)
               .join(data.Unicode("http://www.baidu.com"))
-              .join(SpecialChar.toUnicode(randomFormat._3)
-              .join(SpecialChar.toUnicode(randomFormat._4))), leftGlued = true),
-          operation.Unicode.Insert(range.start, SpecialChar.toUnicode(randomFormat._1))), Type.Add)
+              .join(SpecialChar.toUnicode(randomFormat._3))
+              .join(SpecialChar.toUnicode(randomFormat._4))
+          )
+        ), Type.Add)
       case 3 =>
         // remove title/image to a subparagraph
         randomLinked(d, r) match {
