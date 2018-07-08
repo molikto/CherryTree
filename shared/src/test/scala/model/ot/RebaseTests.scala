@@ -145,6 +145,7 @@ object RebaseTests extends TestSuite {
               val j = ot.Node.rebase(b, a)
               (k, j) match {
                 case (Rebased(ks, (kap, kbp)), Rebased(js, (jbp, jap))) =>
+                  // TODO really????
                   // there are cases where asymmetry causes one path is conflict one is not
                   // for example
                   // left one is insert(4, len = 9) delete(0, 9)
