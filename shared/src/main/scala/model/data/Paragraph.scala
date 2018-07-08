@@ -46,7 +46,7 @@ object Paragraph extends DataObject[Paragraph] {
 
   private[model] def parse(unicode: Unicode): Paragraph = {
     val reader = new UnicodeReader(unicode)
-    Paragraph(Text.parse(reader, SpecialChar.NotSpecial))
+    Paragraph(Text.parseAll(reader))
   }
 
   override val pickler: Pickler[Paragraph] = new Pickler[Paragraph] {

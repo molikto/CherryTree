@@ -37,10 +37,10 @@ object DataTests extends TestSuite {
     'paragraphThrowForInvalidData - {
       val org = Paragraph(Seq(Text.Emphasis(Paragraph.random().text)))
       assert(Try {
-        Paragraph.parse(org.serialize().delete(IntRange(0, SpecialChar.Size - 1)))
+        Paragraph.parse(org.serialize().delete(IntRange(0)))
       }.isFailure)
       assert(Try {
-        Paragraph.parse(org.serialize().delete(IntRange(org.size - SpecialChar.Size + 1, org.size)))
+        Paragraph.parse(org.serialize().delete(IntRange(org.size)))
       }.isFailure)
     }
 

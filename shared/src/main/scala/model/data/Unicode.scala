@@ -17,12 +17,10 @@ private[model] object SpecialChar extends Enumeration {
   type Type = Value
 
   // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
-  val Char = '\uE700'
+  val Start = 0xF0000
 
   def toUnicode(t: Type): Unicode = Unicode(s"$Char${t.id.toChar}")
 
-  val Size = 2
-  val NotSpecial = Value
   val EmphasisStart = Value
   val EmphasisEnd = Value
   val StrongStart = Value
@@ -41,6 +39,22 @@ private[model] object SpecialChar extends Enumeration {
   val CodeEnd = Value
   val LaTeXStart = Value
   val LaTeXEnd = Value
+
+  val formatted = Seq(
+    (EmphasisStart, EmphasisEnd),
+    (StrongStart, StrongEnd),
+    (StrikeThroughStart, StrikeThroughEnd)
+  )
+
+  val linked = Seq(
+    (LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd),
+    (ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
+  )
+
+  val coded = Seq(
+    (CodeStart, CodeEnd),
+    (LaTeXStart, LaTeXEnd)
+  )
 }
 
 
@@ -49,8 +63,7 @@ private[model] class UnicodeWriter {
   private val sb = new StringBuilder()
 
   def put(a: SpecialChar.Type): Unit = {
-    sb.append(SpecialChar.Char)
-    sb.append(a.id.toChar)
+    Character.toChars(SpecialChar.Start + a.id).foreach(sb.append)
   }
 
   def put(url: Unicode): Unit = {
@@ -68,34 +81,30 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def isEmpty: Boolean = start >= str.length
 
-  def eatOrNil(): SpecialChar.Type = {
-    if (str.charAt(start) == SpecialChar.Char) {
-      val c = str.charAt(start + 1)
-      if (c != SpecialChar.NotSpecial.id && c < SpecialChar.maxId) {
-        start = start + 2
-        return SpecialChar(c)
-      } else {
-        throw new UnicodeParseException("Invalid special char")
-      }
+  private def isSpecialCodePoint(c: Int) = c >= SpecialChar.Start && c < SpecialChar.Start + SpecialChar.maxId
+
+  def eatOrNotSpecial(): Option[SpecialChar.Type] = {
+    val c = str.codePointAt(start)
+    if (isSpecialCodePoint(c)) {
+      start = str.offsetByCodePoints(start, 1)
+      Some(SpecialChar(c - SpecialChar.Start))
+    } else {
+      None
     }
-    SpecialChar.NotSpecial
   }
 
   def eatOrFalse(a: SpecialChar.Type): Boolean = {
-    if (str.charAt(start) == SpecialChar.Char) {
-      if (str.charAt(start + 1) == a.id.toChar) {
-        start = start + 2
-        return true
-      } else {
-        return false
-      }
+    if (str.codePointAt(start) == SpecialChar.Start + a.id) {
+      start = str.offsetByCodePoints(start, 1)
+      true
+    } else {
+      false
     }
-    false
   }
 
   def eatUntilSpecialChar(): Unicode = {
     var index = start
-    while (index < str.length && str.codePointAt(index) != SpecialChar.Char.toInt) {
+    while (index < str.length && !isSpecialCodePoint(str.codePointAt(index))) {
       index = str.offsetByCodePoints(index, 1)
     }
     val ret = str.substring(start, index)

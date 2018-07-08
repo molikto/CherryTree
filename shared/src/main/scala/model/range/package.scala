@@ -65,6 +65,8 @@ package object range {
 
   object IntRange {
 
+    def apply(a: Int): IntRange = IntRange(a, a)
+
     val pickler: Pickler[IntRange] = new Pickler[IntRange] {
       override def pickle(obj: IntRange)(implicit state: PickleState): Unit = {
         import state.enc._

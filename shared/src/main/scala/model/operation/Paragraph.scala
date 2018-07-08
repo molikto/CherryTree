@@ -1,6 +1,6 @@
 package model.operation
 
-import model.data.{InfoType, Paragraph, SpecialChar}
+import model.data.{InfoType, SpecialChar}
 import model.{data, _}
 import model.operation.Type.Type
 import model.range.IntRange
@@ -46,11 +46,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     }
     r.nextInt(9) match {
       case 0 =>
-        val randomFormat = r.nextInt(3) match {
-          case 0 => (SpecialChar.EmphasisStart, SpecialChar.EmphasisEnd)
-          case 1 => (SpecialChar.StrongStart, SpecialChar.StrongEnd)
-          case 2 => (SpecialChar.StrikeThroughStart, SpecialChar.StrikeThroughEnd)
-        }
+        val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
           operation.Unicode.Insert(range.endInclusive + 1, SpecialChar.toUnicode(randomFormat._2), leftGlued = true),
@@ -58,8 +54,8 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Paragraph(Seq(
-            operation.Unicode.Delete(IntRange(a.endInclusive - SpecialChar.Size + 1, a.endInclusive)),
-            operation.Unicode.Delete(IntRange(a.start, a.start + SpecialChar.Size - 1))), Type.Delete)
+            operation.Unicode.Delete(IntRange(a.endInclusive)),
+            operation.Unicode.Delete(IntRange(a.start))), Type.Delete)
           case None => fallback()
         }
         // remove a format
@@ -79,16 +75,16 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           operation.Unicode.Insert(range.start, SpecialChar.toUnicode(randomFormat._1))), Type.Add)
       case 3 =>
         // remove title/image to a subparagraph
-        randomTitleOrLink(d, r) match {
+        randomLinked(d, r) match {
           case Some((a, t)) => Paragraph(Seq(
-            operation.Unicode.Delete(IntRange(a.start, a.start + SpecialChar.Size - 1)),
-            operation.Unicode.Delete(IntRange(t.start - SpecialChar.Size, a.endInclusive))),
+            operation.Unicode.Delete(IntRange(a.start)),
+            operation.Unicode.Delete(IntRange(t.start - 1, a.endInclusive))),
             Type.Delete)
           case None => fallback()
         }
       case 4 =>
         // change title/image url/title
-        randomTitleOrLink(d, r) match {
+        randomLinked(d, r) match {
           case Some((_, t)) => Paragraph(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextString(10)))), Type.AddDelete)
           case None => fallback()
         }
@@ -102,9 +98,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case 7 =>
         // delete inside unicode
         randomCoded(d, r) match {
-          case Some(a) if a.size > SpecialChar.Size * 2 =>
-            val len = r.nextInt(a.size - SpecialChar.Size * 2)
-            val start = r.nextInt(a.size - SpecialChar.Size * 2 - len)
+          case Some(a) if a.size > 2 =>
+            val len = r.nextInt(a.size - 2)
+            val start = r.nextInt(a.size - 2 - len)
             Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len - 1))), Type.Add)
           case None => fallback()
         }
@@ -112,7 +108,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         // insert inside unicode
         randomCoded(d, r) match {
           case Some(a) => Paragraph(Seq(operation.Unicode.Insert(
-            SpecialChar.Size + a.start + r.nextInt(a.size - SpecialChar.Size * 2), data.Unicode(r.nextInt(10).toString))), Type.Add)
+            1 + a.start + r.nextInt(a.size - 2), data.Unicode(r.nextInt(10).toString))), Type.Add)
           case None => fallback()
         }
     }
@@ -126,35 +122,58 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     randomSubparagraph(d, r).start
   }
 
-  private def randomTitleOrLink(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
+  private def randomLinked(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
     val info = d.info().zipWithIndex
-    val starts = info.filter(a => a._1.ty == InfoType.Special(SpecialChar.LinkStart) || a._1.ty == InfoType.Special(SpecialChar.ImageStart))
-    val t = starts(r.nextInt(starts.size))
-    val text = t._1.text.asInstanceOf[data.Text.Linked]
-    info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.contentEnd))
+    val starts = info.filter(a => a._1.ty match {
+      case InfoType.Special(k) => SpecialChar.linked.exists(_._1 == k)
+      case _ => false
+    })
+    if (starts.isEmpty) {
+      None
+    } else {
+      val t = starts(r.nextInt(starts.size))
+      val text = t._1.text.asInstanceOf[data.Text.Linked]
+      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
+      val urlStart = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.contentEnd)).get._2 + 1
+      val urlEnd = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.urlEnd)).get._2 - 1
+      Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
+    }
   }
 
   private def randomFormatted(d: data.Paragraph, r: Random): Option[IntRange] = {
-    None
+    val info = d.info().zipWithIndex
+    val starts = info.filter(a => a._1.ty match {
+      case InfoType.Special(k) => SpecialChar.formatted.exists(_._1 == k)
+      case _ => false
+    })
+    if (starts.isEmpty) {
+      None
+    } else {
+      val t = starts(r.nextInt(starts.size))
+      val text = t._1.text.asInstanceOf[data.Text.Formatted]
+      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
+      Some(IntRange(t._2, end))
+    }
   }
 
   private def randomCoded(d: data.Paragraph, r: Random): Option[IntRange] = {
-    None
+    val info = d.info().zipWithIndex
+    val starts = info.filter(a => a._1.ty match {
+      case InfoType.Special(k) => SpecialChar.coded.exists(_._1 == k)
+      case _ => false
+    })
+    if (starts.isEmpty) {
+      None
+    } else {
+      val t = starts(r.nextInt(starts.size))
+      val text = t._1.text.asInstanceOf[data.Text.Coded]
+      val end = info.find(a => a._1.text == text && a._1.ty == InfoType.Special(text.end)).get._2
+      Some(IntRange(t._2, end))
+    }
   }
 
   private def randomSubparagraph(d: data.Paragraph, r: Random): IntRange = {
-    val a = r.nextInt(d.size / 2)
-    val c = r.nextInt(d.size - a) + a
-    var ok = false
-    while (!ok) {
-      try {
-        data.Paragraph.parse(d.serialize().slice(IntRange(a, c)))
-        ok = true
-      } catch  {
-        case _: Throwable =>
-      }
-    }
-    IntRange(a, c)
+    IntRange(0, d.size - 1)
   }
 
 

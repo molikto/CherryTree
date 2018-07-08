@@ -24,29 +24,39 @@ object Text {
   def size(paragraph: Seq[Text]): Int = paragraph.map(_.size).sum
 
   private[model] def parse(reader: UnicodeReader): Text = {
-    reader.eatOrNil() match {
-      case SpecialChar.EmphasisStart =>
-        Emphasis(parse(reader, SpecialChar.EmphasisEnd))
-      case SpecialChar.StrongStart =>
-        Strong(parse(reader, SpecialChar.StrongEnd))
-      case SpecialChar.StrikeThroughStart =>
-        StrikeThrough(parse(reader, SpecialChar.StrikeThroughEnd))
-      case SpecialChar.LinkStart =>
-        Link(parse(reader, SpecialChar.LinkContentEnd), reader.eatUntilAndDrop(SpecialChar.LinkUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.LinkTitleEnd))
-      case SpecialChar.ImageStart =>
-        Image(parse(reader, SpecialChar.ImageContentEnd), reader.eatUntilAndDrop(SpecialChar.ImageUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.ImageTitleEnd))
-      case SpecialChar.CodeStart =>
-        Code(reader.eatUntilAndDrop(SpecialChar.CodeEnd))
-      case SpecialChar.LaTeXStart =>
-        LaTeX(reader.eatUntilAndDrop(SpecialChar.LaTeXEnd))
-      case SpecialChar.NotSpecial =>
+    reader.eatOrNotSpecial() match {
+      case Some(a) => a match {
+        case SpecialChar.EmphasisStart =>
+          Emphasis(parseAll(reader, SpecialChar.EmphasisEnd))
+        case SpecialChar.StrongStart =>
+          Strong(parseAll(reader, SpecialChar.StrongEnd))
+        case SpecialChar.StrikeThroughStart =>
+          StrikeThrough(parseAll(reader, SpecialChar.StrikeThroughEnd))
+        case SpecialChar.LinkStart =>
+          Link(parseAll(reader, SpecialChar.LinkContentEnd), reader.eatUntilAndDrop(SpecialChar.LinkUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.LinkTitleEnd))
+        case SpecialChar.ImageStart =>
+          Image(parseAll(reader, SpecialChar.ImageContentEnd), reader.eatUntilAndDrop(SpecialChar.ImageUrlEnd), reader.eatUntilAndDropNonEmpty(SpecialChar.ImageTitleEnd))
+        case SpecialChar.CodeStart =>
+          Code(reader.eatUntilAndDrop(SpecialChar.CodeEnd))
+        case SpecialChar.LaTeXStart =>
+          LaTeX(reader.eatUntilAndDrop(SpecialChar.LaTeXEnd))
+        case _ =>
+          throw new UnicodeParseException("Expecting a non-special char or a special start char")
+      }
+      case None =>
         Plain(reader.eatUntilSpecialChar())
-      case _ =>
-        throw new UnicodeParseException("Expecting a non-special char or a special start char")
     }
   }
 
-  private[model] def parse(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
+  private[model] def parseAll(reader: UnicodeReader): Seq[Text] = {
+    val buffer = new ArrayBuffer[Text]()
+    while (!reader.isEmpty) {
+      buffer += Text.parse(reader)
+    }
+    buffer.toVector
+  }
+
+  private[model] def parseAll(reader: UnicodeReader, until: SpecialChar.Type): Seq[Text] = {
     val buffer = new ArrayBuffer[Text]()
     while (!reader.isEmpty && !reader.eatOrFalse(until)) {
       buffer += Text.parse(reader)
@@ -55,7 +65,7 @@ object Text {
   }
 
 
-  trait Styled extends Text {
+  trait Formatted extends Text {
     def content: Seq[Text]
     def styleCharStart: SpecialChar.Type
     def styleCharEnd: SpecialChar.Type
@@ -69,18 +79,18 @@ object Text {
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
+       buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
       content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
+       buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
     }
   }
 
-  trait Linked extends Styled {
+  trait Linked extends Formatted {
     def contentEnd: SpecialChar.Type
     def url: Unicode
     def urlEnd: SpecialChar.Type
     def title: Option[Unicode]
-    override val size: Int = Text.size(content) + url.size + title.map(_.size).getOrElse(0) + 4 * SpecialChar.Size
+    override val size: Int = Text.size(content) + url.size + title.map(_.size).getOrElse(0) + 4
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(styleCharStart)
@@ -93,26 +103,26 @@ object Text {
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
+       buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
       content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(contentEnd))
+       buffer += Info(selfPosition, this, InfoType.Special(contentEnd))
       for (_ <- 0 until url.size) buffer += Info(selfPosition, this, InfoType.Unicode)
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(urlEnd))
+       buffer += Info(selfPosition, this, InfoType.Special(urlEnd))
       for (_ <- 0 until title.map(_.size).getOrElse(0)) buffer += Info(selfPosition, this, InfoType.Unicode)
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
+       buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
     }
   }
 
-  case class Emphasis(override val content: Seq[Text]) extends Styled {
+  case class Emphasis(override val content: Seq[Text]) extends Formatted {
     override def styleCharStart: Type = SpecialChar.EmphasisStart
     override def styleCharEnd: Type = SpecialChar.EmphasisEnd
   }
-  case class Strong(override val content: Seq[Text]) extends Styled {
+  case class Strong(override val content: Seq[Text]) extends Formatted {
     override def styleCharStart: Type = SpecialChar.StrongStart
     override def styleCharEnd: Type = SpecialChar.StrongEnd
   }
 
-  case class StrikeThrough(override val content: Seq[Text]) extends Styled {
+  case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
     override def styleCharStart: Type = SpecialChar.StrikeThroughStart
     override def styleCharEnd: Type = SpecialChar.StrikeThroughEnd
   }
@@ -133,7 +143,7 @@ object Text {
     def unicode: Unicode
     def start: SpecialChar.Type
     def end: SpecialChar.Type
-    override val size: Int = unicode.size + 2 * SpecialChar.Size
+    override val size: Int = unicode.size + 2
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(start)
@@ -142,9 +152,9 @@ object Text {
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(start))
+       buffer += Info(selfPosition, this, InfoType.Special(start))
       for (_ <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Coded)
-      for (_ <- 0 until SpecialChar.Size) buffer += Info(selfPosition, this, InfoType.Special(end))
+       buffer += Info(selfPosition, this, InfoType.Special(end))
     }
   }
   case class Code(unicode: Unicode) extends Coded {
