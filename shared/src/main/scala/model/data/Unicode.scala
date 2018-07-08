@@ -19,7 +19,7 @@ private[model] object SpecialChar extends Enumeration {
   // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
   val Start = 0xF0000
 
-  def toUnicode(t: Type): Unicode = Unicode(s"$Char${t.id.toChar}")
+  def toUnicode(t: Type): Unicode = Unicode(new String(Character.toChars(SpecialChar.Start + t.id)))
 
   val EmphasisStart = Value
   val EmphasisEnd = Value
@@ -66,7 +66,7 @@ private[model] class UnicodeWriter {
   private val sb = new StringBuilder()
 
   def put(a: SpecialChar.Type): Unit = {
-    Character.toChars(SpecialChar.Start + a.id).foreach(sb.append)
+    sb.append(SpecialChar.toUnicode(a))
   }
 
   def put(url: Unicode): Unit = {

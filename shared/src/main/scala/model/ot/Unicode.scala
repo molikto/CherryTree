@@ -35,8 +35,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def deleteReplaceAtomic(delete: Delete, replace: ReplaceAtomic, deleteConflict: => conflict.Unicode): RebaseResult = {
       if (delete.r.contains(replace.r)) {
         Rebased(Set(deleteConflict), (
-          None,
-          Some(Delete(delete.r.start, delete.r.endInclusive + replace.sizeDiff))
+          Some(Delete(delete.r.start, delete.r.endInclusive + replace.sizeDiff)),
+          None
         ))
       } else if (delete.r.overlap(replace.r)) {
         throw new IllegalArgumentException()

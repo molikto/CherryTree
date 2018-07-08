@@ -14,6 +14,7 @@ class CherryTreeServer extends Api {
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
+  private var debugHistoryDocuments = Seq(document)
 
   def debugDocument = document
   def debugChanges = changes
@@ -64,6 +65,11 @@ class CherryTreeServer extends Api {
         val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
         document = operation.Node.applyT(transformed, document)
         changes = changes ++ transformed
+        var debugTopDocument = document
+        for (t <- transformed) {
+          debugTopDocument = operation.Node.apply(t, debugTopDocument)
+          debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+        }
         clients.update(authentication, version)
         // LATER don't accept conflicting items
         ClientUpdate(ws, ts.size, version)
