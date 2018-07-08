@@ -55,6 +55,9 @@ private[model] object SpecialChar extends Enumeration {
     (CodeStart, CodeEnd),
     (LaTeXStart, LaTeXEnd)
   )
+
+  val starts = formatted.map(_._1) ++ linked.map(_._1) ++ coded.map(_._1)
+  val ends = formatted.map(_._2) ++ linked.map(_._4) ++ coded.map(_._2)
 }
 
 
@@ -157,9 +160,13 @@ case class Unicode(private var str: String) {
     Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}")
   }
   def delete(r: IntRange): Unicode = {
-    val start = str.offsetByCodePoints(0, r.start)
-    val end = str.offsetByCodePoints(start, r.size)
-    Unicode(s"${str.substring(0, start)}${str.substring(end)}")
+    if (r.size == 0) {
+      this
+    } else {
+      val start = str.offsetByCodePoints(0, r.start)
+      val end = str.offsetByCodePoints(start, r.size)
+      Unicode(s"${str.substring(0, start)}${str.substring(end)}")
+    }
   }
 
   def replace(r: IntRange, unicode: Unicode): Unicode = {

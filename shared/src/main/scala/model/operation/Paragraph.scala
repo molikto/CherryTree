@@ -1,6 +1,6 @@
 package model.operation
 
-import model.data.{InfoType, SpecialChar}
+import model.data.{Info, InfoType, SpecialChar}
 import model.{data, _}
 import model.operation.Type.Type
 import model.range.IntRange
@@ -46,7 +46,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     }
     val rc = r.nextInt(9)
     rc match {
-      case 0 =>
+      case 0 if d.size > 0 =>
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
@@ -60,7 +60,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case None => fallback()
         }
         // remove a format
-      case 2 =>
+      case 2 if d.size > 0 =>
         // add title/image to a subparagraph
         val randomFormat = r.nextInt(2) match {
           case 0 => (SpecialChar.ImageStart, SpecialChar.ImageContentEnd, SpecialChar.ImageUrlEnd, SpecialChar.ImageTitleEnd)
@@ -90,7 +90,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case Some((_, t)) => Paragraph(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextString(10)))), Type.AddDelete)
           case None => fallback()
         }
-      case 5 =>
+      case 5 if d.size > 0 =>
         // delete a subparagrpah
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(operation.Unicode.Delete(range)), Type.Delete)
@@ -113,15 +113,17 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
             1 + a.start + r.nextInt(a.size - 2), data.Unicode(r.nextInt(10).toString))), Type.Add)
           case None => fallback()
         }
+      case _ =>
+        fallback()
     }
   }
 
 
 
 
-  // TODO fix all these functions
   def randomParagraphInsertionPoint(d: data.Paragraph, r: Random): Int = {
-    randomSubparagraph(d, r).start
+    if (d.size == 0) 0
+    else randomSubparagraph(d, r).start
   }
 
   private def randomLinked(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
@@ -174,8 +176,37 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     }
   }
 
+
   private def randomSubparagraph(d: data.Paragraph, r: Random): IntRange = {
-    IntRange(0, d.size - 1)
+    if (d.size == 0) {
+      throw new IllegalArgumentException()
+    }
+    def isValidStart(_1: InfoType): Boolean = _1 match {
+      case InfoType.Plain => true
+      case InfoType.Special(a) => SpecialChar.starts.contains(a)
+      case _ => false
+    }
+
+    def isValidEnd(_1: InfoType): Boolean = _1 match {
+      case InfoType.Plain => true
+      case InfoType.Special(a) => SpecialChar.ends.contains(a)
+      case _ => false
+    }
+
+    val info = d.info().zipWithIndex
+    while (true) {
+      val a = info(r.nextInt(d.size))
+      val b = info(r.nextInt(d.size - a._2) + a._2)
+      if (isValidStart(a._1.ty) && isValidEnd(b._1.ty)) {
+        if (a._1.position == b._1.position) {
+          // single item
+          return IntRange(a._2, b._2)
+        } else if (a._1.position.dropRight(1) == b._1.position.dropRight(1)) {
+          return IntRange(a._2, b._2)
+        }
+      }
+    }
+    throw new IllegalArgumentException("")
   }
 
 
