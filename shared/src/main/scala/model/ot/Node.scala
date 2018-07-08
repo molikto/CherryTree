@@ -14,21 +14,15 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
   // LATER handle move
   override def rebase(winner: operation.Node, loser: operation.Node): RebaseResult = {
     def insertDelete(i: operation.Node.Insert, d: operation.Node.Delete, deleteConflict : => conflict.Node): RebaseResult = {
-      if (d.r.start == i.c) { // a special case that the insertion is still valid after the deletion
-        free(i, d.modify(_.r).using(_.modify(_.childs).using(_.moveBy(i.childs.size))))
-      } else { // in other cases, deleting the insertion point is deleting the entire insertion
-        d.r.transformAfterDeleted(i.c) match {
-          case Some(p) =>
-            free(
-              i.copy(c = p),
-              d.modify(_.r).using(r => range.Node(cursor.Node.transformAfterInserted(i.c, i.childs.size, r.start), r.childs.size))
-              )
-          case None => Rebased(Set(deleteConflict), (None, Some(
-            if (d.r.start.size == i.c.size) // same level
-              d.modify(_.r).using(r => range.Node(r.start, r.childs.size + i.childs.size))
-            else d // not same level
-          )))
-        }
+      d.r.transformAfterDeleted(i.c) match {
+        case Some(p) =>
+          free(i.copy(c = p), d.modify(_.r).using(r => range.Node(cursor.Node.transformAfterInserted(i.c, i.childs.size, r.start), r.childs.size)))
+        case None =>
+          if (d.r.start.size == i.c.size) { // same level, ALWAYS insert something, the deletion is also moved
+            free(i.copy(c = d.r.start), d.modify(_.r).using(_.modify(_.childs).using(_.moveBy(i.childs.size))))
+          } else { // in this case, parent is gone, we cannot possibly insert in a correct place
+            Rebased(Set(deleteConflict), (None, Some(d)))
+          }
       }
     }
     def reverse(res: RebaseResult) = Rebased(res.conflicts, (res.t._2, res.t._1))
