@@ -61,17 +61,17 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           // [   ( ]  )
           val leftRange = IntRange(d.r.start, s.r.start - 1)
           val rightStart = s.r.start + s.left.size
-          val rightRange = IntRange(rightStart, rightStart + d.r.size - leftRange.size)
+          val rightRange = IntRange(rightStart, rightStart + d.r.size - leftRange.size - 1)
           free(Seq(
-              Delete(leftRange),
-              Delete(rightRange)),
+              Delete(rightRange),
+              Delete(leftRange)),
             Seq(s.copy(r = IntRange(d.r.start, s.r.endInclusive - d.r.size))))
         } else {
           // (   [ )  ]
           free(Seq(
-              Delete(IntRange(d.r.start, s.r.endInclusive).moveBy(s.left.size)),
-              Delete(IntRange(s.r.endInclusive + 1, d.r.endInclusive).moveBy(s.left.size + s.right.size))),
-              Seq(s.modify(_.r).using(_.modify(_.endInclusive).using(_ => d.r.start - 1))))
+            Delete(IntRange(s.r.endInclusive + 1, d.r.endInclusive).moveBy(s.left.size + s.right.size)),
+            Delete(IntRange(d.r.start, s.r.endInclusive).moveBy(s.left.size))
+          ), Seq(s.modify(_.r).using(_.modify(_.endInclusive).using(_ => d.r.start - 1))))
         }
       } else if (d.r.start < s.r.start){
         free(d, s.modify(_.r).using(_.moveBy(-d.r.size)))
@@ -105,7 +105,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def reverseSurround(a: Surround): Seq[operation.Unicode] = {
       // ---- **** ----
       Seq(Delete(a.r.start, a.r.start + a.left.size - 1),
-        Delete(a.r.endInclusive + a.left.size + 1, a.r.endInclusive + a.left.size + a.right.size))
+        Delete(a.r.endInclusive + a.left.size, a.r.endInclusive + a.left.size + a.right.size - 1))
     }
 
     def overlapSurround(s: Surround, l: Surround, sWins: Boolean): RebaseResult = {
@@ -216,8 +216,15 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           } else {
             // merge results
             val points = Seq(wr.start, wr.endInclusive, lr.start, lr.endInclusive)
-            val overall = Surround(IntRange(points.min, points.max), ws, we)
-            free(reverseSurround(l) :+ overall, reverseSurround(w) :+ overall)
+            val nrange = IntRange(points.min, points.max)
+            val overall = Surround(nrange, ws, we)
+            if (nrange == wr) {
+              free(reverseSurround(l) :+ overall, Seq.empty)
+            } else if (nrange == lr) {
+              free(Seq.empty, reverseSurround(w) :+ overall)
+            } else {
+              free(reverseSurround(l) :+ overall, reverseSurround(w) :+ overall)
+            }
           }
         } else {
           def wrapLInW() =

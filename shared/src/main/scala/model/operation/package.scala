@@ -30,10 +30,9 @@ package object operation {
 
     def random(data: DATA, r: Random): OPERATION
 
-    def randomTransaction(size: Int, data: DATA): TRANSACTION = {
+    def randomTransaction(size: Int, data: DATA, r: Random): TRANSACTION = {
       var a = data
       var i = 0
-      val r = new Random()
       var cs = Seq.empty[OPERATION]
       while (i < size) {
         val c = random(a, r)

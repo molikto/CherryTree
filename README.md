@@ -11,3 +11,5 @@ test with `sbt sharedJVM/test`, `sbt sharedJVM/testOnly xxx` etc.
 
 * static assertion is by assert and doc
 * dynamic check use exception
+
+

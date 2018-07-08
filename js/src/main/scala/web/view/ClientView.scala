@@ -15,7 +15,7 @@ import model._
 import model.data
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 
 object ClientView {
@@ -38,11 +38,12 @@ object ClientView {
 
 class ClientView(override val $: BackendScope[ClientModel, data.Node]) extends ObserverView[ClientModel, data.Node] {
 
+  val random = new Random()
   def render(client: ClientModel, state: data.Node): VdomElement = {
     div(
       div(s"client ${client.debug_authentication}, version ${client.debug_committedVersion}"),
       button("change content", onClick ==> (_ => Callback {
-        client.change(operation.Node.randomTransaction(3, state))
+        client.change(operation.Node.randomTransaction(3, state, random))
       })),
       div(
         contentEditable := true,

@@ -174,6 +174,8 @@ object RebaseTests extends TestSuite {
               if (aaa == bbb) {
                 if (debug) println(s"App: $aaa")
               } else {
+                var a = 1
+                a =  2
                 if (debug) println(s"App 0: $aaa")
                 if (debug) println(s"App 1: $bbb")
               }
@@ -207,17 +209,61 @@ object RebaseTests extends TestSuite {
       }
     }
 
+    'paragraph - {
+      val random = new Random()
+      var n = data.Paragraph.random(random)
+      for (_ <- 0 until 3000) {
+        val a = operation.Paragraph.randomTransaction(1, n, random)
+        val b = operation.Paragraph.randomTransaction(1, n, random)
+        val debug = false
+        if (debug) println(s"Change a: $a")
+        if (debug) println(s"Change b: $b")
+        ot.Paragraph.rebase(a, b) match {
+          case Rebased(_, (ap, bp)) =>
+            if (debug) println(s"Change a': $ap")
+            if (debug) println(s"Change b': $bp")
+            val aaa = operation.Paragraph.apply(bp, operation.Paragraph.apply(a, n))
+            val bbb = operation.Paragraph.apply(ap, operation.Paragraph.apply(b, n))
+            if (aaa == bbb) {
+              if (debug) println(s"App: $aaa")
+              n = aaa
+            } else {
+              var a = 1
+              a =  2
+              if (debug) println(s"App 0: $aaa")
+              if (debug) println(s"App 1: $bbb")
+            }
+            assert(aaa == bbb)
+        }
+      }
+    }
+
+
     'squareRandom - {
       var n = node
+      val random = new Random()
       for (_ <- 0 until 3000) {
-        val a = operation.Node.randomTransaction(20, n)
-        val r1 = Try { operation.Node.apply(a, node) }
-        val b = operation.Node.randomTransaction(20, n)
-        val r2 = Try { operation.Node.apply(b, node) }
-        // for invalid sequences, rebasing might just make the sequence valid
-        if (r1.isSuccess && r2.isSuccess) {
-          n = r1.get
-          assertRebaseSquare(a, b)
+        val a = operation.Node.randomTransaction(20, n, random)
+        val b = operation.Node.randomTransaction(19, n, random)
+        val debug = false
+        if (debug) println(s"Change a: $a")
+        if (debug) println(s"Change b: $b")
+        ot.Node.rebase(a, b) match {
+          case Rebased(_, (ap, bp)) =>
+            if (debug) println(s"Change a': $ap")
+            if (debug) println(s"Change b': $bp")
+            val aaa = operation.Node.apply(bp, operation.Node.apply(a, n))
+            val bbb = operation.Node.apply(ap, operation.Node.apply(b, n))
+            if (aaa == bbb) {
+              if (debug) println(s"App: $aaa")
+              n = aaa
+            } else {
+              var a = 1
+              a =  2
+              if (debug) println(s"App 0: $aaa")
+              if (debug) println(s"App 1: $bbb")
+            }
+            assert(aaa == bbb)
         }
       }
     }

@@ -22,6 +22,8 @@ object ClientTests extends TestSuite  {
       s[Api]
     }
 
+    val random = new Random()
+
     def serverDoc = server.debugDocument
     def serverChanges = server.debugChanges
 
@@ -100,7 +102,7 @@ object ClientTests extends TestSuite  {
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(operation.Node.randomTransaction(1, clients(j).doc.get))
+            clients(j).change(operation.Node.randomTransaction(1, clients(j).doc.get, random))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
@@ -111,7 +113,7 @@ object ClientTests extends TestSuite  {
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(operation.Node.randomTransaction(2, clients(j).doc.get))
+            clients(j).change(operation.Node.randomTransaction(2, clients(j).doc.get, random))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
