@@ -103,7 +103,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case Some(a) if a.size > 2 =>
             val len = r.nextInt(a.size - 2)
             val start = a.start + 1 + r.nextInt(a.size - 2 - len)
-            Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len - 1))), Type.Add)
+            Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len - 1))), Type.Delete)
           case None => fallback()
         }
       case 8 =>

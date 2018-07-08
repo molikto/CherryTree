@@ -9,7 +9,7 @@ package object util extends ObservablePropertyImplicits  {
 
 
 
-  def debugged[T](a: T)(implicit debug: Boolean = debugOn): T = {
+  def debugged[T](a : => T)(implicit debug: Boolean = debugOn): T = {
     if (debug) {
       a match {
         case bb: ByteBuffer =>

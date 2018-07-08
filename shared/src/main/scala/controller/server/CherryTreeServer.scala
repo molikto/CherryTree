@@ -63,12 +63,16 @@ class CherryTreeServer extends Api {
     checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
         val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
+        var debugTopDocument = document
         document = operation.Node.applyT(transformed, document)
         changes = changes ++ transformed
-        var debugTopDocument = document
         for (t <- transformed) {
           debugTopDocument = operation.Node.apply(t, debugTopDocument)
           debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+        }
+        val debug = true
+        if (debug) {
+          assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
         }
         clients.update(authentication, version)
         // LATER don't accept conflicting items
