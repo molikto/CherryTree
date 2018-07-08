@@ -96,10 +96,8 @@ object RebaseTests extends TestSuite {
           if (debug) println(s"Change b': $bp")
           if (debug) println(s"a(node): ${a(node)}")
           if (debug) println(s"b(node): ${b(node)}")
-          val an = a(node)
-          val bn = b(node)
-          val app0 = if (bp.isDefined) bp.get(an) else an
-          val app1 = if (ap.isDefined) ap.get(bn) else bn
+          val app0 = operation.Node.apply(bp, a(node))
+          val app1 = operation.Node.apply(ap, b(node))
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {
@@ -163,8 +161,7 @@ object RebaseTests extends TestSuite {
       }
     }
 
-    def assertRebaseSquare(a: Seq[operation.Node], b: Seq[operation.Node]): Unit = {
-      val debug = false
+    def assertRebaseSquare(a: Seq[operation.Node], b: Seq[operation.Node], debug: Boolean = false): Unit = {
       if (debug) println(s"Change a: $a")
       if (debug) println(s"Change b: $b")
       ot.Node.rebase(a, b) match {
@@ -208,6 +205,21 @@ object RebaseTests extends TestSuite {
               }
             }
           }
+        }
+      }
+    }
+
+    'squareRandom - {
+      var n = node
+      for (_ <- 0 until 3000) {
+        val a = operation.Node.randomTransaction(20, n)
+        val r1 = Try { operation.Node.apply(a, node) }
+        val b = operation.Node.randomTransaction(20, n)
+        val r2 = Try { operation.Node.apply(b, node) }
+        // for invalid sequences, rebasing might just make the sequence valid
+        if (r1.isSuccess && r2.isSuccess) {
+          n = r1.get
+          assertRebaseSquare(a, b)
         }
       }
     }

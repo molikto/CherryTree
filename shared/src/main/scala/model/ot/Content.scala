@@ -29,7 +29,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
             if (w == l) {
               Rebased(Set.empty, (None, None))
             } else {
-              Rebased(Set(conflict.Content.Code.Lang(w)), (None, Some(winner)))
+              Rebased(Set(conflict.Content.Code.Lang(w)), (Some(winner), None))
             }
           case operation.Content.Paragraph.Content(l) =>
             throw new AssertionError()

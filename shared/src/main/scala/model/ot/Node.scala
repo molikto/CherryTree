@@ -45,7 +45,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             }
           case operation.Node.Replace(lc, _) =>
             if (wc == lc) {
-              Rebased(Set(conflict.Node.ReplacedByLoser()), (Some(loser), None))
+              Rebased(Set(conflict.Node.ReplacedByLoser()), (None, Some(loser)))
             } else {
               free(winner, loser)
             }
