@@ -1,7 +1,5 @@
 package model
 
-import boopickle.Pickler
-import model.data.DataObject
 
 import scala.util.Random
 

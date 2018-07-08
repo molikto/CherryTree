@@ -8,5 +8,5 @@ package object model extends Picklers {
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
 
-  def debugModel = true
+  def debugModel = false
 }
