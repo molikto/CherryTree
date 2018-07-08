@@ -27,11 +27,13 @@ case class Node(content: Content, childs: Seq[Node]) {
   private def delete(r: IntRange): Node =
     copy(childs = childs.patch(r.start, Seq.empty, r.size))
 
-  private def insert(i: Int, childs: Seq[Node]): Node =
-    copy(childs = childs.patch(i, childs, 0))
+  private def insert(i: Int, cs: Seq[Node]): Node = {
+    if (i < 0 || i > childs.size) throw new IllegalArgumentException()
+    copy(childs = childs.patch(i, cs, 0))
+  }
 
-  def insert(c: cursor.Node, childs: Seq[Node]): data.Node =
-    map(c.dropRight(1), a => a.insert(c.last, childs))
+  def insert(c: cursor.Node, cs: Seq[Node]): data.Node =
+    map(c.dropRight(1), a => a.insert(c.last, cs))
 
   def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = this(r)

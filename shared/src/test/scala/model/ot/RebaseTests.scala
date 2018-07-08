@@ -90,11 +90,16 @@ object RebaseTests extends TestSuite {
       if (debug) println(s"Change b: $b")
       ot.Node.rebase(a, b) match {
         case Rebased(s, (ap, bp)) =>
+          if (debug) println(s"node: $node")
           if (debug) println(s"Rebase type s: $s")
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 = bp.map(_(a(node)))
-          val app1 = ap.map(_(b(node)))
+          if (debug) println(s"a(node): ${a(node)}")
+          if (debug) println(s"b(node): ${b(node)}")
+          val an = a(node)
+          val bn = b(node)
+          val app0 = if (bp.isDefined) bp.get(an) else an
+          val app1 = if (ap.isDefined) ap.get(bn) else bn
           if (app0 == app1) {
             if (debug) println(s"App: $app0")
           } else {

@@ -24,7 +24,11 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               i.copy(c = p),
               d.modify(_.r).using(r => range.Node(cursor.Node.transformAfterInserted(i.c, i.childs.size, r.start), r.childs.size))
               )
-          case None => Rebased(Set(deleteConflict), (None, Some(d.modify(_.r).using(r => range.Node(r.start, r.childs.size + i.childs.size)))))
+          case None => Rebased(Set(deleteConflict), (None, Some(
+            if (d.r.start.size == i.c.size) // same level
+              d.modify(_.r).using(r => range.Node(r.start, r.childs.size + i.childs.size))
+            else d // not same level
+          )))
         }
       }
     }
