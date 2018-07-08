@@ -9,7 +9,7 @@ import operation.Unicode._
 object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
 
-  type RebaseResult = Rebased[conflict.Unicode, (Option[operation.Unicode], Option[operation.Unicode])]
+  type RebaseResult = Rebased[conflict.Unicode, (Seq[operation.Unicode], Seq[operation.Unicode])]
 
 
   override def rebase(winner: operation.Unicode, loser: operation.Unicode): RebaseResult = {
@@ -20,8 +20,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val lto = delete.r.endInclusive
       if (lfrom < wat && lto >= wat) {
         Rebased(Set(deleteConflict), (
-          None,
-          Some(Delete(lfrom, lto + wc.size))
+          Seq.empty,
+          Seq(Delete(lfrom, lto + wc.size))
         ))
       } else {
         val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)
@@ -35,8 +35,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def deleteReplaceAtomic(delete: Delete, replace: ReplaceAtomic, deleteConflict: => conflict.Unicode): RebaseResult = {
       if (delete.r.contains(replace.r)) {
         Rebased(Set(deleteConflict), (
-          Some(Delete(delete.r.start, delete.r.endInclusive + replace.sizeDiff)),
-          None
+          Seq(Delete(delete.r.start, delete.r.endInclusive + replace.sizeDiff)),
+          Seq.empty
         ))
       } else if (delete.r.overlap(replace.r)) {
         throw new IllegalArgumentException()
@@ -78,8 +78,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (d@Delete(_), a@Insert(_, _, _)) =>
         reverse(addDelete(a, d, conflict.Unicode.WinnerDeletesLoser()))
       case (Delete(ws), Delete(ls)) =>
-        val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a.start, a.endInclusive))
-        val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => Delete(a.start, a.endInclusive))
+        val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a.start, a.endInclusive)).toSeq
+        val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => Delete(a.start, a.endInclusive)).toSeq
         Rebased(Set.empty, (wp, lp))
       case (d@Delete(_), r@ReplaceAtomic(_, _)) =>
         deleteReplaceAtomic(d, r, conflict.Unicode.WinnerDeletesLoser())
@@ -92,8 +92,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (w@ReplaceAtomic(ws, _), l@ReplaceAtomic(ls, _)) =>
         if (ws == ls) {
           Rebased(Set(conflict.Unicode.WinnerDeletesLoser()),
-            (Some(w.modify(_.r).using(a => IntRange(a.start, a.endInclusive + l.sizeDiff))),
-            None))
+            (Seq(w.modify(_.r).using(a => IntRange(a.start, a.endInclusive + l.sizeDiff))),
+            Seq.empty))
         } else if (ws.overlap(ls)) {
           throw new IllegalArgumentException()
         } else if (ws.start < ls.start) {

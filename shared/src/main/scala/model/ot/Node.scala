@@ -9,7 +9,7 @@ import scala.util.Random
 
 object Node extends Ot[data.Node, operation.Node, conflict.Node] {
 
-  type RebaseResult = Rebased[conflict.Node, (Option[operation.Node], Option[operation.Node])]
+  type RebaseResult = Rebased[conflict.Node, (Seq[operation.Node], Seq[operation.Node])]
 
   // LATER handle move
   override def rebase(winner: operation.Node, loser: operation.Node): RebaseResult = {
@@ -21,7 +21,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           if (d.r.start.size == i.c.size) { // same level, ALWAYS insert something, the deletion is also moved
             free(i.copy(c = d.r.start), d.modify(_.r).using(_.modify(_.childs).using(_.moveBy(i.childs.size))))
           } else { // in this case, parent is gone, we cannot possibly insert in a correct place
-            Rebased(Set(deleteConflict), (None, Some(d)))
+            Rebased(Set(deleteConflict), (Seq.empty, Seq(d)))
           }
       }
     }
@@ -38,7 +38,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             }
           case operation.Node.Replace(lc, _) =>
             if (wc == lc) {
-              Rebased(Set(conflict.Node.ReplacedByLoser()), (None, Some(loser)))
+              Rebased(Set(conflict.Node.ReplacedByLoser()), (Seq.empty, Seq(loser)))
             } else {
               free(winner, loser)
             }
@@ -47,7 +47,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case operation.Node.Delete(lr) =>
             lr.transformAfterDeleted(wc) match {
               case Some(p) => free(w.copy(c = p), loser)
-              case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (None, Some(loser)))
+              case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (Seq.empty, Seq(loser)))
             }
           case operation.Node.Move(lr, la) =>
             ???
@@ -56,13 +56,13 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
         loser match {
           case operation.Node.Content(lc, _) =>
             if (wc == lc) {
-              Rebased(Set(conflict.Node.ReplacedByWinner()), (Some(winner), None))
+              Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
             } else {
               free(winner, loser)
             }
           case operation.Node.Replace(lc, _) =>
             if (wc == lc) {
-              Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Some(winner), None))
+              Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Seq(winner), Seq.empty))
             } else {
               free(winner, loser)
             }
@@ -71,7 +71,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case operation.Node.Delete(lr) =>
             lr.transformAfterDeleted(wc) match {
               case Some(p) => free(w.copy(c = p), loser)
-              case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (None, Some(loser)))
+              case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (Seq.empty, Seq(loser)))
             }
           case operation.Node.Move(lr, la) =>
             ???
@@ -98,18 +98,18 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case l@operation.Node.Content(lc, _) =>
             wr.transformAfterDeleted(lc) match {
               case Some(p) => free(winner, l.copy(c = p))
-              case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Some(winner), None))
+              case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Seq(winner), Seq.empty))
             }
           case l@operation.Node.Replace(lc, _) =>
             wr.transformAfterDeleted(lc) match {
               case Some(p) => free(winner, l.copy(c = p))
-              case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Some(winner), None))
+              case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Seq(winner), Seq.empty))
             }
           case i@operation.Node.Insert(_, _) =>
             reverse(insertDelete(i, d, conflict.Node.WinnerDeletesLoser()))
           case operation.Node.Delete(lr) =>
-            val wp = lr.transformDeletingRangeAfterDeleted(wr).map(operation.Node.Delete)
-            val lp = wr.transformDeletingRangeAfterDeleted(lr).map(operation.Node.Delete)
+            val wp = lr.transformDeletingRangeAfterDeleted(wr).map(operation.Node.Delete).toSeq
+            val lp = wr.transformDeletingRangeAfterDeleted(lr).map(operation.Node.Delete).toSeq
             Rebased(Set.empty, (wp, lp))
           case operation.Node.Move(lr, la) =>
             ???

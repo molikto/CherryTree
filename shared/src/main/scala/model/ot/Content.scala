@@ -7,7 +7,7 @@ import scala.util.Random
 
 object Content extends Ot[data.Content, operation.Content, conflict.Content] {
 
-  type RebaseResult = Rebased[conflict.Content, (Option[operation.Content], Option[operation.Content])]
+  type RebaseResult = Rebased[conflict.Content, (Seq[operation.Content], Seq[operation.Content])]
   override def rebase(winner: operation.Content, loser: operation.Content): RebaseResult = {
     winner match  {
       case operation.Content.Code.Content(w) =>
@@ -27,9 +27,9 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
             free(winner, loser)
           case operation.Content.Code.Lang(l) =>
             if (w == l) {
-              Rebased(Set.empty, (None, None))
+              Rebased(Set.empty, (Seq.empty, Seq.empty))
             } else {
-              Rebased(Set(conflict.Content.Code.Lang(w)), (Some(winner), None))
+              Rebased(Set(conflict.Content.Code.Lang(w)), (Seq(winner), Seq.empty))
             }
           case operation.Content.Paragraph.Content(l) =>
             throw new AssertionError()

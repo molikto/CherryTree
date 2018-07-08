@@ -8,12 +8,14 @@ import scala.util.Random
 
 object Paragraph extends Ot[data.Paragraph, operation.Paragraph, conflict.Paragraph] {
 
-  type RebaseResult = Rebased[conflict.Paragraph, (Option[operation.Paragraph], Option[operation.Paragraph])]
+  type RebaseResult = Rebased[conflict.Paragraph, (Seq[operation.Paragraph], Seq[operation.Paragraph])]
   override def rebase(winner: operation.Paragraph, loser: operation.Paragraph): RebaseResult = {
     val a = ot.Unicode.rebase(winner.u, loser.u)
     // TODO what's the purpose of ty here? and how is it used?
-    val ww = if (a.t._1.isEmpty) None else Some(operation.Paragraph(a.t._1, winner.ty))
-    val ll = if (a.t._2.isEmpty) None else Some(operation.Paragraph(a.t._2, loser.ty))
+    val t1 = a.t._1
+    val t2 = a.t._2
+    val ww = if (t1.isEmpty) Seq.empty else Seq(operation.Paragraph(t1, winner.ty))
+    val ll = if (t2.isEmpty) Seq.empty else Seq(operation.Paragraph(t2, loser.ty))
     Rebased(a.conflicts, (ww, ll))
   }
 }
