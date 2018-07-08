@@ -104,7 +104,7 @@ trait ClientModelStateTrait { self =>
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientUpdate](head, server.change(authentication, committedVersion, submit).call(), succsss => {
+          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, if (debugModel) committed else data.Node.empty).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>

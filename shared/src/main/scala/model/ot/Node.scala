@@ -3,7 +3,6 @@ package model.ot
 
 import boopickle.Pickler
 import model._
-import model.operation.Node
 import com.softwaremill.quicklens._
 
 import scala.util.Random

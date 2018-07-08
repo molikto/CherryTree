@@ -27,7 +27,8 @@ trait Api {
   def change(
     authentication: Authentication.Token,
     version: Int,
-    changes: Seq[transaction.Node]
+    changes: Seq[transaction.Node],
+    debugCurrentDoc: data.Node
   ): Either[ApiError, ClientUpdate]
 
 

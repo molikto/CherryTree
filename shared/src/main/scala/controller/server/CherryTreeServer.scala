@@ -9,8 +9,7 @@ import scala.collection.mutable
 class CherryTreeServer extends Api {
 
   // states, now in single thread fashion
-  def emptyDocument = data.Node(data.Content.Paragraph(data.Paragraph.empty), Seq.empty)
-  private var document = emptyDocument
+  private var document = data.Node.empty
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
@@ -59,9 +58,12 @@ class CherryTreeServer extends Api {
     }
   }
 
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node]): ErrorT[ClientUpdate] = synchronized {
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
     checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
+        if (debugModel) {
+          assert(debugClientDoc == debugHistoryDocuments(clientVersion))
+        }
         val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
         var debugTopDocument = document
         document = operation.Node.applyT(transformed, document)
@@ -70,8 +72,7 @@ class CherryTreeServer extends Api {
           debugTopDocument = operation.Node.apply(t, debugTopDocument)
           debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
         }
-        val debug = true
-        if (debug) {
+        if (debugModel) {
           assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
         }
         clients.update(authentication, version)

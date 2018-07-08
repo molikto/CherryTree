@@ -7,4 +7,6 @@ package object model extends Picklers {
 
   def some[T, R](a: T, b: R): (Option[T], Option[R]) = (Some(a), Some(b))
 
+
+  def debugModel = true
 }

@@ -185,7 +185,6 @@ object RebaseTests extends TestSuite {
             case (Failure(e), Success(s)) =>
               throw new IllegalArgumentException(s"b succeeded$s", e)
           }
-        case _ =>
       }
     }
 
