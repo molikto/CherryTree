@@ -1,9 +1,8 @@
 
 package controller.client
 
-import controller.TestApiAdapter
+import controller.TestAutowireClient
 import controller.api.{Api, Authentication}
-import controller.server.CherryTreeServer
 import model._
 import model.ot.NodeOps
 import utest._
@@ -16,9 +15,9 @@ import scala.util.{Random, Try}
 object ClientTests extends TestSuite  {
 
   val tests = Tests {
-    val server = new CherryTreeServer()
+    val server = new controller.server.Server()
     val api = {
-      val s = new TestApiAdapter(server)
+      val s = new TestAutowireClient(server)
       s[Api]
     }
 

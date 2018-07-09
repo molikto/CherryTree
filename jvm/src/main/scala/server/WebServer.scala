@@ -4,13 +4,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import controller.server.CherryTreeServer
 
 
-class HttpServer() {
+class WebServer() {
 
 
-  val api = new CherryTreeServer()
+  val api = new controller.server.Server()
   val router = new HttpRouter(api)
   def run() {
     implicit val system: ActorSystem = ActorSystem("server-system")

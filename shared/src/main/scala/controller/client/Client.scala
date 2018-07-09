@@ -9,8 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ClientModel(
+class Client(
   protected override val server: Server,
   protected override val initial: ClientInit,
   protected override val authentication: Authentication.Token
-) extends ClientModelNodeLevelCommandTrait
+) extends ClientStateTrait

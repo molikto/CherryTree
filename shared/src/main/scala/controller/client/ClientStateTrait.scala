@@ -19,7 +19,7 @@ import model._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait ClientModelStateTrait { self =>
+trait ClientStateTrait { self =>
 
   protected def lockObject: AnyRef  = self
   protected def initial: ClientInit

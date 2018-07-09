@@ -6,7 +6,7 @@ import model.ot.Rebased
 
 import scala.collection.mutable
 
-class CherryTreeServer extends Api {
+class Server extends Api {
 
   // states, now in single thread fashion
   private var document = data.Node.empty

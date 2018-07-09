@@ -13,3 +13,14 @@ test with `sbt sharedJVM/test`, `sbt sharedJVM/testOnly xxx` etc.
 * dynamic check use exception
 
 
+## read the code?
+
+* `model`: abstract and pure functions
+    * `data`: data object definition, serialization
+    * `cursor`: data type for cursor inside data
+    * `range`: data type for range inside data, from left to right style
+    * `operation`: operation definition on data
+    * `conflict`, `transaction`: helper definitions
+    * `ot` operational transformation for operations
+* `controller`
+* `web` the web client

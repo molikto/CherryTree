@@ -14,7 +14,7 @@ lazy val server = (project in file("jvm")).settings(
 lazy val client = (project in file("js")).settings(
   sharedSettings,
   scalaVersion := Version.scala,
-  scalaJSUseMainModuleInitializer := true,
+  webpackBundlingMode := BundlingMode.LibraryAndApplication(),
   npmDependencies in Compile ++= Deps.clientJs,
   libraryDependencies ++= Deps.client.value
 ).enablePlugins(ScalaJSPlugin, ScalaJSWeb, ScalaJSBundlerPlugin).

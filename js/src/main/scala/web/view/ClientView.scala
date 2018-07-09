@@ -3,7 +3,7 @@ package web.view
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.{BackendScope, Unmounted}
 import controller.client._
-import controller.client.ClientModel
+import controller.client.Client
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.all._
@@ -21,11 +21,11 @@ import scala.util.{Failure, Random, Success}
 object ClientView {
 
 
-  private implicit val reusabilityClient = Reusability.always[ClientModel]
+  private implicit val reusabilityClient = Reusability.always[Client]
   private implicit val reusabilityClientState = Reusability.by_==[data.Node]
 
-  private val creator = ObserverView[ClientModel, data.Node, ClientView](
-    ScalaComponent.builder[ClientModel]("ClientView"),
+  private val creator = ObserverView[Client, data.Node, ClientView](
+    ScalaComponent.builder[Client]("ClientView"),
     s => new ClientView(s),
     client => client.doc,
     onStart = _.start(),
@@ -33,13 +33,13 @@ object ClientView {
   ).configure(Reusability.shouldComponentUpdate)
     .build
 
-  def apply(c: ClientModel): Unmounted[ClientModel, data.Node, ClientView] = creator(c)
+  def apply(c: Client): Unmounted[Client, data.Node, ClientView] = creator(c)
 }
 
-class ClientView(override val $: BackendScope[ClientModel, data.Node]) extends ObserverView[ClientModel, data.Node] {
+class ClientView(override val $: BackendScope[Client, data.Node]) extends ObserverView[Client, data.Node] {
 
   val random = new Random()
-  def render(client: ClientModel, state: data.Node): VdomElement = {
+  def render(client: Client, state: data.Node): VdomElement = {
     div(
       div(s"client ${client.debug_authentication}, version ${client.debug_committedVersion}"),
       button("change content", onClick ==> (_ => Callback {

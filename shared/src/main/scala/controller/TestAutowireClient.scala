@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 
-class TestApiAdapter(service: Api) extends autowire.Client[ByteBuffer, Pickler, Pickler] {
+class TestAutowireClient(service: Api) extends autowire.Client[ByteBuffer, Pickler, Pickler] {
 
   object server extends autowire.Server[ByteBuffer, Pickler, Pickler] {
     override def read[R: Pickler](p: ByteBuffer) = boopickle.Default.Unpickle[R].fromBytes(p)

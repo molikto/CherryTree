@@ -12,12 +12,11 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
-import controller.Ids
 import controller.api.Api
 
 class HttpRouter(val service: Api) extends Directives {
 
-  val apiRouter = new ApiRouter(service)
+  val apiRouter = new AutowireServer(service)
 
   def apply()(implicit s: ActorSystem, m: Materializer, e: ExecutionContext): Route = {
 
@@ -32,8 +31,11 @@ class HttpRouter(val service: Api) extends Directives {
                 |    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap-reboot.min.css" rel="stylesheet" type="text/css" />
                 |  </head>
                 |  <body>
-                |   <div style="height:100vh" id="${Ids.main}"></div>
+                |   <div style="height:100vh" id="main"></div>
                 |   <script src="/assets/client-fastopt-bundle.js" type="text/javascript"></script>
+                |   <script type="text/javascript">
+                |     cherryTreeDevMain("main")
+                |   </script>
                 |  </body>
                 |</html>""".stripMargin)
         }

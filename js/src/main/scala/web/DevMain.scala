@@ -1,6 +1,5 @@
 package web
 
-import controller.Ids
 import org.scalajs.dom
 import model._
 import japgolly.scalajs.react._
@@ -9,12 +8,16 @@ import japgolly.scalajs.react._
 import controller.api.Authentication
 import web.view.ClientInitializerView
 
+import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+
 
 object DevMain {
 
 
-  def main(args: Array[String]): Unit = {
-    val mainDiv = el[dom.html.Div](Ids.main)
+
+  @JSExportTopLevel("cherryTreeDevMain")
+  def cherryTreeDevMain(id: String): Unit = {
+    val mainDiv = el[dom.html.Div](id)
     ScalaComponent.builder.static("TestPanel")(
       div(
         width := "100%",

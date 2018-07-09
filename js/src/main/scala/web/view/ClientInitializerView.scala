@@ -1,7 +1,7 @@
 package web.view
 
-import controller.client.ClientModel
-import web.net.JsAutowireAdapter
+import controller.client.Client
+import web.net.JsAutowireClient
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import controller.client.ClientInitializer
@@ -17,7 +17,7 @@ object ClientInitializerView {
 
   private val creator = ScalaComponent
     .builder[Authentication.Token]("ClientInitializerView")
-    .initialState(None.asInstanceOf[Option[ClientModel]])
+    .initialState(None.asInstanceOf[Option[Client]])
     .renderBackend[ClientInitializerView]
     .componentDidMount(_.backend.start)
     .componentWillUnmount(_.backend.stop)
@@ -25,9 +25,9 @@ object ClientInitializerView {
   def apply(token: Authentication.Token) = creator(token)
 }
 
-class ClientInitializerView($: BackendScope[Authentication.Token, Option[ClientModel]]) {
+class ClientInitializerView($: BackendScope[Authentication.Token, Option[Client]]) {
 
-  private val server = new JsAutowireAdapter()[Api]
+  private val server = new JsAutowireClient()[Api]
 
   def stop = Callback {
   }
@@ -41,7 +41,7 @@ class ClientInitializerView($: BackendScope[Authentication.Token, Option[ClientM
     }
   }
 
-  def render(token: Authentication.Token, client: Option[ClientModel]): VdomElement = {
+  def render(token: Authentication.Token, client: Option[Client]): VdomElement = {
     client match {
       case Some(c) =>
         ClientView(c)

@@ -12,7 +12,7 @@ import util._
 import model._
 
 
-class JsAutowireAdapter extends autowire.Client[ByteBuffer, Pickler, Pickler] {
+class JsAutowireClient extends autowire.Client[ByteBuffer, Pickler, Pickler] {
   override def doCall(req: Request): Future[ByteBuffer] = {
     dom.ext.Ajax.post(
       url = "/api/" + req.path.mkString("/"),

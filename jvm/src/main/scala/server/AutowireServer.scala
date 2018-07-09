@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import model._
 import util._
 
-class ApiRouter(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
+class AutowireServer(val service: Api) extends autowire.Server[ByteBuffer, Pickler, Pickler] {
 
   implicit val debug = false
 
