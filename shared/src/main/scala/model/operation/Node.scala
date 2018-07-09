@@ -8,9 +8,14 @@ import scala.util.Random
 
 
 abstract sealed class Node extends Operation[data.Node] {
+  def transform(a: data.Mode): data.Mode = a
 }
 
 object Node extends OperationObject[data.Node, Node] {
+  def transform(ns: Seq[Node], a: data.Mode): data.Mode = {
+    a
+  }
+
   case class Content(at: cursor.Node, content: operation.Content) extends Node {
     override def ty: Type = content.ty
     override def apply(d: data.Node): data.Node = {

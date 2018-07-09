@@ -10,8 +10,10 @@ class ObservableProperty[T](initial: T) extends Observable[T] {
   private var t = initial
 
   def update(t: T): Unit = {
-    this.t = t
-    subject.onNext(t)
+    if (t != this.t) {
+      this.t = t
+      subject.onNext(t)
+    }
   }
 
   def modify(a: T => T): Unit = {
