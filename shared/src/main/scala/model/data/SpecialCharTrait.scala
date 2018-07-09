@@ -43,12 +43,12 @@ object SpecialChar {
   
   val all: Seq[DelimitedModifiers] = coded ++ formatted ++ linked
   
-  val splitableOrdered: Seq[DelimitedModifiers] = formatted ++ linked
-  val nonSplitableOrdered: Seq[DelimitedModifiers] = linked
-  //** from inner to outter
+  val splittableOrdered: Seq[DelimitedModifiers] = formatted ++ linked
+  val nonSplittableOrdered: Seq[DelimitedModifiers] = linked
+  //** from inner to outer
   // also inner splits
-  val surroundStartCodeInToOut: Seq[Unicode] = splitableOrdered.map(a => a.startUnicode)
-  val surroundStartCodeNotSplit: Seq[Unicode] = nonSplitableOrdered.map(a => a.startUnicode)
+  val surroundStartCodeInToOut: Seq[Unicode] = splittableOrdered.map(a => a.startUnicode)
+  val surroundStartCodeNotSplit: Seq[Unicode] = nonSplittableOrdered.map(a => a.startUnicode)
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
