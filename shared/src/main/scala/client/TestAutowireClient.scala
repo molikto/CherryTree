@@ -1,10 +1,9 @@
-package controller
+package client
 
 import java.nio.ByteBuffer
 
 import boopickle.Pickler
-import controller.api.Api
-
+import api.Api
 import model._
 
 import scala.concurrent.Future

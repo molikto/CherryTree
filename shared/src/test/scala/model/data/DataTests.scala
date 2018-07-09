@@ -1,6 +1,6 @@
 package model.data
 
-import controller.api.{ApiError, ClientInit, ErrorT}
+import api.{ApiError, ClientInit, ErrorT}
 import model._
 import model.range.IntRange
 import utest._

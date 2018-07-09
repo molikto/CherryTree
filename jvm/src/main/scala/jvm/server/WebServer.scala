@@ -1,4 +1,4 @@
-package server
+package jvm.server
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 class WebServer() {
 
 
-  val api = new controller.server.Server()
+  val api = new server.Server()
   val router = new HttpRouter(api)
   def run() {
     implicit val system: ActorSystem = ActorSystem("server-system")

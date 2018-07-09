@@ -1,4 +1,4 @@
-package server
+package jvm.server
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RequestContext, RouteResult}
@@ -6,7 +6,7 @@ import akka.util.ByteString
 import java.nio.ByteBuffer
 
 import boopickle.Pickler
-import controller.api.Api
+import api.Api
 
 import scala.concurrent.{ExecutionContext, Future}
 import model._

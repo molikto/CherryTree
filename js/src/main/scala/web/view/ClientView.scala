@@ -2,14 +2,14 @@ package web.view
 
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.{BackendScope, Unmounted}
-import controller.client._
-import controller.client.Client
+import client._
+import client.Client
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
-import controller.api.{Api, Authentication}
+import api.{Api, Authentication}
 import sun.text.normalizer.ICUBinary.Authenticate
 import model._
 import model.data

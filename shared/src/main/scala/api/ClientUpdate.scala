@@ -1,4 +1,4 @@
-package controller.api
+package api
 
 import model._
 

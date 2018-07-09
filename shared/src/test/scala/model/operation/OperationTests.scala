@@ -1,7 +1,7 @@
 package model.operation
 
 
-import controller.api.{ApiError, ClientInit, ErrorT}
+import api.{ApiError, ClientInit, ErrorT}
 import model._
 import model.data.DataObject
 import model.range.IntRange

@@ -5,7 +5,7 @@ import model._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react._
-import controller.api.Authentication
+import api.Authentication
 import web.view.ClientInitializerView
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}

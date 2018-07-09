@@ -1,4 +1,4 @@
-package controller.api
+package api
 
 object Authentication {
   case class Token(stuff: String)

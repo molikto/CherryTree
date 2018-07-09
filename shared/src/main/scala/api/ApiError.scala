@@ -1,4 +1,4 @@
-package controller.api
+package api
 
 sealed abstract class ApiError extends Exception
 object ApiError {

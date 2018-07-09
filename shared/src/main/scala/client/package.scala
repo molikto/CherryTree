@@ -1,5 +1,3 @@
-package controller
-
 import java.nio.ByteBuffer
 
 import autowire.ClientProxy
@@ -10,5 +8,4 @@ import scala.concurrent.Future
 
 package object client {
 
-  type Server = ClientProxy[Api, ByteBuffer, boopickle.Pickler, boopickle.Pickler]
 }

@@ -1,9 +1,8 @@
-package controller.client
+package client
 
 
 import autowire._
 import com.softwaremill.quicklens._
-
 import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.execution.rstreams.Subscription
@@ -11,7 +10,7 @@ import monix.reactive._
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
-import controller.api._
+import api._
 import model.ot.Rebased
 import util._
 import model._
@@ -23,7 +22,7 @@ trait ClientStateTrait { self =>
 
   protected def lockObject: AnyRef  = self
   protected def initial: ClientInit
-  protected def server: Server
+  protected def server: Client.Proxy
   protected val authentication: Authentication.Token
   def debug_authentication: Authentication.Token = authentication
 

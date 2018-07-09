@@ -1,5 +1,4 @@
-package server
-
+package jvm.server
 
 object DevMain {
   def main(args: Array[String]): Unit = {

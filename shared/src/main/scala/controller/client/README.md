@@ -1,6 +1,0 @@
-
-
-
-
-
-client model implementation

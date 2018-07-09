@@ -1,10 +1,10 @@
 
-package controller.client
+package client
 
-import controller.TestAutowireClient
-import controller.api.{Api, Authentication}
+import api.{Api, Authentication}
 import model._
 import model.ot.NodeOps
+import server.Server
 import utest._
 
 import scala.concurrent.duration._
@@ -15,16 +15,16 @@ import scala.util.{Random, Try}
 object ClientTests extends TestSuite  {
 
   val tests = Tests {
-    val server = new controller.server.Server()
+    val s = new server.Server()
     val api = {
-      val s = new TestAutowireClient(server)
+      val s = new TestAutowireClient(s)
       s[Api]
     }
 
     val random = new Random()
 
-    def serverDoc = server.debugDocument
-    def serverChanges = server.debugChanges
+    def serverDoc = s.debugDocument
+    def serverChanges = s.debugChanges
 
 
     def cl(name: String) = ClientInitializer.init(api, Authentication.Token(name))

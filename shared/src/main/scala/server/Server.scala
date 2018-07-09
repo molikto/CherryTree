@@ -1,7 +1,7 @@
-package controller.server
+package server
 
 import model._
-import controller.api._
+import api._
 import model.ot.Rebased
 
 import scala.collection.mutable

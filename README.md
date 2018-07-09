@@ -22,5 +22,5 @@ test with `sbt sharedJVM/test`, `sbt sharedJVM/testOnly xxx` etc.
     * `operation`: operation definition on data
     * `conflict`, `transaction`: helper definitions
     * `ot` operational transformation for operations
-* `controller`
+* `server`: abstract server implementation
 * `web` the web client
