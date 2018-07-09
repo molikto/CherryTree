@@ -5,7 +5,7 @@ import model.range.IntRange
 
 import scala.util.Random
 
-package object data {
+package object data extends SpecialCharTrait {
 
   trait DataObject[T] {
     def random(): T = random(new Random())

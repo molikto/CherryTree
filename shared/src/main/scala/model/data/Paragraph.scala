@@ -10,7 +10,7 @@ import scala.util.Random
 sealed class InfoType {
 }
 object InfoType {
-  case class Special(a: SpecialChar.Type) extends InfoType
+  case class Special(a: SpecialChar) extends InfoType
   case object Plain extends InfoType
   case object Unicode extends InfoType
   case object Coded extends InfoType

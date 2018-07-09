@@ -13,67 +13,13 @@ class UnicodeParseException(msg: String) extends IOException(msg) {
 
 }
 
-private[model] object SpecialChar extends Enumeration {
-  type Type = Value
-
-  // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
-  val Start = 0xF0000
-
-  def toUnicode(t: Type): Unicode = Unicode(new String(Character.toChars(SpecialChar.Start + t.id)))
-
-  val EmphasisStart = Value
-  val EmphasisEnd = Value
-  val StrongStart = Value
-  val StrongEnd = Value
-  val StrikeThroughStart = Value
-  val StrikeThroughEnd = Value
-  val LinkStart = Value
-  val LinkContentEnd = Value
-  val LinkUrlEnd = Value
-  val LinkTitleEnd = Value
-  val ImageStart = Value
-  val ImageContentEnd = Value
-  val ImageUrlEnd = Value
-  val ImageTitleEnd = Value
-  val CodeStart = Value
-  val CodeEnd = Value
-  val LaTeXStart = Value
-  val LaTeXEnd = Value
-
-  val formatted = Seq(
-    (EmphasisStart, EmphasisEnd),
-    (StrongStart, StrongEnd),
-    (StrikeThroughStart, StrikeThroughEnd)
-  )
-
-  val linked = Seq(
-    (LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd),
-    (ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
-  )
-
-  val coded = Seq(
-    (CodeStart, CodeEnd),
-    (LaTeXStart, LaTeXEnd)
-  )
-
-  //** from inner to outter
-  // also inner splits
-  val surroundStartCodeInToOut: Seq[Unicode] = Seq(StrongStart, EmphasisStart, StrikeThroughStart, ImageStart, LinkStart).map(toUnicode)
-  val surroundStartCodeNotSplit: Seq[Unicode] = Seq(ImageStart, LinkStart).map(toUnicode)
-
-  val starts = formatted.map(_._1) ++ linked.map(_._1) ++ coded.map(_._1)
-  val ends = formatted.map(_._2) ++ linked.map(_._4) ++ coded.map(_._2)
-
-
-}
-
 
 private[model] class UnicodeWriter {
 
   private val sb = new StringBuilder()
 
-  def put(a: SpecialChar.Type): Unit = {
-    sb.append(SpecialChar.toUnicode(a))
+  def put(a: SpecialChar): Unit = {
+    sb.append(Unicode(a))
   }
 
   def put(url: Unicode): Unit = {
@@ -91,20 +37,20 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def isEmpty: Boolean = start >= str.length
 
-  private def isSpecialCodePoint(c: Int) = c >= SpecialChar.Start && c < SpecialChar.Start + SpecialChar.maxId
+  private def isSpecialCodePoint(c: Int) = c >= SpecialCharStart && c < SpecialCharStart + maxId
 
-  def eatOrNotSpecial(): Option[SpecialChar.Type] = {
+  def eatOrNotSpecial(): Option[SpecialChar] = {
     val c = str.codePointAt(start)
     if (isSpecialCodePoint(c)) {
       start = str.offsetByCodePoints(start, 1)
-      Some(SpecialChar(c - SpecialChar.Start))
+      Some(SpecialChar(c - SpecialCharStart))
     } else {
       None
     }
   }
 
-  def eatOrFalse(a: SpecialChar.Type): Boolean = {
-    if (str.codePointAt(start) == SpecialChar.Start + a.id) {
+  def eatOrFalse(a: SpecialChar): Boolean = {
+    if (str.codePointAt(start) == SpecialCharStart + a.id) {
       start = str.offsetByCodePoints(start, 1)
       true
     } else {
@@ -122,13 +68,13 @@ private[model] class UnicodeReader(a: Unicode) {
     Unicode(ret)
   }
 
-  def eatUntilAndDrop(b: SpecialChar.Type): Unicode = {
+  def eatUntilAndDrop(b: SpecialChar): Unicode = {
     val a = eatUntilSpecialChar()
     if (!eatOrFalse(b)) throw new UnicodeParseException(s"Expecting $b")
     a
   }
 
-  def eatUntilAndDropNonEmpty(b: SpecialChar.Type): Option[Unicode] = {
+  def eatUntilAndDropNonEmpty(b: SpecialChar): Option[Unicode] = {
     val a = eatUntilAndDrop(b)
     if (a.isEmpty) {
       None
@@ -141,6 +87,10 @@ object Unicode extends DataObject[Unicode] {
   override val pickler: boopickle.Pickler[Unicode] = new boopickle.Pickler[Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
+  }
+
+  def apply(a: SpecialChar): Unicode = {
+    Unicode(new String(Character.toChars(SpecialCharStart + a.id)))
   }
 
   override def random(r: Random): Unicode = Unicode(r.nextLong().toString)

@@ -17,8 +17,8 @@ object ClientTests extends TestSuite  {
   val tests = Tests {
     val s = new server.Server()
     val api = {
-      val s = new TestAutowireClient(s)
-      s[Api]
+      val k = new TestAutowireClient(s)
+      k[Api]
     }
 
     val random = new Random()

@@ -1,6 +1,6 @@
 package model.operation
 
-import model.data.{Info, InfoType, SpecialChar}
+import model.data._
 import model.{data, _}
 import model.operation.Type.Type
 import model.range.IntRange
@@ -50,7 +50,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
-          operation.Unicode.Surround(range, SpecialChar.toUnicode(randomFormat._1), SpecialChar.toUnicode(randomFormat._2))), Type.Add)
+          operation.Unicode.Surround(range, data.Unicode(randomFormat._1), data.Unicode(randomFormat._2))), Type.Add)
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Paragraph(Seq(
@@ -62,16 +62,16 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case 2 if d.size > 0 =>
         // add title/image to a subparagraph
         val randomFormat = r.nextInt(2) match {
-          case 0 => (SpecialChar.ImageStart, SpecialChar.ImageContentEnd, SpecialChar.ImageUrlEnd, SpecialChar.ImageTitleEnd)
-          case 1 => (SpecialChar.LinkStart, SpecialChar.LinkContentEnd, SpecialChar.LinkUrlEnd, SpecialChar.LinkTitleEnd)
+          case 0 => (ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
+          case 1 => (LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd)
         }
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
-          operation.Unicode.Surround(range, SpecialChar.toUnicode(randomFormat._1),
-            SpecialChar.toUnicode(randomFormat._2)
+          operation.Unicode.Surround(range, data.Unicode(randomFormat._1),
+            data.Unicode(randomFormat._2)
               .join(data.Unicode("http://www.baidu.com"))
-              .join(SpecialChar.toUnicode(randomFormat._3))
-              .join(SpecialChar.toUnicode(randomFormat._4))
+              .join(data.Unicode(randomFormat._3))
+              .join(data.Unicode(randomFormat._4))
           )
         ), Type.Add)
       case 3 =>
