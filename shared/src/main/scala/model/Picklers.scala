@@ -5,7 +5,7 @@ import boopickle._
 
 trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers with MaterializePicklerFallback {
 
-  implicit val pickler_Mode: Pickler[data.Mode] = data.Mode.pickler
+  implicit val pickler_mode_Node: Pickler[mode.Node] = mode.Node.pickler
 
   implicit val pickler_Node: Pickler[data.Node] = data.Node.pickler
   implicit val operationPickler_Node: Pickler[operation.Node] = operation.Node.pickler

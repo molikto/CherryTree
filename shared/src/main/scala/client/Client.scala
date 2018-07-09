@@ -16,7 +16,6 @@ import api._
 import model.ot.Rebased
 import util._
 import model._
-import model.data.ClientState
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -171,7 +170,7 @@ class Client(
     * if not, the mode is transformed by the change
     */
   def change(changes: transaction.Node,
-    mode: Option[data.Mode] = None,
+    mode: Option[model.mode.Node] = None,
     sync: Boolean = true): Unit = self.synchronized {
     var changed = false
     val d = if (changes.nonEmpty) {

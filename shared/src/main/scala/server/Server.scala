@@ -20,7 +20,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, data.Mode.ContentNormal.empty, version)
+    val state = ClientInit(document, mode.Node.empty, version)
     clients.update(token, version)
     Right(state)
   }
@@ -59,7 +59,7 @@ class Server extends Api {
     }
   }
 
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: data.Mode, debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: model.mode.Node, debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
     checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
         if (debugModel) {

@@ -2,18 +2,19 @@ package model.operation
 
 import model._
 import Type.Type
+import com.softwaremill.quicklens._
 import model.range.IntRange
 
 import scala.util.Random
 
 
 abstract sealed class Node extends Operation[data.Node] {
-  def transform(a: data.Mode): data.Mode = a
+  def transform(a: mode.Node): mode.Node
 }
 
 object Node extends OperationObject[data.Node, Node] {
-  def transform(ns: Seq[Node], a: data.Mode): data.Mode = {
-    a
+  def transform(ns: Seq[Node], a: mode.Node): mode.Node = {
+    ns.foldLeft(a) { (a, n) => n.transform(a) }
   }
 
   case class Content(at: cursor.Node, content: operation.Content) extends Node {
@@ -21,24 +22,51 @@ object Node extends OperationObject[data.Node, Node] {
     override def apply(d: data.Node): data.Node = {
       d.map(at, a => a.copy(content = content(a.content)))
     }
+
+    override def transform(a: mode.Node): mode.Node = a match {
+      case c: mode.Node.Content if c.node == at => c.modify(_.a).using(content.transform)
+      case _ => a
+    }
   }
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = {
       d.map(at, a => a.copy(content = content))
     }
+
+    override def transform(a: mode.Node): mode.Node = a match {
+      case c: mode.Node.Content if c.node == at => c.copy(a = mode.Content.Normal.empty)
+      case _ => a
+    }
   }
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
     override def apply(d: data.Node): data.Node = d.insert(at, childs)
+
+    override def transform(a: mode.Node): mode.Node = a match {
+      case c: mode.Node.Content =>
+        c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a))
+      case mode.Node.Visual(fix, move) =>
+        mode.Node.Visual(
+          cursor.Node.transformAfterInserted(at, childs.size, fix),
+          cursor.Node.transformAfterInserted(at, childs.size, move))
+
+    }
   }
   case class Delete(r: range.Node) extends Node {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
+
+    override def transform(a: mode.Node): mode.Node = a match {
+      case mode.Node.Content(node, _) => ???
+      case mode.Node.Visual(fix, move) => ???
+    }
   }
   case class Move(r: range.Node, at: cursor.Node) extends Node {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, at)
+
+    override def transform(a: mode.Node): mode.Node = ???
   }
 
   override val pickler: Pickler[Node] = new Pickler[Node] {

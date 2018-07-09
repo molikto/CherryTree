@@ -13,7 +13,6 @@ import api.{Api, Authentication}
 import sun.text.normalizer.ICUBinary.Authenticate
 import model._
 import model.data
-import model.data.ClientState
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Random, Success}
