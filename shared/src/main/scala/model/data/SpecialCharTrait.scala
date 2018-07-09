@@ -10,24 +10,14 @@ trait SpecialCharTrait extends Enumeration {
   private[data] def createSpecialChar(id: Int) = apply(id)
 
 
-  val EmphasisStart = Value
-  val EmphasisEnd = Value
-  val StrongStart = Value
-  val StrongEnd = Value
-  val StrikeThroughStart = Value
-  val StrikeThroughEnd = Value
-  val LinkStart = Value
-  val LinkContentEnd = Value
-  val LinkUrlEnd = Value
-  val LinkTitleEnd = Value
-  val ImageStart = Value
-  val ImageContentEnd = Value
-  val ImageUrlEnd = Value
-  val ImageTitleEnd = Value
-  val CodeStart = Value
-  val CodeEnd = Value
-  val LaTeXStart = Value
-  val LaTeXEnd = Value
+  val EmphasisStart, EmphasisEnd, 
+    StrongStart, StrongEnd,
+    StrikeThroughStart, StrikeThroughEnd,
+    LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd,
+    ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd,
+    CodeStart, CodeEnd,
+    LaTeXStart, LaTeXEnd:
+    SpecialChar = Value
 
 }
 
@@ -36,29 +26,41 @@ object SpecialChar {
   def apply(id: Int): SpecialChar = createSpecialChar(id)
 
   val formatted = Seq(
-    (EmphasisStart, EmphasisEnd),
-    (StrongStart, StrongEnd),
-    (StrikeThroughStart, StrikeThroughEnd)
+    FormattedModifiers(StrongStart, StrongEnd),
+    FormattedModifiers(EmphasisStart, EmphasisEnd),
+    FormattedModifiers(StrikeThroughStart, StrikeThroughEnd)
   )
 
   val linked = Seq(
-    (LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd),
-    (ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
+    LinkedModifiers(LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd),
+    LinkedModifiers(ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
   )
 
   val coded = Seq(
-    (CodeStart, CodeEnd),
-    (LaTeXStart, LaTeXEnd)
+    CodedModifiers(LaTeXStart, LaTeXEnd),
+    CodedModifiers(CodeStart, CodeEnd)
   )
-
+  
+  val all: Seq[DelimitedModifiers] = coded ++ formatted ++ linked
+  
+  val splitableOrdered: Seq[DelimitedModifiers] = formatted ++ linked
+  val nonSplitableOrdered: Seq[DelimitedModifiers] = linked
   //** from inner to outter
   // also inner splits
-  val surroundStartCodeInToOut: Seq[Unicode] = Seq(StrongStart, EmphasisStart, StrikeThroughStart, ImageStart, LinkStart).map(a => Unicode(a))
-  val surroundStartCodeNotSplit: Seq[Unicode] = Seq(ImageStart, LinkStart).map(a => Unicode(a))
+  val surroundStartCodeInToOut: Seq[Unicode] = splitableOrdered.map(a => a.startUnicode)
+  val surroundStartCodeNotSplit: Seq[Unicode] = nonSplitableOrdered.map(a => a.startUnicode)
 
-  val starts = formatted.map(_._1) ++ linked.map(_._1) ++ coded.map(_._1)
-  val ends = formatted.map(_._2) ++ linked.map(_._4) ++ coded.map(_._2)
+  val starts: Seq[SpecialChar] = all.map(_.start)
+  val ends: Seq[SpecialChar] = all.map(_.end)
 }
 
-class CodedModifiers(val start: SpecialChar, val end: SpecialChar)
+sealed abstract class DelimitedModifiers {
+  val start: SpecialChar
+  val end: SpecialChar
+  def  startUnicode = Unicode(start)
+  def  endUnicode = Unicode(end)
+}
+case class CodedModifiers(start: SpecialChar, end: SpecialChar) extends DelimitedModifiers
+case class FormattedModifiers(start: SpecialChar, end: SpecialChar) extends DelimitedModifiers
+case class LinkedModifiers(start: SpecialChar, contentEnd: SpecialChar, urlEnd: SpecialChar, end: SpecialChar) extends DelimitedModifiers
 

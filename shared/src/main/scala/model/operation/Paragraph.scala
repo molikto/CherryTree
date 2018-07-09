@@ -50,7 +50,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
-          operation.Unicode.Surround(range, data.Unicode(randomFormat._1), data.Unicode(randomFormat._2))), Type.Add)
+          operation.Unicode.Surround(range, randomFormat.startUnicode, randomFormat.endUnicode)), Type.Add)
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Paragraph(Seq(
@@ -129,7 +129,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   private def randomLinked(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
     val info = d.info().zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.linked.exists(_._1 == k)
+      case InfoType.Special(k) => SpecialChar.linked.exists(_.start == k)
       case _ => false
     })
     if (starts.isEmpty) {
@@ -147,7 +147,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   private def randomFormatted(d: data.Paragraph, r: Random): Option[IntRange] = {
     val info = d.info().zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.formatted.exists(_._1 == k)
+      case InfoType.Special(k) => SpecialChar.formatted.exists(_.start == k)
       case _ => false
     })
     if (starts.isEmpty) {
@@ -163,7 +163,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   private def randomCoded(d: data.Paragraph, r: Random): Option[IntRange] = {
     val info = d.info().zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.coded.exists(_._1 == k)
+      case InfoType.Special(k) => SpecialChar.coded.exists(_.start == k)
       case _ => false
     })
     if (starts.isEmpty) {
