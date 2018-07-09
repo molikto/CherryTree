@@ -9,6 +9,10 @@ import scala.util.Random
 
 
 abstract sealed class Node extends Operation[data.Node] {
+  /**
+    * the returned cursor, always assumes the the child list is not empty in case of a delete operation
+    * this is harmless now, because it will point to a imaginary node, and this can be recalibrate afterwards
+    */
   def transform(a: mode.Node): mode.Node
 }
 
@@ -35,7 +39,7 @@ object Node extends OperationObject[data.Node, Node] {
     }
 
     override def transform(a: mode.Node): mode.Node = a match {
-      case c: mode.Node.Content if c.node == at => c.copy(a = mode.Content.Normal.empty)
+      case c: mode.Node.Content if c.node == at => mode.Node.None
       case _ => a
     }
   }
@@ -58,8 +62,18 @@ object Node extends OperationObject[data.Node, Node] {
     override def apply(d: data.Node): data.Node = d.delete(r)
 
     override def transform(a: mode.Node): mode.Node = a match {
-      case mode.Node.Content(node, _) => ???
-      case mode.Node.Visual(fix, move) => ???
+      case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
+        case Some(k) => c.copy(node = k)
+        case None => mode.Node.None
+      }
+      case mode.Node.Visual(fix, move) =>
+        if (r.contains(fix) && r.contains(move)) {
+          mode.Node.None
+        } else {
+          mode.Node.Visual(
+            r.transformAfterDeleted(fix).getOrElse(r.start),
+            r.transformAfterDeleted(move).getOrElse(r.start))  // LATER is this ok???
+        }
     }
   }
   case class Move(r: range.Node, at: cursor.Node) extends Node {

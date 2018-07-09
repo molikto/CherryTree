@@ -8,7 +8,9 @@ import model.range.IntRange
 import scala.util.Random
 
 
-sealed trait Unicode extends Operation[data.Unicode]
+sealed trait Unicode extends Operation[data.Unicode] {
+  def transform(i: mode.Content): mode.Content
+}
 
 object Unicode extends OperationObject[data.Unicode, Unicode] {
 
@@ -48,6 +50,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Move(r: IntRange, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
+
+    override def transform(i: mode.Content): mode.Content = ???
   }
 
   /**

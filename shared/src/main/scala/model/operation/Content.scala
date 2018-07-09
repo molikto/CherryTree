@@ -3,6 +3,7 @@ package model.operation
 import model._
 import Type.Type
 import model.operation.Node.Replace
+import model.range.IntRange
 
 import scala.util.Random
 
@@ -22,7 +23,7 @@ object Content extends OperationObject[data.Content, Content] {
         }
       }
 
-      override def transform(a: mode.Content): mode.Content = ???
+      override def transform(a: mode.Content): mode.Content = op.transform(a)
     }
     case class Lang(lang: Option[String]) extends operation.Content {
       override def ty: Type = Type.AddDelete
@@ -46,7 +47,7 @@ object Content extends OperationObject[data.Content, Content] {
         }
       }
 
-      override def transform(a: mode.Content): mode.Content = ???
+      override def transform(a: mode.Content): mode.Content = op.transform(a)
     }
   }
 
