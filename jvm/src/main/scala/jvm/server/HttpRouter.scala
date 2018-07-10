@@ -23,26 +23,10 @@ class HttpRouter(val service: Api) extends Directives {
 
     pathSingleSlash {
       get {
-        complete {
-          HttpEntity(ContentTypes.`text/html(UTF-8)`, string =
-            s"""|<!DOCTYPE html>
-                |<html>
-                |  <head>
-                |    <title>Cherry Tree Dev Test</title>
-                |    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap-reboot.min.css" rel="stylesheet" type="text/css" />
-                |  </head>
-                |  <body>
-                |   <div style="height:100vh" id="main"></div>
-                |   <script src="/assets/client-fastopt-bundle.js" type="text/javascript"></script>
-                |   <script type="text/javascript">
-                |     cherryTreeDevMain("main")
-                |   </script>
-                |  </body>
-                |</html>""".stripMargin)
-        }
+        getFromResource("public/dev_main.html")
       }
     } ~
-    ((pathPrefix("assets" / Remaining) & respondWithHeader(`Cache-Control`(`no-cache`)))) { file =>
+    (pathPrefix("assets" / Remaining) & respondWithHeader(`Cache-Control`(`no-cache`))) { file =>
       // optionally compresses the response with Gzip or Deflate
       // if the client accepts compressed responses
       getFromResource("public/" + file)
