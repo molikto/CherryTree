@@ -1,17 +1,31 @@
 package web.view
 
 import client.Client
+import org.scalajs.dom.window
+import org.scalajs.dom.document
+import org.scalajs.dom
 import org.scalajs.dom.html
 import org.scalajs.dom.raw._
+import util.ObservableProperty
 
+import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val rootView: html.Element, private val client: Client) {
+class ClientView(private val parent: html.Element, private val client: Client) {
 
+  private val des = ArrayBuffer[Unit => Unit]()
+
+  def destroy(): Unit = {
+    des.reverse.foreach(_.apply())
+  }
 
   // initialise
+  private val rootView = dom.document.createElement("div").asInstanceOf[HTMLDivElement]
+  parent.appendChild(rootView)
   rootView.contentEditable = "true"
+  des.append(_ => parent.removeChild(rootView))
+
 
   private var shiftKey = false
   private var mouseDown: MouseDown = null
@@ -31,6 +45,7 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     */
 
   domObserver.start()
+  des.append(_ => domObserver.stop())
 
   class DomObserver {
     private val mutationObserverOptions = MutationObserverInit(
@@ -57,7 +72,7 @@ class ClientView(private val rootView: html.Element, private val client: Client)
       mutationObserver.disconnect()
     }
 
-    private def registerMutations(value: js.Array[MutationRecord]) = {
+    private def registerMutations(value: js.Array[MutationRecord]): Unit = {
       // TODO what's the purpose of this?
     }
   }
@@ -71,9 +86,19 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  class DomChange {
+  des.append(_ => if (inDomChange != null) inDomChange.destroy())
 
+  val commitTimeout = 20
+  class DomChange(
     var composing: Boolean = false
+  ) {
+
+    var timeout: Integer = if (composing) null else window.setTimeout(() => finish(), commitTimeout)
+
+
+    def destroy(): Unit = {
+
+    }
 
     def finish(): Unit = {
 
@@ -87,10 +112,34 @@ class ClientView(private val rootView: html.Element, private val client: Client)
 
 
   def startDomChange(composing: Boolean = false): DomChange = {
-    // TODO
-    ???
+    if (inDomChange != null) {
+      if (composing) {
+        if (inDomChange.timeout != null) window.clearTimeout(inDomChange.timeout)
+        inDomChange.composing = true
+      }
+    } else {
+      inDomChange = new DomChange(composing)
+    }
+    inDomChange
   }
 
+  /**
+    *
+    * event helper
+    *
+    */
+
+  def event[T <: Event](`type`: String,
+    listener: js.Function1[T, _]): Unit = {
+    rootView.addEventListener(`type`, listener)
+    des.append(_ => rootView.removeEventListener(`type`, listener))
+  }
+
+  def editEvent[T <: Event](`type`: String,
+    listener: js.Function1[T, _]): Unit = {
+    rootView.addEventListener(`type`, listener)
+    des.append(_ => rootView.removeEventListener(`type`, listener))
+  }
 
   /**
     *
@@ -101,37 +150,15 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  rootView.addEventListener("keydown", (a: KeyboardEvent) => {
+  editEvent("keydown", (a: KeyboardEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("keyup", (a: KeyboardEvent) => {
+  editEvent("keyup", (a: KeyboardEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("keypress", (a: KeyboardEvent) => {
-  })
-
-
-  /**
-    *
-    *
-    * mouse
-    *
-    *
-    */
-
-  rootView.addEventListener("mousewown", (a: MouseEvent) => {
-    println(a)
-  })
-
-
-  class MouseDown {
-
-  }
-
-  rootView.addEventListener("contextmenu", (a: MouseEvent) => {
-    println(a)
+  editEvent("keypress", (a: KeyboardEvent) => {
   })
 
 
@@ -143,24 +170,45 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  rootView.addEventListener("compositionstart", (a: CompositionEvent) => {
+  editEvent("compositionstart", (a: CompositionEvent) => {
     startDomChange(true)
   })
 
-  rootView.addEventListener("compositionupdate", (a: CompositionEvent) => {
+  editEvent("compositionupdate", (a: CompositionEvent) => {
     startDomChange(true)
   })
 
-  rootView.addEventListener("compositionend", (a: CompositionEvent) => {
+  editEvent("compositionend", (a: CompositionEvent) => {
     if (inDomChange == null) {
       if (a.data != null) startDomChange(true)
     }
     if (inDomChange != null) inDomChange.compositionEnd()
   })
 
-  rootView.addEventListener("input", (a: Event) => {
+  editEvent("input", (a: Event) => {
     val change = startDomChange()
     if (!change.composing) change.finish()
+  })
+
+  /**
+    *
+    *
+    * mouse
+    *
+    *
+    */
+
+  event("mousedown", (a: MouseEvent) => {
+    println(a)
+  })
+
+
+  class MouseDown {
+
+  }
+
+  event("contextmenu", (a: MouseEvent) => {
+    println(a)
   })
 
 
@@ -172,15 +220,15 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  rootView.addEventListener("copy", (a: ClipboardEvent) => {
+  editEvent("copy", (a: ClipboardEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("cut", (a: ClipboardEvent) => {
+  editEvent("cut", (a: ClipboardEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("paste", (a: ClipboardEvent) => {
+  editEvent("paste", (a: ClipboardEvent) => {
     println(a)
   })
 
@@ -193,19 +241,23 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  rootView.addEventListener("dragstart", (a: DragEvent) => {
+  event("dragstart", (a: DragEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("dragend", (a: DragEvent) => {
+  event("dragend", (a: DragEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("dragover", (a: DragEvent) => {
+  editEvent("dragover", (a: DragEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("drop", (a: DragEvent) => {
+  editEvent("dragenter", (a: DragEvent) => {
+    println(a)
+  })
+
+  editEvent("drop", (a: DragEvent) => {
     println(a)
   })
 
@@ -218,11 +270,11 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     *
     */
 
-  rootView.addEventListener("focus", (a: FocusEvent) => {
+  event("focus", (a: FocusEvent) => {
     println(a)
   })
 
-  rootView.addEventListener("blur", (a: FocusEvent) => {
+  event("blur", (a: FocusEvent) => {
     println(a)
   })
 
@@ -239,9 +291,9 @@ class ClientView(private val rootView: html.Element, private val client: Client)
     */
 
   private val selectionReader = new SelectionReader()
-
   class SelectionReader() {
 
+    des.append(_ => destroy())
   }
 
 }
