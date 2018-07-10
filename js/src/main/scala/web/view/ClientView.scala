@@ -1,54 +1,247 @@
 package web.view
 
-import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.component.Scala.{BackendScope, Unmounted}
-import client._
 import client.Client
-import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.component.Scala.BackendScope
-import japgolly.scalajs.react.vdom.all._
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.Reusability
-import api.{Api, Authentication}
-import sun.text.normalizer.ICUBinary.Authenticate
-import model._
-import model.data
+import org.scalajs.dom.html
+import org.scalajs.dom.raw._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Random, Success}
+import scala.scalajs.js
+
+// in this class we use nulls for a various things, but not for public API
+class ClientView(private val rootView: html.Element, private val client: Client) {
 
 
-object ClientView {
+  // initialise
+  rootView.contentEditable = "true"
+
+  private var shiftKey = false
+  private var mouseDown: MouseDown = null
+  private var inDomChange: DomChange = null
+  private var lastKeyCode: Integer = null
+  private var lastKeyCodeTime: Long = 0
+  private val domObserver = new DomObserver()
+
+  /**
+    *
+    *
+    *
+    * dom observer
+    *
+    *
+    *
+    */
+
+  domObserver.start()
+
+  class DomObserver {
+    private val mutationObserverOptions = MutationObserverInit(
+      childList = true,
+      characterData = true,
+      attributes = true,
+      subtree = true,
+      characterDataOldValue = true)
+    private val mutationObserver = new MutationObserver((changes, obs) => {
+      registerMutations(changes)
+    })
+
+    def start(): Unit = {
+      mutationObserver.observe(rootView, mutationObserverOptions)
+    }
 
 
-  private implicit val reusabilityClient = Reusability.always[Client]
-  private implicit val reusabilityClientState = Reusability.by_==[ClientState]
+    def flush(): Unit = {
+      registerMutations(mutationObserver.takeRecords())
+    }
 
-  private val creator = ObserverView[Client, ClientState, ClientView](
-    ScalaComponent.builder[Client]("ClientView"),
-    s => new ClientView(s),
-    client => client.doc,
-    onStart = _.start(),
-    onStop = _.stop()
-  ).configure(Reusability.shouldComponentUpdate)
-    .build
+    def stop(): Unit = {
+      flush()
+      mutationObserver.disconnect()
+    }
 
-  def apply(c: Client): Unmounted[Client, ClientState, ClientView] = creator(c)
-}
-
-class ClientView(override val $: BackendScope[Client, ClientState]) extends ObserverView[Client, ClientState] {
-
-  val random = new Random()
-  def render(client: Client, state: ClientState): VdomElement = {
-    div(
-      div(s"client ${client.debug_authentication}, version ${client.debug_committedVersion}"),
-      button("change content", onClick ==> (_ => Callback {
-        client.change(operation.Node.randomTransaction(3, state.node, random))
-      })),
-      div(
-        contentEditable := true,
-        SimpleTreeView(state.node)
-      )
-    )
+    private def registerMutations(value: js.Array[MutationRecord]) = {
+      // TODO what's the purpose of this?
+    }
   }
+
+
+  /**
+    *
+    *
+    * dom change
+    *
+    *
+    */
+
+  class DomChange {
+
+    var composing: Boolean = false
+
+    def finish(): Unit = {
+
+      // TODO
+    }
+    def compositionEnd(): Unit = {
+      // TODO
+    }
+
+  }
+
+
+  def startDomChange(composing: Boolean = false): DomChange = {
+    // TODO
+    ???
+  }
+
+
+  /**
+    *
+    *
+    *
+    * keyboard
+    *
+    *
+    */
+
+  rootView.addEventListener("keydown", (a: KeyboardEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("keyup", (a: KeyboardEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("keypress", (a: KeyboardEvent) => {
+  })
+
+
+  /**
+    *
+    *
+    * mouse
+    *
+    *
+    */
+
+  rootView.addEventListener("mousewown", (a: MouseEvent) => {
+    println(a)
+  })
+
+
+  class MouseDown {
+
+  }
+
+  rootView.addEventListener("contextmenu", (a: MouseEvent) => {
+    println(a)
+  })
+
+
+  /**
+    *
+    *
+    * input
+    *
+    *
+    */
+
+  rootView.addEventListener("compositionstart", (a: CompositionEvent) => {
+    startDomChange(true)
+  })
+
+  rootView.addEventListener("compositionupdate", (a: CompositionEvent) => {
+    startDomChange(true)
+  })
+
+  rootView.addEventListener("compositionend", (a: CompositionEvent) => {
+    if (inDomChange == null) {
+      if (a.data != null) startDomChange(true)
+    }
+    if (inDomChange != null) inDomChange.compositionEnd()
+  })
+
+  rootView.addEventListener("input", (a: Event) => {
+    val change = startDomChange()
+    if (!change.composing) change.finish()
+  })
+
+
+  /***
+    *
+    *
+    * copy paste
+    *
+    *
+    */
+
+  rootView.addEventListener("copy", (a: ClipboardEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("cut", (a: ClipboardEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("paste", (a: ClipboardEvent) => {
+    println(a)
+  })
+
+
+  /**
+    *
+    *
+    * drag drop
+    *
+    *
+    */
+
+  rootView.addEventListener("dragstart", (a: DragEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("dragend", (a: DragEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("dragover", (a: DragEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("drop", (a: DragEvent) => {
+    println(a)
+  })
+
+
+  /**
+    *
+    *
+    * focus events
+    *
+    *
+    */
+
+  rootView.addEventListener("focus", (a: FocusEvent) => {
+    println(a)
+  })
+
+  rootView.addEventListener("blur", (a: FocusEvent) => {
+    println(a)
+  })
+
+
+  /****
+    *
+    *
+    *
+    *
+    *
+    * selection reader
+    *
+    *
+    */
+
+  private val selectionReader = new SelectionReader()
+
+  class SelectionReader() {
+
+  }
+
 }

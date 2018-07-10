@@ -10,7 +10,6 @@ object Version {
   val acyclic = "0.1.7"
   val monix = "2.3.3"
   val utest = "0.6.4"
-  val scalaJsReact = "1.2.0"
 }
 
 object Deps {
@@ -37,14 +36,8 @@ object Deps {
 
   val client = Def.setting(shared.value ++ (
     "org.scala-js" %%% "scalajs-dom" % Version.scalajsDom ::
-    // "com.github.lukajcb" %%% "rxscala-js" % "0.15.0" ::
-    "com.github.japgolly.scalajs-react" %%% "core" % Version.scalaJsReact ::
-    "com.github.japgolly.scalajs-react" %%% "extra" % Version.scalaJsReact ::
       Nil))
 
   val clientJs = Seq(
-    // "rxjs" -> "5.5.6",
-    "react" -> "15.6.1",
-    "react-dom" -> "15.6.1"
   )
 }

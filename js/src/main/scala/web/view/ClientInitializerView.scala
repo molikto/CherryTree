@@ -1,52 +1,60 @@
 package web.view
 
-import client.Client
-import web.net.JsAutowireClient
-import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.component.Scala.BackendScope
-import client.ClientInitializer
-import japgolly.scalajs.react.vdom.all._
-import japgolly.scalajs.react._
 import api.{Api, Authentication}
+import client.{Client, ClientInitializer}
+import org.scalajs.dom
+import web.net.JsAutowireClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
-object ClientInitializerView {
+/**
+  * when created, starts connection with server
+  * @param where an id of a html element, it is assumed that you don't modify it after handling to us
+  */
+@JSExportTopLevel("ClientInitializerView")
+class ClientInitializerView(where: String, stuff: String) {
 
-  private val creator = ScalaComponent
-    .builder[Authentication.Token]("ClientInitializerView")
-    .initialState(None.asInstanceOf[Option[Client]])
-    .renderBackend[ClientInitializerView]
-    .componentDidMount(_.backend.start)
-    .componentWillUnmount(_.backend.stop)
-    .build
-  def apply(token: Authentication.Token) = creator(token)
-}
-
-class ClientInitializerView($: BackendScope[Authentication.Token, Option[Client]]) {
+  private val rootView = el[dom.html.Element](where)
+  private val token = Authentication.Token(stuff)
 
   private val server = new JsAutowireClient()[Api]
 
-  def stop = Callback {
-  }
+  var client: Option[Client] = None
 
-  def start: Callback = $.props.map { p =>
-    ClientInitializer.init(server, p).onComplete {
-      case Success(client) =>
-        $.setState(Some(client)).runNow()
+  private def goConnecting(): Unit = {
+    onlyChild(rootView, {
+      import scalatags.JsDom.all._
+      p("connecting")
+    }.render)
+    ClientInitializer.init(server, token).onComplete {
+      case Success(c) =>
+        goClient(c)
       case Failure(exception) =>
-        exception.printStackTrace()
+        goFailure(exception)
     }
   }
 
-  def render(token: Authentication.Token, client: Option[Client]): VdomElement = {
-    client match {
-      case Some(c) =>
-        ClientView(c)
-      case None =>
-        div(s"$token Connecting to server")
-    }
+  goConnecting()
+
+
+  private def goFailure(exception: Throwable): Unit = {
+    onlyChild(rootView, {
+      import scalatags.JsDom.all._
+      div(
+        p(s"failed: ${exception.getMessage}"),
+        button("retry", onclick := goConnecting())
+      )
+    }.render)
+  }
+
+
+  private def goClient(client: Client): Unit = {
+    this.client = Some(client)
+    removeAllChild(rootView)
+    client.start()
+    new ClientView(rootView, client)
   }
 }
