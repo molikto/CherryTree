@@ -13,12 +13,13 @@ abstract sealed class Node extends Operation[data.Node] {
     * the returned cursor, always assumes the the child list is not empty in case of a delete operation
     * this is harmless now, because it will point to a imaginary node, and this can be recalibrate afterwards
     */
-  def transform(a: mode.Node): mode.Node
+  def transform(a: mode.Node): Option[mode.Node]
+  def transform(a: Option[mode.Node]): Option[mode.Node] = a.flatMap(transform)
 }
 
 object Node extends OperationObject[data.Node, Node] {
-  def transform(ns: Seq[Node], a: mode.Node): mode.Node = {
-    ns.foldLeft(a) { (a, n) => n.transform(a) }
+  def transform(ns: Seq[Node], a: mode.Node): Option[mode.Node] = {
+    ns.foldLeft(Some(a) : Option[mode.Node]) { (a, n) => n.transform(a) }
   }
 
   case class Content(at: cursor.Node, content: operation.Content) extends Node {
@@ -27,9 +28,9 @@ object Node extends OperationObject[data.Node, Node] {
       d.map(at, a => a.copy(content = content(a.content)))
     }
 
-    override def transform(a: mode.Node): mode.Node = a match {
-      case c: mode.Node.Content if c.node == at => c.modify(_.a).using(content.transform)
-      case _ => a
+    override def transform(a: mode.Node): Option[mode.Node] = a match {
+      case c: mode.Node.Content if c.node == at => content.transform(c.a).map(k => c.copy(a = k))
+      case _ => Some(a)
     }
   }
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
@@ -38,22 +39,22 @@ object Node extends OperationObject[data.Node, Node] {
       d.map(at, a => a.copy(content = content))
     }
 
-    override def transform(a: mode.Node): mode.Node = a match {
-      case c: mode.Node.Content if c.node == at => mode.Node.None
-      case _ => a
+    override def transform(a: mode.Node): Option[mode.Node] = a match {
+      case c: mode.Node.Content if c.node == at => None
+      case _ => Some(a)
     }
   }
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
     override def apply(d: data.Node): data.Node = d.insert(at, childs)
 
-    override def transform(a: mode.Node): mode.Node = a match {
+    override def transform(a: mode.Node): Option[mode.Node] = a match {
       case c: mode.Node.Content =>
-        c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a))
+        Some(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
       case mode.Node.Visual(fix, move) =>
-        mode.Node.Visual(
+        Some(mode.Node.Visual(
           cursor.Node.transformAfterInserted(at, childs.size, fix),
-          cursor.Node.transformAfterInserted(at, childs.size, move))
+          cursor.Node.transformAfterInserted(at, childs.size, move)))
 
     }
   }
@@ -61,18 +62,15 @@ object Node extends OperationObject[data.Node, Node] {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
 
-    override def transform(a: mode.Node): mode.Node = a match {
+    override def transform(a: mode.Node): Option[mode.Node] = a match {
       case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
-        case Some(k) => c.copy(node = k)
-        case None => mode.Node.None
+        case Some(k) => Some(c.copy(node = k))
+        case None => None
       }
       case mode.Node.Visual(fix, move) =>
-        if (r.contains(fix) && r.contains(move)) {
-          mode.Node.None
-        } else {
-          mode.Node.Visual(
-            r.transformAfterDeleted(fix).getOrElse(r.start),
-            r.transformAfterDeleted(move).getOrElse(r.start))  // LATER is this ok???
+        (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
+          case (Some(ff), Some(mm)) => Some(mode.Node.Visual(ff, mm))
+          case _ => None
         }
     }
   }
@@ -80,7 +78,7 @@ object Node extends OperationObject[data.Node, Node] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, at)
 
-    override def transform(a: mode.Node): mode.Node = ???
+    override def transform(a: mode.Node): Option[mode.Node] = ???
   }
 
   override val pickler: Pickler[Node] = new Pickler[Node] {

@@ -26,7 +26,6 @@ package object mode {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node
-    case object None extends Node
 
 
     val pickler: Pickler[Node] = new Pickler[Node]() {

@@ -8,7 +8,7 @@ import model.range.IntRange
 import scala.util.Random
 
 abstract sealed class Content extends Operation[data.Content] {
-  def transform(a: mode.Content): mode.Content
+  def transform(a: mode.Content): Option[mode.Content]
 }
 
 object Content extends OperationObject[data.Content, Content] {
@@ -23,7 +23,7 @@ object Content extends OperationObject[data.Content, Content] {
         }
       }
 
-      override def transform(a: mode.Content): mode.Content = op.transform(a)
+      override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
     }
     case class Lang(lang: Option[String]) extends operation.Content {
       override def ty: Type = Type.AddDelete
@@ -34,7 +34,7 @@ object Content extends OperationObject[data.Content, Content] {
         }
       }
 
-      override def transform(a: mode.Content): mode.Content = a
+      override def transform(a: mode.Content): Option[mode.Content] = Some(a)
     }
   }
   object Paragraph {
@@ -47,7 +47,7 @@ object Content extends OperationObject[data.Content, Content] {
         }
       }
 
-      override def transform(a: mode.Content): mode.Content = op.transform(a)
+      override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
     }
   }
 

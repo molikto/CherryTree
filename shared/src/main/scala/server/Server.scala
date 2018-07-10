@@ -59,7 +59,7 @@ class Server extends Api {
     }
   }
 
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: model.mode.Node, debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
     checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
         if (debugModel) {

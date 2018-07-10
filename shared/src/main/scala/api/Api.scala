@@ -28,7 +28,7 @@ trait Api {
     authentication: Authentication.Token,
     version: Int,
     changes: Seq[transaction.Node],
-    mode: model.mode.Node,
+    mode: Option[model.mode.Node],
     debugCurrentDoc: data.Node
   ): Either[ApiError, ClientUpdate]
 

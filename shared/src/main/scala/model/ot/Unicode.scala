@@ -20,10 +20,10 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val wc = add.unicode
       val lfrom = delete.r.start
       val lto = delete.r.endInclusive
-      if (lfrom < wat && lto >= wat) {
+      if (delete.r.deletesCursor(add.at)) {
         Rebased(Set(deleteConflict), (
           Seq.empty,
-          Seq(Delete(lfrom, lto + wc.size))
+          Seq(Delete(delete.r.start, delete.r.endInclusive + wc.size))
         ))
       } else {
         val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)

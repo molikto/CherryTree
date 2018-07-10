@@ -17,7 +17,7 @@ import scala.util.Random
   */
 case class Paragraph(u: Seq[Unicode], override val ty: Type) extends Operation[data.Paragraph] {
 
-  def transform(a: mode.Content): mode.Content = u.foldLeft(a) {(s, u) => u.transform(s) }
+  def transform(a: mode.Content): Option[mode.Content] = u.foldLeft(Some(a) : Option[mode.Content]) {(s, u) => u.transform(s) }
 
   override def apply(d: data.Paragraph): data.Paragraph =
     data.Paragraph.parse(Unicode.apply(u, d.serialize()))

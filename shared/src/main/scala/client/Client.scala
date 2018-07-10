@@ -63,7 +63,7 @@ class Client(
   /**
     * document observable
     */
-  val doc = ObservableProperty(ClientState(committed, initial.mode))
+  val doc = ObservableProperty(ClientState(committed, Some(initial.mode)))
 
   /**
     * request queue
@@ -155,7 +155,10 @@ class Client(
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
-      doc.modify(it => ClientState(operation.Node.apply(wp0, it.node), operation.Node.transform(wp0, it.mode)))
+      doc.modify(it =>
+        ClientState(operation.Node.apply(wp0, it.node),
+          it.mode.flatMap(a => operation.Node.transform(wp0, a))
+          ))
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -180,12 +183,12 @@ class Client(
       doc.get.node
     }
     val m = mode match {
-      case Some(k) =>
+      case Some(_) =>
         changed = true
-        k
+        mode
       case None =>
         if (changed) {
-          operation.Node.transform(changes, doc.get.mode)
+          doc.get.mode.flatMap(a => operation.Node.transform(changes, a))
         } else {
           doc.get.mode
         }
