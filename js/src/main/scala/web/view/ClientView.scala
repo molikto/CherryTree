@@ -11,6 +11,9 @@ import util.ObservableProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
+object ClientView {
+  val FocusedClass = "CherryTree-focused"
+}
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: html.Element, private val client: Client) {
 
@@ -33,6 +36,7 @@ class ClientView(private val parent: html.Element, private val client: Client) {
   private var lastKeyCode: Integer = null
   private var lastKeyCodeTime: Long = 0
   private val domObserver = new DomObserver()
+  private var focused = false
 
   /**
     *
@@ -144,6 +148,28 @@ class ClientView(private val parent: html.Element, private val client: Client) {
   /**
     *
     *
+    * focus events
+    *
+    *
+    */
+
+//  event("focus", (a: FocusEvent) => {
+//    if (!focused) {
+//      focused = true
+//      rootView.classList.add(ClientView.FocusedClass)
+//    }
+//  })
+//
+//  event("blur", (a: FocusEvent) => {
+//    if (focused) {
+//      focused = false
+//      rootView.classList.remove(ClientView.FocusedClass)
+//    }
+//  })
+
+  /**
+    *
+    *
     *
     * keyboard
     *
@@ -190,28 +216,6 @@ class ClientView(private val parent: html.Element, private val client: Client) {
     if (!change.composing) change.finish()
   })
 
-  /**
-    *
-    *
-    * mouse
-    *
-    *
-    */
-
-  event("mousedown", (a: MouseEvent) => {
-    println(a)
-  })
-
-
-  class MouseDown {
-
-  }
-
-  event("contextmenu", (a: MouseEvent) => {
-    println(a)
-  })
-
-
   /***
     *
     *
@@ -221,16 +225,39 @@ class ClientView(private val parent: html.Element, private val client: Client) {
     */
 
   editEvent("copy", (a: ClipboardEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   editEvent("cut", (a: ClipboardEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   editEvent("paste", (a: ClipboardEvent) => {
-    println(a)
+    a.preventDefault()
   })
+
+
+  /**
+    *
+    *
+    * mouse
+    *
+    *
+    */
+
+  event("mousedown", (a: MouseEvent) => {
+    a.preventDefault()
+  })
+
+
+  class MouseDown {
+
+  }
+
+  event("contextmenu", (a: MouseEvent) => {
+    a.preventDefault()
+  })
+
 
 
   /**
@@ -242,46 +269,26 @@ class ClientView(private val parent: html.Element, private val client: Client) {
     */
 
   event("dragstart", (a: DragEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   event("dragend", (a: DragEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   editEvent("dragover", (a: DragEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   editEvent("dragenter", (a: DragEvent) => {
-    println(a)
+    a.preventDefault()
   })
 
   editEvent("drop", (a: DragEvent) => {
-    println(a)
+    a.preventDefault()
   })
-
-
-  /**
-    *
-    *
-    * focus events
-    *
-    *
-    */
-
-  event("focus", (a: FocusEvent) => {
-    println(a)
-  })
-
-  event("blur", (a: FocusEvent) => {
-    println(a)
-  })
-
 
   /****
-    *
-    *
     *
     *
     *

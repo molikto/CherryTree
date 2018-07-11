@@ -55,6 +55,8 @@
 
 ## good to have
 
+
+* make it embeddable, currently we assume it is a standalone thing
 * compatible with other browsers, currently only recent version of Chrome is supported
 
 ## build

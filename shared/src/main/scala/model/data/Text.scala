@@ -64,7 +64,7 @@ object Text {
   }
 
 
-  trait Formatted extends Text {
+  private[model] trait Formatted extends Text {
     def content: Seq[Text]
     def styleCharStart: SpecialChar
     def styleCharEnd: SpecialChar
@@ -84,7 +84,7 @@ object Text {
     }
   }
 
-  trait Linked extends Formatted {
+  private[model] trait Linked extends Formatted {
     def contentEnd: SpecialChar
     def url: Unicode
     def urlEnd: SpecialChar
