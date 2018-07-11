@@ -19,7 +19,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val parent: html.Element, private val client: Client) extends View {
+class ClientView(private val parent: HTMLElement, private val client: Client) extends View {
 
   private var theme: ColorScheme = ColorScheme.default
 
@@ -36,14 +36,15 @@ class ClientView(private val parent: html.Element, private val client: Client) e
 
   private val bottomBarSize = "24px"
 
-  private val mode = p("").render
+  private val mode = p(
+    "").render
 
   private val bottomBar = div(
     width := "100%",
+    paddingTop := "1px",
     paddingLeft := "8px",
     fontSize := "14px",
     attr("user-select") := "none",
-    alignContent := "center",
     alignSelf := "flex-end",
     height := bottomBarSize,
     backgroundColor := theme.bottomBarBackground,
