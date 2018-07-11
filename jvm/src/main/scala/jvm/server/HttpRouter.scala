@@ -23,7 +23,7 @@ class HttpRouter(val service: Api) extends Directives {
 
     pathSingleSlash {
       get {
-        getFromResource("public/dev_main.html")
+        getFromResource("public/main.html")
       }
     } ~
     (pathPrefix("assets" / Remaining) & respondWithHeader(`Cache-Control`(`no-cache`))) { file =>

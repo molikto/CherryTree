@@ -64,7 +64,7 @@ object Text {
   }
 
 
-  private[model] trait Formatted extends Text {
+  sealed private[model] trait Formatted extends Text {
     def content: Seq[Text]
     def styleCharStart: SpecialChar
     def styleCharEnd: SpecialChar
@@ -84,7 +84,7 @@ object Text {
     }
   }
 
-  private[model] trait Linked extends Formatted {
+  sealed private[model] trait Linked extends Formatted {
     def contentEnd: SpecialChar
     def url: Unicode
     def urlEnd: SpecialChar
@@ -138,7 +138,7 @@ object Text {
     override def styleCharEnd: SpecialChar = ImageTitleEnd
   }
 
-  trait Coded extends Text {
+  sealed trait Coded extends Text {
     def unicode: Unicode
     def start: SpecialChar
     def end: SpecialChar

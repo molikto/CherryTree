@@ -1,11 +1,13 @@
 package web
 
 import org.scalajs.dom
-import org.scalajs.dom.{Node, html}
+import org.scalajs.dom.raw.HTMLDivElement
+import org.scalajs.dom.{Event, Node, html}
+
+import scala.scalajs.js
 
 
 package object view {
-
   def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
 
   def removeAllChild(a: Node): Unit = {

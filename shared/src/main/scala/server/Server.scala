@@ -5,11 +5,12 @@ import api._
 import model.ot.Rebased
 
 import scala.collection.mutable
+import scala.util.Random
 
 class Server extends Api {
 
   // states, now in single thread fashion
-  private var document = data.Node.empty
+  private var document = data.Node.random(new Random(59))
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty

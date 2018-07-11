@@ -1,238 +1,174 @@
 package web.view
 
 import client.Client
+import model.{ClientState, cursor, data}
+import monix.execution.{Ack, Scheduler}
+import monix.reactive.observers.Subscriber
 import org.scalajs.dom.window
 import org.scalajs.dom.document
 import org.scalajs.dom
 import org.scalajs.dom.html
+import org.scalajs.dom.html.Div
 import org.scalajs.dom.raw._
-import util.ObservableProperty
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
+import scalatags.JsDom.all._
+import monix.execution.Scheduler.Implicits.global
 
-object ClientView {
-  val FocusedClass = "CherryTree-focused"
-}
+import scala.concurrent.Future
+
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val parent: html.Element, private val client: Client) {
+class ClientView(private val parent: html.Element, private val client: Client) extends View {
 
-  private val des = ArrayBuffer[Unit => Unit]()
+  private var theme: ColorScheme = ColorScheme.default
 
-  def destroy(): Unit = {
-    des.reverse.foreach(_.apply())
-  }
+  dom = div(
+    width := "100%",
+    `class` := "cherrytree",
+    height := "100%",
+    display :="flex",
+    backgroundColor := theme.contentBackground,
+    flexDirection := "column-reverse",
+    overflow := "hidden").render
+  parent.appendChild(dom)
+  defer(_ => parent.removeChild(dom))
 
-  // initialise
-  private val rootView = dom.document.createElement("div").asInstanceOf[HTMLDivElement]
-  parent.appendChild(rootView)
-  rootView.contentEditable = "true"
-  des.append(_ => parent.removeChild(rootView))
+  private val bottomBarSize = "24px"
 
+  private val mode = p("").render
 
-  private var shiftKey = false
-  private var mouseDown: MouseDown = null
-  private var inDomChange: DomChange = null
-  private var lastKeyCode: Integer = null
-  private var lastKeyCodeTime: Long = 0
-  private val domObserver = new DomObserver()
-  private var focused = false
+  private val bottomBar = div(
+    width := "100%",
+    paddingLeft := "8px",
+    fontSize := "14px",
+    attr("user-select") := "none",
+    alignContent := "center",
+    alignSelf := "flex-end",
+    height := bottomBarSize,
+    backgroundColor := theme.bottomBarBackground,
+    color := theme.bottomBarText,
+    mode
+  ).render
+  dom.appendChild(bottomBar)
 
-  /**
-    *
-    *
-    *
-    * dom observer
-    *
-    *
-    *
-    */
+  private val root = div(width := "100%",
+    height := "100%",
+    padding := "48px",
+    color := theme.contentText,
+    `class` := "cherrytree-root",
+    overflowY := "scroll"
+  ).render
+  dom.appendChild(root)
 
-  domObserver.start()
-  des.append(_ => domObserver.stop())
+  private var previousEditableContent: ContentView = null
 
-  class DomObserver {
-    private val mutationObserverOptions = MutationObserverInit(
-      childList = true,
-      characterData = true,
-      attributes = true,
-      subtree = true,
-      characterDataOldValue = true)
-    private val mutationObserver = new MutationObserver((changes, obs) => {
-      registerMutations(changes)
-    })
-
-    def start(): Unit = {
-      mutationObserver.observe(rootView, mutationObserverOptions)
-    }
-
-
-    def flush(): Unit = {
-      registerMutations(mutationObserver.takeRecords())
-    }
-
-    def stop(): Unit = {
-      flush()
-      mutationObserver.disconnect()
-    }
-
-    private def registerMutations(value: js.Array[MutationRecord]): Unit = {
-      // TODO what's the purpose of this?
+  def removeContentEditor() = {
+    if (previousEditableContent != null) {
+      previousEditableContent.clearMode()
+      previousEditableContent = null
     }
   }
 
-
-  /**
-    *
-    *
-    * dom change
-    *
-    *
-    */
-
-  des.append(_ => if (inDomChange != null) inDomChange.destroy())
-
-  val commitTimeout = 20
-  class DomChange(
-    var composing: Boolean = false
-  ) {
-
-    var timeout: Integer = if (composing) null else window.setTimeout(() => finish(), commitTimeout)
-
-
-    def destroy(): Unit = {
-
+  def contentAt(at: model.cursor.Node): ContentView = {
+    def rec(a: Node, b: model.cursor.Node): Node = {
+      if (b.isEmpty) a.childNodes.item(0)
+        // ul, li, content
+      else rec(a.childNodes.item(1).childNodes.item(b.head).childNodes.item(0), b.tail)
     }
-
-    def finish(): Unit = {
-
-      // TODO
-    }
-    def compositionEnd(): Unit = {
-      // TODO
-    }
-
+    View.fromDom[ContentView](rec(root, at).childNodes.item(0))
   }
 
-
-  def startDomChange(composing: Boolean = false): DomChange = {
-    if (inDomChange != null) {
-      if (composing) {
-        if (inDomChange.timeout != null) window.clearTimeout(inDomChange.timeout)
-        inDomChange.composing = true
+  def syncMode(m: Option[model.mode.Node]): Unit = {
+    mode.textContent = m match {
+      case None =>
+        if (previousEditableContent != null) removeContentEditor()
+        ""
+      case Some(mm) => mm match {
+        case model.mode.Node.Content(at, aa) =>
+          val current = contentAt(at)
+          if (current != previousEditableContent) {
+            removeContentEditor()
+            current.initMode()
+          }
+          current.syncMode(aa)
+          aa match {
+            case model.mode.Content.Insertion(_) =>
+              "INSERT"
+            case model.mode.Content.Visual(_, _) =>
+              "VISUAL"
+            case model.mode.Content.Normal(_) =>
+              "NORMAL"
+          }
+        case model.mode.Node.Visual(_, _) =>
+          if (previousEditableContent != null) removeContentEditor()
+          "NODE VISUAL"
       }
-    } else {
-      inDomChange = new DomChange(composing)
     }
-    inDomChange
   }
 
-  /**
-    *
-    * event helper
-    *
-    */
-
-  def event[T <: Event](`type`: String,
-    listener: js.Function1[T, _]): Unit = {
-    rootView.addEventListener(`type`, listener)
-    des.append(_ => rootView.removeEventListener(`type`, listener))
-  }
-
-  def editEvent[T <: Event](`type`: String,
-    listener: js.Function1[T, _]): Unit = {
-    rootView.addEventListener(`type`, listener)
-    des.append(_ => rootView.removeEventListener(`type`, listener))
-  }
-
-  /**
-    *
-    *
-    * focus events
-    *
-    *
-    */
-
-//  event("focus", (a: FocusEvent) => {
-//    if (!focused) {
-//      focused = true
-//      rootView.classList.add(ClientView.FocusedClass)
-//    }
-//  })
-//
-//  event("blur", (a: FocusEvent) => {
-//    if (focused) {
-//      focused = false
-//      rootView.classList.remove(ClientView.FocusedClass)
-//    }
-//  })
-
-  /**
-    *
-    *
-    *
-    * keyboard
-    *
-    *
-    */
-
-  editEvent("keydown", (a: KeyboardEvent) => {
-    println(a)
-  })
-
-  editEvent("keyup", (a: KeyboardEvent) => {
-    println(a)
-  })
-
-  editEvent("keypress", (a: KeyboardEvent) => {
-  })
-
-
-  /**
-    *
-    *
-    * input
-    *
-    *
-    */
-
-  editEvent("compositionstart", (a: CompositionEvent) => {
-    startDomChange(true)
-  })
-
-  editEvent("compositionupdate", (a: CompositionEvent) => {
-    startDomChange(true)
-  })
-
-  editEvent("compositionend", (a: CompositionEvent) => {
-    if (inDomChange == null) {
-      if (a.data != null) startDomChange(true)
+  {
+    val ClientState(node, selection) = client.state
+    def initRenderContentRec(root: model.data.Node, parent: html.Element): Unit = {
+      val box = div().render
+      parent.appendChild(box)
+      val content = root.content match {
+        case model.data.Content.Paragraph(cs) =>
+          new ParagraphView(cs).dom
+        case model.data.Content.Code(a, lang) =>
+          p(s"LANGUAGE: $lang", a.toString).render
+      }
+      box.appendChild(content)
+      val list = ul().render
+      box.appendChild(list)
+      root.childs.foreach(a => {
+        val item = li().render
+        list.appendChild(item)
+        initRenderContentRec(a, item)
+      })
     }
-    if (inDomChange != null) inDomChange.compositionEnd()
+    initRenderContentRec(node, root)
+
+    syncMode(selection)
+    defer(client.stateUpdates.doOnNext(update => {
+      syncMode(update.mode)
+    }).subscribe())
+  }
+
+  event("keydown", (a: KeyboardEvent) => {
+    println(s"keydown ${a.key}")
+    //a.preventDefault()
   })
 
-  editEvent("input", (a: Event) => {
-    val change = startDomChange()
-    if (!change.composing) change.finish()
+  event("keyup", (a: KeyboardEvent) => {
+    println(s"keyup ${a.key}")
+    //a.preventDefault()
   })
+
+  event("keypress", (a: KeyboardEvent) => {
+    println(s"keypress ${a.key}")
+    //a.preventDefault()
+  })
+
+
 
   /***
     *
     *
-    * copy paste
+    * copy paste currently disabled for entire document
     *
     *
     */
 
-  editEvent("copy", (a: ClipboardEvent) => {
+  event("copy", (a: ClipboardEvent) => {
     a.preventDefault()
   })
 
-  editEvent("cut", (a: ClipboardEvent) => {
+  event("cut", (a: ClipboardEvent) => {
     a.preventDefault()
   })
 
-  editEvent("paste", (a: ClipboardEvent) => {
+  event("paste", (a: ClipboardEvent) => {
     a.preventDefault()
   })
 
@@ -240,8 +176,7 @@ class ClientView(private val parent: html.Element, private val client: Client) {
   /**
     *
     *
-    * mouse
-    *
+    * mouse event currently disabled for entire document
     *
     */
 
@@ -251,7 +186,6 @@ class ClientView(private val parent: html.Element, private val client: Client) {
 
 
   class MouseDown {
-
   }
 
   event("contextmenu", (a: MouseEvent) => {
@@ -263,7 +197,7 @@ class ClientView(private val parent: html.Element, private val client: Client) {
   /**
     *
     *
-    * drag drop
+    * drag drop currently disabled for entire document
     *
     *
     */
@@ -276,31 +210,18 @@ class ClientView(private val parent: html.Element, private val client: Client) {
     a.preventDefault()
   })
 
-  editEvent("dragover", (a: DragEvent) => {
+  event("dragover", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  editEvent("dragenter", (a: DragEvent) => {
+  event("dragenter", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  editEvent("drop", (a: DragEvent) => {
+  event("drop", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  /****
-    *
-    *
-    *
-    * selection reader
-    *
-    *
-    */
 
-  private val selectionReader = new SelectionReader()
-  class SelectionReader() {
-
-    des.append(_ => destroy())
-  }
 
 }

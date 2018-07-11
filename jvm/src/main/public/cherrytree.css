@@ -1,0 +1,37 @@
+/** TODO how to apply them as a theme? */
+
+
+.cherrytree-root::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Track */
+.cherrytree-root::-webkit-scrollbar-track {
+    background: #282c34;
+}
+
+/* Handle */
+.cherrytree-root::-webkit-scrollbar-thumb {
+    background: #5A637580;
+}
+
+/* Handle on hover */
+.cherrytree-root::-webkit-scrollbar-thumb:hover {
+    background: #747D9180;
+}
+
+.cherrytree-content::selection {
+    background-color: #333843;
+}
+
+
+.cherrytree-code {
+    font-style: normal;
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    padding: .15rem .2rem;
+    font-size: 90%;
+    color: #f0c5ce;
+    background-color: #3b404b;
+    border-radius: .15rem;
+}
+

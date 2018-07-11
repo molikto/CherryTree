@@ -6,7 +6,7 @@ import org.scalajs.dom
 import web.net.JsAutowireClient
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -15,10 +15,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * @param where an id of a html element, it is assumed that you don't modify it after handling to us
   */
 @JSExportTopLevel("ClientInitializerView")
-class ClientInitializerView(where: String, stuff: String) {
+class ClientInitializerView(where: String) {
 
   private val rootView = el[dom.html.Element](where)
-  private val token = Authentication.Token(stuff)
+  private val token = Authentication.Token(System.currentTimeMillis().toString)
 
   private val server = new JsAutowireClient()[Api]
 

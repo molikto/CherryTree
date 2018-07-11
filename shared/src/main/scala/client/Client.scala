@@ -16,6 +16,7 @@ import api._
 import model.ot.Rebased
 import util._
 import model._
+import monix.reactive.subjects.PublishSubject
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -23,6 +24,11 @@ import scala.util.{Failure, Success}
 
 object Client {
   type Proxy = ClientProxy[Api, ByteBuffer, boopickle.Pickler, boopickle.Pickler]
+
+  case class Update(
+    transaction: model.transaction.Node,
+    mode: Option[model.mode.Node],
+    fromUser: Boolean)
 }
 
 class Client(
@@ -63,7 +69,17 @@ class Client(
   /**
     * document observable
     */
-  val doc = ObservableProperty(ClientState(committed, Some(initial.mode)))
+  private var state_ = ClientState(committed, Some(initial.mode))
+
+
+
+  val stateUpdates: PublishSubject[Client.Update] = PublishSubject[Client.Update]()
+
+  private def updateDoc(a: ClientState, from: model.transaction.Node, fromUser: Boolean): Unit = {
+    state_ = a
+    stateUpdates.onNext(Client.Update(from, a.mode, fromUser))
+  }
+  def state: ClientState = state_
 
   /**
     * request queue
@@ -111,7 +127,7 @@ class Client(
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, doc.get.mode, if (debugModel) committed else data.Node.empty).call(), succsss => {
+          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debugModel) committed else data.Node.empty).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>
@@ -155,10 +171,8 @@ class Client(
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
-      doc.modify(it =>
-        ClientState(operation.Node.apply(wp0, it.node),
-          it.mode.flatMap(a => operation.Node.transform(wp0, a))
-          ))
+      updateDoc(
+        ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, fromUser = false)
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -178,9 +192,9 @@ class Client(
     var changed = false
     val d = if (changes.nonEmpty) {
       changed = true
-      operation.Node.apply(changes, doc.get.node)
+      operation.Node.apply(changes, state.node)
     } else {
-      doc.get.node
+      state.node
     }
     val m = mode match {
       case Some(_) =>
@@ -188,13 +202,13 @@ class Client(
         mode
       case None =>
         if (changed) {
-          doc.get.mode.flatMap(a => operation.Node.transform(changes, a))
+          state.mode.flatMap(a => operation.Node.transform(changes, a))
         } else {
-          doc.get.mode
+          state.mode
         }
     }
     if (changed) {
-      doc.update(ClientState(d, m))
+      updateDoc(ClientState(d, m), changes, fromUser = true)
       uncommitted = uncommitted :+ changes
       if (sync) self.sync()
     }

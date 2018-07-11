@@ -52,8 +52,8 @@ object Content extends DataObject[Content] {
 
   override def random(r: Random): Content =
     if (r.nextBoolean()) {
-      Content.Code(Unicode.random(r), None)
-    } else {
       Content.Paragraph(data.Paragraph.random(r))
+    } else {
+      Content.Code(Unicode.random(r), None)
     }
 }
