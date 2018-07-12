@@ -7,8 +7,8 @@ import scala.collection.mutable.ArrayBuffer
 
 abstract sealed class Text {
 
-  private[model] def serialize(buffer: UnicodeWriter)
-  private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node)
+  private[data] def serialize(buffer: UnicodeWriter)
+  private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node)
   val size: Int
 }
 

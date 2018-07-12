@@ -10,38 +10,16 @@
     * so edits like copying a big trunk of data, then paste exactly the same, is not supported (can use pointers)
     
 
-## top most (at most 5 tasks here)
+## now
 
-* hack up a rich text editor can expose (custom data model, editor state), also can expose interface for changes, also can apply changes
-* keyboard editor ui and data sync
-    * make typing works
-    * make cursor and selection in sync in text mode
-* semantically data?
-    * union type
-    * reference type
-
-## core
-
-* references
-* multi-sort node type: it is **never** ending story to abstract stuff
-* branching
-    * offline branch
-* non-destructive manual conflict resolving
-* abstract away Content class
-* time traveling
-* use code point count in otString type and other string type
-
-## client
-
-
-* keyboard and content editable
-* mouse - I think I know what this does now, but consider now we only have a mouse-free experience
-    * drag to move
-    * text selection
-    * node selection -- will handle like workflowy
-* infinite scrolling -- currently we just use browser default
-* settings: implement as also a document!
-* rich text
+* mode definition is kinda of wrong?
+* paragraph operation creation
+* paragraph view present
+* keyboard editor for paragraph
+* mouse support
+* copy paste
+* drag drop
+* search and replace
 
 ## server
 
@@ -52,12 +30,29 @@
 * user input validation
     * unique id collision detection
     * make logic all total, no exceptions
+    
+## future
+
+* reference type
+* tables (the most important thing is how to create a simple keyboard interface to create, select and edit)
+* data records (like book entry)
+* branching
+    * offline branch
+* time traveling
+
 
 ## good to have
 
 
+* infinite scrolling -- currently we just use browser default
 * make it embeddable, currently we assume it is a standalone thing
 * compatible with other browsers, currently only recent version of Chrome is supported
+* because we don't have reference links, a good start is if a link is modified, we try to change all links with same description and url and tell the user, something like this
+* exc to exit editing panel?
+* char counter
+* support or disable print (currently print with control glyphs)
+* importers/exporters
+
 
 ## build
 

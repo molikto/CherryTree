@@ -2,7 +2,6 @@ package model.data
 
 import boopickle._
 import model.cursor
-import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
