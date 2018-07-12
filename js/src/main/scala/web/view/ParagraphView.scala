@@ -36,7 +36,7 @@ class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView
         span(`class` := "ct-cg", "]")
       )
       case Text.Image(t, b, c) =>
-        img(rec(t), src := b.toString)
+        img(rec(t), verticalAlign := "bottom", src := b.toString)
       case Text.LaTeX(c) =>
         val a = span(`class` := "ct-latex").render
         window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)

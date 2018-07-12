@@ -20,6 +20,9 @@
     background: #747D9180;
 }
 
+.ct-content {
+}
+
 ::selection {
     background: #58617488;
 }
@@ -43,13 +46,13 @@
 /* control glyph */
 .ct-cg {
     font-style: normal;
-    color: #5c6370;
+    color: #636e83;
     font-weight:normal;
 }
 
 /*
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    font-size: 90%;
+    font-size: 50%;
 */
 
 .ct-link {

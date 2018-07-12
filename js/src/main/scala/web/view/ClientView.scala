@@ -182,19 +182,19 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     */
 
   event("mousedown", (a: MouseEvent) => {
-    //a.preventDefault()
+    a.preventDefault()
   })
 
 
   event("mouseup", (a: MouseEvent) => {
-    window.setTimeout(() => window.console.log(window.getSelection()), 1)
+    // window.setTimeout(() => window.console.log(window.getSelection()), 1)
   })
 
   class MouseDown {
   }
 
   event("contextmenu", (a: MouseEvent) => {
-    //a.preventDefault()
+    a.preventDefault()
   })
 
 

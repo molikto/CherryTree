@@ -13,10 +13,18 @@ class Server extends Api {
   // states, now in single thread fashion
   private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
     Text.Plain(Unicode("Plain text with some ")),
-    Text.Strong(Seq(Text.Plain(Unicode("strong text and ")), Text.Code(Unicode("CODE INSIDE")))),
-    Text.Plain(Unicode(" ")),
-    Text.Emphasis(Seq(Text.Plain(Unicode("em text and ")), Text.Code(Unicode("CODE INSIDE")))),
-    Text.Plain(Unicode(" ")),
+    Text.Strong(Seq(
+      Text.Plain(Unicode("strong text and ")),
+      Text.Code(Unicode("div")),
+      Text.Plain(Unicode(" some code")),
+    )),
+    Text.Plain(Unicode(" and ")),
+    Text.Emphasis(Seq(
+      Text.Plain(Unicode("em text and ")),
+      Text.Code(Unicode("html")),
+      Text.Plain(Unicode(" some code"))
+    )),
+    Text.Plain(Unicode(". ")),
     Text.StrikeThrough(Seq(Text.Plain(Unicode("des text and ")),
       Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
     )),
@@ -37,7 +45,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, mode.Node.empty, version)
+    val state = ClientInit(document, model.mode.Node.Visual(Seq.empty, Seq.empty), version)
     clients.update(token, version)
     Right(state)
   }
