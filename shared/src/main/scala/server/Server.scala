@@ -12,12 +12,12 @@ class Server extends Api {
 
   // states, now in single thread fashion
   private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
-    Text.Plain(Unicode("Plain text with some ")),
     Text.Strong(Seq(
       Text.Plain(Unicode("strong text and ")),
       Text.Code(Unicode("div")),
       Text.Plain(Unicode(" some code")),
     )),
+    Text.Plain(Unicode(" plain text with some ")),
     Text.Plain(Unicode(" and ")),
     Text.Emphasis(Seq(
       Text.Plain(Unicode("em text and ")),

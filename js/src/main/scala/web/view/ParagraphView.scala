@@ -15,7 +15,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
 
   private val inserting: ParagraphEditorView = null
 
-  def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
+  private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
         span(`class` := "ct-cg", "*"),
@@ -23,7 +23,6 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
         span(`class` := "ct-cg", "*")
       )
       case Text.Strong(c) => span(
-        backgroundColor := clientView.theme.astHighlight,
         span(`class` := "ct-cg", "#"),
         strong(`class` := "ct-em", rec(c)),
         span(`class` := "ct-cg", "#") // TODO ** char as a single char
@@ -83,26 +82,26 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
   private val inserter: ParagraphEditorView = null
 
 
-  def removeInsertionModeIfExists(): Unit = {
+  private def removeInsertionModeIfExists(): Unit = {
     // TODO
   }
 
 
-  def getDom(a: Seq[Int]): Node = getDom(dom, a)
+  private def getDom(a: Seq[Int]): Node = getDom(dom, a)
 
-  def getDom(parent: Node, a: Seq[Int]): Node = {
+  private def getDom(parent: Node, a: Seq[Int]): Node = {
     if (a.isEmpty) {
       parent
     } else {
-      if (parent.isInstanceOf[HTMLImageElement]) {
-        getDom(parent.childNodes.item(a.head), a.tail)
-      } else {
+      if (parent.isInstanceOf[HTMLSpanElement]) {
         getDom(parent.childNodes.item(1).childNodes.item(a.head), a.tail)
+      } else {
+        getDom(parent.childNodes.item(a.head), a.tail)
       }
     }
   }
 
-  def selectionToDomRange(range: IntRange): (Node, Int, Int) = {
+  private def selectionToDomRange(range: IntRange): (Node, Int, Int, HTMLSpanElement) = {
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
     val info = paragraph.info
@@ -116,21 +115,23 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       val ast = ss.text.asInstanceOf[Text.Code]
       val sss = ast.unicode.toStringPosition(ss.charPosition)
       val eee = ast.unicode.toStringPosition(ee.charPosition + 1)
-      (codeText, sss, eee)
+      (codeText, sss, eee, null)
     } else if (range.size == 1 &&
       ss.ty  == InfoType.Special &&
       SpecialChar.startsEnds.contains(ss.specialChar) &&
       !ss.text.isInstanceOf[Text.AtomicViewed]) {
       val isStart = SpecialChar.starts.contains(ss.specialChar)
-      val a = getDom(ss.nodePosition)
+      val a = getDom(ss.nodePosition).asInstanceOf[HTMLSpanElement]
       val range = if (isStart) (0, 1) else (2, 3)
-      (a, range._1, range._2)
+      (a, range._1, range._2, a)
     } else {
-      (dom, 0, dom.childNodes.length) // TODO
+      (dom, 0, dom.childNodes.length, null) // TODO
     }
   }
 
-  def setSelection(r: IntRange): Unit = {
+  private var astHighlight: HTMLSpanElement = null
+
+  private def setSelection(r: IntRange): Unit = {
     val range: Range = document.createRange()
     if (isEmpty) {
       range.setStart(dom.childNodes.item(0), 0)
@@ -141,6 +142,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       range.setEnd(start._1, start._3)
     }
     val sel = window.getSelection
+    // TODO ast highlight
     sel.removeAllRanges
     sel.addRange(range)
   }
