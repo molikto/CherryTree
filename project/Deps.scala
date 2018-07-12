@@ -31,6 +31,7 @@ object Deps {
 
   val server = Def.setting(shared.value ++ (
     "com.typesafe.akka" %%% "akka-http" % Version.akka ::
+    //"com.vladsch.flexmark" % "flexmark-all" % "0.34.6" ::
     "com.vmunier" %%% "scalajs-scripts" % Version.scalajsScripts ::
       Nil))
 

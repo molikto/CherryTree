@@ -14,18 +14,43 @@ class ParagraphView(init: Paragraph) extends ContentView  {
 
   def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
-      case Text.Emphasis(c) => em(rec(c))
-      case Text.Strong(c) => strong(rec(c))
-      case Text.StrikeThrough(c) => del(rec(c))
-      case Text.LaTeX(c) => code(c.toString)
-      case Text.Code(c) => code(`class` := "cherrytree-code", c.toString)
-      case Text.Plain(c) => span(c.toString)
-      case Text.Link(t, b, c) => a(rec(t), href := b.toString)
-      case Text.Image(t, b, c) => a(rec(t), href := b.toString)
+      case Text.Emphasis(c) => span(
+        span(`class` := "ct-cg", "*"),
+        em(`class` := "ct-em", rec(c)),
+        span(`class` := "ct-cg", "*")
+      )
+      case Text.Strong(c) => span(
+        span(`class` := "ct-cg", "#"),
+        strong(`class` := "ct-em", rec(c)),
+        span(`class` := "ct-cg", "#") // TODO ** char as a single char
+      )
+      case Text.StrikeThrough(c) => span(
+        span(`class` := "ct-cg", "-"),
+        del(`class` := "ct-del", rec(c)),
+        span(`class` := "ct-cg", "-")
+      )
+      case Text.Link(t, b, c) => span(
+        span(`class` := "ct-cg", "["),
+        span(`class` := "ct-link", rec(t), href := b.toString),
+        span(`class` := "ct-cg", "]")
+      )
+      case Text.Image(t, b, c) =>
+        img(rec(t), src := b.toString)
+      case Text.LaTeX(c) =>
+        val a = span(`class` := "ct-latex").render
+        window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
+        bindNode(a)
+      case Text.Code(c) =>
+        span(
+          span(`class` := "ct-cg", "`"),
+          code(`class` := "ct-code", c.toString),
+          span(`class` := "ct-cg", "`")
+        )
+      case Text.Plain(c) => stringFrag(c.toString)
     }
   }
 
-  dom = p(`class` := "cherrytree-content", rec(init.text)).render
+  dom = p(`class` := "ct-content", rec(init.text)).render
 
   dom.style = "outline: 0px solid transparent;"
 
@@ -64,12 +89,12 @@ class ParagraphView(init: Paragraph) extends ContentView  {
   }
 
   def setSelection(min: Int, max: Int): Unit = {
-    val range: Range = document.createRange()
-    range.setStart(dom, 0)
-    range.setEnd(dom, 1)
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
+//    val range: Range = document.createRange()
+//    range.setStart(dom, 0)
+//    range.setEnd(dom, 1)
+//    val sel = window.getSelection
+//    sel.removeAllRanges
+//    sel.addRange(range)
   }
 
   override def syncMode(aa: mode.Content): Unit =  aa match {

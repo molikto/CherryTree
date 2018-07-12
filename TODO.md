@@ -12,9 +12,9 @@
 
 ## now
 
+* paragraph view present
 * mode definition is kinda of wrong?
 * paragraph operation creation
-* paragraph view present
 * keyboard editor for paragraph
 * mouse support
 * copy paste

@@ -1,37 +1,67 @@
 /** TODO how to apply them as a theme? */
 
 
-.cherrytree-root::-webkit-scrollbar {
+.ct-root::-webkit-scrollbar {
     width: 10px;
 }
 
 /* Track */
-.cherrytree-root::-webkit-scrollbar-track {
+.ct-root::-webkit-scrollbar-track {
     background: #282c34;
 }
 
 /* Handle */
-.cherrytree-root::-webkit-scrollbar-thumb {
+.ct-root::-webkit-scrollbar-thumb {
     background: #5A637580;
 }
 
 /* Handle on hover */
-.cherrytree-root::-webkit-scrollbar-thumb:hover {
+.ct-root::-webkit-scrollbar-thumb:hover {
     background: #747D9180;
 }
 
-.cherrytree-content::selection {
-    background-color: #333843;
+::selection {
+    background: #58617488;
 }
 
 
-.cherrytree-code {
+.ct-code {
     font-style: normal;
+    font-weight:normal;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    padding: .15rem .2rem;
     font-size: 90%;
     color: #f0c5ce;
-    background-color: #3b404b;
-    border-radius: .15rem;
 }
 
+
+/*
+    padding: .15rem .2rem;
+     border-radius: .15rem;
+    background: #3b404b;
+*/
+
+/* control glyph */
+.ct-cg {
+    font-style: normal;
+    color: #5c6370;
+    font-weight:normal;
+}
+
+/*
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size: 90%;
+*/
+
+.ct-link {
+   color: #268bd2;
+}
+
+.ct-latex {
+}
+
+.ct-strong {
+}
+.ct-em {
+}
+.ct-del {
+}

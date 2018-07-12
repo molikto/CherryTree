@@ -2,6 +2,7 @@ package server
 
 import model._
 import api._
+import model.data.{Text, Unicode}
 import model.ot.Rebased
 
 import scala.collection.mutable
@@ -10,7 +11,18 @@ import scala.util.Random
 class Server extends Api {
 
   // states, now in single thread fashion
-  private var document = data.Node.random(new Random(59))
+  private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
+    Text.Plain(Unicode("Plain text with some ")),
+    Text.Strong(Seq(Text.Plain(Unicode("strong text and ")), Text.Code(Unicode("CODE INSIDE")))),
+    Text.Plain(Unicode(" ")),
+    Text.Emphasis(Seq(Text.Plain(Unicode("em text and ")), Text.Code(Unicode("CODE INSIDE")))),
+    Text.Plain(Unicode(" ")),
+    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"), None),
+    Text.Plain(Unicode(" some latex ")),
+    Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
+    Text.Plain(Unicode(" and some image ")),
+    Text.Image(Seq.empty, Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg"))
+  ))), Seq.empty)
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
