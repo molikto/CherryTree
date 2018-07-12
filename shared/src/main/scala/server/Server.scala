@@ -29,7 +29,7 @@ class Server extends Api {
       Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
     )),
     Text.Plain(Unicode(" ")),
-    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"), None),
+    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com")),
     Text.Plain(Unicode(" some latex ")),
     Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
     Text.Plain(Unicode(" and some image ")),
@@ -45,7 +45,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, model.mode.Node.Visual(Seq.empty, Seq.empty), version)
+    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultNormalMode()), version)
     clients.update(token, version)
     Right(state)
   }

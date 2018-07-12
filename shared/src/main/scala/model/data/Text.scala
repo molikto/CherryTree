@@ -6,6 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
+  def isEmpty: Boolean
 
   private[data] def serialize(buffer: UnicodeWriter)
   private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node)
@@ -19,6 +20,9 @@ abstract sealed class Text {
   */
 object Text {
 
+  sealed trait AtomicViewed extends Text {
+
+  }
 
   def size(paragraph: Seq[Text]): Int = paragraph.map(_.size).sum
 
@@ -32,9 +36,9 @@ object Text {
         case StrikeThroughStart =>
           StrikeThrough(parseAll(reader, StrikeThroughEnd))
         case LinkStart =>
-          Link(parseAll(reader, LinkContentEnd), reader.eatUntilAndDrop(LinkUrlEnd), reader.eatUntilAndDropNonEmpty(LinkTitleEnd))
+          Link(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(LinkEnd))
         case ImageStart =>
-          Image(parseAll(reader, ImageContentEnd), reader.eatUntilAndDrop(ImageUrlEnd), reader.eatUntilAndDropNonEmpty(ImageTitleEnd))
+          Image(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(ImageEnd))
         case CodeStart =>
           Code(reader.eatUntilAndDrop(CodeEnd))
         case LaTeXStart =>
@@ -63,79 +67,62 @@ object Text {
     buffer.toVector
   }
 
-
   sealed private[model] trait Formatted extends Text {
     def content: Seq[Text]
-    def styleCharStart: SpecialChar
-    def styleCharEnd: SpecialChar
+    def specialCharStart: SpecialChar
+    def specialCharEnd: SpecialChar
+    override def isEmpty = false
+    def attributes: Seq[SpecialChar] = Seq.empty
+    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new IllegalArgumentException()
 
-    override val size: Int = Text.size(content) + 2
-
-    override private[model] def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(styleCharStart)
-      content.foreach(_.serialize(buffer))
-      buffer.put(styleCharEnd)
-    }
-
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
-      content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
-       buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
-    }
-  }
-
-  sealed private[model] trait Linked extends Formatted {
-    def contentEnd: SpecialChar
-    def url: Unicode
-    def urlEnd: SpecialChar
-    def title: Option[Unicode]
-    override val size: Int = Text.size(content) + url.size + title.map(_.size).getOrElse(0) + 4
+    override val size: Int = 2 + Text.size(content) + attributes.map(a => attribute(a).size + 1).sum
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(styleCharStart)
+      buffer.put(specialCharStart)
       content.foreach(_.serialize(buffer))
-      buffer.put(contentEnd)
-      buffer.put(url)
-      buffer.put(urlEnd)
-      title.foreach(a => buffer.put(a))
-      buffer.put(styleCharEnd)
+      attributes.foreach(a => {
+        buffer.put(a)
+        buffer.put(attribute(a))
+      })
+      buffer.put(specialCharEnd)
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special(styleCharStart))
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
       content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
-       buffer += Info(selfPosition, this, InfoType.Special(contentEnd))
-      for (_ <- 0 until url.size) buffer += Info(selfPosition, this, InfoType.Unicode)
-       buffer += Info(selfPosition, this, InfoType.Special(urlEnd))
-      for (_ <- 0 until title.map(_.size).getOrElse(0)) buffer += Info(selfPosition, this, InfoType.Unicode)
-       buffer += Info(selfPosition, this, InfoType.Special(styleCharEnd))
+      attributes.foreach(a => {
+        buffer += Info(selfPosition, this, InfoType.Special, specialChar = a)
+        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i)
+      })
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
     }
   }
 
   case class Emphasis(override val content: Seq[Text]) extends Formatted {
-    override def styleCharStart: SpecialChar = EmphasisStart
-    override def styleCharEnd: SpecialChar = EmphasisEnd
+    override def specialCharStart: SpecialChar = EmphasisStart
+    override def specialCharEnd: SpecialChar = EmphasisEnd
+
   }
   case class Strong(override val content: Seq[Text]) extends Formatted {
-    override def styleCharStart: SpecialChar = StrongStart
-    override def styleCharEnd: SpecialChar = StrongEnd
+    override def specialCharStart: SpecialChar = StrongStart
+    override def specialCharEnd: SpecialChar = StrongEnd
   }
 
   case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
-    override def styleCharStart: SpecialChar = StrikeThroughStart
-    override def styleCharEnd: SpecialChar = StrikeThroughEnd
+    override def specialCharStart: SpecialChar = StrikeThroughStart
+    override def specialCharEnd: SpecialChar = StrikeThroughEnd
   }
-  case class Link(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Linked {
-    override def styleCharStart: SpecialChar = LinkStart
-    override def contentEnd: SpecialChar = LinkContentEnd
-    override def urlEnd: SpecialChar = LinkUrlEnd
-    override def styleCharEnd: SpecialChar = LinkTitleEnd
+  case class Link(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted {
+    override def specialCharStart: SpecialChar = LinkStart
+    override def specialCharEnd: SpecialChar = LinkEnd
+    override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
+    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(content: Seq[Text], url: Unicode, title: Option[Unicode] = None) extends Linked {
-    override def styleCharStart: SpecialChar = ImageStart
-    override def contentEnd: SpecialChar = ImageContentEnd
-    override def urlEnd: SpecialChar = ImageUrlEnd
-    override def styleCharEnd: SpecialChar = ImageTitleEnd
+  case class Image(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicViewed {
+    override def specialCharStart: SpecialChar = ImageStart
+    override def specialCharEnd: SpecialChar = ImageEnd
+    override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
+    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
 
   sealed trait Coded extends Text {
@@ -149,30 +136,32 @@ object Text {
       buffer.put(unicode)
       buffer.put(end)
     }
+    override def isEmpty = false
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special(start))
-      for (_ <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Coded)
-       buffer += Info(selfPosition, this, InfoType.Special(end))
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = start)
+      for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Coded, charPosition = i)
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = end)
     }
   }
   case class Code(unicode: Unicode) extends Coded {
     override def start: SpecialChar = CodeStart
     override def end: SpecialChar = CodeEnd
   }
-  case class LaTeX(unicode: Unicode) extends Coded {
+  case class LaTeX(unicode: Unicode) extends Coded with AtomicViewed {
     override def start: SpecialChar = LaTeXStart
     override def end: SpecialChar = LaTeXEnd
   }
   case class Plain(unicode: Unicode) extends Text {
     override val size: Int = unicode.size
+    override def isEmpty: Boolean = unicode.isEmpty
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-      for (_ <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Plain)
+      for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Plain, charPosition = i)
     }
   }
 }

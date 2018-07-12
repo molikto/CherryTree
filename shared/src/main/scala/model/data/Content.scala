@@ -1,12 +1,14 @@
 package model.data
 
 import boopickle._
-import model.data
+import model.range.IntRange
+import model.{data, mode}
 
 import scala.util.Random
 
 
 abstract sealed class Content {
+  def defaultNormalMode(): mode.Content
 }
 
 /**
@@ -17,9 +19,13 @@ abstract sealed class Content {
   * but paragraph it is not, so we need to be sure that the data we are editing is valid
   */
 object Content extends DataObject[Content] {
-  case class Code(unicode: Unicode, lang: Option[String]) extends Content
+  case class Code(unicode: Unicode, lang: Option[String]) extends Content {
+    override def defaultNormalMode(): mode.Content = mode.Content.Normal(IntRange(0, 0))
+  }
   case class Paragraph(paragraph: data.Paragraph) extends Content {
     val size: Int = paragraph.size
+
+    override def defaultNormalMode(): mode.Content = paragraph.defaultNormalMode()
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

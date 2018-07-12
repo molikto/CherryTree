@@ -8,7 +8,7 @@ case class ColorScheme(
   astHighlight: String = "#333843"
 )
 
-// TODO dynamic color scheme?
+// LATER dynamic color scheme?
 object ColorScheme {
   val default = ColorScheme()
 }

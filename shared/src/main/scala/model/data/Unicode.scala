@@ -73,15 +73,6 @@ private[model] class UnicodeReader(a: Unicode) {
     if (!eatOrFalse(b)) throw new UnicodeParseException(s"Expecting $b")
     a
   }
-
-  def eatUntilAndDropNonEmpty(b: SpecialChar): Option[Unicode] = {
-    val a = eatUntilAndDrop(b)
-    if (a.isEmpty) {
-      None
-    } else {
-      Some(a)
-    }
-  }
 }
 object Unicode extends DataObject[Unicode] {
   override val pickler: boopickle.Pickler[Unicode] = new boopickle.Pickler[Unicode] {
@@ -98,6 +89,8 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+
+  def toStringPosition(charPosition: Int): Int = str.offsetByCodePoints(0, charPosition)
 
   def join(j: Unicode): Unicode = Unicode(str + j.str)
 

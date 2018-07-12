@@ -1,7 +1,8 @@
 package model.data
 
 import boopickle._
-import model.cursor
+import model.range.IntRange
+import model.{cursor, mode}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -9,20 +10,29 @@ import scala.util.Random
 sealed class InfoType {
 }
 object InfoType {
-  case class Special(a: SpecialChar) extends InfoType
+  case object Special extends InfoType
   case object Plain extends InfoType
-  case object Unicode extends InfoType
+  case object AttributeUnicode extends InfoType
   case object Coded extends InfoType
 }
 case class Info(
-  position: cursor.Node,
+  nodePosition: cursor.Node,
   text: Text,
-  ty: InfoType
+  ty: InfoType,
+  charPosition: Int = -1, // only valid if not Special
+  specialChar: SpecialChar = null, // only valid if type == Special
 )
 /**
   * we currently expect all our paragraph object is normalized
   */
 case class Paragraph(text: Seq[Text]) {
+  def isEmpty: Boolean = {
+    for (t <- text) {
+      if (!t.isEmpty) return false
+    }
+    true
+  }
+
 
   private[model] def serialize(): Unicode = {
     val buffer = new UnicodeWriter()
@@ -32,11 +42,17 @@ case class Paragraph(text: Seq[Text]) {
 
   lazy val size: Int = Text.size(text)
 
-  def info(): Seq[Info] = {
+  lazy val info: Seq[Info] = {
     val buffer = new ArrayBuffer[Info]()
     text.zipWithIndex.foreach(a => a._1.info(buffer, Seq(a._2)))
     buffer.toVector
   }
+
+  def defaultNormalMode(): mode.Content = mode.Content.Normal(text.headOption match {
+    case Some(a: Text.LaTeX) => IntRange(0, a.size)
+    case Some(b: Text.Image) => IntRange(0, b.size)
+    case _ => IntRange(0, 0)
+  })
 }
 
 object Paragraph extends DataObject[Paragraph] {
@@ -86,11 +102,11 @@ object Paragraph extends DataObject[Paragraph] {
       case 6 => Text.Image(
         randomWithDepth(r, depth),
         Unicode.random(r),
-        if (r.nextBoolean()) Some(Unicode.random(r)) else None)
+        Unicode.random(r))
       case 7 => Text.Link(
         randomWithDepth(r, depth),
         Unicode.random(r),
-        if (r.nextBoolean()) Some(Unicode.random(r)) else None)
+        Unicode.random(r))
       case _ => Text.Plain(Unicode.random(r))
     }
   }

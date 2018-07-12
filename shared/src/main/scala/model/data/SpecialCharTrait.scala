@@ -10,13 +10,14 @@ trait SpecialCharTrait extends Enumeration {
   private[data] def createSpecialChar(id: Int) = apply(id)
 
 
-  val EmphasisStart, EmphasisEnd, 
+  val EmphasisStart, EmphasisEnd,
     StrongStart, StrongEnd,
     StrikeThroughStart, StrikeThroughEnd,
-    LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd,
-    ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd,
+    LinkStart, LinkEnd,
+    ImageStart, ImageEnd,
     CodeStart, CodeEnd,
-    LaTeXStart, LaTeXEnd:
+    LaTeXStart, LaTeXEnd,
+    UrlAttribute, TitleAttribute:
     SpecialChar = Value
 
 }
@@ -31,18 +32,20 @@ object SpecialChar {
     FormattedModifiers(StrikeThroughStart, StrikeThroughEnd)
   )
 
+  val attributes = Seq(UrlAttribute, TitleAttribute)
+
   val linked = Seq(
-    LinkedModifiers(LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd),
-    LinkedModifiers(ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
+    FormattedModifiers(LinkStart, LinkEnd, attributes),
+    FormattedModifiers(ImageStart, ImageEnd, attributes)
   )
 
   val coded = Seq(
     CodedModifiers(LaTeXStart, LaTeXEnd),
     CodedModifiers(CodeStart, CodeEnd)
   )
-  
+
   val all: Seq[DelimitedModifiers] = coded ++ formatted ++ linked
-  
+
   val splittableOrdered: Seq[DelimitedModifiers] = formatted ++ linked
   val nonSplittableOrdered: Seq[DelimitedModifiers] = linked
   //** from inner to outer
@@ -52,6 +55,8 @@ object SpecialChar {
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
+
+  val startsEnds: Seq[_root_.model.data.SpecialChar] = starts ++ ends
 }
 
 sealed abstract class DelimitedModifiers {
@@ -61,6 +66,6 @@ sealed abstract class DelimitedModifiers {
   def  endUnicode = Unicode(end)
 }
 case class CodedModifiers(start: SpecialChar, end: SpecialChar) extends DelimitedModifiers
-case class FormattedModifiers(start: SpecialChar, end: SpecialChar) extends DelimitedModifiers
-case class LinkedModifiers(start: SpecialChar, contentEnd: SpecialChar, urlEnd: SpecialChar, end: SpecialChar) extends DelimitedModifiers
+case class FormattedModifiers(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty) extends DelimitedModifiers {
+}
 

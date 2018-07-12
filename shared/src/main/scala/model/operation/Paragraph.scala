@@ -23,6 +23,7 @@ case class Paragraph(private [model] val u: Seq[Unicode], override val ty: Type)
 
   override def apply(d: data.Paragraph): data.Paragraph =
     data.Paragraph.parse(Unicode.apply(u, d.serialize()))
+
 }
 
 object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
@@ -67,8 +68,8 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case 2 if d.size > 0 =>
         // add title/image to a subparagraph
         val randomFormat = r.nextInt(2) match {
-          case 0 => (ImageStart, ImageContentEnd, ImageUrlEnd, ImageTitleEnd)
-          case 1 => (LinkStart, LinkContentEnd, LinkUrlEnd, LinkTitleEnd)
+          case 0 => (ImageStart, UrlAttribute, TitleAttribute, ImageEnd)
+          case 1 => (LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
         }
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
@@ -132,27 +133,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   }
 
   private def randomLinked(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
-    val info = d.info().zipWithIndex
+    val info = d.info.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.linked.exists(_.start == k)
-      case _ => false
-    })
-    if (starts.isEmpty) {
-      None
-    } else {
-      val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Linked]
-      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
-      val urlStart = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.contentEnd)).get._2 + 1
-      val urlEnd = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.urlEnd)).get._2 - 1
-      Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
-    }
-  }
-
-  private def randomFormatted(d: data.Paragraph, r: Random): Option[IntRange] = {
-    val info = d.info().zipWithIndex
-    val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.formatted.exists(_.start == k)
+      case InfoType.Special => SpecialChar.linked.exists(_.start == a._1.specialChar)
       case _ => false
     })
     if (starts.isEmpty) {
@@ -160,15 +143,33 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.styleCharEnd)).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.specialCharEnd).get._2
+      val urlStart = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar ==  text.attributes.head).get._2 + 1
+      val urlEnd = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.attributes(1)).get._2 - 1
+      Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
+    }
+  }
+
+  private def randomFormatted(d: data.Paragraph, r: Random): Option[IntRange] = {
+    val info = d.info.zipWithIndex
+    val starts = info.filter(a => a._1.ty match {
+      case InfoType.Special => SpecialChar.formatted.exists(_.start == a._1.specialChar)
+      case _ => false
+    })
+    if (starts.isEmpty) {
+      None
+    } else {
+      val t = starts(r.nextInt(starts.size))
+      val text = t._1.text.asInstanceOf[data.Text.Formatted]
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.specialCharEnd).get._2
       Some(IntRange(t._2, end))
     }
   }
 
   private def randomCoded(d: data.Paragraph, r: Random): Option[IntRange] = {
-    val info = d.info().zipWithIndex
+    val info = d.info.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special(k) => SpecialChar.coded.exists(_.start == k)
+      case InfoType.Special => SpecialChar.coded.exists(_.start == a._1.specialChar)
       case _ => false
     })
     if (starts.isEmpty) {
@@ -176,7 +177,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Coded]
-      val end = info.find(a => a._1.position == t._1.position && a._1.ty == InfoType.Special(text.end)).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.end).get._2
       Some(IntRange(t._2, end))
     }
   }
@@ -186,27 +187,27 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     if (d.size == 0) {
       throw new IllegalArgumentException()
     }
-    def isValidStart(_1: InfoType): Boolean = _1 match {
+    def isValidStart(_1: Info): Boolean = _1.ty match {
       case InfoType.Plain => true
-      case InfoType.Special(a) => SpecialChar.starts.contains(a)
+      case InfoType.Special => SpecialChar.starts.contains(_1.specialChar)
       case _ => false
     }
 
-    def isValidEnd(_1: InfoType): Boolean = _1 match {
+    def isValidEnd(_1: Info): Boolean = _1.ty match {
       case InfoType.Plain => true
-      case InfoType.Special(a) => SpecialChar.ends.contains(a)
+      case InfoType.Special => SpecialChar.ends.contains(_1.specialChar)
       case _ => false
     }
 
-    val info = d.info().zipWithIndex
+    val info = d.info.zipWithIndex
     while (true) {
       val a = info(r.nextInt(d.size))
       val b = info(r.nextInt(d.size - a._2) + a._2)
-      if (isValidStart(a._1.ty) && isValidEnd(b._1.ty)) {
-        if (a._1.position == b._1.position) {
+      if (isValidStart(a._1) && isValidEnd(b._1)) {
+        if (a._1.nodePosition == b._1.nodePosition) {
           // single item
           return IntRange(a._2, b._2)
-        } else if (a._1.position.dropRight(1) == b._1.position.dropRight(1)) {
+        } else if (a._1.nodePosition.dropRight(1) == b._1.nodePosition.dropRight(1)) {
           return IntRange(a._2, b._2)
         }
       }

@@ -2,13 +2,16 @@ package web.view
 
 import scalatags.JsDom.all._
 import model._
-import model.data.{Paragraph, Text}
+import model.data.{InfoType, Paragraph, SpecialChar, Text}
+import model.range.IntRange
+import org.scalajs.dom
 import org.scalajs.dom._
+import org.scalajs.dom.raw.{HTMLImageElement, HTMLSpanElement}
 import org.w3c.dom.css.CSSStyleDeclaration
 
 import scala.scalajs.js
 
-class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView  {
+class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends ContentView  {
 
   private val inserting: ParagraphEditorView = null
 
@@ -51,7 +54,9 @@ class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView
     }
   }
 
-  dom = p(`class` := "ct-content", rec(init.text)).render
+  var isEmpty = paragraph.isEmpty
+
+  dom = p(`class` := "ct-content", if (isEmpty) " " else rec(paragraph.text)).render
 
   dom.style = "outline: 0px solid transparent;"
 
@@ -77,6 +82,69 @@ class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView
 
   private val inserter: ParagraphEditorView = null
 
+
+  def removeInsertionModeIfExists(): Unit = {
+    // TODO
+  }
+
+
+  def getDom(a: Seq[Int]): Node = getDom(dom, a)
+
+  def getDom(parent: Node, a: Seq[Int]): Node = {
+    if (a.isEmpty) {
+      parent
+    } else {
+      if (parent.isInstanceOf[HTMLImageElement]) {
+        getDom(parent.childNodes.item(a.head), a.tail)
+      } else {
+        getDom(parent.childNodes.item(1).childNodes.item(a.head), a.tail)
+      }
+    }
+  }
+
+  def selectionToDomRange(range: IntRange): (Node, Int, Int) = {
+    // there are three cases of a selection
+    // a subparagraph, a sub-code, a delimiter of format/code node
+    val info = paragraph.info
+    val ss = info(range.start)
+    val ee = info(range.endInclusive)
+    if (ss.ty == InfoType.Coded &&
+      ee.ty == InfoType.Coded &&
+      ss.nodePosition == ee.nodePosition &&
+      ss.text.isInstanceOf[Text.Code]) {
+      val codeText = getDom(ss.nodePosition).childNodes.item(1)
+      val ast = ss.text.asInstanceOf[Text.Code]
+      val sss = ast.unicode.toStringPosition(ss.charPosition)
+      val eee = ast.unicode.toStringPosition(ee.charPosition + 1)
+      (codeText, sss, eee)
+    } else if (range.size == 1 &&
+      ss.ty  == InfoType.Special &&
+      SpecialChar.startsEnds.contains(ss.specialChar) &&
+      !ss.text.isInstanceOf[Text.AtomicViewed]) {
+      val isStart = SpecialChar.starts.contains(ss.specialChar)
+      val a = getDom(ss.nodePosition)
+      val range = if (isStart) (0, 1) else (2, 3)
+      (a, range._1, range._2)
+    } else {
+      (dom, 0, dom.childNodes.length) // TODO
+    }
+  }
+
+  def setSelection(r: IntRange): Unit = {
+    val range: Range = document.createRange()
+    if (isEmpty) {
+      range.setStart(dom.childNodes.item(0), 0)
+      range.setEnd(dom.childNodes.item(0), 1)
+    } else {
+      val start = selectionToDomRange(r)
+      range.setStart(start._1, start._2)
+      range.setEnd(start._1, start._3)
+    }
+    val sel = window.getSelection
+    sel.removeAllRanges
+    sel.addRange(range)
+  }
+
   override def clearMode(): Unit = {
     dom.contentEditable = "false"
   }
@@ -85,27 +153,15 @@ class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView
     dom.contentEditable = "true"
   }
 
-  def removeInsertionIfExists(): Unit = {
-    // TODO
-  }
-
-  def setSelection(min: Int, max: Int): Unit = {
-//    val range: Range = document.createRange()
-//    range.setStart(dom, 0)
-//    range.setEnd(dom, 1)
-//    val sel = window.getSelection
-//    sel.removeAllRanges
-//    sel.addRange(range)
-  }
-
   override def syncMode(aa: mode.Content): Unit =  aa match {
     case mode.Content.Insertion(pos) =>
+      // TODO remove the empty thing if previously is empty
     case mode.Content.Visual(fix, move) =>
-      removeInsertionIfExists()
+      removeInsertionModeIfExists()
       val (min, max) = util.maxMin(fix, move)
-      setSelection(min, max)
+      setSelection(IntRange(min, max))
     case mode.Content.Normal(range) =>
-      removeInsertionIfExists()
-      setSelection(range.start, range.endInclusive)
+      removeInsertionModeIfExists()
+      setSelection(range)
   }
 }

@@ -42,7 +42,7 @@
 
 ## good to have
 
-
+* theme system
 * infinite scrolling -- currently we just use browser default
 * make it embeddable, currently we assume it is a standalone thing
 * compatible with other browsers, currently only recent version of Chrome is supported
