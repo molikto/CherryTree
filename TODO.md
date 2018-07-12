@@ -12,7 +12,6 @@
 
 ## now
 
-* paragraph view present
 * mode definition is kinda of wrong?
 * paragraph operation creation
 * keyboard editor for paragraph
@@ -74,3 +73,5 @@
 * ~~basic generated ot - replace old Node and Change class~~
 * ~~wire up with old code, non-generalized static server part~~
 * ~~FIX THE CLIENT TEST~~
+* ~~**reboot**~~
+* ~~paragraph view present~~

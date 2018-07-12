@@ -17,12 +17,16 @@ class Server extends Api {
     Text.Plain(Unicode(" ")),
     Text.Emphasis(Seq(Text.Plain(Unicode("em text and ")), Text.Code(Unicode("CODE INSIDE")))),
     Text.Plain(Unicode(" ")),
+    Text.StrikeThrough(Seq(Text.Plain(Unicode("des text and ")),
+      Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
+    )),
+    Text.Plain(Unicode(" ")),
     Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"), None),
     Text.Plain(Unicode(" some latex ")),
     Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
     Text.Plain(Unicode(" and some image ")),
     Text.Image(Seq.empty, Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg"))
-  ))), Seq.empty)
+  ))), Seq(data.Node.random()))
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty

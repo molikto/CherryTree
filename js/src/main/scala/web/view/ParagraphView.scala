@@ -8,7 +8,7 @@ import org.w3c.dom.css.CSSStyleDeclaration
 
 import scala.scalajs.js
 
-class ParagraphView(init: Paragraph) extends ContentView  {
+class ParagraphView(clientView: ClientView, init: Paragraph) extends ContentView  {
 
   private val inserting: ParagraphEditorView = null
 
@@ -20,6 +20,7 @@ class ParagraphView(init: Paragraph) extends ContentView  {
         span(`class` := "ct-cg", "*")
       )
       case Text.Strong(c) => span(
+        backgroundColor := clientView.theme.astHighlight,
         span(`class` := "ct-cg", "#"),
         strong(`class` := "ct-em", rec(c)),
         span(`class` := "ct-cg", "#") // TODO ** char as a single char

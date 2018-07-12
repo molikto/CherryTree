@@ -21,7 +21,7 @@ import scala.concurrent.Future
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: HTMLElement, private val client: Client) extends View {
 
-  private var theme: ColorScheme = ColorScheme.default
+  var theme: ColorScheme = ColorScheme.default
 
   dom = div(
     width := "100%",
@@ -115,7 +115,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
       parent.appendChild(box)
       val content = root.content match {
         case model.data.Content.Paragraph(cs) =>
-          new ParagraphView(cs).dom
+          new ParagraphView(this, cs).dom
         case model.data.Content.Code(a, lang) =>
           p(s"LANGUAGE: $lang", a.toString).render
       }
