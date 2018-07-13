@@ -59,9 +59,9 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         // still consider it free, somehow
         if (d.r.start < s.r.start) {
           // [   ( ]  )
-          val leftRange = IntRange(d.r.start, s.r.start - 1)
+          val leftRange = IntRange(d.r.start, s.r.start)
           val rightStart = s.r.start + s.left.size
-          val rightRange = IntRange(rightStart, rightStart + d.r.size - leftRange.size - 1)
+          val rightRange = IntRange(rightStart, rightStart + d.r.size - leftRange.size)
           free(Seq(
               Delete(rightRange),
               Delete(leftRange)),
