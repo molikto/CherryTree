@@ -21,19 +21,19 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
 
+    def transformRange(r: IntRange): IntRange = r match {
+      case IntRange(min, max) =>
+        if (at <= min) IntRange(min + unicode.size, max + unicode.size)
+        else if (at > max) r
+        else IntRange(min, max + unicode.size)
+    }
+
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
       case mode.Content.Insertion(s) =>
         mode.Content.Insertion(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
       case mode.Content.Visual(a, b) =>
-        val (max, min) = maxMin(a, b)
-        if (at <= min) mode.Content.Visual(a + unicode.size, b + unicode.size)
-        else if (at > max) mode.Content.Visual(a, b)
-        else if (a > b) mode.Content.Visual(a + unicode.size, b)
-        else mode.Content.Visual(a, b + unicode.size)
-      case mode.Content.Normal(IntRange(min, max)) =>
-        if (at <= min) mode.Content.Normal(IntRange(min + unicode.size, max + unicode.size))
-        else if (at > max) i
-        else mode.Content.Normal(IntRange(min, max + unicode.size))
+        mode.Content.Visual(transformRange(a), transformRange(b))
+      case mode.Content.Normal(r) => mode.Content.Normal(transformRange(r))
     })
   }
   object Delete {
@@ -42,6 +42,9 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Delete(r: IntRange) extends Unicode {
     override def ty: Type = Type.Delete
     override def apply(d: data.Unicode): data.Unicode = d.delete(r)
+
+    def transformRange(range: IntRange): Option[IntRange] =
+      r.transformDeletingRangeAfterDeleted(range)
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
       case mode.Content.Insertion(k) =>
@@ -53,13 +56,12 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
           k
         }))
      case mode.Content.Visual(a, b) =>
-        if (a > b) {
-          r.transformDeletingRangeAfterDeleted(IntRange(b, a)).map(r => mode.Content.Visual(r.endInclusive, r.start))
-        } else {
-          r.transformDeletingRangeAfterDeleted(IntRange(a, b)).map(r => mode.Content.Visual(r.start, r.endInclusive))
-        }
+       (transformRange(a), transformRange(b)) match {
+         case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))
+         case _ => None
+       }
       case mode.Content.Normal(range) =>
-        r.transformDeletingRangeAfterDeleted(range).map(r => mode.Content.Normal(r))
+        transformRange(range).map(r => mode.Content.Normal(r))
     }
   }
 
@@ -99,13 +101,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
           mode.Content.Insertion(k + sizeDiff)
         }
       case mode.Content.Visual(a, b) =>
-        val (max, min) = maxMin(a, b)
-        val range = transformRange(IntRange(max, min))
-        if (a < b) {
-          mode.Content.Visual(range.start, range.endInclusive)
-        } else {
-          mode.Content.Visual(range.endInclusive, range.start)
-        }
+        mode.Content.Visual(transformRange(a), transformRange(b))
       case mode.Content.Normal(range) =>
         mode.Content.Normal(transformRange(range))
     })
@@ -133,14 +129,10 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       case mode.Content.Insertion(k) =>
         Some(mode.Content.Insertion(if (k <= r.start) k else if (k <= r.endInclusive) k + left.size else k + left.size + right.size))
       case mode.Content.Visual(a, b) =>
-        val (max, min) = maxMin(a, b)
-        transformRange(IntRange(max, min)).map(range => {
-          if (a < b) {
-            mode.Content.Visual(range.start, range.endInclusive)
-          } else {
-            mode.Content.Visual(range.endInclusive, range.start)
-          }
-        })
+        (transformRange(a), transformRange(b)) match {
+          case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))
+          case _ => None
+        }
       case mode.Content.Normal(range) =>
         transformRange(range).map(a => mode.Content.Normal(a))
     }

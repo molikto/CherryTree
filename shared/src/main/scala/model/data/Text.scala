@@ -10,6 +10,7 @@ abstract sealed class Text {
 
   private[data] def serialize(buffer: UnicodeWriter)
   private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node)
+  private[data] def info(a: Int, selfPosition: cursor.Node): Info
   val size: Int
 }
 
@@ -19,6 +20,18 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+  // returns null if not inside
+  private [data] def info(parentPos: cursor.Node, text: Seq[Text], a: Int): Either[Info, Int] = {
+    var totalSize = 0
+    var index = 0
+    while (index < text.size && text(index).size + totalSize <= a) {
+      totalSize += text(index).size
+      index += 1
+    }
+    if (index < text.size) Left(text(index).info(a - totalSize, parentPos :+ index))
+    else Right(a - totalSize)
+  }
+
 
   sealed trait AtomicViewed extends Text {
 
@@ -92,9 +105,27 @@ object Text {
       content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
       attributes.foreach(a => {
         buffer += Info(selfPosition, this, InfoType.Special, specialChar = a)
-        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i)
+        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i, specialChar = a)
       })
        buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+    }
+
+    override def info(start: Int, selfPosition: cursor.Node): Info = {
+      var i = start
+      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
+      i -= 1
+      Text.info(selfPosition, content, i) match {
+        case Left(j) => return j
+        case Right(ii) => i = ii
+      }
+      for (a <- attributes) {
+        if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = a)
+        i -= 1
+        if (i < attribute(a).size) return Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i)
+        i -= attribute(a).size
+      }
+      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+      throw new IllegalArgumentException("index should be smaller in this case")
     }
   }
 
@@ -127,30 +158,39 @@ object Text {
 
   sealed trait Coded extends Text {
     def unicode: Unicode
-    def start: SpecialChar
-    def end: SpecialChar
+    def specialCharStart: SpecialChar
+    def specialCharEnd: SpecialChar
     override val size: Int = unicode.size + 2
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(start)
+      buffer.put(specialCharStart)
       buffer.put(unicode)
-      buffer.put(end)
+      buffer.put(specialCharEnd)
     }
     override def isEmpty = false
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = start)
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
       for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Coded, charPosition = i)
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = end)
+       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+    }
+    override def info(start: Int, selfPosition: cursor.Node): Info = {
+      var i = start
+      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
+      i -= 1
+      if (i < unicode.size) return Info(selfPosition, this, InfoType.Coded, charPosition = i)
+      i -= unicode.size
+      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+      throw new IllegalArgumentException("index should be smaller in this case")
     }
   }
   case class Code(unicode: Unicode) extends Coded {
-    override def start: SpecialChar = CodeStart
-    override def end: SpecialChar = CodeEnd
+    override def specialCharStart: SpecialChar = CodeStart
+    override def specialCharEnd: SpecialChar = CodeEnd
   }
   case class LaTeX(unicode: Unicode) extends Coded with AtomicViewed {
-    override def start: SpecialChar = LaTeXStart
-    override def end: SpecialChar = LaTeXEnd
+    override def specialCharStart: SpecialChar = LaTeXStart
+    override def specialCharEnd: SpecialChar = LaTeXEnd
   }
   case class Plain(unicode: Unicode) extends Text {
     override val size: Int = unicode.size
@@ -163,5 +203,8 @@ object Text {
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
       for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Plain, charPosition = i)
     }
+
+    override private[data] def info(a: Int, selfPosition: cursor.Node) =
+      Info(selfPosition, this, InfoType.Plain, charPosition = a)
   }
 }

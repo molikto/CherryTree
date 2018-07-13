@@ -7,14 +7,18 @@ import model.data.DataObject
 import model.range.IntRange
 import utest._
 
+import scala.util.Random
+
 
 object OperationTests extends TestSuite {
 
+
+  val r = new Random()
   val tests = Tests {
     def testOperationObject[T, O <: Operation[T]](dobj: DataObject[T], obj: OperationObject[T, O]): Unit = {
       for (i <- 0 until 1000) {
-        val a = dobj.random()
-        val o = obj.random(a)
+        val a = dobj.random(r)
+        val o = obj.random(a, r)
 //        println(s"\nTest No. $i")
 //        println(a)
 //        println(o)

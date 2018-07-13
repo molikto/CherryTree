@@ -17,7 +17,7 @@ package object mode {
     object Normal {
       val empty: Normal = Normal(IntRange(0, 0))
     }
-    case class Visual(fix: Int, move: Int) extends Content
+    case class Visual(fix: IntRange, move: IntRange) extends Content
   }
 
   sealed trait Node
@@ -44,8 +44,8 @@ package object mode {
           case Content(node, mode.Content.Visual(fix, move)) =>
             writeInt(2)
             writeIntArray(node.toArray)
-            writeInt(fix)
-            writeInt(move)
+            IntRange.pickler.pickle(fix)
+            IntRange.pickler.pickle(move)
           case Visual(fix, move) =>
             writeInt(3)
             writeIntArray(fix.toArray)
@@ -58,7 +58,7 @@ package object mode {
         readInt match {
           case 0 => Content(readIntArray, mode.Content.Insertion(readInt))
           case 1 => Content(readIntArray, mode.Content.Normal(IntRange.pickler.unpickle))
-          case 2 => Content(readIntArray, mode.Content.Visual(readInt, readInt))
+          case 2 => Content(readIntArray, mode.Content.Visual(IntRange.pickler.unpickle, IntRange.pickler.unpickle))
           case 3 => Visual(readIntArray, readIntArray)
         }
       }

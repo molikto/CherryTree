@@ -20,8 +20,10 @@ case class Info(
   text: Text,
   ty: InfoType,
   charPosition: Int = -1, // only valid if not Special
-  specialChar: SpecialChar = null, // only valid if type == Special
-)
+  specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
+) {
+  def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
+}
 /**
   * we currently expect all our paragraph object is normalized
   */
@@ -42,11 +44,13 @@ case class Paragraph(text: Seq[Text]) {
 
   lazy val size: Int = Text.size(text)
 
-  lazy val info: Seq[Info] = {
+  lazy val infos: Seq[Info] = {
     val buffer = new ArrayBuffer[Info]()
     text.zipWithIndex.foreach(a => a._1.info(buffer, Seq(a._2)))
     buffer.toVector
   }
+
+  def info(a: Int): Info = Text.info(Seq.empty[Int], text, a).left.get
 
   def defaultNormalMode(): mode.Content = mode.Content.Normal(text.headOption match {
     case Some(a: Text.LaTeX) => IntRange(0, a.size)

@@ -112,9 +112,8 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
   private def selectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
-    val info = paragraph.info
-    val ss = info(range.start)
-    val ee = info(range.endInclusive)
+    val ss = paragraph.info(range.start)
+    val ee = paragraph.info(range.endInclusive)
     if (ss.ty == InfoType.Coded &&
       ee.ty == InfoType.Coded &&
       ss.nodePosition == ee.nodePosition &&
@@ -203,8 +202,9 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       // TODO remove the empty thing if previously is empty
     case mode.Content.Visual(fix, move) =>
       removeInsertionModeIfExists()
-      val (min, max) = util.maxMin(fix, move)
-      renderSelection(IntRange(min, max))
+      // TODO render visual
+//      val (min, max) = util.maxMin(fix, move)
+//      renderSelection(IntRange(min, max))
     case mode.Content.Normal(range) =>
       removeInsertionModeIfExists()
       renderSelection(range)

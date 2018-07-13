@@ -133,9 +133,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
   }
 
   private def randomLinked(d: data.Paragraph, r: Random): Option[(IntRange, IntRange)] = {
-    val info = d.info.zipWithIndex
+    val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.linked.exists(_.start == a._1.specialChar)
+      case InfoType.Special => SpecialChar.linked.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {
@@ -143,17 +143,17 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.specialCharEnd).get._2
-      val urlStart = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar ==  text.attributes.head).get._2 + 1
-      val urlEnd = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.attributes(1)).get._2 - 1
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2
+      val urlStart = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.attributes.head)).get._2 + 1
+      val urlEnd = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.attributes(1))).get._2 - 1
       Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
     }
   }
 
   private def randomFormatted(d: data.Paragraph, r: Random): Option[IntRange] = {
-    val info = d.info.zipWithIndex
+    val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.formatted.exists(_.start == a._1.specialChar)
+      case InfoType.Special => SpecialChar.formatted.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {
@@ -161,15 +161,15 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.specialCharEnd).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition  && a._1.isSpecialChar(text.specialCharEnd)).get._2
       Some(IntRange(t._2, end))
     }
   }
 
   private def randomCoded(d: data.Paragraph, r: Random): Option[IntRange] = {
-    val info = d.info.zipWithIndex
+    val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.coded.exists(_.start == a._1.specialChar)
+      case InfoType.Special => SpecialChar.coded.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {
@@ -177,7 +177,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Coded]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.ty == InfoType.Special && a._1.specialChar == text.end).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2
       Some(IntRange(t._2, end))
     }
   }
@@ -199,7 +199,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case _ => false
     }
 
-    val info = d.info.zipWithIndex
+    val info = d.infos.zipWithIndex
     while (true) {
       val a = info(r.nextInt(d.size))
       val b = info(r.nextInt(d.size - a._2) + a._2)
