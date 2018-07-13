@@ -16,7 +16,7 @@ import scala.util.Random
   * paragraph = seq(atomic) | formated(paragraph))
   *
   */
-// TODO a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
+// LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
 case class Paragraph(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Paragraph] {
 
   def transform(a: mode.Content): Option[mode.Content] = u.foldLeft(Some(a) : Option[mode.Content]) {(s, u) => u.transform(s) }

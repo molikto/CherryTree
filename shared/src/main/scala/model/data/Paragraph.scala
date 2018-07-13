@@ -53,9 +53,10 @@ case class Paragraph(text: Seq[Text]) {
   def info(a: Int): Info = Text.info(Seq.empty[Int], text, a).left.get
 
   def defaultNormalMode(): mode.Content = mode.Content.Normal(text.headOption match {
-    case Some(a: Text.LaTeX) => IntRange(0, a.size)
+    case Some(a: Text.AtomicViewed) => IntRange(0, a.size)
     case Some(b: Text.Image) => IntRange(0, b.size)
-    case _ => IntRange(0, 0)
+    case Some(a: Text.Plain) => IntRange(0, 0) // TODO glyph cluster
+    case _ => IntRange(0, 0) // if it is none, we still do this, no big deal, the UI will handle it properly
   })
 }
 

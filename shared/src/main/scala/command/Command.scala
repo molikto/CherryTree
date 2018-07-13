@@ -61,7 +61,9 @@ object Command {
         override def move(content: Content, a: IntRange): IntRange = {
           content match {
             case Content.Paragraph(p) =>
-              // p.info()
+              if (a.start == 0) {
+              }
+              p.info(a)
             case Content.Code(u, l) =>
           }
           // TODO

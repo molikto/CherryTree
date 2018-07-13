@@ -154,21 +154,21 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     }
   }
 
+
   private var astHighlight: HTMLSpanElement = null
 
-  private def removeAstHighlight(): Unit = {
-    if (astHighlight != null) {
-      astHighlight.style.backgroundColor = null
-      astHighlight = null
-    }
-  }
-
-  private def addAstHighlight(_5: HTMLSpanElement): Unit = {
-    astHighlight = _5
-    _5.style.backgroundColor = clientView.theme.astHighlight
-  }
-
   private def renderSelection(r: IntRange): Unit = {
+    def removeAstHighlight(): Unit = {
+      if (astHighlight != null) {
+        astHighlight.style.backgroundColor = null
+        astHighlight = null
+      }
+    }
+
+    def addAstHighlight(_5: HTMLSpanElement): Unit = {
+      astHighlight = _5
+      _5.style.backgroundColor = clientView.theme.astHighlight
+    }
     val range: Range = document.createRange()
     if (isEmpty) {
       range.setStart(dom.childNodes.item(0), 0)
@@ -184,7 +184,6 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       }
     }
     val sel = window.getSelection
-    // TODO ast highlight
     sel.removeAllRanges
     sel.addRange(range)
   }
