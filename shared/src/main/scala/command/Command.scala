@@ -75,7 +75,6 @@ trait Commands {
         }
 
 
-        // TODO currently we are lazy and not supporting extended grapheme clusters
         val left: Command = new Base() {
           override def defaultKey: String = "h"
 
@@ -90,7 +89,7 @@ trait Commands {
               if (a.start == 0) {
                 a
               } else {
-                IntRange(a.start - 1) // TODO
+                u.extendedGraphemeRange(a.start - 1)
               }
           }
         }
@@ -109,7 +108,7 @@ trait Commands {
               if (a.until == u.size) {
                 a
               } else {
-                IntRange(a.until) // TODO
+                u.extendedGraphemeRange(a.until)
               }
           }
         }

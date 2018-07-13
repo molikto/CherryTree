@@ -25,7 +25,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       case Text.Strong(c) => span(
         span(`class` := "ct-cg", "#"),
         strong(`class` := "ct-em", rec(c)),
-        span(`class` := "ct-cg", "#") // TODO ** char as a single char
+        span(`class` := "ct-cg", "#") // LATER ** char as a single char
       )
       case Text.StrikeThrough(c) => span(
         span(`class` := "ct-cg", "-"),

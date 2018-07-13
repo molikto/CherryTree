@@ -13,7 +13,7 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
-import command.{Command, Commands}
+import command.Commands
 import model.ot.Rebased
 import util._
 import model._

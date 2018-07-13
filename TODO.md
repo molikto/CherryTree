@@ -12,6 +12,7 @@
 
 ## now
 
+* solve the unicode glyph problem
 * commands and vim base structure
 * keyboard editor for paragraph
 * mouse support

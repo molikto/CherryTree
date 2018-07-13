@@ -12,13 +12,21 @@ class Server extends Api {
 
   // states, now in single thread fashion
   private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
-    Text.Plain(Unicode(" some latex ")),
+
+    Text.Plain(Unicode({
+      val a = "😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex "
+      a.codePoints().forEach(a => println(a))
+      a
+    })),
+    Text.Code(Unicode( "\u0628" + "\u064e" + "\u064a"  + "😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
     Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
-    Text.Plain(Unicode(" and some image ")),
+    Text.Plain(Unicode(" and <b>should be escaped</b> spaces   some image " + "\u0628" + "\u064e" + "\u064a" +
+      "\u0652" + "\u067a" + "\u064f ")),
     Text.Image(Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg")),
     Text.Strong(Seq(
       Text.Plain(Unicode("strong text and ")),
       Text.Code(Unicode("div")),
+
       Text.Plain(Unicode(" some code")),
     )),
     Text.Plain(Unicode(" plain text with some ")),

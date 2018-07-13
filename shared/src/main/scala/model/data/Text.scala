@@ -209,9 +209,14 @@ object Text {
     override def specialCharStart: SpecialChar = LaTeXStart
     override def specialCharEnd: SpecialChar = LaTeXEnd
   }
+
+  /**
+    * we make it invariant tha plain cannot be empty
+    */
   case class Plain(unicode: Unicode) extends Text {
+    assert(!unicode.isEmpty)
     override val size: Int = unicode.size
-    override def isEmpty: Boolean = unicode.isEmpty
+    override def isEmpty: Boolean = false
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)

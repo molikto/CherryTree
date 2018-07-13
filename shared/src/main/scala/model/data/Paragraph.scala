@@ -27,6 +27,15 @@ case class Info(
   def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
   def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
   def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
+  def extendedGraphemeRange(): IntRange = {
+    if (ty == InfoType.Plain) {
+      text.asInstanceOf[Text.Plain].unicode.extendedGraphemeRange(charPosition).moveBy(nodeStart)
+    } else if (ty == InfoType.Coded) {
+      text.asInstanceOf[Text.Coded].unicode.extendedGraphemeRange(charPosition).moveBy(nodeStart + 1)
+    } else {
+      throw new IllegalStateException("Invalid xml structure")
+    }
+  }
 }
 /**
   * we currently expect all our paragraph object is normalized
@@ -41,12 +50,8 @@ case class Paragraph(text: Seq[Text]) {
       IntRange(atomicStart, atomicStart + info.text.size)
     } else if (info.ty == InfoType.Special) {
       IntRange(pos)
-    } else if (info.ty == InfoType.Plain) {
-      IntRange(pos) // TODO
-    } else if (info.ty == InfoType.Coded) {
-      IntRange(pos) // TODO
     } else {
-      throw new IllegalStateException("Invalid xml structure")
+      info.extendedGraphemeRange()
     }
   }
 
@@ -58,12 +63,8 @@ case class Paragraph(text: Seq[Text]) {
       IntRange(atomicStart, atomicStart + info.text.size)
     } else if (info.ty == InfoType.Special) {
       IntRange(pos)
-    } else if (info.ty == InfoType.Plain) {
-      IntRange(pos) // TODO
-    } else if (info.ty == InfoType.Coded) {
-      IntRange(pos) // TODO
     } else {
-      throw new IllegalStateException("Invalid xml structure")
+      info.extendedGraphemeRange()
     }
   }
 
@@ -124,7 +125,7 @@ case class Paragraph(text: Seq[Text]) {
     case Some(a: Text.AtomicViewed) => IntRange(0, a.size)
     case Some(a: Text.Formatted) => IntRange(0, 1)
     case Some(a: Text.Coded) => IntRange(0, 1)
-    case Some(a: Text.Plain) => IntRange(0, 1) // TODO glyph cluster, first char
+    case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(0) // because plain cannot be empty
     case None => IntRange(0, 0)
   })
 }

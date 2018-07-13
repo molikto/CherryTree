@@ -1,9 +1,11 @@
 package model.data
 
 import java.io.IOException
+import java.util.Locale
 
 import model._
 import model.range.IntRange
+import util.GraphemeSplitter
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -89,6 +91,20 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+
+  def extendedGraphemeRange(pos: Int): IntRange = {
+    val strStartIndex = toStringPosition(pos)
+    var start = 0
+    var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
+    while (strStartIndex >= end) {
+      start = end
+      end = GraphemeSplitter.nextBreak(str, start)
+    }
+    val ss = str.codePointCount(0, start)
+    val ee = str.codePointCount(start, end) + ss
+    IntRange(ss, ee)
+  }
+
 
   def toStringPosition(charPosition: Int): Int = str.offsetByCodePoints(0, charPosition)
 
