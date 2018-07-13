@@ -12,8 +12,13 @@ package object mode {
       *
       * press copy in visual mode you get different result in different editors
       * we adapt one...
+      *
+      * empty selection is only valid when document is empty
       */
-    case class Normal(range: IntRange) extends Content
+    case class Normal(range: IntRange) extends Content {
+      assert(range.size != 0 || range.start != 0) // try to avoid empty selection error
+      def isEmpty: Boolean = range.isEmpty
+    }
     case class Visual(fix: IntRange, move: IntRange) extends Content
   }
 

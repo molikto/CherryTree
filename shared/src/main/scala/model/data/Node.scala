@@ -28,7 +28,7 @@ case class Node(content: Content, childs: Seq[Node]) {
     copy(childs = childs.patch(r.start, Seq.empty, r.size))
 
   private def insert(i: Int, cs: Seq[Node]): Node = {
-    if (i < 0 || i > childs.size) throw new IllegalArgumentException()
+    if (i < 0 || i > childs.size) throw new IllegalArgumentException("Insertion is out of bound")
     copy(childs = childs.patch(i, cs, 0))
   }
 

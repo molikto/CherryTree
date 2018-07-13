@@ -19,7 +19,7 @@ object Content extends OperationObject[data.Content, Content] {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Code => c.copy(unicode = op(c.unicode))
-          case _ => throw new AssertionError()
+          case _ => throw new IllegalStateException("Not applicable operation")
         }
       }
 
@@ -30,7 +30,7 @@ object Content extends OperationObject[data.Content, Content] {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Code => c.copy(lang = lang)
-          case _ => throw new AssertionError()
+          case _ => throw new IllegalStateException("Not applicable operation")
         }
       }
 
@@ -43,7 +43,7 @@ object Content extends OperationObject[data.Content, Content] {
       override def apply(d: data.Content): data.Content = {
         d match {
           case c: data.Content.Paragraph => c.copy(paragraph = op(c.paragraph))
-          case _ => throw new AssertionError()
+          case _ => throw new IllegalStateException("Not applicable operation")
         }
       }
 

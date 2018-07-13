@@ -223,7 +223,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         }
       }
     }
-    throw new IllegalArgumentException("")
+    throw new IllegalStateException("Should return before")
   }
 
 

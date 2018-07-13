@@ -19,7 +19,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
           case operation.Content.Code.Lang(l) =>
             free(winner, loser)
           case operation.Content.Paragraph.Content(l) =>
-            throw new AssertionError()
+            throw new IllegalStateException("Not applicable operation")
         }
       case operation.Content.Code.Lang(w) =>
         loser match {
@@ -32,7 +32,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
               Rebased(Set(conflict.Content.Code.Lang(w)), (Seq(winner), Seq.empty))
             }
           case operation.Content.Paragraph.Content(l) =>
-            throw new AssertionError()
+            throw new IllegalStateException("Not applicable operation")
         }
       case operation.Content.Paragraph.Content(w) =>
         loser match  {
@@ -41,7 +41,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
             Rebased(uc.conflicts.map(conflict.Content.Code.Content),
               (uc.t._1.map(a => operation.Content.Paragraph.Content(a)), uc.t._2.map(a => operation.Content.Paragraph.Content(a))))
           case _ =>
-            throw new AssertionError()
+            throw new IllegalStateException("Not applicable operation")
         }
     }
   }

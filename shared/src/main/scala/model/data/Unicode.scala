@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-class UnicodeParseException(msg: String) extends IOException(msg) {
+class UnicodeParseException(msg: String) extends IllegalStateException(msg) {
 
 }
 
@@ -105,7 +105,7 @@ case class Unicode(private var str: String) {
     Unicode(str.substring(start, end))
   }
   def insert(at: Int, u: Unicode): Unicode = {
-    if (at < 0 || at > size) throw new IllegalArgumentException()
+    if (at < 0 || at > size) throw new IllegalArgumentException("Out of bound")
     val index = str.offsetByCodePoints(0, at)
     Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}")
   }

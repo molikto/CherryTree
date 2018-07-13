@@ -102,7 +102,7 @@ object Text {
     def specialCharEnd: SpecialChar
     override def isEmpty = false
     def attributes: Seq[SpecialChar] = Seq.empty
-    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new IllegalArgumentException()
+    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new NotImplementedError()
 
     override val size: Int = 2 + Text.size(content) + attributes.map(a => attribute(a).size + 1).sum
 
@@ -141,7 +141,7 @@ object Text {
         i -= attribute(a).size
       }
       if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
-      throw new IllegalArgumentException("index should be smaller in this case")
+      throw new IllegalArgumentException("Out of bound")
     }
   }
 
@@ -198,7 +198,7 @@ object Text {
       if (i < unicode.size) return Info(selfPosition, selfStart, this, InfoType.Coded, charPosition = i)
       i -= unicode.size
       if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
-      throw new IllegalArgumentException("index should be smaller in this case")
+      throw new IllegalArgumentException("Out of bound")
     }
   }
   case class Code(unicode: Unicode) extends Coded {

@@ -83,7 +83,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       if (range.contains(r)) {
         IntRange(range.start, range.until + sizeDiff)
       } else if (range.overlap(r)) {
-        throw new IllegalArgumentException("fdsfsa")
+        throw new IllegalStateException("ReplaceAtomic should not be called with overlapping range")
       } else if (range.start < r.start) {
         range
       } else {
@@ -94,7 +94,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
       case mode.Content.Insertion(k) =>
         if (r.deletesCursor(k)) {
-          throw new IllegalArgumentException("")
+          throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
         } else if (k <= r.start) {
           i
         } else {

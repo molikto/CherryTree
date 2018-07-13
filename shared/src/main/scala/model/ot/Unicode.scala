@@ -41,7 +41,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           Seq.empty
         ))
       } else if (delete.r.overlap(replace.r)) {
-        throw new IllegalArgumentException()
+        throw new IllegalStateException("Should not overlap")
       } else if (delete.r.start < replace.r.start) {
         free(delete, replace.modify(_.r).using(_.moveBy(-delete.r.size)))
       } else {
@@ -94,7 +94,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       if (s.r.contains(r.r)) {
         free(r.modify(_.r).using(_.moveBy(s.left.size)), s.modify(_.r).using(_.modify(_.until).using(_ + r.sizeDiff)))
       } else if (s.r.overlap(r.r)) {
-        throw new IllegalArgumentException("Not atomic")
+        throw new IllegalStateException("Not atomic")
       } else if (r.r.start < s.r.start) {
         free(r, s.modify(_.r).using(_.moveBy(r.sizeDiff)))
       } else {
@@ -145,7 +145,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
     def insertReplaceAtomic(insert: Insert, replace: ReplaceAtomic): RebaseResult = {
       if (insert.at > replace.r.start && insert.at < replace.r.until) {
-        throw new IllegalArgumentException()
+        throw new IllegalStateException("Should not overlap")
       } else if (insert.at <= replace.r.start) {
         free(insert, replace.modify(_.r).using(_.moveBy(insert.unicode.size)))
       } else {
@@ -191,7 +191,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
             (Seq(w.modify(_.r).using(a => IntRange(a.start, a.until + l.sizeDiff))),
             Seq.empty))
         } else if (ws.overlap(ls)) {
-          throw new IllegalArgumentException()
+          throw new IllegalStateException("Should not overlap")
         } else if (ws.start < ls.start) {
             free(w, l.modify(_.r).using(_.moveBy(w.sizeDiff)))
         } else {

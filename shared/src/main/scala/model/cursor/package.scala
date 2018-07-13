@@ -60,7 +60,7 @@ package object cursor {
           // if ii == 0, then the insertion cursor is moved by len
           case (None, _) =>
             ref.patch(common.size - 1, Seq(ref(common.size - 1) + len), 1)
-          case _ => throw new IllegalStateException("Not possible")
+          case _ => throw new IllegalStateException("Not possible case")
         }
       }
     }

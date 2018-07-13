@@ -49,7 +49,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
           code(`class` := "ct-code", c.toString),
           span(`class` := "ct-cg", "`")
         )
-      case Text.Plain(c) => stringFrag(c.toString)
+      case Text.Plain(c) => stringFrag(c.toString) // TODO preserve spaces!!!
     }
   }
 
@@ -157,7 +157,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
 
   private var astHighlight: HTMLSpanElement = null
 
-  private def renderSelection(r: IntRange): Unit = {
+  private def renderNormalMode(r: IntRange): Unit = {
     def removeAstHighlight(): Unit = {
       if (astHighlight != null) {
         astHighlight.style.backgroundColor = null
@@ -176,8 +176,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       removeAstHighlight()
     } else {
       if (r.isEmpty) {
-        // TODO should not happen
-        throw new IllegalArgumentException("")
+        throw new IllegalStateException("Normal mode should not have empty range if paragraph is not empty")
       } else {
         val start = nonEmptySelectionToDomRange(r)
         range.setStart(start._1, start._2)
@@ -207,10 +206,8 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     case mode.Content.Visual(fix, move) =>
       removeInsertionModeIfExists()
       // TODO render visual
-//      val (min, max) = util.maxMin(fix, move)
-//      renderSelection(IntRange(min, max))
     case mode.Content.Normal(range) =>
       removeInsertionModeIfExists()
-      renderSelection(range)
+      renderNormalMode(range)
   }
 }

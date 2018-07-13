@@ -46,7 +46,7 @@ case class Paragraph(text: Seq[Text]) {
     } else if (info.ty == InfoType.Coded) {
       IntRange(pos) // TODO
     } else {
-      throw new IllegalArgumentException("what")
+      throw new IllegalStateException("Invalid xml structure")
     }
   }
 
@@ -63,7 +63,7 @@ case class Paragraph(text: Seq[Text]) {
     } else if (info.ty == InfoType.Coded) {
       IntRange(pos) // TODO
     } else {
-      throw new IllegalArgumentException("what")
+      throw new IllegalStateException("Invalid xml structure")
     }
   }
 
@@ -79,7 +79,7 @@ case class Paragraph(text: Seq[Text]) {
         return (i, f)
       }
     }
-    throw new IllegalArgumentException("what")
+    throw new IllegalStateException("Invalid xml structure")
   }
 
   def infoSkipRightAttributes(pos: Int): (Int, Info) = {
@@ -92,7 +92,7 @@ case class Paragraph(text: Seq[Text]) {
         return (i, f)
       }
     }
-    throw new IllegalArgumentException("what")
+    throw new IllegalStateException("Invalid xml structure")
   }
 
 
@@ -125,7 +125,7 @@ case class Paragraph(text: Seq[Text]) {
     case Some(a: Text.Formatted) => IntRange(0, 1)
     case Some(a: Text.Coded) => IntRange(0, 1)
     case Some(a: Text.Plain) => IntRange(0, 1) // TODO glyph cluster, first char
-    case _ => IntRange(0, 0) // if it is none, we still do this, no big deal, the UI will handle it properly
+    case None => IntRange(0, 0)
   })
 }
 

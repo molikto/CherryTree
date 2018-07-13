@@ -60,15 +60,17 @@ trait Commands {
 
           def move(content: model.data.Content, a: IntRange): IntRange
 
-          override def action(a: ClientState): Client.Update = a.mode match {
-            case Some(o@mode.Node.Content(n, c)) =>
-              val content = a.node(n).content
-              c match {
-                case mode.Content.Normal(r) => mkUpdate(o.copy(a = mode.Content.Normal(move(content, r))))
-                case v@mode.Content.Visual(fix, m) => mkUpdate(o.copy(a = mode.Content.Visual(fix, move(content, m))))
-                case _ => throw new IllegalStateException("")
-              }
-            case _ => throw new IllegalStateException("")
+          override def action(a: ClientState): Client.Update = {
+            a.mode match {
+              case Some(o@mode.Node.Content(n, c)) =>
+                val content = a.node(n).content
+                c match {
+                  case mode.Content.Normal(r) => mkUpdate(o.copy(a = mode.Content.Normal(move(content, r))))
+                  case v@mode.Content.Visual(fix, m) => mkUpdate(o.copy(a = mode.Content.Visual(fix, move(content, m))))
+                  case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+                }
+              case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+            }
           }
         }
 
