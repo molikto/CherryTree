@@ -43,6 +43,7 @@ class ClientInitializerView(where: String) {
   private def goFailure(exception: Throwable): Unit = {
     onlyChild(rootView, {
       import scalatags.JsDom.all._
+      exception.printStackTrace()
       div(
         p(s"failed: ${exception.getMessage}"),
         button("retry", onclick := goConnecting())

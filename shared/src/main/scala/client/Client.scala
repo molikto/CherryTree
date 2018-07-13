@@ -13,6 +13,7 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
+import command.{Command, Commands}
 import model.ot.Rebased
 import util._
 import model._
@@ -35,7 +36,7 @@ class Client(
   private val server: Client.Proxy,
   private val initial: ClientInit,
   private val authentication: Authentication.Token
-)  { self =>
+) extends Commands { self =>
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
@@ -180,6 +181,9 @@ class Client(
   }
 
 
+  def act(command: Command): Unit = change(command.action(state))
+
+  def change(update: Client.Update): Unit = change(update.transaction, update.mode, update.fromUser)
   /**
     * submit a change to local state, a sync might follow
     *

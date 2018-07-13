@@ -8,9 +8,11 @@ import scala.collection.mutable.ArrayBuffer
 abstract sealed class Text {
   def isEmpty: Boolean
 
+  def isAtomicViewed: Boolean = this.isInstanceOf[Text.AtomicViewed]
+
   private[data] def serialize(buffer: UnicodeWriter)
-  private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node)
-  private[data] def info(a: Int, selfPosition: cursor.Node): Info
+  private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int)
+  private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int): Info
   val size: Int
 }
 
@@ -20,16 +22,29 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+  private [data] def info(parentPos: cursor.Node, seqStart: Int, text: Seq[Text], buffer: ArrayBuffer[Info]): Unit = {
+    var pos = seqStart
+    var index = 0
+    for (t <- text) {
+      t.info(buffer, parentPos :+ index, pos)
+      pos += t.size
+      index += 1
+    }
+  }
+
   // returns null if not inside
-  private [data] def info(parentPos: cursor.Node, text: Seq[Text], a: Int): Either[Info, Int] = {
+  private [data] def info(parentPos: cursor.Node, seqStart: Int, text: Seq[Text], a: Int): Either[Int, Info] = {
+    var ss = seqStart
     var totalSize = 0
     var index = 0
     while (index < text.size && text(index).size + totalSize <= a) {
-      totalSize += text(index).size
+      val sss = text(index).size
+      totalSize += sss
+      ss += sss
       index += 1
     }
-    if (index < text.size) Left(text(index).info(a - totalSize, parentPos :+ index))
-    else Right(a - totalSize)
+    if (index < text.size) Right(text(index).info(a - totalSize, parentPos :+ index, ss))
+    else Left(a - totalSize)
   }
 
 
@@ -41,7 +56,7 @@ object Text {
 
   private[model] def parse(reader: UnicodeReader): Text = {
     reader.eatOrNotSpecial() match {
-      case Some(a) => a match {
+      case Some(a) => a match { // LATER generic parser
         case EmphasisStart =>
           Emphasis(parseAll(reader, EmphasisEnd))
         case StrongStart =>
@@ -51,7 +66,8 @@ object Text {
         case LinkStart =>
           Link(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(LinkEnd))
         case ImageStart =>
-          Image(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(ImageEnd))
+          parseAll(reader, UrlAttribute)
+          Image(reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(ImageEnd))
         case CodeStart =>
           Code(reader.eatUntilAndDrop(CodeEnd))
         case LaTeXStart =>
@@ -100,31 +116,31 @@ object Text {
       buffer.put(specialCharEnd)
     }
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
-      content.zipWithIndex.foreach(a => a._1.info(buffer, selfPosition :+ a._2))
+    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
+       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
+      Text.info(selfPosition, selfStart + 1, content, buffer)
       attributes.foreach(a => {
-        buffer += Info(selfPosition, this, InfoType.Special, specialChar = a)
-        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i, specialChar = a)
+        buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = a)
+        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, charPosition = i, specialChar = a)
       })
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
     }
 
-    override def info(start: Int, selfPosition: cursor.Node): Info = {
+    override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
       var i = start
-      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
       i -= 1
-      Text.info(selfPosition, content, i) match {
-        case Left(j) => return j
-        case Right(ii) => i = ii
+      Text.info(selfPosition, selfStart + 1, content, i) match {
+        case Right(j) => return j
+        case Left(ii) => i = ii
       }
       for (a <- attributes) {
-        if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = a)
+        if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = a)
         i -= 1
-        if (i < attribute(a).size) return Info(selfPosition, this, InfoType.AttributeUnicode, charPosition = i)
+        if (i < attribute(a).size) return Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, charPosition = i)
         i -= attribute(a).size
       }
-      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
       throw new IllegalArgumentException("index should be smaller in this case")
     }
   }
@@ -149,11 +165,12 @@ object Text {
     override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicViewed {
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicViewed {
     override def specialCharStart: SpecialChar = ImageStart
     override def specialCharEnd: SpecialChar = ImageEnd
     override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
+    override def content: Seq[Text] = Seq.empty
   }
 
   sealed trait Coded extends Text {
@@ -169,18 +186,18 @@ object Text {
     }
     override def isEmpty = false
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
-      for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Coded, charPosition = i)
-       buffer += Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
+       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
+      for (i <- 0 until unicode.size) buffer += Info(selfPosition, selfStart, this, InfoType.Coded, charPosition = i)
+       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
     }
-    override def info(start: Int, selfPosition: cursor.Node): Info = {
+    override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
       var i = start
-      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharStart)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
       i -= 1
-      if (i < unicode.size) return Info(selfPosition, this, InfoType.Coded, charPosition = i)
+      if (i < unicode.size) return Info(selfPosition, selfStart, this, InfoType.Coded, charPosition = i)
       i -= unicode.size
-      if (i == 0) return Info(selfPosition, this, InfoType.Special, specialChar = specialCharEnd)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
       throw new IllegalArgumentException("index should be smaller in this case")
     }
   }
@@ -200,11 +217,11 @@ object Text {
       buffer.put(unicode)
     }
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node): Unit = {
-      for (i <- 0 until unicode.size) buffer += Info(selfPosition, this, InfoType.Plain, charPosition = i)
+    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
+      for (i <- 0 until unicode.size) buffer += Info(selfPosition, selfStart, this, InfoType.Plain, charPosition = i)
     }
 
-    override private[data] def info(a: Int, selfPosition: cursor.Node) =
-      Info(selfPosition, this, InfoType.Plain, charPosition = a)
+    override private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int) =
+      Info(selfPosition, selfStart, this, InfoType.Plain, charPosition = a)
   }
 }

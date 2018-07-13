@@ -17,17 +17,85 @@ object InfoType {
 }
 case class Info(
   nodePosition: cursor.Node,
+  nodeStart: Int,
   text: Text,
   ty: InfoType,
   charPosition: Int = -1, // only valid if not Special
   specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
 ) {
   def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
+  def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
+  def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
+  def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
 }
 /**
   * we currently expect all our paragraph object is normalized
   */
 case class Paragraph(text: Seq[Text]) {
+
+  def moveLeftAtomic(aaa: Int): IntRange = {
+    val (pos, info) = infoSkipLeftAttributes(aaa - 1)
+    // three cases of selection, atomic, special char, unicode
+    if (info.text.isAtomicViewed) {
+      val atomicStart = info.nodeStart
+      IntRange(atomicStart, atomicStart + info.text.size)
+    } else if (info.ty == InfoType.Special) {
+      IntRange(pos)
+    } else if (info.ty == InfoType.Plain) {
+      IntRange(pos) // TODO
+    } else if (info.ty == InfoType.Coded) {
+      IntRange(pos) // TODO
+    } else {
+      throw new IllegalArgumentException("what")
+    }
+  }
+
+  def moveRightAtomic(bbb: Int): IntRange = {
+    val (pos, info) = infoSkipRightAttributes(bbb + 1)
+    // three cases of selection, atomic, special char, unicode
+    if (info.text.isAtomicViewed) {
+      val atomicStart = info.nodeStart
+      IntRange(atomicStart, atomicStart + info.text.size)
+    } else if (info.ty == InfoType.Special) {
+      IntRange(pos)
+    } else if (info.ty == InfoType.Plain) {
+      IntRange(pos) // TODO
+    } else if (info.ty == InfoType.Coded) {
+      IntRange(pos) // TODO
+    } else {
+      throw new IllegalArgumentException("what")
+    }
+  }
+
+  def infoSkipLeftAttributes(pos: Int): (Int, Info) = {
+    var i = pos
+    while (i >= 0) {
+      val f = info(i)
+      if (f.ty == InfoType.AttributeUnicode) {
+        i -= f.charPosition + 1
+      } else if (f.isAttributeTag) {
+        i -= 1
+      } else {
+        return (i, f)
+      }
+    }
+    throw new IllegalArgumentException("what")
+  }
+
+  def infoSkipRightAttributes(pos: Int): (Int, Info) = {
+    var i = pos
+    while (true) {
+      val f = info(i)
+      if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
+        i = f.nodeStart + f.text.size - 1 // the last character
+      } else {
+        return (i, f)
+      }
+    }
+    throw new IllegalArgumentException("what")
+  }
+
+
   def isEmpty: Boolean = {
     for (t <- text) {
       if (!t.isEmpty) return false
@@ -44,13 +112,13 @@ case class Paragraph(text: Seq[Text]) {
 
   lazy val size: Int = Text.size(text)
 
-  lazy val infos: Seq[Info] = {
+  private [model] lazy val infos: Seq[Info] = {
     val buffer = new ArrayBuffer[Info]()
-    text.zipWithIndex.foreach(a => a._1.info(buffer, Seq(a._2)))
+    Text.info(Seq.empty, 0, text, buffer)
     buffer.toVector
   }
 
-  def info(a: Int): Info = Text.info(Seq.empty[Int], text, a).left.get
+  def info(a: Int): Info = Text.info(Seq.empty[Int], 0, text, a).right.get
 
   def defaultNormalMode(): mode.Content = mode.Content.Normal(text.headOption match {
     case Some(a: Text.AtomicViewed) => IntRange(0, a.size)
@@ -106,7 +174,6 @@ object Paragraph extends DataObject[Paragraph] {
       case 4 => Text.StrikeThrough(randomWithDepth(r, depth))
       case 5 => Text.LaTeX(Unicode.random(r))
       case 6 => Text.Image(
-        randomWithDepth(r, depth),
         Unicode.random(r),
         Unicode.random(r))
       case 7 => Text.Link(

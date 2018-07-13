@@ -1,6 +1,7 @@
 package web.view
 
 import client.Client
+import command.Commands
 import model.{ClientState, cursor, data}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
@@ -143,9 +144,9 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
           case model.mode.Content.Normal(range) =>
             event.key match {
               case "l" =>
-                client.change(Seq.empty, Some(model.mode.Node.Content(a, model.mode.Content.Normal(range.moveBy(1)))))
+                client.act(client.command.move.content.right)
               case "h" =>
-                client.change(Seq.empty, Some(model.mode.Node.Content(a, model.mode.Content.Normal(range.moveBy(-1)))))
+                client.act(client.command.move.content.left)
             }
         }
       case _ =>

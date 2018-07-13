@@ -37,8 +37,8 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
         span(`class` := "ct-link", rec(t), href := b.toString),
         span(`class` := "ct-cg", "]")
       )
-      case Text.Image(t, b, c) =>
-        img(rec(t), verticalAlign := "bottom", src := b.toString)
+      case Text.Image(b, c) =>
+        img(verticalAlign := "bottom", src := b.toString)
       case Text.LaTeX(c) =>
         val a = span(`class` := "ct-latex").render
         window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
@@ -109,7 +109,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     parent.childNodes.item(1).childNodes.item(0)
   }
 
-  private def selectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
+  private def nonEmptySelectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
     val ss = paragraph.info(range.start)
@@ -137,18 +137,18 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
         val s = ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.charPosition)
         (text, s)
       } else {
-        assert(ss.ty == InfoType.Special && SpecialChar.starts.contains(ss.specialChar))
+        assert(ss.isStart)
         val node = domChildArray(getDom(ss.nodePosition.dropRight(1)))
         (node, ss.nodePosition.last)
       }
-      val end = if (ss.ty == InfoType.Plain) {
-        val text = getDom(ss.nodePosition)
-        val s = ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.charPosition + 1)
-        (text, s)
+      val end = if (ee.ty == InfoType.Plain) {
+        val text = getDom(ee.nodePosition)
+        val e = ee.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.charPosition + 1)
+        (text, e)
       } else {
-        assert(ss.ty == InfoType.Special && SpecialChar.ends.contains(ss.specialChar))
-        val node = domChildArray(getDom(ss.nodePosition.dropRight(1)))
-        (node, ss.nodePosition.last + 1)
+        assert(ee.isEnd)
+        val node = domChildArray(getDom(ee.nodePosition.dropRight(1)))
+        (node, ee.nodePosition.last + 1)
       }
       (start._1, start._2, end._1, end._2, null)
     }
@@ -179,7 +179,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
         // TODO should not happen
         throw new IllegalArgumentException("")
       } else {
-        val start = selectionToDomRange(r)
+        val start = nonEmptySelectionToDomRange(r)
         range.setStart(start._1, start._2)
         range.setEnd(start._3, start._4)
         if (astHighlight != start._5) {

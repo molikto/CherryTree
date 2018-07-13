@@ -12,6 +12,10 @@ class Server extends Api {
 
   // states, now in single thread fashion
   private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
+    Text.Plain(Unicode(" some latex ")),
+    Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
+    Text.Plain(Unicode(" and some image ")),
+    Text.Image(Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg")),
     Text.Strong(Seq(
       Text.Plain(Unicode("strong text and ")),
       Text.Code(Unicode("div")),
@@ -29,11 +33,7 @@ class Server extends Api {
       Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
     )),
     Text.Plain(Unicode(" ")),
-    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com")),
-    Text.Plain(Unicode(" some latex ")),
-    Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
-    Text.Plain(Unicode(" and some image ")),
-    Text.Image(Seq.empty, Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg"))
+    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"))
   ))), Seq(data.Node.random()))
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size

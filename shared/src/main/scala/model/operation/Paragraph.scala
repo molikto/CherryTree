@@ -52,7 +52,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     }
     val rc = r.nextInt(9)
     rc match {
-      case 0 if d.size > 0 =>
+      case 0 =>
         val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(
@@ -65,7 +65,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case None => fallback()
         }
         // remove a format
-      case 2 if d.size > 0 =>
+      case 2 =>
         // add title/image to a subparagraph
         val randomFormat = r.nextInt(2) match {
           case 0 => (ImageStart, UrlAttribute, TitleAttribute, ImageEnd)
@@ -96,7 +96,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case Some((_, t)) => Paragraph(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextString(10)))), Type.AddDelete)
           case None => fallback()
         }
-      case 5 if d.size > 0 =>
+      case 5 =>
         // delete a subparagrpah
         val range = randomSubparagraph(d, r)
         Paragraph(Seq(operation.Unicode.Delete(range)), Type.Delete)
@@ -185,7 +185,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
 
   private def randomSubparagraph(d: data.Paragraph, r: Random): IntRange = {
     if (d.size == 0) {
-      throw new IllegalArgumentException()
+      return IntRange(0, 0)
     }
     def isValidStart(_1: Info): Boolean = _1.ty match {
       case InfoType.Plain => true
@@ -206,7 +206,18 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       if (isValidStart(a._1) && isValidEnd(b._1)) {
         if (a._1.nodePosition == b._1.nodePosition) {
           // single item
-          return IntRange(a._2, b._2 + 1)
+          if (a._2 == b._2) {
+            if (r.nextBoolean()) {
+              // convert to a single one
+              if (r.nextBoolean()) {
+                return IntRange(a._2, a._2)
+              } else {
+                return IntRange(a._2 + 1, a._2 + 1)
+              }
+            } else {
+              return IntRange(a._2, b._2 + 1)
+            }
+          }
         } else if (a._1.nodePosition.dropRight(1) == b._1.nodePosition.dropRight(1)) {
           return IntRange(a._2, b._2 + 1)
         }

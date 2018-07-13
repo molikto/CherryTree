@@ -71,7 +71,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           free(Seq(
             Delete(IntRange(s.r.until, d.r.until).moveBy(s.left.size + s.right.size)),
             Delete(IntRange(d.r.start, s.r.until).moveBy(s.left.size))
-          ), Seq(s.modify(_.r).using(_.modify(_.until).using(_ => d.r.start - 1))))
+          ), Seq(s.modify(_.r).using(_.modify(_.until).using(_ => d.r.start))))
         }
       } else if (d.r.start < s.r.start){
         free(d, s.modify(_.r).using(_.moveBy(-d.r.size)))
@@ -114,7 +114,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val si = order.indexOf(s.left)
       val li = order.indexOf(l.left)
       val min = SpecialChar.surroundStartCodeInToOut(Math.min(si, li))
-      val r1 = IntRange(s.r.start, l.r.start - 1)
+      val r1 = IntRange(s.r.start, l.r.start)
       val r2 = IntRange(l.r.start, s.r.until)
       val r3 = IntRange(s.r.until, l.r.until)
       // [   (   ]   )
