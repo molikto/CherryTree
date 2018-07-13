@@ -169,7 +169,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     _5.style.backgroundColor = clientView.theme.astHighlight
   }
 
-  private def setSelection(r: IntRange): Unit = {
+  private def renderSelection(r: IntRange): Unit = {
     val range: Range = document.createRange()
     if (isEmpty) {
       range.setStart(dom.childNodes.item(0), 0)
@@ -204,9 +204,9 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     case mode.Content.Visual(fix, move) =>
       removeInsertionModeIfExists()
       val (min, max) = util.maxMin(fix, move)
-      setSelection(IntRange(min, max))
+      renderSelection(IntRange(min, max))
     case mode.Content.Normal(range) =>
       removeInsertionModeIfExists()
-      setSelection(range)
+      renderSelection(range)
   }
 }

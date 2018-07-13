@@ -64,7 +64,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
 
   private var previousFocusContent: ContentView = null
 
-  def removeContentEditor() = {
+  def removeFocusContent() = {
     if (previousFocusContent != null) {
       previousFocusContent.clearMode()
       previousFocusContent = null
@@ -83,13 +83,13 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
   def syncMode(m: Option[model.mode.Node]): Unit = {
     mode.textContent = m match {
       case None =>
-        if (previousFocusContent != null) removeContentEditor()
+        if (previousFocusContent != null) removeFocusContent()
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
           val current = contentAt(at)
           if (current != previousFocusContent) {
-            removeContentEditor()
+            removeFocusContent()
             current.initMode()
           }
           current.syncMode(aa)
@@ -102,7 +102,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
               "NORMAL"
           }
         case model.mode.Node.Visual(_, _) =>
-          if (previousFocusContent != null) removeContentEditor()
+          if (previousFocusContent != null) removeFocusContent()
           "NODE VISUAL"
       }
     }

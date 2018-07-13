@@ -12,8 +12,7 @@
 
 ## now
 
-* mode definition is kinda of wrong?
-* paragraph operation creation
+* commands and vim base structure
 * keyboard editor for paragraph
 * mouse support
 * copy paste
@@ -38,11 +37,16 @@
 * branching
     * offline branch
 * time traveling
+* scripting
 
 
 ## good to have
 
+* macros
 * theme system
+* multi-tabs
+* register for copy paste
+* outline panel for quick navigation
 * infinite scrolling -- currently we just use browser default
 * make it embeddable, currently we assume it is a standalone thing
 * compatible with other browsers, currently only recent version of Chrome is supported
@@ -75,3 +79,4 @@
 * ~~FIX THE CLIENT TEST~~
 * ~~**reboot**~~
 * ~~paragraph view present~~
+* ~~mode definition is kinda of wrong? -- not wrong, we are sticking with the linearized formation for now~~
