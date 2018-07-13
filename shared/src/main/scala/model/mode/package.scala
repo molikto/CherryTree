@@ -14,15 +14,11 @@ package object mode {
       * we adapt one...
       */
     case class Normal(range: IntRange) extends Content
-    object Normal {
-      val empty: Normal = Normal(IntRange(0, 0))
-    }
     case class Visual(fix: IntRange, move: IntRange) extends Content
   }
 
   sealed trait Node
   object Node {
-    val empty = Content(cursor.Node.Root, mode.Content.Normal.empty)
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node

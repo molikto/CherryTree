@@ -18,16 +18,16 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
       if (d.r.sameParent(i.at)) {
         val at = i.at.last
         val left = d.r.childs.start
-        val right = d.r.childs.endInclusive
+        val right = d.r.childs.until - 1
         if (at <= left) {
           free(i, d.modify(_.r).using(_.modify(_.childs).using(_.moveBy(i.childs.size))))
         } else if (at > left && at <= right) {
            //[][]
           // [].....[]
-          val range1 = IntRange(left, at - 1)
+          val range1 = IntRange(left, at)
           val end = right + i.childs.size
           // end.size = d.r.childs.size - range1.size = right - left + 1
-          val range2 = IntRange(end + 1 - (d.r.childs.size - range1.size), end)
+          val range2 = IntRange(end + 1 - (d.r.childs.size - range1.size), end + 1)
           free(
             Seq(i.modify(_.at).using(a => a.dropRight(1) :+ left)),
             Seq(

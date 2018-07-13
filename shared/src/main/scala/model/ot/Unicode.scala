@@ -19,17 +19,17 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val wat = add.at
       val wc = add.unicode
       val lfrom = delete.r.start
-      val lto = delete.r.endInclusive
+      val lto = delete.r.until - 1
       if (delete.r.deletesCursor(add.at)) {
         Rebased(Set(deleteConflict), (
           Seq.empty,
-          Seq(Delete(delete.r.start, delete.r.endInclusive + wc.size))
+          Seq(Delete(delete.r.start, delete.r.until + wc.size))
         ))
       } else {
         val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)
         free(
           Insert(wat0, wc),
-          Delete(lfrom + ld, lto + ld)
+          Delete(lfrom + ld, lto + ld + 1)
         )
       }
     }
@@ -37,7 +37,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def deleteReplaceAtomic(delete: Delete, replace: ReplaceAtomic, deleteConflict: => conflict.Unicode): RebaseResult = {
       if (delete.r.contains(replace.r)) {
         Rebased(Set(deleteConflict), (
-          Seq(Delete(delete.r.start, delete.r.endInclusive + replace.sizeDiff)),
+          Seq(Delete(delete.r.start, delete.r.until + replace.sizeDiff)),
           Seq.empty
         ))
       } else if (delete.r.overlap(replace.r)) {
@@ -52,9 +52,9 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def deleteSurround(d: Delete, s: Surround, deleteConflict: => conflict.Unicode): RebaseResult = {
       // this is not a deleting range, but, it should work
       if (d.r.contains(s.r)) {
-        Rebased(Set(deleteConflict), (Seq(d.copy(r = d.r.modify(_.endInclusive).using(_ + s.left.size + s.right.size))), Seq.empty))
+        Rebased(Set(deleteConflict), (Seq(d.copy(r = d.r.modify(_.until).using(_ + s.left.size + s.right.size))), Seq.empty))
       } else if (s.r.contains(d.r)) {
-        free(d.modify(_.r).using(_.moveBy(s.left.size)), s.modify(_.r).using(_.modify(_.endInclusive).using(_ - d.r.size)))
+        free(d.modify(_.r).using(_.moveBy(s.left.size)), s.modify(_.r).using(_.modify(_.until).using(_ - d.r.size)))
       } else if (d.r.overlap(s.r)) {
         // still consider it free, somehow
         if (d.r.start < s.r.start) {
@@ -65,13 +65,13 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           free(Seq(
               Delete(rightRange),
               Delete(leftRange)),
-            Seq(s.copy(r = IntRange(d.r.start, s.r.endInclusive - d.r.size))))
+            Seq(s.copy(r = IntRange(d.r.start, s.r.until - d.r.size))))
         } else {
           // (   [ )  ]
           free(Seq(
-            Delete(IntRange(s.r.endInclusive + 1, d.r.endInclusive).moveBy(s.left.size + s.right.size)),
-            Delete(IntRange(d.r.start, s.r.endInclusive).moveBy(s.left.size))
-          ), Seq(s.modify(_.r).using(_.modify(_.endInclusive).using(_ => d.r.start - 1))))
+            Delete(IntRange(s.r.until, d.r.until).moveBy(s.left.size + s.right.size)),
+            Delete(IntRange(d.r.start, s.r.until).moveBy(s.left.size))
+          ), Seq(s.modify(_.r).using(_.modify(_.until).using(_ => d.r.start - 1))))
         }
       } else if (d.r.start < s.r.start){
         free(d, s.modify(_.r).using(_.moveBy(-d.r.size)))
@@ -83,8 +83,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def insertSurround(i: Insert, s: Surround): RebaseResult = {
       if (i.at <= s.r.start) {
         free(i, s.modify(_.r).using(_.moveBy(i.unicode.size)))
-      } else if (i.at <= s.r.endInclusive) {
-        free(i.modify(_.at).using(_ + s.left.size), s.modify(_.r).using(_.modify(_.endInclusive).using(_ + i.unicode.size)))
+      } else if (i.at < s.r.until) {
+        free(i.modify(_.at).using(_ + s.left.size), s.modify(_.r).using(_.modify(_.until).using(_ + i.unicode.size)))
       } else {
         free(i.modify(_.at).using(_ + s.left.size + s.right.size), s)
       }
@@ -92,7 +92,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
     def replaceAtomicSurround(r: ReplaceAtomic, s: Surround): RebaseResult = {
       if (s.r.contains(r.r)) {
-        free(r.modify(_.r).using(_.moveBy(s.left.size)), s.modify(_.r).using(_.modify(_.endInclusive).using(_ + r.sizeDiff)))
+        free(r.modify(_.r).using(_.moveBy(s.left.size)), s.modify(_.r).using(_.modify(_.until).using(_ + r.sizeDiff)))
       } else if (s.r.overlap(r.r)) {
         throw new IllegalArgumentException("Not atomic")
       } else if (r.r.start < s.r.start) {
@@ -104,8 +104,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
     def reverseSurround(a: Surround): Seq[operation.Unicode] = {
       // ---- **** ----
-      Seq(Delete(a.r.start, a.r.start + a.left.size - 1),
-        Delete(a.r.endInclusive + a.left.size, a.r.endInclusive + a.left.size + a.right.size - 1))
+      Seq(Delete(a.r.start, a.r.start + a.left.size),
+        Delete(a.r.until - 1 + a.left.size, a.r.until + a.left.size + a.right.size - 1))
     }
 
     def overlapSurround(s: Surround, l: Surround, sWins: Boolean): RebaseResult = {
@@ -115,8 +115,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val li = order.indexOf(l.left)
       val min = SpecialChar.surroundStartCodeInToOut(Math.min(si, li))
       val r1 = IntRange(s.r.start, l.r.start - 1)
-      val r2 = IntRange(l.r.start, s.r.endInclusive)
-      val r3 = IntRange(s.r.endInclusive + 1, l.r.endInclusive)
+      val r2 = IntRange(l.r.start, s.r.until)
+      val r3 = IntRange(s.r.until, l.r.until)
       // [   (   ]   )
       if (SpecialChar.surroundStartCodeNotSplit.contains(min)) { // cannot split
         // if cannot: [   ]   (  )
@@ -144,7 +144,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     }
 
     def insertReplaceAtomic(insert: Insert, replace: ReplaceAtomic): RebaseResult = {
-      if (insert.at > replace.r.start && insert.at <= replace.r.endInclusive) {
+      if (insert.at > replace.r.start && insert.at < replace.r.until) {
         throw new IllegalArgumentException()
       } else if (insert.at <= replace.r.start) {
         free(insert, replace.modify(_.r).using(_.moveBy(insert.unicode.size)))
@@ -174,8 +174,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (d@Delete(_), a@Insert(_, _, _)) =>
         reverse(addDelete(a, d, conflict.Unicode.WinnerDeletesLoser()))
       case (Delete(ws), Delete(ls)) =>
-        val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a.start, a.endInclusive)).toSeq
-        val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => Delete(a.start, a.endInclusive)).toSeq
+        val wp = ls.transformDeletingRangeAfterDeleted(ws).map(a => Delete(a)).toSeq
+        val lp = ws.transformDeletingRangeAfterDeleted(ls).map(a => Delete(a)).toSeq
         free(wp, lp)
       case (d@Delete(_), r@ReplaceAtomic(_, _)) =>
         deleteReplaceAtomic(d, r, conflict.Unicode.WinnerDeletesLoser())
@@ -188,7 +188,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       case (w@ReplaceAtomic(ws, _), l@ReplaceAtomic(ls, _)) =>
         if (ws == ls) {
           Rebased(Set(conflict.Unicode.WinnerDeletesLoser()),
-            (Seq(w.modify(_.r).using(a => IntRange(a.start, a.endInclusive + l.sizeDiff))),
+            (Seq(w.modify(_.r).using(a => IntRange(a.start, a.until + l.sizeDiff))),
             Seq.empty))
         } else if (ws.overlap(ls)) {
           throw new IllegalArgumentException()
@@ -215,8 +215,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
             free(Seq.empty, Seq.empty)
           } else {
             // merge results
-            val points = Seq(wr.start, wr.endInclusive, lr.start, lr.endInclusive)
-            val nrange = IntRange(points.min, points.max)
+            val points = Seq(wr.start, wr.until - 1, lr.start, lr.until - 1)
+            val nrange = IntRange(points.min, points.max + 1)
             val overall = Surround(nrange, ws, we)
             if (nrange == wr) {
               free(reverseSurround(l) :+ overall, Seq.empty)
@@ -228,9 +228,9 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           }
         } else {
           def wrapLInW() =
-            free(w.modify(_.r).using(_.modify(_.endInclusive).using(_ + ls.size + le.size)), l.modify(_.r).using(_.moveBy(ws.size)))
+            free(w.modify(_.r).using(_.modify(_.until).using(_ + ls.size + le.size)), l.modify(_.r).using(_.moveBy(ws.size)))
           def wrapWInL() =
-            free(w.modify(_.r).using(_.moveBy(ls.size)), l.modify(_.r).using(_.modify(_.endInclusive).using(_ + ws.size + we.size)))
+            free(w.modify(_.r).using(_.moveBy(ls.size)), l.modify(_.r).using(_.modify(_.until).using(_ + ws.size + we.size)))
           if (wr == lr) {
             // some order how should they be applied?
             val order = SpecialChar.surroundStartCodeInToOut

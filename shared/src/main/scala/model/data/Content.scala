@@ -20,7 +20,7 @@ abstract sealed class Content {
   */
 object Content extends DataObject[Content] {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content {
-    override def defaultNormalMode(): mode.Content = mode.Content.Normal(IntRange(0, 0))
+    override def defaultNormalMode(): mode.Content = mode.Content.Normal(IntRange(0, 1)) // TODO first char
   }
   case class Paragraph(paragraph: data.Paragraph) extends Content {
     val size: Int = paragraph.size

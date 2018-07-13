@@ -60,7 +60,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Paragraph(Seq(
-            operation.Unicode.Delete(IntRange(a.endInclusive)),
+            operation.Unicode.Delete(IntRange(a.until - 1)),
             operation.Unicode.Delete(IntRange(a.start))), Type.Delete)
           case None => fallback()
         }
@@ -84,7 +84,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
         // remove title/image to a subparagraph
         randomLinked(d, r) match {
           case Some((a, t)) => Paragraph(Seq(
-            operation.Unicode.Delete(IntRange(t.start - 1, a.endInclusive)),
+            operation.Unicode.Delete(IntRange(t.start - 1, a.until)),
             operation.Unicode.Delete(IntRange(a.start))
           ),
             Type.Delete)
@@ -109,7 +109,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
           case Some(a) if a.size > 2 =>
             val len = r.nextInt(a.size - 2)
             val start = a.start + 1 + r.nextInt(a.size - 2 - len)
-            Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len - 1))), Type.Delete)
+            Paragraph(Seq(operation.Unicode.Delete(IntRange(start, start + len))), Type.Delete)
           case None => fallback()
         }
       case 8 =>
@@ -143,9 +143,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2 + 1
       val urlStart = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.attributes.head)).get._2 + 1
-      val urlEnd = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.attributes(1))).get._2 - 1
+      val urlEnd = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.attributes(1))).get._2
       Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
     }
   }
@@ -161,7 +161,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Formatted]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition  && a._1.isSpecialChar(text.specialCharEnd)).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition  && a._1.isSpecialChar(text.specialCharEnd)).get._2 + 1
       Some(IntRange(t._2, end))
     }
   }
@@ -177,7 +177,7 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
     } else {
       val t = starts(r.nextInt(starts.size))
       val text = t._1.text.asInstanceOf[data.Text.Coded]
-      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2
+      val end = info.find(a => a._1.nodePosition == t._1.nodePosition && a._1.isSpecialChar(text.specialCharEnd)).get._2 + 1
       Some(IntRange(t._2, end))
     }
   }
@@ -206,9 +206,9 @@ object Paragraph extends OperationObject[data.Paragraph, Paragraph] {
       if (isValidStart(a._1) && isValidEnd(b._1)) {
         if (a._1.nodePosition == b._1.nodePosition) {
           // single item
-          return IntRange(a._2, b._2)
+          return IntRange(a._2, b._2 + 1)
         } else if (a._1.nodePosition.dropRight(1) == b._1.nodePosition.dropRight(1)) {
-          return IntRange(a._2, b._2)
+          return IntRange(a._2, b._2 + 1)
         }
       }
     }

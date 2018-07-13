@@ -54,8 +54,9 @@ case class Paragraph(text: Seq[Text]) {
 
   def defaultNormalMode(): mode.Content = mode.Content.Normal(text.headOption match {
     case Some(a: Text.AtomicViewed) => IntRange(0, a.size)
-    case Some(b: Text.Image) => IntRange(0, b.size)
-    case Some(a: Text.Plain) => IntRange(0, 0) // TODO glyph cluster
+    case Some(a: Text.Formatted) => IntRange(0, 1)
+    case Some(a: Text.Coded) => IntRange(0, 1)
+    case Some(a: Text.Plain) => IntRange(0, 1) // TODO glyph cluster, first char
     case _ => IntRange(0, 0) // if it is none, we still do this, no big deal, the UI will handle it properly
   })
 }

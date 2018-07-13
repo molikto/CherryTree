@@ -113,7 +113,7 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
     val ss = paragraph.info(range.start)
-    val ee = paragraph.info(range.endInclusive)
+    val ee = paragraph.info(range.until - 1)
     if (ss.ty == InfoType.Coded &&
       ee.ty == InfoType.Coded &&
       ss.nodePosition == ee.nodePosition &&
@@ -175,12 +175,17 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       range.setEnd(dom.childNodes.item(0), 1)
       removeAstHighlight()
     } else {
-      val start = selectionToDomRange(r)
-      range.setStart(start._1, start._2)
-      range.setEnd(start._3, start._4)
-      if (astHighlight != start._5) {
-        removeAstHighlight()
-        if (start._5 != null) addAstHighlight(start._5)
+      if (r.isEmpty) {
+        // TODO should not happen
+        throw new IllegalArgumentException("")
+      } else {
+        val start = selectionToDomRange(r)
+        range.setStart(start._1, start._2)
+        range.setEnd(start._3, start._4)
+        if (astHighlight != start._5) {
+          removeAstHighlight()
+          if (start._5 != null) addAstHighlight(start._5)
+        }
       }
     }
     val sel = window.getSelection

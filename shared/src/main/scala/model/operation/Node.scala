@@ -154,9 +154,9 @@ object Node extends OperationObject[data.Node, Node] {
         if (c != cursor.Node.Root) {
           var ran = range.Node(c)
           if (r.nextBoolean() && ran.childs.start > 1) {
-            ran = range.Node(ran.parent, IntRange(ran.childs.start - 2, ran.childs.endInclusive))
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 2))
           } else if (r.nextBoolean() && ran.childs.start > 0) {
-            ran = range.Node(ran.parent, IntRange(ran.childs.start - 1, ran.childs.endInclusive))
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 1))
           }
           Delete(ran)
         } else {

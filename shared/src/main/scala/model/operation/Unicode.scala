@@ -22,10 +22,10 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
 
     def transformRange(r: IntRange): IntRange = r match {
-      case IntRange(min, max) =>
-        if (at <= min) IntRange(min + unicode.size, max + unicode.size)
-        else if (at > max) r
-        else IntRange(min, max + unicode.size)
+      case IntRange(start, until) =>
+        if (at <= start) IntRange(start + unicode.size, until + unicode.size)
+        else if (at >= until) r
+        else IntRange(start, until + unicode.size)
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
@@ -50,7 +50,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       case mode.Content.Insertion(k) =>
         Some(mode.Content.Insertion(if (k <= r.start) {
           k
-        } else if (k > r.endInclusive) {
+        } else if (k >= r.until) {
           k - r.size
         } else {
           k
@@ -81,7 +81,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     def transformRange(range: IntRange): IntRange = {
       if (range.contains(r)) {
-        IntRange(range.start, range.endInclusive + sizeDiff)
+        IntRange(range.start, range.until + sizeDiff)
       } else if (range.overlap(r)) {
         throw new IllegalArgumentException("fdsfsa")
       } else if (range.start < r.start) {
@@ -115,7 +115,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       if (range == r) {
         Some(range.moveBy(left.size))
       } else if (range.contains(r)) {
-        Some(IntRange(range.start, range.endInclusive + left.size + right.size))
+        Some(IntRange(range.start, range.until + left.size + right.size))
       } else if (range.overlap(r)) {
         None
       } else if (range.start < r.start) {
@@ -127,7 +127,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
       case mode.Content.Insertion(k) =>
-        Some(mode.Content.Insertion(if (k <= r.start) k else if (k <= r.endInclusive) k + left.size else k + left.size + right.size))
+        Some(mode.Content.Insertion(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
       case mode.Content.Visual(a, b) =>
         (transformRange(a), transformRange(b)) match {
           case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))
@@ -153,7 +153,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       Insert(r.nextInt(d.size + 1), data.Unicode(r.nextLong().toString))
     } else {
       val (end, start) = maxMin(r.nextInt(d.size), r.nextInt(d.size))
-      Delete(start, end)
+      Delete(start, end + 1)
     }
   }
   

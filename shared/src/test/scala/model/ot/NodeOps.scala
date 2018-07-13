@@ -30,7 +30,7 @@ object NodeOps {
   }
 
   def deleteContent(at: Seq[Int], from: Int, len: Int): operation.Node = {
-    operation.Node.Content(at, operation.Content.Code.Content(operation.Unicode.Delete(IntRange(from, from + len - 1))))
+    operation.Node.Content(at, operation.Content.Code.Content(operation.Unicode.Delete(IntRange(from, from + len))))
   }
 
   def deleteNode(at: Seq[Int]): operation.Node = {
