@@ -62,12 +62,12 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
   ).render
   dom.appendChild(root)
 
-  private var previousEditableContent: ContentView = null
+  private var previousFocusContent: ContentView = null
 
   def removeContentEditor() = {
-    if (previousEditableContent != null) {
-      previousEditableContent.clearMode()
-      previousEditableContent = null
+    if (previousFocusContent != null) {
+      previousFocusContent.clearMode()
+      previousFocusContent = null
     }
   }
 
@@ -83,12 +83,12 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
   def syncMode(m: Option[model.mode.Node]): Unit = {
     mode.textContent = m match {
       case None =>
-        if (previousEditableContent != null) removeContentEditor()
+        if (previousFocusContent != null) removeContentEditor()
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
           val current = contentAt(at)
-          if (current != previousEditableContent) {
+          if (current != previousFocusContent) {
             removeContentEditor()
             current.initMode()
           }
@@ -102,7 +102,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
               "NORMAL"
           }
         case model.mode.Node.Visual(_, _) =>
-          if (previousEditableContent != null) removeContentEditor()
+          if (previousFocusContent != null) removeContentEditor()
           "NODE VISUAL"
       }
     }
@@ -136,19 +136,32 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }).subscribe())
   }
 
-  event("keydown", (a: KeyboardEvent) => {
-    println(s"keydown ${a.key}")
-    //a.preventDefault()
+  event("keydown", (event: KeyboardEvent) => {
+    client.state.mode match {
+      case Some(model.mode.Node.Content(a, content)) =>
+        content match {
+          case model.mode.Content.Normal(range) =>
+            event.key match {
+              case "l" =>
+                client.change(Seq.empty, Some(model.mode.Node.Content(a, model.mode.Content.Normal(range.moveBy(1)))))
+              case "h" =>
+                client.change(Seq.empty, Some(model.mode.Node.Content(a, model.mode.Content.Normal(range.moveBy(-1)))))
+            }
+        }
+      case _ =>
+    }
+    println(s"keydown ${event.key}")
+    event.preventDefault()
   })
 
-  event("keyup", (a: KeyboardEvent) => {
-    println(s"keyup ${a.key}")
-    //a.preventDefault()
+  event("keyup", (event: KeyboardEvent) => {
+    println(s"keyup ${event.key}")
+    event.preventDefault()
   })
 
-  event("keypress", (a: KeyboardEvent) => {
-    println(s"keypress ${a.key}")
-    //a.preventDefault()
+  event("keypress", (event: KeyboardEvent) => {
+    println(s"keypress ${event.key}")
+    event.preventDefault()
   })
 
 

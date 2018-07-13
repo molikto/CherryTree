@@ -1,6 +1,6 @@
 package jvm.server
 
-object DevMain {
+object Main {
   def main(args: Array[String]): Unit = {
     new WebServer().run()
   }

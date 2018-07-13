@@ -93,15 +93,23 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
     if (a.isEmpty) {
       parent
     } else {
-      if (parent.isInstanceOf[HTMLSpanElement]) {
-        getDom(parent.childNodes.item(1).childNodes.item(a.head), a.tail)
-      } else {
-        getDom(parent.childNodes.item(a.head), a.tail)
-      }
+      getDom(domChildArray(parent).childNodes.item(a.head), a.tail)
     }
   }
 
-  private def selectionToDomRange(range: IntRange): (Node, Int, Int, HTMLSpanElement) = {
+  private def domChildArray(parent: Node): Node = {
+    if (parent.isInstanceOf[HTMLSpanElement]) {
+      parent.childNodes.item(1)
+    } else {
+      parent
+    }
+  }
+
+  private def domCodeText(parent: Node): Node = {
+    parent.childNodes.item(1).childNodes.item(0)
+  }
+
+  private def selectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
     val info = paragraph.info
@@ -111,11 +119,11 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       ee.ty == InfoType.Coded &&
       ss.nodePosition == ee.nodePosition &&
       ss.text.isInstanceOf[Text.Code]) {
-      val codeText = getDom(ss.nodePosition).childNodes.item(1)
+      val codeText = domCodeText(getDom(ss.nodePosition))
       val ast = ss.text.asInstanceOf[Text.Code]
       val sss = ast.unicode.toStringPosition(ss.charPosition)
       val eee = ast.unicode.toStringPosition(ee.charPosition + 1)
-      (codeText, sss, eee, null)
+      (codeText, sss, codeText, eee, null)
     } else if (range.size == 1 &&
       ss.ty  == InfoType.Special &&
       SpecialChar.startsEnds.contains(ss.specialChar) &&
@@ -123,23 +131,58 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
       val isStart = SpecialChar.starts.contains(ss.specialChar)
       val a = getDom(ss.nodePosition).asInstanceOf[HTMLSpanElement]
       val range = if (isStart) (0, 1) else (2, 3)
-      (a, range._1, range._2, a)
+      (a, range._1, a, range._2, a)
     } else {
-      (dom, 0, dom.childNodes.length, null) // TODO
+      val start = if (ss.ty == InfoType.Plain) {
+        val text = getDom(ss.nodePosition)
+        val s = ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.charPosition)
+        (text, s)
+      } else {
+        assert(ss.ty == InfoType.Special && SpecialChar.starts.contains(ss.specialChar))
+        val node = domChildArray(getDom(ss.nodePosition.dropRight(1)))
+        (node, ss.nodePosition.last)
+      }
+      val end = if (ss.ty == InfoType.Plain) {
+        val text = getDom(ss.nodePosition)
+        val s = ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.charPosition + 1)
+        (text, s)
+      } else {
+        assert(ss.ty == InfoType.Special && SpecialChar.ends.contains(ss.specialChar))
+        val node = domChildArray(getDom(ss.nodePosition.dropRight(1)))
+        (node, ss.nodePosition.last + 1)
+      }
+      (start._1, start._2, end._1, end._2, null)
     }
   }
 
   private var astHighlight: HTMLSpanElement = null
+
+  private def removeAstHighlight(): Unit = {
+    if (astHighlight != null) {
+      astHighlight.style.backgroundColor = null
+      astHighlight = null
+    }
+  }
+
+  private def addAstHighlight(_5: HTMLSpanElement): Unit = {
+    astHighlight = _5
+    _5.style.backgroundColor = clientView.theme.astHighlight
+  }
 
   private def setSelection(r: IntRange): Unit = {
     val range: Range = document.createRange()
     if (isEmpty) {
       range.setStart(dom.childNodes.item(0), 0)
       range.setEnd(dom.childNodes.item(0), 1)
+      removeAstHighlight()
     } else {
       val start = selectionToDomRange(r)
       range.setStart(start._1, start._2)
-      range.setEnd(start._1, start._3)
+      range.setEnd(start._3, start._4)
+      if (astHighlight != start._5) {
+        removeAstHighlight()
+        if (start._5 != null) addAstHighlight(start._5)
+      }
     }
     val sel = window.getSelection
     // TODO ast highlight
