@@ -75,7 +75,7 @@ class Client(
 
   val stateUpdates: PublishSubject[Client.Update] = PublishSubject[Client.Update]()
 
-  private def updateDoc(a: ClientState, from: model.transaction.Node, fromUser: Boolean): Unit = {
+  private def updateState(a: ClientState, from: model.transaction.Node, fromUser: Boolean): Unit = {
     state_ = a
     stateUpdates.onNext(Client.Update(from, a.mode, fromUser))
   }
@@ -171,7 +171,7 @@ class Client(
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
-      updateDoc(
+      updateState(
         ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, fromUser = false)
     } catch {
       case e: Exception =>
@@ -208,7 +208,7 @@ class Client(
         }
     }
     if (changed) {
-      updateDoc(ClientState(d, m), changes, fromUser = true)
+      updateState(ClientState(d, m), changes, fromUser = true)
       uncommitted = uncommitted :+ changes
       if (sync) self.sync()
     }
