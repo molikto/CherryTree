@@ -13,10 +13,11 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
-import command.Commands
+import command.{Commands, Key}
 import model.ot.Rebased
 import util._
 import model._
+import model.data.SpecialChar
 import monix.reactive.subjects.PublishSubject
 
 import scala.concurrent.Future
@@ -217,4 +218,20 @@ class Client(
       if (sync) self.sync()
     }
   }
+
+  /**
+    * these are settings??
+    */
+  override def delimitationCodePoints: Map[SpecialChar.Delimitation, Int] = Map(
+    SpecialChar.StrikeThrough -> '-'.toInt,
+    SpecialChar.Code -> '`'.toInt,
+    SpecialChar.Strong -> '#'.toInt,
+    SpecialChar.LaTeX -> '$'.toInt,
+    SpecialChar.Link -> '['.toInt,
+    SpecialChar.Emphasis -> '*'.toInt
+  )
+
+  override def additionalKeyMaps: Map[String, Seq[Key]] = Map.empty
+
+  override def removedDefaultKeyMaps: Map[String, Seq[Key]] = Map.empty
 }

@@ -26,28 +26,40 @@ object SpecialChar {
 
   def apply(id: Int): SpecialChar = createSpecialChar(id)
 
+  val Emphasis =
+    Delimitation(EmphasisStart, EmphasisEnd)
+  val Strong =
+    Delimitation(StrongStart, StrongEnd)
+  val StrikeThrough =
+    Delimitation(StrikeThroughStart, StrikeThroughEnd)
   val formatted = Seq(
-    FormattedModifiers(StrongStart, StrongEnd),
-    FormattedModifiers(EmphasisStart, EmphasisEnd),
-    FormattedModifiers(StrikeThroughStart, StrikeThroughEnd)
+    Emphasis, Strong, StrikeThrough
   )
 
   val attributes = Seq(UrlAttribute, TitleAttribute)
 
+  val Link =
+    Delimitation(LinkStart, LinkEnd, attributes)
+
+  val Image =
+    Delimitation(ImageStart, ImageEnd, attributes)
+
   val linked = Seq(
-    FormattedModifiers(LinkStart, LinkEnd, attributes),
-    FormattedModifiers(ImageStart, ImageEnd, attributes)
+    Link, Image
   )
 
-  val coded = Seq(
-    CodedModifiers(LaTeXStart, LaTeXEnd),
-    CodedModifiers(CodeStart, CodeEnd)
-  )
+  val Code =
+    Delimitation(CodeStart, CodeEnd)
 
-  val all: Seq[DelimitedModifiers] = coded ++ formatted ++ linked
+  val LaTeX =
+    Delimitation(LaTeXStart, LaTeXEnd)
 
-  val splittableOrdered: Seq[DelimitedModifiers] = formatted ++ linked
-  val nonSplittableOrdered: Seq[DelimitedModifiers] = linked
+  val coded = Seq(Code, LaTeX)
+
+  val all: Seq[Delimitation] = coded ++ formatted ++ linked
+
+  val splittableOrdered: Seq[Delimitation] = formatted ++ linked
+  val nonSplittableOrdered: Seq[Delimitation] = linked
   //** from inner to outer
   // also inner splits
   val surroundStartCodeInToOut: Seq[Unicode] = splittableOrdered.map(a => a.startUnicode)
@@ -56,16 +68,12 @@ object SpecialChar {
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
 
-  val startsEnds: Seq[_root_.model.data.SpecialChar] = starts ++ ends
-}
+  val startsEnds: Seq[SpecialChar] = starts ++ ends
 
-sealed abstract class DelimitedModifiers {
-  val start: SpecialChar
-  val end: SpecialChar
-  def  startUnicode = Unicode(start)
-  def  endUnicode = Unicode(end)
-}
-case class CodedModifiers(start: SpecialChar, end: SpecialChar) extends DelimitedModifiers
-case class FormattedModifiers(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty) extends DelimitedModifiers {
+  case class Delimitation(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty) {
+    private[model] def startUnicode = Unicode(start)
+    private[model] def endUnicode = Unicode(end)
+  }
+
 }
 

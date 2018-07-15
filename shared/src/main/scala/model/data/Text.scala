@@ -1,14 +1,13 @@
 package model.data
 
 import model.cursor
+import model.data.SpecialChar.Delimitation
 
 import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
-  def isEmpty: Boolean
-
-  def isAtomicViewed: Boolean = this.isInstanceOf[Text.AtomicViewed]
+  def isAtomicViewed: Boolean = this.isInstanceOf[Text.AtomicSelected]
 
   private[data] def serialize(buffer: UnicodeWriter)
   private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int)
@@ -33,26 +32,28 @@ object Text {
   }
 
   // returns null if not inside
-  private [data] def info(parentPos: cursor.Node, seqStart: Int, text: Seq[Text], a: Int): Either[Int, Info] = {
+  private [data] def info(parentPos: cursor.Node,
+    seqStart: Int,
+    text: Seq[Text],
+    a: Int): Info = {
     var ss = seqStart
     var totalSize = 0
     var index = 0
-    while (index < text.size && text(index).size + totalSize <= a) {
+    while (text(index).size + totalSize <= a) {
       val sss = text(index).size
       totalSize += sss
       ss += sss
       index += 1
     }
-    if (index < text.size) Right(text(index).info(a - totalSize, parentPos :+ index, ss))
-    else Left(a - totalSize)
+    text(index).info(a - totalSize, parentPos :+ index, ss)
   }
 
 
-  sealed trait AtomicViewed extends Text {
+  sealed trait AtomicSelected extends Text {
 
   }
 
-  def size(paragraph: Seq[Text]): Int = paragraph.map(_.size).sum
+  def size(content: Seq[Text]): Int = content.map(_.size).sum
 
   private[model] def parse(reader: UnicodeReader): Text = {
     reader.eatOrNotSpecial() match {
@@ -96,118 +97,130 @@ object Text {
     buffer.toVector
   }
 
-  sealed private[model] trait Formatted extends Text {
-    def content: Seq[Text]
-    def specialCharStart: SpecialChar
-    def specialCharEnd: SpecialChar
-    override def isEmpty = false
-    def attributes: Seq[SpecialChar] = Seq.empty
-    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new NotImplementedError()
+  sealed private[model] trait Delimited[T] extends Text {
+    def content: T
+    def contentSize: Int
+    private[model] def serializeContent(buffer: UnicodeWriter): Unit
+    private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit
+    private [model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info
 
-    override val size: Int = 2 + Text.size(content) + attributes.map(a => attribute(a).size + 1).sum
-
-    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(specialCharStart)
-      content.foreach(_.serialize(buffer))
+    final private[model] override def serialize(buffer: UnicodeWriter): Unit = {
+      buffer.put(delimitation.start)
+      serializeContent(buffer)
       attributes.foreach(a => {
         buffer.put(a)
         buffer.put(attribute(a))
       })
-      buffer.put(specialCharEnd)
+      buffer.put(delimitation.end)
     }
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
-       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
-      Text.info(selfPosition, selfStart + 1, content, buffer)
+    def delimitation: SpecialChar.Delimitation
+
+    def attributes: Seq[SpecialChar] = delimitation.attributes
+    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new NotImplementedError()
+
+    final override val size: Int = 2 + contentSize + attributes.map(a => attribute(a).size + 1).sum
+
+    final override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
+      var position = selfStart
+      buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = delimitation.start)
+      position += 1
+      contentInfo(buffer, selfPosition, selfStart, position)
+      position += contentSize
       attributes.foreach(a => {
-        buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = a)
-        for (i <- 0 until attribute(a).size) buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, charPosition = i, specialChar = a)
+        buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = a)
+        position += 1
+        attribute(a).codePoints.forEach(c => {
+          buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, position, char = c, specialChar = a)
+          position += 1
+        })
       })
-       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
+      buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = delimitation.end)
     }
 
-    override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
+    final override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
+      val infoPosition = selfStart + start
       var i = start
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = delimitation.start)
       i -= 1
-      Text.info(selfPosition, selfStart + 1, content, i) match {
-        case Right(j) => return j
-        case Left(ii) => i = ii
-      }
+      if (i < contentSize) return contentInfo(selfPosition, selfStart, i, selfStart + 1)
+      i -= contentSize
       for (a <- attributes) {
-        if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = a)
+        if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = a)
         i -= 1
-        if (i < attribute(a).size) return Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, charPosition = i)
+        val attr = attribute(a)
+        if (i < attr.size) return Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, infoPosition, char = attr(i))
         i -= attribute(a).size
       }
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
+      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = delimitation.end)
       throw new IllegalArgumentException("Out of bound")
+    }
+  }
+
+  sealed private[model] trait Formatted extends Delimited[Seq[Text]] {
+    def content: Seq[Text]
+    def delimitation: SpecialChar.Delimitation
+    lazy val contentSize: Int = Text.size(content)
+
+    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
+      content.foreach(_.serialize(buffer))
+    }
+
+    override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
+      Text.info(selfPosition, contentStart, content, buffer)
+    }
+
+    override private[model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info = {
+      Text.info(selfPosition, contentStart, content, a)
     }
   }
 
   case class Emphasis(override val content: Seq[Text]) extends Formatted {
-    override def specialCharStart: SpecialChar = EmphasisStart
-    override def specialCharEnd: SpecialChar = EmphasisEnd
-
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Emphasis
   }
   case class Strong(override val content: Seq[Text]) extends Formatted {
-    override def specialCharStart: SpecialChar = StrongStart
-    override def specialCharEnd: SpecialChar = StrongEnd
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Strong
   }
 
   case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
-    override def specialCharStart: SpecialChar = StrikeThroughStart
-    override def specialCharEnd: SpecialChar = StrikeThroughEnd
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.StrikeThrough
   }
   case class Link(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted {
-    override def specialCharStart: SpecialChar = LinkStart
-    override def specialCharEnd: SpecialChar = LinkEnd
-    override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicViewed {
-    override def specialCharStart: SpecialChar = ImageStart
-    override def specialCharEnd: SpecialChar = ImageEnd
-    override def attributes: Seq[SpecialChar] = Seq(UrlAttribute, TitleAttribute)
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicSelected {
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
     override def content: Seq[Text] = Seq.empty
   }
 
-  sealed trait Coded extends Text {
-    def unicode: Unicode
-    def specialCharStart: SpecialChar
-    def specialCharEnd: SpecialChar
-    override val size: Int = unicode.size + 2
+  sealed trait Coded extends Delimited[Unicode] {
+    def content: Unicode
+    def delimitation: SpecialChar.Delimitation
+    override def contentSize: Int = content.size
 
-    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(specialCharStart)
-      buffer.put(unicode)
-      buffer.put(specialCharEnd)
+    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
+      buffer.put(content)
     }
-    override def isEmpty = false
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
-       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
-      for (i <- 0 until unicode.size) buffer += Info(selfPosition, selfStart, this, InfoType.Coded, charPosition = i)
-       buffer += Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
+    override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
+      var position = contentStart
+      content.codePoints.forEach(c => {
+        buffer += Info(selfPosition, selfStart, this, InfoType.Coded, position, char = c)
+        position += 1
+      })
     }
-    override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
-      var i = start
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharStart)
-      i -= 1
-      if (i < unicode.size) return Info(selfPosition, selfStart, this, InfoType.Coded, charPosition = i)
-      i -= unicode.size
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, specialChar = specialCharEnd)
-      throw new IllegalArgumentException("Out of bound")
+
+    override private [model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info = {
+      Info(selfPosition, selfStart, this, InfoType.Coded, contentStart + a, char = content(a))
     }
   }
-  case class Code(unicode: Unicode) extends Coded {
-    override def specialCharStart: SpecialChar = CodeStart
-    override def specialCharEnd: SpecialChar = CodeEnd
+  case class Code(content: Unicode) extends Coded {
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
   }
-  case class LaTeX(unicode: Unicode) extends Coded with AtomicViewed {
-    override def specialCharStart: SpecialChar = LaTeXStart
-    override def specialCharEnd: SpecialChar = LaTeXEnd
+  case class LaTeX(content: Unicode) extends Coded with AtomicSelected {
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
   }
 
   /**
@@ -216,17 +229,21 @@ object Text {
   case class Plain(unicode: Unicode) extends Text {
     assert(!unicode.isEmpty)
     override val size: Int = unicode.size
-    override def isEmpty: Boolean = false
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)
     }
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
-      for (i <- 0 until unicode.size) buffer += Info(selfPosition, selfStart, this, InfoType.Plain, charPosition = i)
+      var position = selfStart
+      unicode.codePoints.forEach(c => {
+        buffer += Info(selfPosition, selfStart, this, InfoType.Plain, position, char = c)
+        position += 1
+      })
     }
 
-    override private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int) =
-      Info(selfPosition, selfStart, this, InfoType.Plain, charPosition = a)
+    override private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int) = {
+      Info(selfPosition, selfStart, this, InfoType.Plain, a + selfStart, char = unicode(a))
+    }
   }
 }

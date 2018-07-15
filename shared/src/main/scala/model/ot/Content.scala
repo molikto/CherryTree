@@ -18,7 +18,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
               (uc.t._1.map(operation.Content.Code.Content), uc.t._2.map(operation.Content.Code.Content)))
           case operation.Content.Code.Lang(l) =>
             free(winner, loser)
-          case operation.Content.Paragraph.Content(l) =>
+          case operation.Content.Rich.Content(l) =>
             throw new IllegalStateException("Not applicable operation")
         }
       case operation.Content.Code.Lang(w) =>
@@ -31,15 +31,15 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
             } else {
               Rebased(Set(conflict.Content.Code.Lang(w)), (Seq(winner), Seq.empty))
             }
-          case operation.Content.Paragraph.Content(l) =>
+          case operation.Content.Rich.Content(l) =>
             throw new IllegalStateException("Not applicable operation")
         }
-      case operation.Content.Paragraph.Content(w) =>
+      case operation.Content.Rich.Content(w) =>
         loser match  {
-          case operation.Content.Paragraph.Content(l) =>
-            val uc = ot.Paragraph.rebase(w, l)
+          case operation.Content.Rich.Content(l) =>
+            val uc = ot.Rich.rebase(w, l)
             Rebased(uc.conflicts.map(conflict.Content.Code.Content),
-              (uc.t._1.map(a => operation.Content.Paragraph.Content(a)), uc.t._2.map(a => operation.Content.Paragraph.Content(a))))
+              (uc.t._1.map(a => operation.Content.Rich.Content(a)), uc.t._2.map(a => operation.Content.Rich.Content(a))))
           case _ =>
             throw new IllegalStateException("Not applicable operation")
         }

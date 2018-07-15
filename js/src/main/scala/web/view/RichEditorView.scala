@@ -2,7 +2,7 @@ package web.view
 
 import org.scalajs.dom._
 
-class ParagraphEditorView(pe: ParagraphView) {
+class RichEditorView(pe: RichView) {
 
 
   def onCompositionStart(a: CompositionEvent): Unit = {

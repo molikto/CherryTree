@@ -43,7 +43,7 @@ case class Node(content: Content, childs: Seq[Node]) {
 
 object Node extends DataObject[Node] {
 
-  val empty = Node(data.Content.Paragraph(data.Paragraph.empty), Seq.empty)
+  val empty = Node(data.Content.Rich(data.Rich.empty), Seq.empty)
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._

@@ -11,7 +11,7 @@ import scala.util.Random
 class Server extends Api {
 
   // states, now in single thread fashion
-  private var document = data.Node(data.Content.Paragraph(data.Paragraph(Seq(
+  private var document = data.Node(data.Content.Rich(data.Rich(Seq(
 
     Text.Plain(Unicode("😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
     Text.Code(Unicode( "\u0628" + "\u064e" + "\u064a"  + "😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
@@ -49,7 +49,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultNormalMode()), version)
+    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultMode()), version)
     clients.update(token, version)
     Right(state)
   }

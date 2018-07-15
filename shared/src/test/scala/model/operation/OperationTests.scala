@@ -23,7 +23,7 @@ object OperationTests extends TestSuite {
 //        println(a)
 //        println(o)
         val res = o(a)
-//        println(res)
+        val kk = res.hashCode()
         val bytes = Pickle.intoBytes(o)(implicitly, obj.pickler)
         val b = Unpickle[O](obj.pickler).fromBytes(bytes)
         assert(o == b)
@@ -34,8 +34,8 @@ object OperationTests extends TestSuite {
       testOperationObject(data.Unicode, operation.Unicode)
     }
 
-    'paragraph - {
-      testOperationObject(data.Paragraph, operation.Paragraph)
+    'rich - {
+      testOperationObject(data.Rich, operation.Rich)
     }
 
     'content - {

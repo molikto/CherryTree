@@ -2,6 +2,7 @@ package model.data
 
 import java.io.IOException
 import java.util.Locale
+import java.util.stream.IntStream
 
 import model._
 import model.range.IntRange
@@ -91,6 +92,10 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+  def apply(i: Int): Int = str.codePointAt(i)
+
+  def codePoints: IntStream = str.codePoints()
+
 
   def extendedGraphemeRange(pos: Int): IntRange = {
     val strStartIndex = toStringPosition(pos)

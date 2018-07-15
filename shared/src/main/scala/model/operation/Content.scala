@@ -37,12 +37,12 @@ object Content extends OperationObject[data.Content, Content] {
       override def transform(a: mode.Content): Option[mode.Content] = Some(a)
     }
   }
-  object Paragraph {
-    case class Content(op: operation.Paragraph) extends operation.Content {
+  object Rich {
+    case class Content(op: operation.Rich) extends operation.Content {
       override def ty: Type = op.ty
       override def apply(d: data.Content): data.Content = {
         d match {
-          case c: data.Content.Paragraph => c.copy(paragraph = op(c.paragraph))
+          case c: data.Content.Rich => c.copy(content = op(c.content))
           case _ => throw new IllegalStateException("Not applicable operation")
         }
       }
@@ -61,9 +61,9 @@ object Content extends OperationObject[data.Content, Content] {
         case Content.Code.Lang(l) =>
           writeInt(1)
           writeString(l.getOrElse(""))
-        case Content.Paragraph.Content(u) =>
+        case Content.Rich.Content(u) =>
           writeInt(2)
-          operation.Paragraph.pickler.pickle(u)
+          operation.Rich.pickler.pickle(u)
       }
     }
 
@@ -78,14 +78,14 @@ object Content extends OperationObject[data.Content, Content] {
             case a => Some(a)
           })
         case 2 =>
-          Content.Paragraph.Content(operation.Paragraph.pickler.unpickle)
+          Content.Rich.Content(operation.Rich.pickler.unpickle)
       }
     }
   }
 
   override def random(d: data.Content, r: Random): Content = {
     d match {
-      case data.Content.Paragraph(paragraph) => Paragraph.Content(operation.Paragraph.random(paragraph, r))
+      case data.Content.Rich(content) => Rich.Content(operation.Rich.random(content, r))
       case data.Content.Code(unicode, _) =>
         if (r.nextBoolean()) {
           Code.Content(operation.Unicode.random(unicode, r))

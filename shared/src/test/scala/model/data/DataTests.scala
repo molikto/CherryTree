@@ -24,30 +24,30 @@ object DataTests extends TestSuite {
       testDataObject(data.Unicode)
     }
 
-    'paragraph - {
-      testDataObject(data.Paragraph)
+    'rich - {
+      testDataObject(data.Rich)
     }
 
-    'paragraphSize - {
-      for (_ <- 0 until 10) {
-        val a = Paragraph.random(r)
+    'richSize - {
+      for (_ <- 0 until 100) {
+        val a = Rich.random(r)
         assert(a.serialize().size == a.size)
       }
     }
 
-    'paragraphThrowForInvalidData - {
-      val org = Paragraph(Seq(Text.Emphasis(Paragraph.random(r).text)))
+    'richThrowForInvalidData - {
+      val org = Rich(Seq(Text.Emphasis(Rich.random(r).text)))
       assert(Try {
-        Paragraph.parse(org.serialize().delete(IntRange(0)))
+        Rich.parse(org.serialize().delete(IntRange(0)))
       }.isFailure)
       assert(Try {
-        Paragraph.parse(org.serialize().delete(IntRange(org.size)))
+        Rich.parse(org.serialize().delete(IntRange(org.size)))
       }.isFailure)
     }
 
-    'paragraphInfoConsistent - {
+    'richInfoConsistent - {
       for (i <- 0 until 1000) {
-        val p = Paragraph.random(r)
+        val p = Rich.random(r)
         (0 until p.size).map(i => p.info(i)) == p.infos
       }
     }

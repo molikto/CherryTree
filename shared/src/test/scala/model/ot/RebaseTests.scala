@@ -167,8 +167,8 @@ object RebaseTests extends TestSuite {
         case Rebased(_, (ap, bp)) =>
           if (debug) println(s"Change a': $ap")
           if (debug) println(s"Change b': $bp")
-          val app0 =  Try { operation.Node.apply(bp, operation.Node.apply(a, node)) }
-          val app1 =  Try { operation.Node.apply(ap, operation.Node.apply(b, node)) }
+          val app0 = Try { operation.Node.apply(bp, operation.Node.apply(a, node)) }
+          val app1 = Try { operation.Node.apply(ap, operation.Node.apply(b, node)) }
           (app0, app1) match {
             case (Success(aaa), Success(bbb)) =>
               if (aaa == bbb) {
@@ -209,21 +209,21 @@ object RebaseTests extends TestSuite {
       }
     }
 
-    'paragraph - {
+    'rich - {
       val random = new Random()
-      var n = data.Paragraph.random(random)
+      var n = data.Rich.random(random)
       for (_ <- 0 until 3000) {
-        val a = operation.Paragraph.randomTransaction(1, n, random)
-        val b = operation.Paragraph.randomTransaction(1, n, random)
-        val debug = false
+        val a = operation.Rich.randomTransaction(1, n, random)
+        val b = operation.Rich.randomTransaction(1, n, random)
+        val debug = true
         if (debug) println(s"Change a: $a")
         if (debug) println(s"Change b: $b")
-        ot.Paragraph.rebase(a, b) match {
+        ot.Rich.rebase(a, b) match {
           case Rebased(_, (ap, bp)) =>
             if (debug) println(s"Change a': $ap")
             if (debug) println(s"Change b': $bp")
-            val aaa = operation.Paragraph.apply(bp, operation.Paragraph.apply(a, n))
-            val bbb = operation.Paragraph.apply(ap, operation.Paragraph.apply(b, n))
+            val aaa = operation.Rich.apply(bp, operation.Rich.apply(a, n))
+            val bbb = operation.Rich.apply(ap, operation.Rich.apply(b, n))
             if (aaa == bbb) {
               if (debug) println(s"App: $aaa")
               n = aaa

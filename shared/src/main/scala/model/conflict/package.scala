@@ -20,7 +20,7 @@ package object conflict {
       case class Content(u: Unicode) extends conflict.Content
       case class Lang(l: Option[String]) extends conflict.Content
     }
-    object Paragraph {
+    object Rich {
       case class Content(u: conflict.Paragraph) extends conflict.Content
     }
   }

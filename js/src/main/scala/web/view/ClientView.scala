@@ -115,8 +115,8 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
       val box = div().render
       parent.appendChild(box)
       val content = root.content match {
-        case model.data.Content.Paragraph(cs) =>
-          new ParagraphView(this, cs).dom
+        case model.data.Content.Rich(cs) =>
+          new RichView(this, cs).dom
         case model.data.Content.Code(a, lang) =>
           p(s"LANGUAGE: $lang", a.toString).render
       }
@@ -144,9 +144,9 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
           case model.mode.Content.Normal(range) =>
             event.key match {
               case "l" =>
-                client.act(client.command.move.content.right)
+                client.act(client.Command.motion.rich.right)
               case "h" =>
-                client.act(client.command.move.content.left)
+                client.act(client.Command.motion.rich.left)
             }
         }
       case _ =>

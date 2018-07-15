@@ -12,13 +12,14 @@
 
 ## now
 
-* experiment with cursor rendering
+*the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
+
 * motion commands
 * single edit commands
 * visual mode
 * insert mode
 * vim base structure
-* keyboard editor for paragraph
+* keyboard editor for rich
 * mouse support
 * copy paste
 * drag drop
@@ -36,6 +37,7 @@
     
 ## future
 
+* read though a vim reference and implement missing features that can be ported
 * reference type
 * tables (the most important thing is how to create a simple keyboard interface to create, select and edit)
 * data records (like book entry)
@@ -47,6 +49,7 @@
 
 ## good to have
 
+* patch chrome/electron so we get a better looking selection
 * macros
 * theme system
 * multi-tabs
@@ -83,6 +86,7 @@
 * ~~wire up with old code, non-generalized static server part~~
 * ~~FIX THE CLIENT TEST~~
 * ~~**reboot**~~
-* ~~paragraph view present~~
+* ~~rich view present~~
 * ~~mode definition is kinda of wrong? -- not wrong, we are sticking with the linearized formation for now~~
 * ~~solve the unicode glyph problem~~
+* ~~experiment with cursor rendering~~

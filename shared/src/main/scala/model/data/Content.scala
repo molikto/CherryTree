@@ -8,7 +8,8 @@ import scala.util.Random
 
 
 abstract sealed class Content {
-  def defaultNormalMode(): mode.Content
+  def defaultMode(): mode.Content = mode.Content.Normal(beginningAtomicRange())
+  def beginningAtomicRange(): IntRange
 }
 
 /**
@@ -16,16 +17,15 @@ abstract sealed class Content {
   *
   * HTML, LaTeX and code currently the editing method is all plain text,
   *
-  * but paragraph it is not, so we need to be sure that the data we are editing is valid
+  * but rich it is not, so we need to be sure that the data we are editing is valid
   */
 object Content extends DataObject[Content] {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content {
-    override def defaultNormalMode(): mode.Content = mode.Content.Normal(if (unicode.size == 0) IntRange(0, 0) else unicode.extendedGraphemeRange(0))
+    override def beginningAtomicRange(): IntRange = if (unicode.size == 0) IntRange(0, 0) else unicode.extendedGraphemeRange(0)
   }
-  case class Paragraph(paragraph: data.Paragraph) extends Content {
-    val size: Int = paragraph.size
-
-    override def defaultNormalMode(): mode.Content = paragraph.defaultNormalMode()
+  case class Rich(content: data.Rich) extends Content {
+    val size: Int = content.size
+    override def beginningAtomicRange(): IntRange = content.beginningAtomicRange()
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {
@@ -36,9 +36,9 @@ object Content extends DataObject[Content] {
           writeInt(0)
           Unicode.pickler.pickle(u)
           writeString(l.getOrElse(""))
-        case Paragraph(p) =>
+        case Rich(p) =>
           writeInt(1)
-          data.Paragraph.pickler.pickle(p)
+          data.Rich.pickler.pickle(p)
       }
     }
 
@@ -51,14 +51,14 @@ object Content extends DataObject[Content] {
             case a => Some(a)
           })
         case 1 =>
-          Paragraph(data.Paragraph.pickler.unpickle)
+          Rich(data.Rich.pickler.unpickle)
       }
     }
   }
 
   override def random(r: Random): Content =
     if (r.nextBoolean()) {
-      Content.Paragraph(data.Paragraph.random(r))
+      Content.Rich(data.Rich.random(r))
     } else {
       Content.Code(Unicode.random(r), None)
     }

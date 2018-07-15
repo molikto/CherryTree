@@ -13,8 +13,8 @@ trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers wi
   implicit val pickler_Content: Pickler[data.Content] = data.Content.pickler
   implicit val operationPickler_Content: Pickler[operation.Content] = operation.Content.pickler
 
-  implicit val pickler_Paragraph: Pickler[data.Paragraph] = data.Paragraph.pickler
-  implicit val operationPickler_Paragraph: Pickler[operation.Paragraph] = operation.Paragraph.pickler
+  implicit val pickler_Paragraph: Pickler[data.Rich] = data.Rich.pickler
+  implicit val operationPickler_Paragraph: Pickler[operation.Rich] = operation.Rich.pickler
 
   implicit val pickler_Unicode: Pickler[data.Unicode] = data.Unicode.pickler
   implicit val operationPickler_Unicode: Pickler[operation.Unicode] = operation.Unicode.pickler
