@@ -19,7 +19,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       val wat = add.at
       val wc = add.unicode
       val lfrom = delete.r.start
-      val lto = delete.r.until - 1
+      val lto = delete.r.until
       if (delete.r.deletesCursor(add.at)) {
         Rebased(Set(deleteConflict), (
           Seq.empty,
@@ -29,7 +29,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         val (wat0, ld) = if (wat <= lfrom) (wat, wc.size) else (wat - delete.r.size, 0)
         free(
           Insert(wat0, wc),
-          Delete(lfrom + ld, lto + ld + 1)
+          Delete(lfrom + ld, lto + ld)
         )
       }
     }
@@ -71,7 +71,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           free(Seq(
             Delete(IntRange(s.r.until, d.r.until).moveBy(s.left.size + s.right.size)),
             Delete(IntRange(d.r.start, s.r.until).moveBy(s.left.size))
-          ), Seq(s.modify(_.r).using(_.modify(_.until).using(_ => d.r.start))))
+          ), Seq(s.modify(_.r).using(_.copy(until = d.r.start))))
         }
       } else if (d.r.start < s.r.start){
         free(d, s.modify(_.r).using(_.moveBy(-d.r.size)))
@@ -105,7 +105,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
     def reverseSurround(a: Surround): Seq[operation.Unicode] = {
       // ---- **** ----
       Seq(Delete(a.r.start, a.r.start + a.left.size),
-        Delete(a.r.until - 1 + a.left.size, a.r.until + a.left.size + a.right.size - 1))
+        Delete(a.r.until, a.r.until + a.right.size))
     }
 
     def overlapSurround(s: Surround, l: Surround, sWins: Boolean): RebaseResult = {
