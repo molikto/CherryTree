@@ -67,7 +67,7 @@ object Text {
         case LinkStart =>
           Link(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(LinkEnd))
         case ImageStart =>
-          parseAll(reader, UrlAttribute)
+          reader.eat(UrlAttribute)
           Image(reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(ImageEnd))
         case CodeStart =>
           Code(reader.eatUntilAndDrop(CodeEnd))

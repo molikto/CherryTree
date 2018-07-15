@@ -52,6 +52,12 @@ private[model] class UnicodeReader(a: Unicode) {
     }
   }
 
+  def eat(a: SpecialChar) : Unit = {
+    if (!eatOrFalse(a)) {
+      throw new UnicodeParseException("!!")
+    }
+  }
+
   def eatOrFalse(a: SpecialChar): Boolean = {
     if (str.codePointAt(start) == SpecialCharStart + a.id) {
       start = str.offsetByCodePoints(start, 1)

@@ -249,7 +249,7 @@ object RebaseTests extends TestSuite {
     'squareRandom - {
       var n = node
       val random = new Random()
-      for (_ <- 0 until 3000) {
+      for (_ <- 0 until 300) {
         val a = operation.Node.randomTransaction(20, n, random)
         val b = operation.Node.randomTransaction(19, n, random)
         val debug = false
