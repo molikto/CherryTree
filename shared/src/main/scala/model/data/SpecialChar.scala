@@ -4,7 +4,7 @@ package model.data
 trait SpecialCharTrait extends Enumeration {
   type SpecialChar = Value
 
-  // LATER mmm... really? https://en.wikipedia.org/wiki/Private_Use_Areas
+  // LATER mmm... this is really hacky really? https://en.wikipedia.org/wiki/Private_Use_Areas
   private[data] val SpecialCharStart = 0xF0000
 
   private[data] def createSpecialChar(id: Int) = apply(id)

@@ -49,8 +49,8 @@ class ParagraphView(clientView: ClientView, var paragraph: Paragraph) extends Co
           code(`class` := "ct-code", c.toString),
           span(`class` := "ct-cg", "`")
         )
-      case Text.Plain(c) => stringFrag(c.toString) // TODO preserve spaces!!!
-    }
+      case Text.Plain(c) => stringFrag(c.toString)
+  }
   }
 
   var isEmpty = paragraph.isEmpty

@@ -69,8 +69,6 @@ object ClientTests extends TestSuite  {
         })
       }
 
-      // LATER needs fix or not? not really necessary now
-
 //      'oneWaySync - {
 //        client.change(insertTop)
 //        waitAssertStateSyncBetweenClientsAndServer()

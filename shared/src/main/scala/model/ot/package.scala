@@ -14,7 +14,6 @@ package object ot {
 
     type TRANSACTION = Seq[OPERATION]
 
-    // LATER should here be a data: DATA??
     def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])]
 
     def free(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] =

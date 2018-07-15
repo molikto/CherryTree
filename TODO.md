@@ -12,8 +12,12 @@
 
 ## now
 
-* solve the unicode glyph problem
-* commands and vim base structure
+* experiment with cursor rendering
+* motion commands
+* single edit commands
+* visual mode
+* insert mode
+* vim base structure
 * keyboard editor for paragraph
 * mouse support
 * copy paste
@@ -81,3 +85,4 @@
 * ~~**reboot**~~
 * ~~paragraph view present~~
 * ~~mode definition is kinda of wrong? -- not wrong, we are sticking with the linearized formation for now~~
+* ~~solve the unicode glyph problem~~
