@@ -62,16 +62,15 @@ object Rich extends OperationObject[data.Rich, Rich] {
       case 2 =>
         // add title/image to a subparagraph
         val randomFormat = r.nextInt(2) match {
-          case 0 => (ImageStart, UrlAttribute, TitleAttribute, ImageEnd)
-          case 1 => (LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
+          case 0 => (IntRange.empty(randomParagraphInsertionPoint(d, r)), ImageStart, UrlAttribute, TitleAttribute, ImageEnd)
+          case 1 => (randomSubrich(d, r), LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
         }
-        val range = randomSubrich(d, r)
         Rich(Seq(
-          operation.Unicode.Surround(range, data.Unicode(randomFormat._1),
-            data.Unicode(randomFormat._2)
+          operation.Unicode.Surround(randomFormat._1, data.Unicode(randomFormat._2),
+            data.Unicode(randomFormat._3)
               .join(data.Unicode("http://www.baidu.com"))
-              .join(data.Unicode(randomFormat._3))
               .join(data.Unicode(randomFormat._4))
+              .join(data.Unicode(randomFormat._5))
           )
         ), Type.Add)
       case 3 =>
@@ -87,7 +86,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
       case 4 =>
         // change title/image url/title
         randomLinked(d, r) match {
-          case Some((_, t)) => Rich(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextString(10)))), Type.AddDelete)
+          case Some((_, t)) => Rich(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextInt().toString))), Type.AddDelete)
           case None => fallback()
         }
       case 5 =>

@@ -65,7 +65,7 @@ case class Info(
   }
 }
 /**
-  * we currently expect all our rich object is normalized???
+  * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
 

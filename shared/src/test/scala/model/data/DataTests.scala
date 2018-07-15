@@ -60,6 +60,18 @@ object DataTests extends TestSuite {
       testDataObject(data.Node)
     }
 
+    'unicode  - {
+      'slice - {
+        assert(Unicode("123456").slice(IntRange(1)) == Unicode("2"))
+      }
+      'replace - {
+        assert(Unicode("123456").replace(IntRange(1), Unicode("a")) == Unicode("1a3456"))
+      }
+      'surround - {
+        assert(Unicode("123456").surround(IntRange(1), Unicode("a"), Unicode("b")) == Unicode("1a2b3456"))
+      }
+    }
+
     'implicitlyGenerated - {
       for (i <- 0 until 10) {
         val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(r), model.mode.Node.Visual(Seq.empty, Seq.empty), i))

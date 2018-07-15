@@ -5,6 +5,7 @@ package object range {
 
   case class IntRange(start: Int, until: Int) {
 
+
     def deletesCursor(i: Int): Boolean = start < i && until > i
 
     def size: Int = until - start
@@ -73,6 +74,8 @@ package object range {
 
 
   object IntRange {
+
+    def empty(a: Int) = IntRange(a, a)
 
     def apply(a: Int): IntRange = IntRange(a, a + 1)
 

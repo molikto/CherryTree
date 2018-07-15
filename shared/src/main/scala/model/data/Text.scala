@@ -12,7 +12,7 @@ abstract sealed class Text {
   private[data] def serialize(buffer: UnicodeWriter)
   private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int)
   private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int): Info
-  val size: Int
+  def size: Int
 }
 
 /**
@@ -119,7 +119,7 @@ object Text {
     def attributes: Seq[SpecialChar] = delimitation.attributes
     def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new NotImplementedError()
 
-    final override val size: Int = 2 + contentSize + attributes.map(a => attribute(a).size + 1).sum
+    final override lazy val size: Int = 2 + contentSize + attributes.map(a => attribute(a).size + 1).sum
 
     final override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
       var position = selfStart
@@ -228,7 +228,7 @@ object Text {
     */
   case class Plain(unicode: Unicode) extends Text {
     assert(!unicode.isEmpty)
-    override val size: Int = unicode.size
+    override def size: Int = unicode.size
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)

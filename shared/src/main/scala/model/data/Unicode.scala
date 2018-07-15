@@ -92,6 +92,7 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(private var str: String) {
+
   def apply(i: Int): Int = str.codePointAt(i)
 
   def codePoints: IntStream = str.codePoints()
@@ -144,6 +145,13 @@ case class Unicode(private var str: String) {
     val start = str.offsetByCodePoints(0, r.start)
     val end = str.offsetByCodePoints(start, r.size)
     Unicode(s"${str.substring(0, start)}${unicode.str}${str.substring(end)}")
+  }
+
+  def surround(r: IntRange, left: Unicode, right: Unicode): Unicode = {
+    val start = str.offsetByCodePoints(0, r.start)
+    val end = str.offsetByCodePoints(start, r.size)
+    val s = str.substring(start, end)
+    Unicode(s"${str.substring(0, start)}${left.str}$s${right.str}${str.substring(end)}")
   }
 
   def move(r: IntRange, at: Int): Unicode = {

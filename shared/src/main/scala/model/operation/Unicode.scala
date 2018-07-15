@@ -109,7 +109,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
   case class Surround(r: IntRange, left: data.Unicode, right: data.Unicode, idempotent: Boolean = true) extends Unicode {
     override def ty: Type = Type.Add
-    override def apply(d: data.Unicode): data.Unicode = d.replace(r, left.join(d.slice(r)).join(right))
+    override def apply(d: data.Unicode): data.Unicode = d.surround(r, left, right)
 
     def transformRange(range: IntRange): Option[IntRange] = {
       if (range == r) {

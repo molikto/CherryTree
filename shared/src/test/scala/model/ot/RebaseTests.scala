@@ -215,25 +215,32 @@ object RebaseTests extends TestSuite {
       for (_ <- 0 until 3000) {
         val a = operation.Rich.randomTransaction(1, n, random)
         val b = operation.Rich.randomTransaction(1, n, random)
-        val debug = true
+        val debug = false
+        if (debug) println(n.size)
         if (debug) println(s"Change a: $a")
         if (debug) println(s"Change b: $b")
         ot.Rich.rebase(a, b) match {
           case Rebased(_, (ap, bp)) =>
-            if (debug) println(s"Change a': $ap")
-            if (debug) println(s"Change b': $bp")
-            val aaa = operation.Rich.apply(bp, operation.Rich.apply(a, n))
-            val bbb = operation.Rich.apply(ap, operation.Rich.apply(b, n))
-            if (aaa == bbb) {
-              if (debug) println(s"App: $aaa")
-              n = aaa
-            } else {
-              var a = 1
-              a =  2
-              if (debug) println(s"App 0: $aaa")
-              if (debug) println(s"App 1: $bbb")
+            try {
+              if (debug) println(s"Change a': $ap")
+              if (debug) println(s"Change b': $bp")
+              val aaa = operation.Rich.apply(bp, operation.Rich.apply(a, n))
+              val bbb = operation.Rich.apply(ap, operation.Rich.apply(b, n))
+              if (aaa == bbb) {
+                if (debug) println(s"App: $aaa")
+                n = aaa
+              } else {
+                var a = 1
+                a =  2
+                if (debug) println(s"App 0: $aaa")
+                if (debug) println(s"App 1: $bbb")
+              }
+              assert(aaa == bbb)
+            } catch {
+              case k: Throwable =>
+                val j = 1
+                throw k
             }
-            assert(aaa == bbb)
         }
       }
     }
