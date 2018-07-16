@@ -11,7 +11,6 @@ case class Key(
   alt: Boolean = false,
   control: Boolean = false,
   meta: Boolean = false) {
-
   def +(a: Key.Modifier): Key = a.modify(this)
 }
 

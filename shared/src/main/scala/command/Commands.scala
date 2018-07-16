@@ -80,20 +80,20 @@ trait Commands {
   object Command {
     sealed abstract class Result
 
+    def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
     /**
       */
     object motion {
 
-      abstract class Base extends Command {
+      abstract class MotionCommand extends Command {
         id += "motion"
 
-        def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
       }
 
       // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
       object rich {
 
-        abstract class Base extends motion.Base {
+        abstract class RichMotionCommand extends motion.MotionCommand {
           id += "content"
 
           override def available(a: ClientState): Boolean = a.mode match {
@@ -127,24 +127,24 @@ trait Commands {
         }
 
 
-        val left: Command = new Base() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
+        val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
           override def defaultKeys = Seq("h", Backspace, Left)
           override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
           override def repeatable: Boolean = true
         }
 
-        val right: Command = new Base() {
+        val right: Command = new RichMotionCommand() {
           override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
           override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
           override def repeatable: Boolean = true
         }
 
-        val beginning: Command = new Base() {
+        val beginning: Command = new RichMotionCommand() {
           override def defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
           override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
         }
 
-        val end: Command = new Base {
+        val end: Command = new RichMotionCommand {
           override def defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
           override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
         }
@@ -161,7 +161,7 @@ trait Commands {
         // not implemented...??? because it is hard to make columns in a rich text editor
         // bar   N  |            to column N (default: 1)
 
-        abstract class FindCommand extends motion.Base {
+        abstract class FindCommand extends motion.MotionCommand {
 
           def reverse: FindCommand
 
@@ -245,7 +245,7 @@ trait Commands {
           override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
             content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
         }
-        val repeatFind: Command = new motion.Base {
+        val repeatFind: Command = new motion.MotionCommand {
           override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(";")
           override def action(a: ClientState): Client.Update = {
@@ -253,7 +253,7 @@ trait Commands {
           }
           override def repeatable: Boolean = true
         }
-        val repeatFindOppositeDirection: Command = new motion.Base {
+        val repeatFindOppositeDirection: Command = new motion.MotionCommand {
           override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(",")
           override def action(a: ClientState): Client.Update = {
@@ -357,20 +357,53 @@ trait Commands {
 
     object insert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
-      //  a     N  a    append text after the cursor (N times)
-      //A     N  A    append text at the end of the line (N times)
-      //i     N  i    insert text before the cursor (N times) (also: <Insert>)
-      //I     N  I    insert text before the first non-blank in the line (N times)
-      //gI    N  gI   insert text in column 1 (N times)
-      //o     N  o    open a new line below the current line, append text (N times)
-      //O     N  O    open a new line above the current line, append text (N times)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
       //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
       //
       //in Visual block mode:
       //v_b_I    I    insert the same text in front of all the selected lines
       //v_b_A    A    append the same text after all the selected lines
+
       // TODO
+      //o     N  o    open a new line below the current line, append text (N times)
+      //O     N  O    open a new line above the current line, append text (N times)
+      abstract class InsertCommand extends Command  {
+        def move(content: Rich,a: IntRange): Int
+
+        override def available(a: ClientState): Boolean = a.mode match {
+
+          case Some(model.mode.Node.Content(n, model.mode.Content.Normal(_))) =>
+            a.node(n).content match {
+              case model.data.Content.Rich(p) =>
+                true
+              case _ => false
+            }
+          case _ => false
+        }
+
+        override def action(a: ClientState): Client.Update = a.mode match {
+          case Some(c@model.mode.Node.Content(n, model.mode.Content.Normal(r))) =>
+            modeUpdate(c.copy(a = model.mode.Content.Insertion(move(
+              a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r))))
+        }
+      }
+      val appendAtCursor: InsertCommand = new InsertCommand {
+        override def defaultKeys: Seq[Key] = Seq("a")
+        override def move(content: Rich, a: IntRange): Int = a.until
+      }
+      val appendAtLine: InsertCommand  = new InsertCommand {
+        override def defaultKeys: Seq[Key] = Seq("A")
+        override def move(content: Rich,a: IntRange): Int = content.size
+      }
+      val insertAtCursor: InsertCommand  = new InsertCommand {
+        override def defaultKeys: Seq[Key] = Seq("i")
+        override def move(content: Rich,a: IntRange): Int = a.start
+      }
+      // TODO gI    N  gI   insert text in column 1 (N times)
+      val insertAtLine : InsertCommand = new InsertCommand {
+        override def defaultKeys: Seq[Key] = Seq("I")
+        override def move(content: Rich,a: IntRange): Int = 0
+      }
     }
 
     object scroll {

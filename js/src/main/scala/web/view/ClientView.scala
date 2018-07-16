@@ -149,7 +149,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }.subscribe())
   }
 
-  // TODO fix exact keymap https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
+  // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
   private val KeyMap: Map[String, Key.V] = Map(
     "Home" -> Key.Home,
     "End" -> Key.End,
@@ -170,7 +170,6 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
   )
 
   event("keydown", (event: KeyboardEvent) => {
-    // TODO key mapping
     var key = KeyMap.get(event.key).orNull
     if (key == null && Key.isUnicodeKey(event.key)) {
       key = Key.Grapheme(model.data.Unicode(event.key))
