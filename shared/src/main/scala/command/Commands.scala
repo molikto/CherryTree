@@ -269,6 +269,7 @@ trait Commands {
         }
 
         /**
+          * LATER
           * w     N  w            N words forward
           * W     N  W            N blank-separated WORDs forward
           * e     N  e            forward to the end of the Nth word
@@ -287,6 +288,7 @@ trait Commands {
 
 
 
+        // LATER
         //        )     N  )            N sentences forward
         //        (     N  (            N sentences backward
 
@@ -321,6 +323,7 @@ trait Commands {
 
       object node {
         /**
+          * LATER
           * k     N  k            up N lines (also: CTRL-P and <Up>)
           * j     N  j            down N lines (also: CTRL-J, CTRL-N, <NL>, and <Down>)
           * -     N  -            up N lines, on the first non-blank character
@@ -347,6 +350,7 @@ trait Commands {
 
 
         /**
+          * LATER
           * 'motion-parent': [['g', 'p']],
           * 'motion-next-sibling': [['}']],
           * 'motion-prev-sibling': [[' {']],
@@ -359,6 +363,7 @@ trait Commands {
 
     object scroll {
 
+      // LATER only some of should be implemented
       // Q_sc          Scrolling
       //
       //CTRL-E        N  CTRL-E       window N lines downwards (default: 1)
