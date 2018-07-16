@@ -84,6 +84,7 @@ case class Rich(text: Seq[Text]) {
 
   def moveLeftAtomic(a: IntRange): IntRange = if (a.start == 0) a else moveLeftAtomic(a.start)
   def moveRightAtomic(a: IntRange): IntRange = if (a.until == size) a else moveRightAtomic(a.until - 1)
+  // atomic consists: single unicode grapheme, single control point, atomic views
   def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes((aaa - 1) max 0).atomicRange
   def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes((bbb + 1) min (size - 1)).atomicRange
 

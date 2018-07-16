@@ -425,7 +425,7 @@ trait Commands {
     object Edits {
       abstract class EditCommand extends Command  {
         def defaultKeys: Seq[Key] = Seq.empty
-        def edit(content: Rich,a: Int): model.operation.Rich
+        def edit(content: Rich,a: Int): Option[model.operation.Rich]
 
         override def available(a: ClientState): Boolean = a.mode match {
           case Some(model.mode.Node.Content(n, model.mode.Content.Insertion(_))) =>
@@ -439,24 +439,28 @@ trait Commands {
 
         override def action(a: ClientState): Client.Update = a.mode match {
           case Some(c@model.mode.Node.Content(n, model.mode.Content.Insertion(r))) =>
-            Client.Update(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(edit(a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r)))), None)
+            val res = edit(a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r).map(k => {
+              Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+            }).getOrElse(Seq.empty)
+            Client.Update(res, None)
         }
-      }
-      abstract class EmptyEditCommand extends EditCommand {
-        override def edit(content: Rich, a: Int): operation.Rich = throw new NotImplementedError("")
-        override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, None)
       }
       val backspace: Command = new EditCommand {
         // TODO these keys should be seperate delete words, etc...
-        override def hardcodeKeys: Seq[Key] = Backspace.withAllModifers
-        override def edit(content: Rich, a: Int): operation.Rich = {
-          operation.Rich.delete(content.moveLeftAtomic(a))
+        override def hardcodeKeys: Seq[Key] = Backspace.withAllModifers ++ Seq(Control + "h")
+        override def edit(content: Rich, a: Int): Option[operation.Rich] = {
+          if (a > 0) {
+            Some(operation.Rich.deleteOrUnwrapAt(content, a - 1))
+          } else {
+            None
+          }
         }
       }
 
-      val enter: Command = new EmptyEditCommand {
-        // this also seems wrong
+      val enter: Command = new EditCommand {
+        // TODO what to do on enter???
         override def hardcodeKeys: Seq[Key] = Enter.withAllModifers
+        override def edit(content: Rich, a: Int): Option[operation.Rich] = None
       }
     }
 

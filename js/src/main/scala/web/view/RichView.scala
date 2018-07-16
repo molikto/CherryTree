@@ -473,7 +473,6 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     rich = data.asInstanceOf[model.data.Content.Rich].content
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
-      window.console.log(rich.toString)
      // val cs = c.asInstanceOf[operation.Content.Rich]
       clearDom()
       initDom()

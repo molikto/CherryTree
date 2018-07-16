@@ -21,6 +21,26 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+  def deleteOrUnwrapAt(content: data.Rich, i: Int): Rich = {
+    val info = content.infoSkipLeftAttributes(i)
+    if (info.ty == InfoType.Special && !info.text.isAtomicViewed) {
+      operation.Rich.unwrap(info.nodeStart, info.text.asInstanceOf[Text.Delimited[Any]])
+    } else {
+      operation.Rich.delete(info.atomicRange)
+    }
+  }
+
+  def unwrap(start: Int, value: Text.Delimited[Any]): operation.Rich = {
+    operation.Rich(
+      Seq(
+        Unicode.Delete(start, start + 1),
+        Unicode.Delete(start + value.contentSize, start + value.size - 1)
+      ),
+      Type.Delete
+    )
+  }
+
+
   def delete(range: IntRange): Rich = Rich(Seq(Unicode.Delete(range)), Type.Delete)
 
   def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)

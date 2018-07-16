@@ -97,7 +97,7 @@ object Text {
     buffer.toVector
   }
 
-  sealed private[model] trait Delimited[T] extends Text {
+  sealed trait Delimited[T] extends Text {
     def content: T
     def contentSize: Int
     private[model] def serializeContent(buffer: UnicodeWriter): Unit
