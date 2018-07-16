@@ -4,7 +4,7 @@ import api.ClientUpdate
 import client.Client
 import model.data.{apply => _, _}
 import model.range.IntRange
-import model.{ClientState, mode}
+import model.{ClientState, mode, operation}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
@@ -60,9 +60,10 @@ trait Commands {
 
     commands_.append(this)
 
+    def hardcodeKeys: Seq[Key] = Seq.empty
     def defaultKeys: Seq[Key]
 
-    def keys:  Seq[Key] = defaultKeys // TODO
+    def keys:  Seq[Key] = defaultKeys ++ hardcodeKeys // TODO
 
     def repeatable: Boolean = false
 
@@ -73,6 +74,7 @@ trait Commands {
     def waitingForGrapheme: Boolean = false
     def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = throw new NotImplementedError()
   }
+
 
   object Command {
 
@@ -370,7 +372,7 @@ trait Commands {
       }
     }
 
-    object ContentInsert {
+    object EnterInsert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
       //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
@@ -420,7 +422,45 @@ trait Commands {
       }
     }
 
-    object scroll {
+    object Edits {
+      abstract class EditCommand extends Command  {
+        def defaultKeys: Seq[Key] = Seq.empty
+        def edit(content: Rich,a: Int): model.operation.Rich
+
+        override def available(a: ClientState): Boolean = a.mode match {
+          case Some(model.mode.Node.Content(n, model.mode.Content.Insertion(_))) =>
+            a.node(n).content match {
+              case model.data.Content.Rich(p) =>
+                true
+              case _ => false
+            }
+          case _ => false
+        }
+
+        override def action(a: ClientState): Client.Update = a.mode match {
+          case Some(c@model.mode.Node.Content(n, model.mode.Content.Insertion(r))) =>
+            Client.Update(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(edit(a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r)))), None)
+        }
+      }
+      abstract class EmptyEditCommand extends EditCommand {
+        override def edit(content: Rich, a: Int): operation.Rich = throw new NotImplementedError("")
+        override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, None)
+      }
+      val backspace: Command = new EditCommand {
+        // TODO these keys should be seperate delete words, etc...
+        override def hardcodeKeys: Seq[Key] = Backspace.withAllModifers
+        override def edit(content: Rich, a: Int): operation.Rich = {
+          operation.Rich.delete(content.moveLeftAtomic(a))
+        }
+      }
+
+      val enter: Command = new EmptyEditCommand {
+        // this also seems wrong
+        override def hardcodeKeys: Seq[Key] = Enter.withAllModifers
+      }
+    }
+
+    object Scroll {
 
       // LATER only some of should be implemented
       // Q_sc          Scrolling
@@ -445,8 +485,9 @@ trait Commands {
 
   {
     var ignored: Command = Command.ContentMotion.toNextChar
-    ignored = Command.ContentInsert.appendAtCursor
+    ignored = Command.EnterInsert.appendAtCursor
     ignored = Command.exit
+    ignored = Command.Edits.backspace
   }
 
   // these are currently NOT implemented becuase we want a different mark system

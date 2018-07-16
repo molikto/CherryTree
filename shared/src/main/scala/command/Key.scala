@@ -11,6 +11,17 @@ case class Key(
   alt: Boolean = false,
   control: Boolean = false,
   meta: Boolean = false) {
+
+  def withAllModifers: Seq[Key] = {
+    import Key._
+    val allTrue = copy(shift = true, alt = true, control = true, meta = true)
+    Seq(this,
+      Shift + this, Meta + this, Control + this, Alt + this,
+      copy(shift = true, meta = true), copy(shift = true, control = true), copy(shift = true, meta = true),
+      copy(alt = true, control = true), copy(alt = true, meta = true), copy(control = true, meta = true),
+      allTrue.copy(shift = false), allTrue.copy(alt = false), allTrue.copy(control = false), allTrue.copy(meta = false),
+      allTrue)
+  }
 }
 
 object Key {
@@ -46,6 +57,7 @@ object Key {
   case object Backspace extends V
   case object Tab extends V
   case object Escape extends V
+
   case class Unknown(k: String) extends V // a key not yet defined here...
 
   /**

@@ -253,7 +253,10 @@ class Client(
   }
 
 
-  def act(command: Command): Unit = change(command.action(state))
+  def act(command: Command): Unit = {
+    flush()
+    change(command.action(state))
+  }
 
   private val keyToCommand: Map[Key, Command] = commands.flatMap(c => c.keys.map(_ -> c)).toMap
   private val graphemeToCommand: Map[Key.Grapheme, Command] = commands.flatMap(
@@ -286,10 +289,12 @@ class Client(
               false
             }
         }
-      if (state.isInserting) doCommand()
-      else {
-          doCommand()
-          true
+      if (state.isInserting) {
+        // some keys we MUST keep
+        doCommand()
+      } else {
+        doCommand()
+        true
       }
     }
   }

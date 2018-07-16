@@ -35,9 +35,36 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     *
     */
 
-  dom = p(`class` := "ct-content", if (isEmpty) " " else rec(rich.text)).render
+  dom = p(`class` := "ct-content").render
 
   dom.style = "outline: 0px solid transparent;"
+
+
+  private var insertEmptyTextNode: raw.Text = null
+  private var insertNonEmptyTextNode: raw.Text = null
+  private var insertNonEmptyTextNodeStartIndex: Int = 0
+  private var insertNonEmptyTextLength: Int = 0
+  private var astHighlight: HTMLSpanElement = null
+
+  private def initDom(): Unit = {
+    if (dom.childNodes.length == 0) {
+      if (isEmpty) dom.appendChild(" ".render)
+      else dom.appendChild(rec(rich.text).render)
+    } else {
+      throw new IllegalStateException("...")
+    }
+  }
+
+  {
+    initDom()
+  }
+
+  private def clearDom(): Unit = {
+    insertEmptyTextNode = null
+    insertNonEmptyTextNode = null
+    astHighlight = null
+    removeAllChild(dom)
+  }
 
   private def clearEmptyRenderingIfEmptyState(): Unit = {
     if (isEmpty) removeAllChild(dom)
@@ -248,7 +275,6 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     }
   }
 
-  private var astHighlight: HTMLSpanElement = null
 
   private def removeFormattedNodeHighlight(): Unit = {
     if (astHighlight != null) {
@@ -285,15 +311,10 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   })
 
   event("input", (a: Event) => {
+    // TODO only accept single node text changes, or subparagraph changes??
     if (isInserting) window.console.log(a)
     else a.preventDefault()
   })
-
-
-  private var insertEmptyTextNode: raw.Text = null
-  private var insertNonEmptyTextNode: raw.Text = null
-  private var insertNonEmptyTextNodeStartIndex: Int = 0
-  private var insertNonEmptyTextLength: Int = 0
 
 
   /**
@@ -452,7 +473,10 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     rich = data.asInstanceOf[model.data.Content.Rich].content
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
-      val cs = c.asInstanceOf[operation.Content.Rich]
+      window.console.log(rich.toString)
+     // val cs = c.asInstanceOf[operation.Content.Rich]
+      clearDom()
+      initDom()
     }
   }
 }
