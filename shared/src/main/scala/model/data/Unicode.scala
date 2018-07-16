@@ -103,8 +103,7 @@ case class Unicode(private var str: String) {
 
   def codePoints: IntStream = str.codePoints()
 
-
-  def extendedGraphemeRange(pos: Int): IntRange = {
+  private def extendedGraphemeStrRange(pos: Int): (Int, Int) = {
     val strStartIndex = toStringPosition(pos)
     var start = 0
     var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
@@ -112,6 +111,16 @@ case class Unicode(private var str: String) {
       start = end
       end = GraphemeSplitter.nextBreak(str, start)
     }
+    (start, end)
+  }
+
+  def extendedGrapheme(pos: Int): Unicode = {
+    val (start, end) = extendedGraphemeStrRange(pos)
+    Unicode(str.substring(start, end))
+  }
+
+  def extendedGraphemeRange(pos: Int): IntRange = {
+    val (start, end) = extendedGraphemeStrRange(pos)
     val ss = str.codePointCount(0, start)
     val ee = str.codePointCount(start, end) + ss
     IntRange(ss, ee)

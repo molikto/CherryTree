@@ -1,7 +1,7 @@
 package web.view
 
 import client.Client
-import command.Commands
+import command.{Commands, Key}
 import model.{ClientState, cursor, data}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
@@ -37,8 +37,10 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
 
   private val bottomBarSize = "24px"
 
-  private val mode = p(
+  private val mode = span(
     "").render
+
+  private val debugInfo = span(marginLeft := "12px", "").render
 
   private val bottomBar = div(
     width := "100%",
@@ -49,8 +51,10 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     alignSelf := "flex-end",
     height := bottomBarSize,
     backgroundColor := theme.bottomBarBackground,
+    flexDirection := "row",
     color := theme.bottomBarText,
-    mode
+    mode,
+    debugInfo
   ).render
   dom.appendChild(bottomBar)
 
@@ -109,6 +113,9 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }
   }
 
+  /**
+    * initialize
+    */
   {
     val ClientState(node, selection) = client.state
     def initRenderContentRec(root: model.data.Node, parent: html.Element): Unit = {
@@ -135,24 +142,45 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     defer(client.stateUpdates.doOnNext(update => {
       syncMode(update.mode)
     }).subscribe())
+
+    defer(client.errors.doOnNext {
+      case Some(e) => debugInfo.textContent = e.getMessage
+      case _ =>
+    }.subscribe())
   }
 
+  // TODO fix exact keymap https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
+  private val KeyMap: Map[String, Key.V] = Map(
+    "Home" -> Key.Home,
+    "End" -> Key.End,
+    "ArrowLeft" -> Key.Left,
+    "ArrowRight" -> Key.Right,
+    "ArrowUp" -> Key.Up,
+    "ArrowDown" -> Key.Down,
+    "Enter" -> Key.Enter,
+    "PageDown" -> Key.PageDown,
+    "PageUp" -> Key.PageUp,
+    "Backspace" -> Key.Backspace,
+    "Tab" -> Key.Tab,
+    "Escape" -> Key.Escape,
+    "Shift" -> Key.Shift,
+    "Meta" -> Key.Meta,
+    "Control" -> Key.Control,
+    "Alt" -> Key.Alt
+  )
+
   event("keydown", (event: KeyboardEvent) => {
-    client.state.mode match {
-      case Some(model.mode.Node.Content(a, content)) =>
-        content match {
-          case model.mode.Content.Normal(range) =>
-            event.key match {
-              case "l" =>
-                client.act(client.Command.motion.rich.right)
-              case "h" =>
-                client.act(client.Command.motion.rich.left)
-            }
-        }
-      case _ =>
+    // TODO key mapping
+    var key = KeyMap.get(event.key).orNull
+    if (key == null && Key.isUnicodeKey(event.key)) {
+      key = Key.Grapheme(model.data.Unicode(event.key))
     }
-    println(s"keydown ${event.key}")
-    event.preventDefault()
+    if (key == null) key = Key.Unknown(event.key)
+    val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
+    debugInfo.textContent = event.key + " " + kk.toString
+    if (client.keyDown(kk)) {
+      event.preventDefault()
+    }
   })
 
   event("keyup", (event: KeyboardEvent) => {

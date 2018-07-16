@@ -2,7 +2,7 @@ package model.data
 
 import boopickle._
 import model.range.IntRange
-import model.{cursor, mode}
+import model.{cursor}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -24,11 +24,11 @@ case class Info(
   specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
   char: Int = 0 // only valid not Special
 ) {
-  def matchesChar(char: Int, delimitationCodePoints:  Map[SpecialChar.Delimitation, Int]): Boolean = {
+  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar.Delimitation, Unicode]): Boolean = {
     if (ty == InfoType.Special) {
-      delimitationCodePoints.get(text.asInstanceOf[Text.Delimited[Any]].delimitation).contains(char)
+      delimitationCodePoints.get(text.asInstanceOf[Text.Delimited[Any]].delimitation).contains(grapheme)
     } else {
-      this.char == char
+      extendedGrapheme == grapheme
     }
   }
 
@@ -43,6 +43,17 @@ case class Info(
       case _ => throw new NotImplementedError("Not implemented yet!!")
     }
   }
+
+  def extendedGrapheme: Unicode = {
+    if (ty == InfoType.Plain) {
+      text.asInstanceOf[Text.Plain].unicode.extendedGrapheme(positionInUnicode)
+    } else if (ty == InfoType.Coded) {
+      text.asInstanceOf[Text.Coded].content.extendedGrapheme(positionInUnicode)
+    } else {
+      throw new IllegalStateException("Invalid xml structure")
+    }
+  }
+
   def extendedGraphemeRange: IntRange = {
     if (ty == InfoType.Plain) {
       text.asInstanceOf[Text.Plain].unicode.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart)
@@ -76,24 +87,24 @@ case class Rich(text: Seq[Text]) {
 
   def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes(aaa - 1).atomicRange
 
-  def findRightCharAtomic(start: IntRange, char: Int, delimitationCodePoints:  Map[SpecialChar.Delimitation, Int]): Option[IntRange] = {
+  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar.Delimitation, Unicode]): Option[IntRange] = {
     var range = start
     while (range.until < size) {
       val info = infoSkipRightAttributes(range.until)
       range = info.atomicRange
-      if (info.matchesChar(char, delimitationCodePoints)) {
+      if (info.matchesChar(grapheme, delimitationCodePoints)) {
         return Some(range)
       }
     }
     None
   }
 
-  def findLeftCharAtomic(start: IntRange, char: Int, delimitationCodePoints: Map[SpecialChar.Delimitation, Int]): Option[IntRange] = {
+  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode]): Option[IntRange] = {
     var range = start
     while (range.start > 0) {
       val info = infoSkipLeftAttributes(range.start - 1)
       range = info.atomicRange
-      if (info.matchesChar(char, delimitationCodePoints)) {
+      if (info.matchesChar(grapheme, delimitationCodePoints)) {
         return Some(range)
       }
     }

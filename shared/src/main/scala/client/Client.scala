@@ -17,7 +17,7 @@ import command.{Commands, Key}
 import model.ot.Rebased
 import util._
 import model._
-import model.data.SpecialChar
+import model.data.{SpecialChar, Unicode}
 import monix.reactive.subjects.PublishSubject
 
 import scala.concurrent.Future
@@ -46,6 +46,8 @@ class Client(
     * connection state
     */
   val connected = ObservableProperty(true)
+
+  val errors: ObservableProperty[Option[Throwable]] = ObservableProperty(None)
 
 
   private var subscription: Cancelable = null
@@ -102,11 +104,12 @@ class Client(
           requesting = false
           onSuccess(r)
           tryTopRequest()
+          errors.update(None)
         }
       case Failure(t) =>
         self.synchronized {
           requesting = false
-          t.printStackTrace()
+          errors.update(Some(t))
           t match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
               // LATER properly handle this!
@@ -184,6 +187,35 @@ class Client(
 
   def act(command: Command): Unit = change(command.action(state))
 
+
+  {
+    val _ignored = Command.motion.rich.left
+  }
+
+  def keyDown(key: Key): Boolean = {
+    if (isWaitingForGraphemeCommand) {
+      key.a match {
+        case g@Key.Grapheme(a) => change(consumeByWaitingForGraphemeCommand(state, g))
+        case _: Key.Modifier => // ignore modifier only keys
+        case _ => clearWaitingForGraphemeCommand()
+      }
+      true
+    } else {
+      def doCommand(): Boolean = {
+        val a = commands.find(_.keys.contains(key))
+        a.foreach(act)
+        a.isDefined
+      }
+      state.mode match {
+        case Some(model.mode.Node.Content(_, model.mode.Content.Insertion(_))) => doCommand()
+        case _ =>
+          doCommand()
+          true
+      }
+    }
+  }
+
+
   def change(update: Client.Update): Unit = change(update.transaction, update.mode, update.fromUser)
   /**
     * submit a change to local state, a sync might follow
@@ -222,13 +254,13 @@ class Client(
   /**
     * these are settings??
     */
-  override def delimitationCodePoints: Map[SpecialChar.Delimitation, Int] = Map(
-    SpecialChar.StrikeThrough -> '-'.toInt,
-    SpecialChar.Code -> '`'.toInt,
-    SpecialChar.Strong -> '#'.toInt,
-    SpecialChar.LaTeX -> '$'.toInt,
-    SpecialChar.Link -> '['.toInt,
-    SpecialChar.Emphasis -> '*'.toInt
+  override def delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode] = Map(
+    SpecialChar.StrikeThrough -> Unicode("-"),
+    SpecialChar.Code -> Unicode("`"),
+    SpecialChar.Strong -> Unicode("#"),
+    SpecialChar.LaTeX -> Unicode("$"),
+    SpecialChar.Link -> Unicode("["),
+    SpecialChar.Emphasis -> Unicode("*")
   )
 
   override def additionalKeyMaps: Map[String, Seq[Key]] = Map.empty

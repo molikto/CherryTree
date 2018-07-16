@@ -1,53 +1,69 @@
 package command
 
+import model.data.Unicode
+import util.GraphemeSplitter
+
 // key is a unicode codepoint
 
-case class Key(a: Key.Single,
+case class Key(
+  a: Key.V,
   shift: Boolean = false,
-  command: Boolean = false,
-  control: Boolean = false) {
+  alt: Boolean = false,
+  control: Boolean = false,
+  meta: Boolean = false) {
 
   def +(a: Key.Modifier): Key = a.modify(this)
 }
 
 object Key {
 
-  sealed trait Modifier {
+  sealed trait Modifier extends V {
     def modify(key: Key): Key
   }
   case object Shift extends Modifier {
     override def modify(key: Key): Key = key.copy(shift = true)
   }
-  case object Command extends Modifier {
-    override def modify(key: Key): Key = key.copy(command = true)
+  case object Meta extends Modifier {
+    override def modify(key: Key): Key = key.copy(meta = true)
   }
   case object Control extends Modifier {
     override def modify(key: Key): Key = key.copy(control = true)
   }
-
-  sealed trait Single {
-
+  case object Alt extends Modifier {
+    override def modify(key: Key): Key = key.copy(alt = true)
   }
 
-  case object Home extends Single
-  case object End extends Single
-  case object Left extends Single
-  case object Right extends Single
-  case object Up extends Single
-  case object Down extends Single
-  case object Enter extends Single
-  case object PageDown extends Single
-  case object PageUp extends Single
-  case object Backspace extends Single
-
-  case class CodePointSingle(a: Int) extends Single
-
-  implicit def stringToKey(s: String): Key = {
-    assert(s.codePointCount(0, s.size) == 1)
-    Key(CodePointSingle(s.codePointAt(0)))
+  sealed trait V {
   }
 
-  implicit def singleToKey(s: Single): Key = {
+  case object Home extends V
+  case object End extends V
+  case object Left extends V
+  case object Right extends V
+  case object Up extends V
+  case object Down extends V
+  case object Enter extends V
+  case object PageDown extends V
+  case object PageUp extends V
+  case object Backspace extends V
+  case object Tab extends V
+  case object Escape extends V
+  case class Unknown(k: String) extends V // a key not yet defined here...
+
+  /**
+    * the value is combined with modifiers
+    */
+  case class Grapheme(a: Unicode) extends V
+
+  def isUnicodeKey(s: String): Boolean = s.length == 1 ||
+    GraphemeSplitter.nextBreak(s) == s.length
+
+  implicit def stringToKeyImplicit(s: String): Key = {
+    assert(isUnicodeKey(s))
+    Key(Grapheme(Unicode(s)))
+  }
+
+  implicit def singleToKey(s: V): Key = {
     Key(s)
   }
 }

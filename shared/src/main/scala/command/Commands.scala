@@ -2,7 +2,7 @@ package command
 
 import api.ClientUpdate
 import client.Client
-import model.data.{Content, InfoType, Rich, SpecialChar}
+import model.data.{apply => _, _}
 import model.range.IntRange
 import model.{ClientState, mode}
 
@@ -17,7 +17,7 @@ trait Commands {
   /**
     * these are settings??
     */
-  def delimitationCodePoints: Map[SpecialChar.Delimitation, Int]
+  def delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode]
 
 
   def additionalKeyMaps: Map[String, Seq[Key]]
@@ -27,24 +27,32 @@ trait Commands {
 
   private var waitingForCharCommand: Command = null
 
-  def tryConsumeByWaitingForCharCommand(state: ClientState, a: Int): Boolean = {
+  // TODO clear in mode change
+  def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
+
+  def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
     if (waitingForCharCommand != null) {
-      waitingForCharCommand.actionOnChar(state, a)
+      val res = waitingForCharCommand.actionOnGrapheme(state, a)
       waitingForCharCommand = null
-      true
+      res
     } else {
-      false
+      noUpdate()
     }
   }
 
+  private def noUpdate(): Client.Update = Client.Update(Seq.empty, None, fromUser = true)
+
+  def clearWaitingForGraphemeCommand(): Unit = {
+    waitingForCharCommand = null
+  }
+
   private var lastFindCommand: Command.motion.rich.FindCommand = null
-  private var lastFindCommandArgument: Int = 0
+  private var lastFindCommandArgument: Grapheme = null
 
   def commands: Seq[Command] = commands_
 
   abstract class Command {
 
-    def noUpdate(): Client.Update = Client.Update(Seq.empty, None, fromUser = true)
 
     commands_.append(this)
 
@@ -53,6 +61,8 @@ trait Commands {
     def name: String = id.mkString(".")
 
     def defaultKeys: Seq[Key]
+
+    def keys:  Seq[Key] = defaultKeys // TODO
 
     def repeatable: Boolean = false
 
@@ -63,8 +73,8 @@ trait Commands {
 
     def action(a: ClientState): Client.Update
 
-    def waitingForChar: Boolean = false
-    def actionOnChar(a: ClientState, char: Int): Client.Update = throw new NotImplementedError()
+    def waitingForGrapheme: Boolean = false
+    def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = throw new NotImplementedError()
   }
 
   object Command {
@@ -153,30 +163,45 @@ trait Commands {
 
         abstract class FindCommand extends motion.Base {
 
+          def reverse: FindCommand
+
           override def action(a: ClientState): Client.Update = {
             waitingForCharCommand = this
             noUpdate()
           }
 
-          override def waitingForChar: Boolean = true
+          override def waitingForGrapheme: Boolean = true
           override def repeatable: Boolean = true
-          def move(a: Rich, range: IntRange, char: Int): Option[IntRange]
-          final override def actionOnChar(a: ClientState, char: Int): Client.Update = {
-            lastFindCommand = this
-            lastFindCommandArgument = char
+          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
+          def skip(a: Rich, range: IntRange): IntRange = range
+          def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
+            if (skipCurrent) {
+              move(a, range, char).flatMap(m => {
+                if (m == range) {
+                  move(a, skip(a, m), char)
+                } else {
+                  Some(m)
+                }
+              })
+            } else {
+              move(a, range, char)
+            }
+          }
+
+          def findGrapheme(a: ClientState, char: Grapheme, skipCurrent: Boolean): Client.Update = {
             a.mode match {
               case Some(o@mode.Node.Content(n, c)) =>
                 val content = a.node(n).content.asInstanceOf[Content.Rich].content
                 c match {
                   case mode.Content.Normal(r) =>
-                    move(content, r, char) match {
+                    moveSkip(content, r, char, skipCurrent) match {
                       case Some(move) =>
                         modeUpdate(o.copy(a = mode.Content.Normal(move)))
                       case None =>
                         noUpdate()
                     }
                   case v@mode.Content.Visual(fix, m) =>
-                    move(content, m, char) match {
+                    moveSkip(content, m, char, skipCurrent) match {
                       case Some(move) =>
                         modeUpdate(o.copy(a = mode.Content.Visual(fix, move)))
                       case None =>
@@ -187,24 +212,44 @@ trait Commands {
               case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
             }
           }
+
+          final override def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = {
+            lastFindCommand = this
+            lastFindCommandArgument = char
+            findGrapheme(a, char, skipCurrent = false)
+          }
         }
 
         val findNextChar: FindCommand = new FindCommand {
+          override def reverse: FindCommand = findPreviousChar
           override def defaultKeys: Seq[Key] = Seq("f")
-          def move(a: Rich, range: IntRange, char: Int): Option[IntRange] = a.findRightCharAtomic(range, char, delimitationCodePoints)
+          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
+
         }
         val findPreviousChar: FindCommand = new FindCommand {
+          override def reverse: FindCommand = findNextChar
           override def defaultKeys: Seq[Key] = Seq("F")
-          def move(a: Rich, range: IntRange, char: Int): Option[IntRange] = a.findLeftCharAtomic(range, char, delimitationCodePoints)
+          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
         }
-        val toNextChar: FindCommand = ???
-        val toPreviousChar: FindCommand = ???
+        val toNextChar: FindCommand = new FindCommand {
+          override def reverse: FindCommand = toPreviousChar
+          override def defaultKeys: Seq[Key] = Seq("t")
+          override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
+          override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
+          content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
+        }
+        val toPreviousChar: FindCommand = new FindCommand {
+          override def reverse: FindCommand = toNextChar
+          override def defaultKeys: Seq[Key] = Seq("T")
+          override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
+          override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
+            content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
+        }
         val repeatFind: Command = new motion.Base {
           override def defaultKeys: Seq[Key] = Seq(";")
           override def action(a: ClientState): Client.Update = {
             if (lastFindCommand != null) {
-              // TODO
-              noUpdate()
+              lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
             } else {
               noUpdate()
             }
@@ -215,8 +260,7 @@ trait Commands {
           override def defaultKeys: Seq[Key] = Seq(",")
           override def action(a: ClientState): Client.Update = {
             if (lastFindCommand != null) {
-              // TODO
-              noUpdate()
+              lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
             } else {
               noUpdate()
             }
@@ -234,12 +278,12 @@ trait Commands {
           * ge    N  ge           backward to the end of the Nth word
           * gE    N  gE           backward to the end of the Nth blank-separated WORD
           */
-        val wordBeginning: Command = ???
-        val wordEnd: Command = ???
-        val wordNext: Command = ???
-        val WordBeginning: Command = ???
-        val WordEnd: Command = ???
-        val WordNext: Command = ???
+//        val wordBeginning: Command = ???
+//        val wordEnd: Command = ???
+//        val wordNext: Command = ???
+//        val WordBeginning: Command = ???
+//        val WordEnd: Command = ???
+//        val WordNext: Command = ???
 
 
 
@@ -288,10 +332,10 @@ trait Commands {
           * gg    N  gg           goto line N (default: first line), on the first
           * non-blank character
           */
-        val up: Command = ???
-        val down: Command = ???
-        val visibleBeginning: Command = ???
-        val visibleEnd: Command = ???
+//        val up: Command = ???
+//        val down: Command = ???
+//        val visibleBeginning: Command = ???
+//        val visibleEnd: Command = ???
 
         // not implemented for not understand what should it behave
         // * N%    N  %            goto line N percentage down in the file; N must be
@@ -307,9 +351,9 @@ trait Commands {
           * 'motion-next-sibling': [['}']],
           * 'motion-prev-sibling': [[' {']],
           */
-        val parent: Command = ???
-        val nextSibling: Command = ???
-        val previousSibling: Command = ???
+//        val parent: Command = ???
+//        val nextSibling: Command = ???
+//        val previousSibling: Command = ???
       }
     }
 
