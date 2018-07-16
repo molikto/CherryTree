@@ -38,7 +38,7 @@ class Server extends Api {
     )),
     Text.Plain(Unicode(" ")),
     Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"))
-  ))), Seq(data.Node.random()))
+  ))), Seq.empty)
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty

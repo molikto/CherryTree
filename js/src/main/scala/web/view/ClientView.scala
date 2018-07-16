@@ -157,13 +157,13 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
           case model.operation.Node.Content(at, c) =>
             contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
           case model.operation.Node.Replace(at, c) =>
-            // TODO
+            // TODO update node structure
             ???
           case model.operation.Node.Delete(r) =>
-            // TODO
+            // TODO update node structure
             ???
           case model.operation.Node.Insert(at, childs) =>
-            // TODO
+            // TODO update node structure
             ???
           case model.operation.Node.Move(_, _) => ???
         }

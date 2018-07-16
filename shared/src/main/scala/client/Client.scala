@@ -60,7 +60,8 @@ class Client(
   private var subscription: Cancelable = null
 
   def start(): Unit = {
-    subscription = Observable.interval(300.millis).doOnNext(_ => sync()).subscribe()
+    // LATER make this an option. so it is easier to debug...
+    subscription = Observable.interval(5000.millis).doOnNext(_ => sync()).subscribe()
   }
 
   def stop(): Unit = {

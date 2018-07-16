@@ -63,7 +63,7 @@ trait Commands {
     def hardcodeKeys: Seq[Key] = Seq.empty
     def defaultKeys: Seq[Key]
 
-    def keys:  Seq[Key] = defaultKeys ++ hardcodeKeys // TODO
+    def keys:  Seq[Key] = defaultKeys ++ hardcodeKeys // TODO key maps
 
     def repeatable: Boolean = false
 
@@ -86,7 +86,7 @@ trait Commands {
         a.mode match {
           case Some(m) =>
             m match {
-              case model.mode.Node.Visual(fix, move) => noUpdate() // TODO
+              case model.mode.Node.Visual(fix, move) => noUpdate() // TODO exit visual mode
               case nc@model.mode.Node.Content(n, c) =>
                 a.node(n).content match {
                   case model.data.Content.Rich(rich) =>
@@ -98,7 +98,7 @@ trait Commands {
                       case _ => noUpdate()
                     }
                   case model.data.Content.Code(c, _) =>
-                    ??? // TODO what
+                    ??? // TODO exit code mode?
 
                 }
               }
@@ -381,7 +381,7 @@ trait Commands {
       //v_b_I    I    insert the same text in front of all the selected lines
       //v_b_A    A    append the same text after all the selected lines
 
-      // TODO
+      // TODO open new line
       //o     N  o    open a new line below the current line, append text (N times)
       //O     N  O    open a new line above the current line, append text (N times)
       abstract class InsertCommand extends Command  {
@@ -415,7 +415,7 @@ trait Commands {
         override def defaultKeys: Seq[Key] = Seq("i")
         override def move(content: Rich,a: IntRange): Int = a.start
       }
-      // TODO gI    N  gI   insert text in column 1 (N times)
+      // TODO support two char keys gI    N  gI   insert text in column 1 (N times)
       val insertAtContentBeginning : InsertCommand = new InsertCommand {
         override def defaultKeys: Seq[Key] = Seq("I")
         override def move(content: Rich,a: IntRange): Int = 0
