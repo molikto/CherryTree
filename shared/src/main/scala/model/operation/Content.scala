@@ -13,55 +13,51 @@ abstract sealed class Content extends Operation[data.Content] {
 
 object Content extends OperationObject[data.Content, Content] {
 
-  object Code {
-    case class Content(op: operation.Unicode) extends operation.Content {
-      override def ty: Type = op.ty
-      override def apply(d: data.Content): data.Content = {
-        d match {
-          case c: data.Content.Code => c.copy(unicode = op(c.unicode))
-          case _ => throw new IllegalStateException("Not applicable operation")
-        }
+  case class Code(op: operation.Unicode) extends operation.Content {
+    override def ty: Type = op.ty
+    override def apply(d: data.Content): data.Content = {
+      d match {
+        case c: data.Content.Code => c.copy(unicode = op(c.unicode))
+        case _ => throw new IllegalStateException("Not applicable operation")
       }
-
-      override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
     }
-    case class Lang(lang: Option[String]) extends operation.Content {
-      override def ty: Type = Type.AddDelete
-      override def apply(d: data.Content): data.Content = {
-        d match {
-          case c: data.Content.Code => c.copy(lang = lang)
-          case _ => throw new IllegalStateException("Not applicable operation")
-        }
-      }
 
-      override def transform(a: mode.Content): Option[mode.Content] = Some(a)
-    }
+    override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
   }
-  object Rich {
-    case class Content(op: operation.Rich) extends operation.Content {
-      override def ty: Type = op.ty
-      override def apply(d: data.Content): data.Content = {
-        d match {
-          case c: data.Content.Rich => c.copy(content = op(c.content))
-          case _ => throw new IllegalStateException("Not applicable operation")
-        }
+  case class CodeLang(lang: Option[String]) extends operation.Content {
+    override def ty: Type = Type.AddDelete
+    override def apply(d: data.Content): data.Content = {
+      d match {
+        case c: data.Content.Code => c.copy(lang = lang)
+        case _ => throw new IllegalStateException("Not applicable operation")
       }
-
-      override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
     }
+
+    override def transform(a: mode.Content): Option[mode.Content] = Some(a)
+  }
+  case class Rich(op: operation.Rich) extends operation.Content {
+    override def ty: Type = op.ty
+    override def apply(d: data.Content): data.Content = {
+      d match {
+        case c: data.Content.Rich => c.copy(content = op(c.content))
+        case _ => throw new IllegalStateException("Not applicable operation")
+      }
+    }
+
+    override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
-        case Content.Code.Content(u) =>
+        case Code(u) =>
           writeInt(0)
           Unicode.pickler.pickle(u)
-        case Content.Code.Lang(l) =>
+        case CodeLang(l) =>
           writeInt(1)
           writeString(l.getOrElse(""))
-        case Content.Rich.Content(u) =>
+        case Rich(u) =>
           writeInt(2)
           operation.Rich.pickler.pickle(u)
       }
@@ -71,26 +67,26 @@ object Content extends OperationObject[data.Content, Content] {
       import state.dec._
       readInt match {
         case 0 =>
-          Content.Code.Content(Unicode.pickler.unpickle)
+          Content.Code(Unicode.pickler.unpickle)
         case 1 =>
-          Content.Code.Lang(readString match {
+          Content.CodeLang(readString match {
             case "" => None
             case a => Some(a)
           })
         case 2 =>
-          Content.Rich.Content(operation.Rich.pickler.unpickle)
+          Content.Rich(operation.Rich.pickler.unpickle)
       }
     }
   }
 
   override def random(d: data.Content, r: Random): Content = {
     d match {
-      case data.Content.Rich(content) => Rich.Content(operation.Rich.random(content, r))
+      case data.Content.Rich(content) => Rich(operation.Rich.random(content, r))
       case data.Content.Code(unicode, _) =>
         if (r.nextBoolean()) {
-          Code.Content(operation.Unicode.random(unicode, r))
+          Code(operation.Unicode.random(unicode, r))
         } else {
-          Code.Lang(Some(r.nextInt(10).toString))
+          CodeLang(Some(r.nextInt(10).toString))
         }
     }
   }

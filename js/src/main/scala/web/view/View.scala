@@ -40,8 +40,9 @@ abstract class View {
     des.append(a)
   }
 
-  def defer(a: Cancelable): Unit = {
+  def defer(a: Cancelable): Cancelable = {
     des.append(_ => a.cancel())
+    a
   }
 
   def event[T <: Event](ty: String,

@@ -4,13 +4,18 @@ import scalatags.JsDom.all._
 import model._
 import model.data._
 import model.range.IntRange
+import monix.execution.Cancelable
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw.{CompositionEvent, Event, HTMLElement, HTMLImageElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, window}
 import org.w3c.dom.css.CSSStyleDeclaration
 
+import monix.execution.Scheduler.Implicits.global
 import scala.scalajs.js
 
+/**
+  * it should only call methods in client for input related, lazy to build bridges now
+  */
 class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
   /**
@@ -59,7 +64,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
       )
       case Text.Strong(c) => span(
         span(`class` := "ct-cg",contenteditable := "false", "#"),
-        strong(`class` := "ct-em", rec(c)),
+        strong(`class` := "ct-strong", rec(c)),
         span(`class` := "ct-cg",contenteditable := "false", "#") // LATER ** char as a single char
       )
       case Text.StrikeThrough(c) => span(
@@ -266,23 +271,22 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
 
   event("compositionstart", (a: CompositionEvent) => {
-//    if (inserting == null) a.preventDefault()
-//    else inserting.onCompositionStart(a)
+    if (isInserting) clientView.client.disableStateUpdate = true
+    else a.preventDefault()
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
-//    if (inserting == null) a.preventDefault()
-//    else inserting.onCompositionUpdate(a)
+    if (!isInserting) a.preventDefault()
   })
 
   event("compositionend", (a: CompositionEvent) => {
-//    if (inserting == null) a.preventDefault()
-//    else inserting.onCompositionUpdate(a)
+    if (isInserting) clientView.client.disableStateUpdate = false
+    else a.preventDefault()
   })
 
   event("input", (a: Event) => {
-//    if (inserting == null) a.preventDefault()
-//    else inserting.onInput(a)
+    if (isInserting) window.console.log(a)
+    else a.preventDefault()
   })
 
 
@@ -350,6 +354,10 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
       insertEmptyTextNode = null
     }
     insertNonEmptyTextNode = null
+    if (flushSubscription != null) {
+      flushSubscription.cancel()
+      flushSubscription = null
+    }
   }
 
   private def clearVisualMode(): Unit = {
@@ -366,6 +374,11 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   }
 
   private def updateInsertMode(pos: Int): Unit = {
+    if (flushSubscription == null) {
+      flushSubscription = defer(clientView.client.flushes.doOnNext(_ => {
+        flushInsertionMode()
+      }).subscribe())
+    }
     val range = document.createRange()
     if (isEmpty) {
       clearEmptyRenderingIfEmptyState()
@@ -411,7 +424,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     dom.contentEditable = "true"
   }
 
-  var insertionPolling = 0
+  private def isInserting = flushSubscription != null
+  private var flushSubscription: Cancelable = null
 
   override def updateMode(aa: mode.Content, viewUpdated: Boolean): Unit = {
     if (viewUpdated) return
@@ -421,20 +435,16 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
         clearVisualMode()
         clearEmptyRenderingIfEmptyState()
         updateInsertMode(pos)
-        // TODO better handling of this
-        insertionPolling = window.setInterval(() => flushInsertionMode(), 100)
       case mode.Content.Visual(fix, move) =>
         clearInsertionMode()
         clearNormalMode()
         renderEmptyRenderingIfEmptyState()
         updateVisualMode(fix, move)
-        window.clearInterval(insertionPolling)
       case mode.Content.Normal(range) =>
         clearInsertionMode()
         clearVisualMode()
         renderEmptyRenderingIfEmptyState()
         updateNormalMode(range)
-        window.clearInterval(insertionPolling)
     }
   }
 
@@ -442,8 +452,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     rich = data.asInstanceOf[model.data.Content.Rich].content
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
-      ???
-      // TODO
+      val cs = c.asInstanceOf[operation.Content.Rich]
     }
   }
 }

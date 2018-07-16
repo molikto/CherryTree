@@ -10,36 +10,36 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
   type RebaseResult = Rebased[conflict.Content, (Seq[operation.Content], Seq[operation.Content])]
   override def rebase(winner: operation.Content, loser: operation.Content): RebaseResult = {
     winner match  {
-      case operation.Content.Code.Content(w) =>
+      case operation.Content.Code(w) =>
         loser match  {
-          case operation.Content.Code.Content(l) =>
+          case operation.Content.Code(l) =>
             val uc = ot.Unicode.rebase(w, l)
-            Rebased(uc.conflicts.map(conflict.Content.Code.Content),
-              (uc.t._1.map(operation.Content.Code.Content), uc.t._2.map(operation.Content.Code.Content)))
-          case operation.Content.Code.Lang(l) =>
+            Rebased(uc.conflicts.map(conflict.Content.Code),
+              (uc.t._1.map(operation.Content.Code), uc.t._2.map(operation.Content.Code)))
+          case operation.Content.CodeLang(l) =>
             free(winner, loser)
-          case operation.Content.Rich.Content(l) =>
+          case operation.Content.Rich(l) =>
             throw new IllegalStateException("Not applicable operation")
         }
-      case operation.Content.Code.Lang(w) =>
+      case operation.Content.CodeLang(w) =>
         loser match {
-          case operation.Content.Code.Content(l) =>
+          case operation.Content.Code(l) =>
             free(winner, loser)
-          case operation.Content.Code.Lang(l) =>
+          case operation.Content.CodeLang(l) =>
             if (w == l) {
               Rebased(Set.empty, (Seq.empty, Seq.empty))
             } else {
-              Rebased(Set(conflict.Content.Code.Lang(w)), (Seq(winner), Seq.empty))
+              Rebased(Set(conflict.Content.CodeLang(w)), (Seq(winner), Seq.empty))
             }
-          case operation.Content.Rich.Content(l) =>
+          case operation.Content.Rich(l) =>
             throw new IllegalStateException("Not applicable operation")
         }
-      case operation.Content.Rich.Content(w) =>
+      case operation.Content.Rich(w) =>
         loser match  {
-          case operation.Content.Rich.Content(l) =>
+          case operation.Content.Rich(l) =>
             val uc = ot.Rich.rebase(w, l)
-            Rebased(uc.conflicts.map(conflict.Content.Code.Content),
-              (uc.t._1.map(a => operation.Content.Rich.Content(a)), uc.t._2.map(a => operation.Content.Rich.Content(a))))
+            Rebased(uc.conflicts.map(conflict.Content.Code),
+              (uc.t._1.map(a => operation.Content.Rich(a)), uc.t._2.map(a => operation.Content.Rich(a))))
           case _ =>
             throw new IllegalStateException("Not applicable operation")
         }

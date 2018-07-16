@@ -7,8 +7,8 @@ object NodeOps {
 
 
   def isAsymmetry(n: conflict.Content): Boolean = n match {
-    case conflict.Content.Code.Content(conflict.Unicode.Asymmetry()) => true
-    case conflict.Content.Rich.Content(conflict.Unicode.Asymmetry()) => true
+    case conflict.Content.Code(conflict.Unicode.Asymmetry()) => true
+    case conflict.Content.Rich(conflict.Unicode.Asymmetry()) => true
     case _ => false
   }
 
@@ -26,11 +26,11 @@ object NodeOps {
   }
 
   def insertContent(at: Seq[Int], p: Int, content: String): operation.Node = {
-    operation.Node.Content(at, operation.Content.Code.Content(operation.Unicode.Insert(p, data.Unicode(content))))
+    operation.Node.Content(at, operation.Content.Code(operation.Unicode.Insert(p, data.Unicode(content))))
   }
 
   def deleteContent(at: Seq[Int], from: Int, len: Int): operation.Node = {
-    operation.Node.Content(at, operation.Content.Code.Content(operation.Unicode.Delete(IntRange(from, from + len))))
+    operation.Node.Content(at, operation.Content.Code(operation.Unicode.Delete(IntRange(from, from + len))))
   }
 
   def deleteNode(at: Seq[Int]): operation.Node = {

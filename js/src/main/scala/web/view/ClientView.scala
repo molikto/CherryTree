@@ -42,7 +42,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   private val mode = span(
     "").render
 
-  private val debugInfo = span(marginLeft := "12px", "").render
+  private val debugVersionInfo = span(marginLeft := "12px", "0").render
+
+  private val debugKeyInfo = span(marginLeft := "12px", "").render
+
+  private val debugErrorInfo = span(color := "red", marginLeft := "12px", "").render
 
   private val bottomBar = div(
     width := "100%",
@@ -56,7 +60,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     flexDirection := "row",
     color := theme.bottomBarText,
     mode,
-    debugInfo
+    debugVersionInfo,
+    debugKeyInfo,
+    debugErrorInfo
   ).render
   dom.appendChild(bottomBar)
 
@@ -163,10 +169,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         }
       }
       updateMode(update.mode, update.viewUpdated)
+      debugVersionInfo.textContent = client.version.toString
     }).subscribe())
 
     defer(client.errors.doOnNext {
-      case Some(e) => debugInfo.textContent = e.getMessage
+      case Some(e) => debugErrorInfo.textContent = e.getMessage
       case _ =>
     }.subscribe())
   }
@@ -179,7 +186,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-    debugInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString
+    debugKeyInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString
     if (client.keyDown(kk)) {
       event.preventDefault()
     }
@@ -237,7 +244,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   }
 
   event("contextmenu", (a: MouseEvent) => {
-    a.preventDefault()
+    window.console.log(a)
   })
 
 

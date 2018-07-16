@@ -20,6 +20,7 @@ import model._
 import model.data.{SpecialChar, Unicode}
 import monix.reactive.subjects.PublishSubject
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -75,19 +76,80 @@ class Client(
   private var committed: data.Node = initial.node
   def debug_committed = committed
   private var uncommitted = Seq.empty[transaction.Node]
+  def version: Int = committedVersion + uncommitted.size
 
   /**
     * document observable
+    *
+    * editor queue
     */
   private var state_ = ClientState(committed, Some(initial.mode))
 
+  private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
+
+  private var disableStateUpdate_ : Boolean = false
+
+  private var flushing = false
+  private var updatingState = false
+  def disableStateUpdate: Boolean = disableStateUpdate_
+  def disableStateUpdate_=(a: Boolean): Unit = {
+    if (flushing) throw new IllegalStateException("You should not change state will fetching state!!")
+    disableStateUpdate_ = a
+    if (!a) {
+      flush()
+    }
+  }
+
+  def flushes: Observable[Unit] = flushes_
+
+  def flush(): Unit = {
+    if (!disableStateUpdate) {
+      flushing = true
+      flushes_.onNext(Unit)
+      flushing = false
+      disabledStateUpdates.foreach(a => {
+        updateInner(a)
+      })
+      disabledStateUpdates.clear()
+    }
+  }
 
 
-  val stateUpdates: PublishSubject[Client.UpdateResult] = PublishSubject[Client.UpdateResult]()
+
+  private val disabledStateUpdates = ArrayBuffer[Client.UpdateResult]()
+
+  private val stateUpdates_ : PublishSubject[Client.UpdateResult] = PublishSubject[Client.UpdateResult]()
+
+  def stateUpdates: Observable[Client.UpdateResult] = stateUpdates_
+
+  private var insertingFlusher: Cancelable = null
+
+  private def updateInner(res: Client.UpdateResult): Unit = {
+    if (updatingState) throw new IllegalStateException("You should not udpate state during a state update!!!")
+    updatingState = true
+    state_ = ClientState(res.root, res.mode)
+    stateUpdates_.onNext(res)
+    updatingState = false
+    if (state_.isInserting) {
+      if (insertingFlusher == null) {
+        insertingFlusher = Observable.interval(300.millis).doOnNext(_ => flush()).subscribe()
+      }
+    } else {
+      if (insertingFlusher != null) {
+        insertingFlusher.cancel()
+        insertingFlusher = null
+      }
+    }
+  }
 
   private def updateState(a: ClientState, from: model.transaction.Node, viewUpdated: Boolean): Unit = {
-    state_ = a
-    stateUpdates.onNext(Client.UpdateResult(a.node, from, a.mode, viewUpdated))
+    val res = Client.UpdateResult(a.node, from, a.mode, viewUpdated)
+    // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
+    if (disableStateUpdate_) {
+      disabledStateUpdates.append(res)
+    } else {
+      updateInner(res)
+    }
   }
   def state: ClientState = state_
 
@@ -224,9 +286,8 @@ class Client(
               false
             }
         }
-      state.mode match {
-        case Some(model.mode.Node.Content(_, model.mode.Content.Insertion(_))) => doCommand()
-        case _ =>
+      if (state.isInserting) doCommand()
+      else {
           doCommand()
           true
       }
@@ -242,7 +303,7 @@ class Client(
     state.mode match {
       case Some(mn@mode.Node.Content(n, mode.Content.Insertion(p))) if state.node(n).content.isRich =>
         change(
-          Seq(operation.Node.Content(n, operation.Content.Rich.Content(operation.Rich.insert(p, unicode)))),
+          Seq(operation.Node.Content(n, operation.Content.Rich(operation.Rich.insert(p, unicode)))),
           Some(mn.copy(a = mode.Content.Insertion(p + unicode.size))),
           viewUpdated = true)
     }
