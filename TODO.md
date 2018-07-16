@@ -14,10 +14,10 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* motion commands
+* insert mode
 * single edit commands
 * visual mode
-* insert mode
+* code mirror!!!
 * vim base structure
 * keyboard editor for rich
 * mouse support
@@ -90,3 +90,4 @@
 * ~~mode definition is kinda of wrong? -- not wrong, we are sticking with the linearized formation for now~~
 * ~~solve the unicode glyph problem~~
 * ~~experiment with cursor rendering~~
+* ~~motion commands~~

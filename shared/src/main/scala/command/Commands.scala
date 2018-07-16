@@ -90,7 +90,7 @@ trait Commands {
         def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
       }
 
-      // content motion is only available on paragraphs, editing of code is handled by third party editor!!!
+      // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
       object rich {
 
         abstract class Base extends motion.Base {
@@ -127,25 +127,25 @@ trait Commands {
         }
 
 
-        val left: Command = new Base() { // h + Control is also in Vim, but we don't use this,
+        val left: Command = new Base() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
           override def defaultKeys = Seq("h", Backspace, Left)
           override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
           override def repeatable: Boolean = true
         }
 
         val right: Command = new Base() {
-          override def defaultKeys = Seq("l", Right)  // space is for smart move
+          override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
           override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
           override def repeatable: Boolean = true
         }
 
         val beginning: Command = new Base() {
-          override def defaultKeys = Seq("0", "^", Home) // merged because we are already structural
+          override def defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
           override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
         }
 
         val end: Command = new Base {
-          override def defaultKeys = Seq("$", End) // is not repeatable, different from Vim
+          override def defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
           override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
         }
 
@@ -246,24 +246,18 @@ trait Commands {
             content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
         }
         val repeatFind: Command = new motion.Base {
+          override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(";")
           override def action(a: ClientState): Client.Update = {
-            if (lastFindCommand != null) {
-              lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
-            } else {
-              noUpdate()
-            }
+            lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
           }
           override def repeatable: Boolean = true
         }
         val repeatFindOppositeDirection: Command = new motion.Base {
+          override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(",")
           override def action(a: ClientState): Client.Update = {
-            if (lastFindCommand != null) {
-              lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
-            } else {
-              noUpdate()
-            }
+            lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
           }
           override def repeatable: Boolean = true
         }
@@ -359,6 +353,24 @@ trait Commands {
 //        val nextSibling: Command = ???
 //        val previousSibling: Command = ???
       }
+    }
+
+    object insert {
+      // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
+      //  a     N  a    append text after the cursor (N times)
+      //A     N  A    append text at the end of the line (N times)
+      //i     N  i    insert text before the cursor (N times) (also: <Insert>)
+      //I     N  I    insert text before the first non-blank in the line (N times)
+      //gI    N  gI   insert text in column 1 (N times)
+      //o     N  o    open a new line below the current line, append text (N times)
+      //O     N  O    open a new line above the current line, append text (N times)
+      //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
+      //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
+      //
+      //in Visual block mode:
+      //v_b_I    I    insert the same text in front of all the selected lines
+      //v_b_A    A    append the same text after all the selected lines
+      // TODO
     }
 
     object scroll {

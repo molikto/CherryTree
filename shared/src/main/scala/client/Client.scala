@@ -202,7 +202,7 @@ class Client(
       true
     } else {
       def doCommand(): Boolean = {
-        val a = commands.find(_.keys.contains(key))
+        val a = commands.find(c => c.keys.contains(key) && c.available(state))
         a.foreach(act)
         a.isDefined
       }
