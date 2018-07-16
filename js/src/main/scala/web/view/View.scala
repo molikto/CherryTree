@@ -14,6 +14,7 @@ object View {
 
   def fromDom[T](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
 }
+
 abstract class View {
 
   private var dom_ : HTMLElement = null
@@ -43,9 +44,11 @@ abstract class View {
     des.append(_ => a.cancel())
   }
 
-  def event[T <: Event](`type`: String,
+  def event[T <: Event](ty: String,
     listener: js.Function1[T, _]): Unit = {
-    dom.addEventListener(`type`, listener)
-    defer(_ => dom.removeEventListener(`type`, listener))
+    // TODO this is a hack for Escape key
+    val target = if (ty.contains("key")) document else dom
+    target.addEventListener(ty, listener)
+    defer(_ => target.removeEventListener(ty, listener))
   }
 }

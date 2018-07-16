@@ -97,7 +97,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
             removeFocusContent()
             current.initMode()
           }
-          current.syncMode(aa)
+          current.updateMode(aa)
           aa match {
             case model.mode.Content.Insertion(_) =>
               "INSERT"
@@ -149,25 +149,6 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }.subscribe())
   }
 
-  // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
-  private val KeyMap: Map[String, Key.V] = Map(
-    "Home" -> Key.Home,
-    "End" -> Key.End,
-    "ArrowLeft" -> Key.Left,
-    "ArrowRight" -> Key.Right,
-    "ArrowUp" -> Key.Up,
-    "ArrowDown" -> Key.Down,
-    "Enter" -> Key.Enter,
-    "PageDown" -> Key.PageDown,
-    "PageUp" -> Key.PageUp,
-    "Backspace" -> Key.Backspace,
-    "Tab" -> Key.Tab,
-    "Escape" -> Key.Escape,
-    "Shift" -> Key.Shift,
-    "Meta" -> Key.Meta,
-    "Control" -> Key.Control,
-    "Alt" -> Key.Alt
-  )
 
   event("keydown", (event: KeyboardEvent) => {
     var key = KeyMap.get(event.key).orNull
@@ -176,20 +157,18 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-    debugInfo.textContent = event.key + " " + kk.toString
+    debugInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString
     if (client.keyDown(kk)) {
       event.preventDefault()
     }
   })
 
   event("keyup", (event: KeyboardEvent) => {
-    println(s"keyup ${event.key}")
-    event.preventDefault()
+    //window.console.log(event)
   })
 
   event("keypress", (event: KeyboardEvent) => {
-    println(s"keypress ${event.key}")
-    event.preventDefault()
+    //window.console.log(event)
   })
 
 

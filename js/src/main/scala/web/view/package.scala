@@ -1,5 +1,6 @@
 package web
 
+import command.Key
 import org.scalajs.dom
 import org.scalajs.dom.raw.HTMLDivElement
 import org.scalajs.dom.{Event, Node, html}
@@ -18,4 +19,27 @@ package object view {
     a.appendChild(b)
   }
 
+
+  // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
+  val KeyMap: Map[String, Key.V] = {
+    import Key._
+    Map(
+      "Home" -> Home,
+      "End" -> End,
+      "ArrowLeft" -> Left,
+      "ArrowRight" -> Right,
+      "ArrowUp" -> Up,
+      "ArrowDown" -> Down,
+      "Enter" -> Enter,
+      "PageDown" -> PageDown,
+      "PageUp" -> PageUp,
+      "Backspace" -> Backspace,
+      "Tab" -> Tab,
+      "Escape" -> Escape,
+      "Shift" -> Shift,
+      "Meta" -> Meta,
+      "Control" -> Control,
+      "Alt" -> Alt
+    )
+  }
 }

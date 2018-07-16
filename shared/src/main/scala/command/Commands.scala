@@ -81,6 +81,35 @@ trait Commands {
     sealed abstract class Result
 
     def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
+
+    val exit = new Command {
+      override def defaultKeys: Seq[Key] = Seq(Escape, Control + "c", Control + "[")
+      override def available(a: ClientState): Boolean = true
+
+      override def action(a: ClientState): Client.Update = {
+        a.mode match {
+          case Some(m) =>
+            m match {
+              case model.mode.Node.Visual(fix, move) => noUpdate() // TODO
+              case nc@model.mode.Node.Content(n, c) =>
+                a.node(n).content match {
+                  case model.data.Content.Rich(rich) =>
+                    c match {
+                      case model.mode.Content.Insertion(pos) =>
+                        modeUpdate(nc.copy(a = model.mode.Content.Normal(rich.moveLeftAtomic(pos))))
+                      case model.mode.Content.Visual(fix, move) =>
+                        modeUpdate(nc.copy(a = model.mode.Content.Normal(move)))
+                      case _ => noUpdate()
+                    }
+                  case model.data.Content.Code(c, _) =>
+                    ??? // TODO what
+
+                }
+              }
+          case None => noUpdate()
+        }
+      }
+    }
     /**
       */
     object motion {
@@ -371,7 +400,6 @@ trait Commands {
         def move(content: Rich,a: IntRange): Int
 
         override def available(a: ClientState): Boolean = a.mode match {
-
           case Some(model.mode.Node.Content(n, model.mode.Content.Normal(_))) =>
             a.node(n).content match {
               case model.data.Content.Rich(p) =>
@@ -427,6 +455,12 @@ trait Commands {
       //zH            N  zH           scroll screen half a screenwidth to the right
       //zL            N  zL           scroll screen half a screenwidth to the left
     }
+  }
+
+  {
+    var ignored: Command = Command.motion.rich.toNextChar
+    ignored = Command.insert.appendAtCursor
+    ignored = Command.exit
   }
 
   // these are currently NOT implemented becuase we want a different mark system
@@ -494,5 +528,7 @@ trait Commands {
   //:ptjump  :ptj[ump]            like ":tjump" but show tag in preview window
   //:pclose  :pc[lose]            close tag preview window
   //CTRL-W_z    CTRL-W z          close tag preview window
+
+
 
 }

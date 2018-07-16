@@ -84,8 +84,8 @@ case class Rich(text: Seq[Text]) {
 
   def moveLeftAtomic(a: IntRange): IntRange = if (a.start == 0) a else moveLeftAtomic(a.start)
   def moveRightAtomic(a: IntRange): IntRange = if (a.until == size) a else moveRightAtomic(a.until - 1)
-
-  def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes(aaa - 1).atomicRange
+  def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes(aaa - 1 max 0).atomicRange
+  def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes(bbb + 1 min text.size - 1).atomicRange
 
   def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar.Delimitation, Unicode]): Option[IntRange] = {
     var range = start
@@ -111,7 +111,6 @@ case class Rich(text: Seq[Text]) {
     None
   }
 
-  def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes(bbb + 1).atomicRange
 
 
 

@@ -11,25 +11,24 @@ case class Key(
   alt: Boolean = false,
   control: Boolean = false,
   meta: Boolean = false) {
-  def +(a: Key.Modifier): Key = a.modify(this)
 }
 
 object Key {
 
   sealed trait Modifier extends V {
-    def modify(key: Key): Key
+    def +(key: Key): Key
   }
   case object Shift extends Modifier {
-    override def modify(key: Key): Key = key.copy(shift = true)
+    def +(key: Key): Key = key.copy(shift = true)
   }
   case object Meta extends Modifier {
-    override def modify(key: Key): Key = key.copy(meta = true)
+    def +(key: Key): Key = key.copy(meta = true)
   }
   case object Control extends Modifier {
-    override def modify(key: Key): Key = key.copy(control = true)
+    def +(key: Key): Key = key.copy(control = true)
   }
   case object Alt extends Modifier {
-    override def modify(key: Key): Key = key.copy(alt = true)
+    def +(key: Key): Key = key.copy(alt = true)
   }
 
   sealed trait V {

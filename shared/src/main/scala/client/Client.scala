@@ -176,7 +176,7 @@ class Client(
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
-      updateState(
+      if (wp0.nonEmpty) updateState(
         ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, fromUser = false)
     } catch {
       case e: Exception =>
@@ -187,10 +187,10 @@ class Client(
 
   def act(command: Command): Unit = change(command.action(state))
 
-
-  {
-    val _ignored = Command.motion.rich.left
-  }
+  private val keyToCommand: Map[Key, Command] = commands.flatMap(c => c.keys.map(_ -> c)).toMap
+  private val graphemeToCommand: Map[Key.Grapheme, Command] = commands.flatMap(
+    c => c.keys.filter(k => !k.control && !k.meta && k.a.isInstanceOf[Key.Grapheme]
+    ).map(_.a.asInstanceOf[Key.Grapheme] -> c)).toMap
 
   def keyDown(key: Key): Boolean = {
     if (isWaitingForGraphemeCommand) {
@@ -201,11 +201,22 @@ class Client(
       }
       true
     } else {
-      def doCommand(): Boolean = {
-        val a = commands.find(c => c.keys.contains(key) && c.available(state))
-        a.foreach(act)
-        a.isDefined
-      }
+      def doCommand(): Boolean = keyToCommand.get(key) match {
+          case Some(command) if command.available(state) =>
+            act(command)
+            true
+          case _ =>
+            if (!key.control && !key.meta && key.a.isInstanceOf[Key.Grapheme]) {
+              graphemeToCommand.get(key.a.asInstanceOf[Key.Grapheme]) match {
+                case Some(command) if command.available(state) =>
+                  act(command)
+                  true
+                case _ => false
+              }
+            } else {
+              false
+            }
+        }
       state.mode match {
         case Some(model.mode.Node.Content(_, model.mode.Content.Insertion(_))) => doCommand()
         case _ =>

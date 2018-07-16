@@ -19,7 +19,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     */
   private val inserting: RichEditorView = null
 
-  var isEmpty = rich.isEmpty
+  private var isEmpty = rich.isEmpty
 
   /**
     *
@@ -35,12 +35,11 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
   dom.style = "outline: 0px solid transparent;"
 
-  def disableEmptyRenderingInEmptyState(): Unit = {
-    assert(isEmpty)
-    removeAllChild(dom)
+  private def clearEmptyRenderingIfEmptyState(): Unit = {
+    if (isEmpty) removeAllChild(dom)
   }
 
-  def emptyRenderingRange(): Range = {
+  private def emptyRenderingRange(): Range = {
     val range = document.createRange()
     range.setStart(dom.childNodes.item(0), 0)
     range.setEnd(dom.childNodes.item(0), 1)
@@ -108,6 +107,45 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     parent.childNodes.item(1).childNodes.item(0)
   }
 
+  private def positionToDomPosition(pos: Int): (Node, Int) = {
+    if (pos == 0) {
+      (domChildArray(dom), 0)
+    } else if (pos == rich.size) {
+      (domChildArray(dom), rich.text.size)
+    } else {
+      val ss = rich.infoSkipLeftAttributes(pos - 1)
+      val ee = rich.infoSkipRightAttributes(pos)
+      if (ss.ty == InfoType.Plain) {
+        if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
+          (domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ee.positionInUnicode))
+        } else {
+          throw new IllegalStateException("Not possible")
+        }
+      } else if (ss.ty == InfoType.Special) {
+        if (ee.ty == InfoType.Special) {
+          (domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+        } else if (ee.ty == InfoType.Plain) {
+          (domAt(ee.nodeCursor), 0)
+        } else if (ee.ty == InfoType.Coded) {
+          (domCodeText(domAt(ee.nodeCursor)), 0)
+        } else {
+          throw new IllegalStateException("Not possible")
+        }
+      } else if (ss.ty == InfoType.Coded) {
+        val unicode = ss.text.asInstanceOf[Text.Code].content
+        if (ee.ty == InfoType.Special) {
+          (domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
+        } else if (ee.ty == InfoType.Coded) {
+          (domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
+        } else {
+          throw new IllegalStateException("Not possible")
+        }
+      } else {
+        throw new IllegalStateException("Not possible")
+      }
+    }
+  }
+
   private def nonEmptySelectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
@@ -155,14 +193,14 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
   private var astHighlight: HTMLSpanElement = null
 
-  def removeFormattedNodeHighlight(): Unit = {
+  private def removeFormattedNodeHighlight(): Unit = {
     if (astHighlight != null) {
       astHighlight.style.backgroundColor = null
       astHighlight = null
     }
   }
 
-  def addFormattedNodeHighlight(_5: HTMLSpanElement): Unit = {
+  private def addFormattedNodeHighlight(_5: HTMLSpanElement): Unit = {
     astHighlight = _5
     _5.style.backgroundColor = clientView.theme.astHighlight
   }
@@ -207,17 +245,33 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     */
 
 
-  def removePreviousModeRendering() = {
-    removeFormattedNodeHighlight()
-  }
 
-
-  private def removeInsertionModeIfExists(): Unit = {
+  private def clearInsertionMode(): Unit = {
     // TODO
   }
 
 
-  private def renderNormalMode(r: IntRange): Unit = {
+  private def clearNormalMode(): Unit = {
+    val sel = window.getSelection
+    if (sel.rangeCount > 0) sel.removeAllRanges
+    removeFormattedNodeHighlight()
+  }
+
+  private def updateInsertMode(pos: Int): Unit = {
+    if (isEmpty) {
+      clearEmptyRenderingIfEmptyState()
+    }
+    val range = document.createRange()
+    val start = positionToDomPosition(pos)
+    range.setStart(start._1, start._2)
+    range.setEnd(start._1, start._2)
+    val sel = window.getSelection
+    sel.removeAllRanges
+    sel.addRange(range)
+  }
+
+
+  private def updateNormalMode(r: IntRange): Unit = {
     val range = if (isEmpty) {
       emptyRenderingRange()
     } else {
@@ -228,6 +282,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
         val start = nonEmptySelectionToDomRange(r)
         range.setStart(start._1, start._2)
         range.setEnd(start._3, start._4)
+        if (start._5 != astHighlight) removeFormattedNodeHighlight()
         if (start._5 != null) addFormattedNodeHighlight(start._5)
       }
       range
@@ -246,17 +301,19 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   }
 
 
-  override def syncMode(aa: mode.Content): Unit = {
-    removePreviousModeRendering()
+  override def updateMode(aa: mode.Content): Unit = {
     aa match {
       case mode.Content.Insertion(pos) =>
       // TODO remove the empty thing if previously is empty
+        clearNormalMode()
+        updateInsertMode(pos)
       case mode.Content.Visual(fix, move) =>
-        removeInsertionModeIfExists()
+        clearInsertionMode()
+        clearNormalMode()
       // TODO render visual
       case mode.Content.Normal(range) =>
-        removeInsertionModeIfExists()
-        renderNormalMode(range)
+        clearInsertionMode()
+        updateNormalMode(range)
     }
   }
 }

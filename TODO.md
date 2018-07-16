@@ -14,12 +14,11 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* key sequence
 * insert mode
 * single edit commands
 * visual mode
 * code mirror!!!
-* vim base structure
+* key sequence
 * keyboard editor for rich
 * mouse support
 * copy paste
@@ -92,3 +91,4 @@
 * ~~solve the unicode glyph problem~~
 * ~~experiment with cursor rendering~~
 * ~~motion commands~~
+* ~~vim base structure~~
