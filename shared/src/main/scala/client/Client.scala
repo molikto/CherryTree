@@ -30,7 +30,13 @@ object Client {
   case class Update(
     transaction: model.transaction.Node,
     mode: Option[model.mode.Node],
-    fromUser: Boolean)
+    viewUpdated: Boolean = false)
+
+  case class UpdateResult(
+    root: model.data.Node,
+    transaction: model.transaction.Node,
+    mode: Option[model.mode.Node],
+    viewUpdated: Boolean = false)
 }
 
 class Client(
@@ -77,11 +83,11 @@ class Client(
 
 
 
-  val stateUpdates: PublishSubject[Client.Update] = PublishSubject[Client.Update]()
+  val stateUpdates: PublishSubject[Client.UpdateResult] = PublishSubject[Client.UpdateResult]()
 
-  private def updateState(a: ClientState, from: model.transaction.Node, fromUser: Boolean): Unit = {
+  private def updateState(a: ClientState, from: model.transaction.Node, viewUpdated: Boolean): Unit = {
     state_ = a
-    stateUpdates.onNext(Client.Update(from, a.mode, fromUser))
+    stateUpdates.onNext(Client.UpdateResult(a.node, from, a.mode, viewUpdated))
   }
   def state: ClientState = state_
 
@@ -177,7 +183,7 @@ class Client(
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
       if (wp0.nonEmpty) updateState(
-        ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, fromUser = false)
+        ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, viewUpdated = false)
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -228,7 +234,22 @@ class Client(
   }
 
 
-  def change(update: Client.Update): Unit = change(update.transaction, update.mode, update.fromUser)
+  /**
+    * view calls this method to insert text at current insertion point,
+    */
+  def onInsertRichTextAndViewUpdated(unicode: Unicode): Unit = {
+    import model._
+    state.mode match {
+      case Some(mn@mode.Node.Content(n, mode.Content.Insertion(p))) if state.node(n).content.isRich =>
+        change(
+          Seq(operation.Node.Content(n, operation.Content.Rich.Content(operation.Rich.insert(p, unicode)))),
+          Some(mn.copy(a = mode.Content.Insertion(p + unicode.size))),
+          viewUpdated = true)
+    }
+  }
+
+
+  def change(update: Client.Update): Unit = change(update.transaction, update.mode, viewUpdated = update.viewUpdated)
   /**
     * submit a change to local state, a sync might follow
     *
@@ -237,6 +258,7 @@ class Client(
     */
   def change(changes: transaction.Node,
     mode: Option[model.mode.Node] = None,
+    viewUpdated: Boolean = false,
     sync: Boolean = true): Unit = self.synchronized {
     var changed = false
     val d = if (changes.nonEmpty) {
@@ -257,7 +279,7 @@ class Client(
         }
     }
     if (changed) {
-      updateState(ClientState(d, m), changes, fromUser = true)
+      updateState(ClientState(d, m), changes, viewUpdated = viewUpdated)
       uncommitted = uncommitted :+ changes
       if (sync) self.sync()
     }

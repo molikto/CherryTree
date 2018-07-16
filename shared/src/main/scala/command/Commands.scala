@@ -17,8 +17,8 @@ trait Commands {
   /**
     * helpers
     */
-  private def noUpdate(): Client.Update = Client.Update(Seq.empty, None, fromUser = true)
-  private def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
+  private def noUpdate(): Client.Update = Client.Update(Seq.empty, None)
+  private def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a))
 
   /**
     * these are settings??
@@ -50,7 +50,7 @@ trait Commands {
     waitingForCharCommand = null
   }
 
-  private var lastFindCommand: Command.motion.rich.FindCommand = null
+  private var lastFindCommand: Command.ContentMotion.FindCommand = null
   private var lastFindCommandArgument: Grapheme = null
 
   def commands: Seq[Command] = commands_
@@ -106,239 +106,231 @@ trait Commands {
     }
     /**
       */
-    object motion {
-
-      abstract class MotionCommand extends Command {
-      }
+    object ContentMotion {
 
       // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
-      object rich {
+      abstract class RichBaseCommand extends Command {
 
-        abstract class RichBaseCommand extends motion.MotionCommand {
+        override def available(a: ClientState): Boolean = a.mode match {
+          case Some(mode.Node.Content(n, c)) =>
+            a.node(n).content match {
+              case model.data.Content.Rich(p) =>
+                c match {
+                  case mode.Content.Normal(_) => true
+                  case mode.Content.Visual(_, _) => true
+                  case _ => false
+                }
+              case _ => false
+            }
+          case _ => false
+        }
+      }
 
-          override def available(a: ClientState): Boolean = a.mode match {
-            case Some(mode.Node.Content(n, c)) =>
-              a.node(n).content match {
-                case model.data.Content.Rich(p) =>
-                  c match {
-                    case mode.Content.Normal(_) => true
-                    case mode.Content.Visual(_, _) => true
-                    case _ => false
-                  }
-                case _ => false
+      abstract class RichMotionCommand extends RichBaseCommand {
+
+        def move(content: model.data.Rich, a: IntRange): IntRange
+
+        final override def action(a: ClientState): Client.Update = {
+          a.mode match {
+            case Some(o@mode.Node.Content(n, c)) =>
+              val content = a.node(n).content.asInstanceOf[Content.Rich].content
+              c match {
+                case mode.Content.Normal(r) => modeUpdate(o.copy(a = mode.Content.Normal(move(content, r))))
+                case v@mode.Content.Visual(fix, m) => modeUpdate(o.copy(a = mode.Content.Visual(fix, move(content, m))))
+                case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
               }
-            case _ => false
+            case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
           }
         }
-
-        abstract class RichMotionCommand extends RichBaseCommand {
-
-          def move(content: model.data.Rich, a: IntRange): IntRange
-
-          final override def action(a: ClientState): Client.Update = {
-            a.mode match {
-              case Some(o@mode.Node.Content(n, c)) =>
-                val content = a.node(n).content.asInstanceOf[Content.Rich].content
-                c match {
-                  case mode.Content.Normal(r) => modeUpdate(o.copy(a = mode.Content.Normal(move(content, r))))
-                  case v@mode.Content.Visual(fix, m) => modeUpdate(o.copy(a = mode.Content.Visual(fix, move(content, m))))
-                  case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-                }
-              case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-            }
-          }
-        }
-
-
-        val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
-          override def defaultKeys = Seq("h", Backspace, Left)
-          override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
-          override def repeatable: Boolean = true
-        }
-
-        val right: Command = new RichMotionCommand() {
-          override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
-          override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
-          override def repeatable: Boolean = true
-        }
-
-        val beginning: Command = new RichMotionCommand() {
-          override def defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
-          override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
-        }
-
-        val end: Command = new RichMotionCommand {
-          override def defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
-          override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
-        }
-
-        // screen related is not implemented
-        //g0       g0           to first character in screen line (differs from "0"
-        //                           when lines wrap)
-        //g^       g^           to first non-blank character in screen line (differs
-        //                           from "^" when lines wrap)
-        //g$    N  g$           to last character in screen line (differs from "$"
-        //                           when lines wrap)
-        //gm       gm           to middle of the screen line
-
-        // not implemented...??? because it is hard to make columns in a rich text editor
-        // bar   N  |            to column N (default: 1)
-
-        abstract class FindCommand extends motion.rich.RichBaseCommand {
-
-          def reverse: FindCommand
-
-          override def action(a: ClientState): Client.Update = {
-            waitingForCharCommand = this
-            noUpdate()
-          }
-
-          override def waitingForGrapheme: Boolean = true
-          override def repeatable: Boolean = true
-          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
-          def skip(a: Rich, range: IntRange): IntRange = range
-          def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
-            if (skipCurrent) {
-              move(a, range, char).flatMap(m => {
-                if (m == range) {
-                  move(a, skip(a, m), char)
-                } else {
-                  Some(m)
-                }
-              })
-            } else {
-              move(a, range, char)
-            }
-          }
-
-          def findGrapheme(a: ClientState, char: Grapheme, skipCurrent: Boolean): Client.Update = {
-            a.mode match {
-              case Some(o@mode.Node.Content(n, c)) =>
-                val content = a.node(n).content.asInstanceOf[Content.Rich].content
-                c match {
-                  case mode.Content.Normal(r) =>
-                    moveSkip(content, r, char, skipCurrent) match {
-                      case Some(move) =>
-                        modeUpdate(o.copy(a = mode.Content.Normal(move)))
-                      case None =>
-                        noUpdate()
-                    }
-                  case v@mode.Content.Visual(fix, m) =>
-                    moveSkip(content, m, char, skipCurrent) match {
-                      case Some(move) =>
-                        modeUpdate(o.copy(a = mode.Content.Visual(fix, move)))
-                      case None =>
-                        noUpdate()
-                    }
-                  case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-                }
-              case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-            }
-          }
-
-          final override def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = {
-            lastFindCommand = this
-            lastFindCommandArgument = char
-            findGrapheme(a, char, skipCurrent = false)
-          }
-        }
-
-        val findNextChar: FindCommand = new FindCommand {
-          override def reverse: FindCommand = findPreviousChar
-          override def defaultKeys: Seq[Key] = Seq("f")
-          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
-
-        }
-        val findPreviousChar: FindCommand = new FindCommand {
-          override def reverse: FindCommand = findNextChar
-          override def defaultKeys: Seq[Key] = Seq("F")
-          def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
-        }
-        val toNextChar: FindCommand = new FindCommand {
-          override def reverse: FindCommand = toPreviousChar
-          override def defaultKeys: Seq[Key] = Seq("t")
-          override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
-          override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
-          content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
-        }
-        val toPreviousChar: FindCommand = new FindCommand {
-          override def reverse: FindCommand = toNextChar
-          override def defaultKeys: Seq[Key] = Seq("T")
-          override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
-          override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
-            content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
-        }
-        val repeatFind: Command = new motion.rich.RichBaseCommand {
-          override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
-          override def defaultKeys: Seq[Key] = Seq(";")
-          override def action(a: ClientState): Client.Update = {
-            lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
-          }
-          override def repeatable: Boolean = true
-        }
-        val repeatFindOppositeDirection: Command = new motion.rich.RichBaseCommand {
-          override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
-          override def defaultKeys: Seq[Key] = Seq(",")
-          override def action(a: ClientState): Client.Update = {
-            lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
-          }
-          override def repeatable: Boolean = true
-        }
-
-        /**
-          * LATER
-          * w     N  w            N words forward
-          * W     N  W            N blank-separated WORDs forward
-          * e     N  e            forward to the end of the Nth word
-          * E     N  E            forward to the end of the Nth blank-separated WORD
-          * b     N  b            N words backward
-          * B     N  B            N blank-separated WORDs backward
-          * ge    N  ge           backward to the end of the Nth word
-          * gE    N  gE           backward to the end of the Nth blank-separated WORD
-          */
-//        val wordBeginning: Command = ???
-//        val wordEnd: Command = ???
-//        val wordNext: Command = ???
-//        val WordBeginning: Command = ???
-//        val WordEnd: Command = ???
-//        val WordNext: Command = ???
-
-
-
-        // LATER
-        //        )     N  )            N sentences forward
-        //        (     N  (            N sentences backward
-
-
-
-
-        // not implemented because we are already a structured editor
-//      }     N  }            N paragraphs forward
-//      {     N  {            N paragraphs backward
-//        ]]    N  ]]           N sections forward, at start of section
-//        [[    N  [[           N sections backward, at start of section
-//          ][    N  ][           N sections forward, at end of section
-//          []    N  []           N sections backward, at end of section
-
-        // not implemented for code related stuff
-//          [(    N  [(           N times back to unclosed '('
-//        [{    N  [{           N times back to unclosed '{'
-//          [m    N  [m           N times back to start of method (for Java)
-//          [M    N  [M           N times back to end of method (for Java)
-//          ])    N  ])           N times forward to unclosed ')'
-//          ]}    N  ]}           N times forward to unclosed '}'
-//        ]m    N  ]m           N times forward to start of method (for Java)
-//        ]M    N  ]M           N times forward to end of method (for Java)
-//          [#    N  [#           N times back to unclosed "#if" or "#else"
-//        ]#    N  ]#           N times forward to unclosed "#else" or "#endif"
-//        [star N  [*           N times back to start of comment "/*"
-//          ]star N  ]*           N times forward to end of comment "*/"
-
-
       }
 
 
-      object node {
+      val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
+        override def defaultKeys = Seq("h", Backspace, Left)
+        override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
+        override def repeatable: Boolean = true
+      }
+
+      val right: Command = new RichMotionCommand() {
+        override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
+        override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
+        override def repeatable: Boolean = true
+      }
+
+      val beginning: Command = new RichMotionCommand() {
+        override def defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
+        override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
+      }
+
+      val end: Command = new RichMotionCommand {
+        override def defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
+        override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
+      }
+
+      // screen related is not implemented
+      //g0       g0           to first character in screen line (differs from "0"
+      //                           when lines wrap)
+      //g^       g^           to first non-blank character in screen line (differs
+      //                           from "^" when lines wrap)
+      //g$    N  g$           to last character in screen line (differs from "$"
+      //                           when lines wrap)
+      //gm       gm           to middle of the screen line
+
+      // not implemented...??? because it is hard to make columns in a rich text editor
+      // bar   N  |            to column N (default: 1)
+
+      abstract class FindCommand extends RichBaseCommand {
+
+        def reverse: FindCommand
+
+        override def action(a: ClientState): Client.Update = {
+          waitingForCharCommand = this
+          noUpdate()
+        }
+
+        override def waitingForGrapheme: Boolean = true
+        override def repeatable: Boolean = true
+        def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
+        def skip(a: Rich, range: IntRange): IntRange = range
+        def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
+          if (skipCurrent) {
+            move(a, range, char).flatMap(m => {
+              if (m == range) {
+                move(a, skip(a, m), char)
+              } else {
+                Some(m)
+              }
+            })
+          } else {
+            move(a, range, char)
+          }
+        }
+
+        def findGrapheme(a: ClientState, char: Grapheme, skipCurrent: Boolean): Client.Update = {
+          a.mode match {
+            case Some(o@mode.Node.Content(n, c)) =>
+              val content = a.node(n).content.asInstanceOf[Content.Rich].content
+              c match {
+                case mode.Content.Normal(r) =>
+                  moveSkip(content, r, char, skipCurrent) match {
+                    case Some(move) =>
+                      modeUpdate(o.copy(a = mode.Content.Normal(move)))
+                    case None =>
+                      noUpdate()
+                  }
+                case v@mode.Content.Visual(fix, m) =>
+                  moveSkip(content, m, char, skipCurrent) match {
+                    case Some(move) =>
+                      modeUpdate(o.copy(a = mode.Content.Visual(fix, move)))
+                    case None =>
+                      noUpdate()
+                  }
+                case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+              }
+            case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+          }
+        }
+
+        final override def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = {
+          lastFindCommand = this
+          lastFindCommandArgument = char
+          findGrapheme(a, char, skipCurrent = false)
+        }
+      }
+
+      val findNextChar: FindCommand = new FindCommand {
+        override def reverse: FindCommand = findPreviousChar
+        override def defaultKeys: Seq[Key] = Seq("f")
+        def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
+
+      }
+      val findPreviousChar: FindCommand = new FindCommand {
+        override def reverse: FindCommand = findNextChar
+        override def defaultKeys: Seq[Key] = Seq("F")
+        def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
+      }
+      val toNextChar: FindCommand = new FindCommand {
+        override def reverse: FindCommand = toPreviousChar
+        override def defaultKeys: Seq[Key] = Seq("t")
+        override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
+        override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
+          content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
+      }
+      val toPreviousChar: FindCommand = new FindCommand {
+        override def reverse: FindCommand = toNextChar
+        override def defaultKeys: Seq[Key] = Seq("T")
+        override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
+        override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
+          content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
+      }
+      val repeatFind: Command = new RichBaseCommand {
+        override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
+        override def defaultKeys: Seq[Key] = Seq(";")
+        override def action(a: ClientState): Client.Update = {
+          lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
+        }
+        override def repeatable: Boolean = true
+      }
+      val repeatFindOppositeDirection: Command = new RichBaseCommand {
+        override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
+        override def defaultKeys: Seq[Key] = Seq(",")
+        override def action(a: ClientState): Client.Update = {
+          lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
+        }
+        override def repeatable: Boolean = true
+      }
+
+      /**
+        * LATER
+        * w     N  w            N words forward
+        * W     N  W            N blank-separated WORDs forward
+        * e     N  e            forward to the end of the Nth word
+        * E     N  E            forward to the end of the Nth blank-separated WORD
+        * b     N  b            N words backward
+        * B     N  B            N blank-separated WORDs backward
+        * ge    N  ge           backward to the end of the Nth word
+        * gE    N  gE           backward to the end of the Nth blank-separated WORD
+        */
+      //        val wordBeginning: Command = ???
+      //        val wordEnd: Command = ???
+      //        val wordNext: Command = ???
+      //        val WordBeginning: Command = ???
+      //        val WordEnd: Command = ???
+      //        val WordNext: Command = ???
+
+
+
+      // LATER
+      //        )     N  )            N sentences forward
+      //        (     N  (            N sentences backward
+
+
+
+
+      // not implemented because we are already a structured editor
+      //      }     N  }            N paragraphs forward
+      //      {     N  {            N paragraphs backward
+      //        ]]    N  ]]           N sections forward, at start of section
+      //        [[    N  [[           N sections backward, at start of section
+      //          ][    N  ][           N sections forward, at end of section
+      //          []    N  []           N sections backward, at end of section
+
+      // not implemented for code related stuff
+      //          [(    N  [(           N times back to unclosed '('
+      //        [{    N  [{           N times back to unclosed '{'
+      //          [m    N  [m           N times back to start of method (for Java)
+      //          [M    N  [M           N times back to end of method (for Java)
+      //          ])    N  ])           N times forward to unclosed ')'
+      //          ]}    N  ]}           N times forward to unclosed '}'
+      //        ]m    N  ]m           N times forward to start of method (for Java)
+      //        ]M    N  ]M           N times forward to end of method (for Java)
+      //          [#    N  [#           N times back to unclosed "#if" or "#else"
+      //        ]#    N  ]#           N times forward to unclosed "#else" or "#endif"
+      //        [star N  [*           N times back to start of comment "/*"
+      //          ]star N  ]*           N times forward to end of comment "*/"
+
+
+      object NodeMotion {
         /**
           * LATER
           * k     N  k            up N lines (also: CTRL-P and <Up>)
@@ -378,7 +370,7 @@ trait Commands {
       }
     }
 
-    object insert {
+    object ContentInsert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
       //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
@@ -452,8 +444,8 @@ trait Commands {
   }
 
   {
-    var ignored: Command = Command.motion.rich.toNextChar
-    ignored = Command.insert.appendAtCursor
+    var ignored: Command = Command.ContentMotion.toNextChar
+    ignored = Command.ContentInsert.appendAtCursor
     ignored = Command.exit
   }
 

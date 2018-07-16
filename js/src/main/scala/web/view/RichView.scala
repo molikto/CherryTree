@@ -2,10 +2,10 @@ package web.view
 
 import scalatags.JsDom.all._
 import model._
-import model.data.{InfoType, Rich, SpecialChar, Text}
+import model.data._
 import model.range.IntRange
 import org.scalajs.dom.raw
-import org.scalajs.dom.raw.{Event, CompositionEvent, Node, Range, HTMLImageElement, HTMLSpanElement}
+import org.scalajs.dom.raw.{CompositionEvent, Event, HTMLElement, HTMLImageElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, window}
 import org.w3c.dom.css.CSSStyleDeclaration
 
@@ -18,8 +18,6 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     * state
     *
     */
-  private val inserting: RichEditorView = null
-
   private var isEmpty = rich.isEmpty
 
   /**
@@ -40,10 +38,14 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     if (isEmpty) removeAllChild(dom)
   }
 
+  private def renderEmptyRenderingIfEmptyState(): Unit = {
+    if (isEmpty && dom.childNodes.length == 0) dom.appendChild(" ".render)
+  }
+
   private def emptyRenderingRange(): Range = {
     val range = document.createRange()
-    range.setStart(dom.childNodes.item(0), 0)
-    range.setEnd(dom.childNodes.item(0), 1)
+    range.setStart(dom.childNodes(0), 0)
+    range.setEnd(dom.childNodes(0), 1)
     range
   }
 
@@ -51,36 +53,40 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
-        span(`class` := "ct-cg", "*"),
+        span(`class` := "ct-cg",contenteditable := "false", "*"),
         em(`class` := "ct-em", rec(c)),
-        span(`class` := "ct-cg", "*")
+        span(`class` := "ct-cg",contenteditable := "false", "*")
       )
       case Text.Strong(c) => span(
-        span(`class` := "ct-cg", "#"),
+        span(`class` := "ct-cg",contenteditable := "false", "#"),
         strong(`class` := "ct-em", rec(c)),
-        span(`class` := "ct-cg", "#") // LATER ** char as a single char
+        span(`class` := "ct-cg",contenteditable := "false", "#") // LATER ** char as a single char
       )
       case Text.StrikeThrough(c) => span(
-        span(`class` := "ct-cg", "-"),
+        span(`class` := "ct-cg",contenteditable := "false", "-"),
         del(`class` := "ct-del", rec(c)),
-        span(`class` := "ct-cg", "-")
+        span(`class` := "ct-cg",contenteditable := "false", "-")
       )
       case Text.Link(t, b, c) => span(
-        span(`class` := "ct-cg", "["),
+        span(`class` := "ct-cg",contenteditable := "false", "["),
         span(`class` := "ct-link", rec(t), href := b.toString),
-        span(`class` := "ct-cg", "]")
+        span(`class` := "ct-cg",contenteditable := "false", "]")
       )
       case Text.Image(b, c) =>
         img(verticalAlign := "bottom", src := b.toString)
       case Text.LaTeX(c) =>
-        val a = span(`class` := "ct-latex").render
+        val a = span().render
         window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
-        bindNode(a)
+        span(contenteditable := "false", `class` := "ct-latex",
+          span("\u200B"), // don't fuck with my cursor!!!
+          a,
+          span("\u200b")
+        )
       case Text.Code(c) =>
         span(
-          span(`class` := "ct-cg", "`"),
+          span(`class` := "ct-cg", contenteditable := "false", "`"),
           code(`class` := "ct-code", c.toString),
-          span(`class` := "ct-cg", "`")
+          span(`class` := "ct-cg", contenteditable := "false", "`")
         )
       case Text.Plain(c) => stringFrag(c.toString)
     }
@@ -95,11 +101,11 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
       var c: Node = null
       val childArray = domChildArray(parent)
       if (insertEmptyTextNode == null || insertEmptyTextNode.parentNode != childArray) {
-        c = childArray.childNodes.item(a.head)
+        c = childArray.childNodes(a.head)
       } else {
         var i = 0
         while (i <= a.head) {
-          c = childArray.childNodes.item(i)
+          c = childArray.childNodes(i)
           if (c != insertEmptyTextNode) {
             i += 1
           }
@@ -111,30 +117,32 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
   private def domChildArray(parent: Node): Node = {
     if (parent.isInstanceOf[HTMLSpanElement]) {
-      parent.childNodes.item(1)
+      parent.childNodes(1)
     } else {
       parent
     }
   }
 
   private def domCodeText(parent: Node): Node = {
-    parent.childNodes.item(1).childNodes.item(0)
+    parent.childNodes(1).childNodes(0)
   }
 
   def createTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
-    assert (insertEmptyTextNode == null)
+    assert(insertEmptyTextNode == null)
     insertEmptyTextNode = document.createTextNode("")
     if (i == node.childNodes.length) {
       node.appendChild(insertEmptyTextNode)
     } else {
-      node.insertBefore(insertEmptyTextNode, node.childNodes.item(i))
+      node.insertBefore(insertEmptyTextNode, node.childNodes(i))
     }
     (insertEmptyTextNode, 0)
   }
 
   def registerNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+    assert(insertNonEmptyTextNode == null)
     insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
     insertNonEmptyTextNodeStartIndex = i
+    insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.size
     (node, i)
   }
 
@@ -258,29 +266,31 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
 
 
   event("compositionstart", (a: CompositionEvent) => {
-    if (inserting == null) a.preventDefault()
-    else inserting.onCompositionStart(a)
+//    if (inserting == null) a.preventDefault()
+//    else inserting.onCompositionStart(a)
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
-    if (inserting == null) a.preventDefault()
-    else inserting.onCompositionUpdate(a)
+//    if (inserting == null) a.preventDefault()
+//    else inserting.onCompositionUpdate(a)
   })
 
   event("compositionend", (a: CompositionEvent) => {
-    if (inserting == null) a.preventDefault()
-    else inserting.onCompositionUpdate(a)
+//    if (inserting == null) a.preventDefault()
+//    else inserting.onCompositionUpdate(a)
   })
 
   event("input", (a: Event) => {
-    if (inserting == null) a.preventDefault()
-    else inserting.onInput(a)
+//    if (inserting == null) a.preventDefault()
+//    else inserting.onInput(a)
   })
 
 
   private var insertEmptyTextNode: raw.Text = null
   private var insertNonEmptyTextNode: raw.Text = null
   private var insertNonEmptyTextNodeStartIndex: Int = 0
+  private var insertNonEmptyTextLength: Int = 0
+
 
   /**
     *
@@ -291,12 +301,63 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     *
     */
 
+  def flushInsertionMode(): Unit = {
+    if (insertEmptyTextNode != null) {
+      // this is really ugly, but somehow Chrome create a new TextNode???
+      var previous = insertEmptyTextNode.previousSibling
+      var next = insertEmptyTextNode.nextSibling
+      var str = ""
+      if (previous != null && previous.isInstanceOf[raw.Text]) {
+        str = str + previous.textContent
+      } else {
+        previous = null
+      }
+      if (insertEmptyTextNode.textContent.length > 0) {
+        str = if (str.isEmpty) insertEmptyTextNode.textContent else str + insertEmptyTextNode.textContent
+      }
+      if (next.textContent.length > 0 && next.isInstanceOf[raw.Text]) {
+        str = str + next.textContent
+      } else {
+        next = null
+      }
+      if (previous != null) previous.parentNode.removeChild(previous)
+      if (next != null) next.parentNode.removeChild(next)
+      if (str.length > 0) {
+        insertEmptyTextNode.textContent = str
+        clientView.client.onInsertRichTextAndViewUpdated(Unicode(str))
+        insertNonEmptyTextNode = insertEmptyTextNode
+        insertNonEmptyTextLength = str.length
+        insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
+        insertEmptyTextNode = null
+      }
+    } else if (insertNonEmptyTextNode != null) {
+      val newContent = insertNonEmptyTextNode.textContent
+      val insertion = newContent.substring(
+        insertNonEmptyTextNodeStartIndex, insertNonEmptyTextNodeStartIndex + newContent.length - insertNonEmptyTextLength)
+      if (insertion.length > 0) {
+        clientView.client.onInsertRichTextAndViewUpdated(Unicode(insertion))
+        insertNonEmptyTextLength = newContent.length
+        insertNonEmptyTextNodeStartIndex += insertion.length
+      }
+    }
+  }
+
 
 
   private def clearInsertionMode(): Unit = {
-    // TODO
+    if (insertEmptyTextNode != null) {
+      insertEmptyTextNode.parentNode.removeChild(insertEmptyTextNode)
+      insertEmptyTextNode = null
+    }
+    insertNonEmptyTextNode = null
   }
 
+  private def clearVisualMode(): Unit = {
+    // TODO
+  }
+  private def updateVisualMode(fix: IntRange, move: IntRange): Unit = {
+    // TODO
+  }
 
   private def clearNormalMode(): Unit = {
     val sel = window.getSelection
@@ -350,20 +411,39 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     dom.contentEditable = "true"
   }
 
+  var insertionPolling = 0
 
-  override def updateMode(aa: mode.Content): Unit = {
+  override def updateMode(aa: mode.Content, viewUpdated: Boolean): Unit = {
+    if (viewUpdated) return
     aa match {
       case mode.Content.Insertion(pos) =>
-      // TODO remove the empty thing if previously is empty
         clearNormalMode()
+        clearVisualMode()
+        clearEmptyRenderingIfEmptyState()
         updateInsertMode(pos)
+        // TODO better handling of this
+        insertionPolling = window.setInterval(() => flushInsertionMode(), 100)
       case mode.Content.Visual(fix, move) =>
         clearInsertionMode()
         clearNormalMode()
-      // TODO render visual
+        renderEmptyRenderingIfEmptyState()
+        updateVisualMode(fix, move)
+        window.clearInterval(insertionPolling)
       case mode.Content.Normal(range) =>
         clearInsertionMode()
+        clearVisualMode()
+        renderEmptyRenderingIfEmptyState()
         updateNormalMode(range)
+        window.clearInterval(insertionPolling)
+    }
+  }
+
+  override def updateContent(data: model.data.Content, c: operation.Content, viewUpdated: Boolean): Unit = {
+    rich = data.asInstanceOf[model.data.Content.Rich].content
+    isEmpty = rich.isEmpty
+    if (!viewUpdated) {
+      ???
+      // TODO
     }
   }
 }

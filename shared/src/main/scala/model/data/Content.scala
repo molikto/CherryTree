@@ -10,6 +10,8 @@ import scala.util.Random
 abstract sealed class Content {
   def defaultMode(): mode.Content = mode.Content.Normal(beginningAtomicRange())
   def beginningAtomicRange(): IntRange
+
+  def isRich = isInstanceOf[Content.Rich]
 }
 
 /**

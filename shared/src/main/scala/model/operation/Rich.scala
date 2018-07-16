@@ -21,6 +21,8 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+  def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
+
 
   override val pickler: Pickler[Rich] = new Pickler[Rich] {
     override def pickle(obj: Rich)(implicit state: PickleState): Unit = {

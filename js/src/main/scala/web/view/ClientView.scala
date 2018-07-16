@@ -2,7 +2,8 @@ package web.view
 
 import client.Client
 import command.{Commands, Key}
-import model.{ClientState, cursor, data}
+import model.data.Unicode
+import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
 import org.scalajs.dom.window
@@ -20,7 +21,8 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val parent: HTMLElement, private val client: Client) extends View {
+class ClientView(private val parent: HTMLElement, val client: Client) extends View {
+
 
   var theme: ColorScheme = ColorScheme.default
 
@@ -78,14 +80,16 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
 
   def contentAt(at: model.cursor.Node): ContentView = {
     def rec(a: Node, b: model.cursor.Node): Node = {
-      if (b.isEmpty) a.childNodes.item(0)
+      if (b.isEmpty) a.childNodes(0)
         // ul, li, content
-      else rec(a.childNodes.item(1).childNodes.item(b.head).childNodes.item(0), b.tail)
+      else rec(a.childNodes(1).childNodes(b.head).childNodes(0), b.tail)
     }
-    View.fromDom[ContentView](rec(root, at).childNodes.item(0))
+    View.fromDom[ContentView](rec(root, at).childNodes(0))
   }
 
-  def syncMode(m: Option[model.mode.Node]): Unit = {
+
+  def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+
     mode.textContent = m match {
       case None =>
         if (previousFocusContent != null) removeFocusContent()
@@ -97,7 +101,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
             removeFocusContent()
             current.initMode()
           }
-          current.updateMode(aa)
+          current.updateMode(aa, viewUpdated)
           aa match {
             case model.mode.Content.Insertion(_) =>
               "INSERT"
@@ -113,11 +117,10 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
     }
   }
 
-  /**
-    * initialize
-    */
+
   {
     val ClientState(node, selection) = client.state
+
     def initRenderContentRec(root: model.data.Node, parent: html.Element): Unit = {
       val box = div().render
       parent.appendChild(box)
@@ -136,11 +139,30 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
         initRenderContentRec(a, item)
       })
     }
+
     initRenderContentRec(node, root)
 
-    syncMode(selection)
+    updateMode(selection, viewUpdated = false)
+  }
+  {
     defer(client.stateUpdates.doOnNext(update => {
-      syncMode(update.mode)
+      for (t <- update.transaction) {
+        t match {
+          case model.operation.Node.Content(at, c) =>
+            contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
+          case model.operation.Node.Replace(at, c) =>
+            // TODO
+            ???
+          case model.operation.Node.Delete(r) =>
+            // TODO
+            ???
+          case model.operation.Node.Insert(at, childs) =>
+            // TODO
+            ???
+          case model.operation.Node.Move(_, _) => ???
+        }
+      }
+      updateMode(update.mode, update.viewUpdated)
     }).subscribe())
 
     defer(client.errors.doOnNext {
@@ -170,6 +192,7 @@ class ClientView(private val parent: HTMLElement, private val client: Client) ex
   event("keypress", (event: KeyboardEvent) => {
     //window.console.log(event)
   })
+
 
 
 

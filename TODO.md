@@ -49,6 +49,7 @@
 
 ## good to have
 
+* find a method to disable Chinese input in normal/visual mode, i.e. different selection rendering
 * patch chrome/electron so we get a better looking selection
 * macros
 * theme system

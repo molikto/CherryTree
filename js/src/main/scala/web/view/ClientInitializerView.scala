@@ -46,7 +46,7 @@ class ClientInitializerView(where: String) {
       exception.printStackTrace()
       div(
         p(s"failed: ${exception.getMessage}"),
-        button("retry", onclick := goConnecting())
+        button("retry", onclick := { () => goConnecting() })
       )
     }.render)
   }

@@ -1,9 +1,11 @@
 package web.view
 
-import model.mode
+import model._
 
 trait ContentView extends View {
-  def updateMode(aa: mode.Content)
+  def updateContent(c: data.Content, trans: operation.Content, viewUpdated: Boolean)
+
+  def updateMode(aa: mode.Content, viewUpdated: Boolean)
 
   def clearMode(): Unit
 
