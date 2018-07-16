@@ -313,8 +313,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   event("input", (a: Event) => {
     // TODO only accept single node text changes, or subparagraph changes??
     if (isInserting) {
-      if (a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String] == "insertText"
-      ) {
+      val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
+      if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
         clientView.client.flush()
       } else {
@@ -482,10 +482,10 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     rich = data.asInstanceOf[model.data.Content.Rich].content
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
-      // TODO incrementally update dom
      // val cs = c.asInstanceOf[operation.Content.Rich]
+      // TODO incrementally update dom
+      clearDom()
+      initDom()
     }
-    clearDom()
-    initDom()
   }
 }
