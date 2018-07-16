@@ -15,6 +15,12 @@ import Key._
 trait Commands {
 
   /**
+    * helpers
+    */
+  private def noUpdate(): Client.Update = Client.Update(Seq.empty, None, fromUser = true)
+  private def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
+
+  /**
     * these are settings??
     */
   def delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode]
@@ -40,8 +46,6 @@ trait Commands {
     }
   }
 
-  private def noUpdate(): Client.Update = Client.Update(Seq.empty, None, fromUser = true)
-
   def clearWaitingForGraphemeCommand(): Unit = {
     waitingForCharCommand = null
   }
@@ -56,20 +60,13 @@ trait Commands {
 
     commands_.append(this)
 
-    protected val id = ArrayBuffer[String]()
-
-    def name: String = id.mkString(".")
-
     def defaultKeys: Seq[Key]
 
     def keys:  Seq[Key] = defaultKeys // TODO
 
     def repeatable: Boolean = false
 
-    def available(a: ClientState): Boolean = Try {
-      action(a)
-    }.isSuccess
-
+    def available(a: ClientState): Boolean
 
     def action(a: ClientState): Client.Update
 
@@ -78,11 +75,8 @@ trait Commands {
   }
 
   object Command {
-    sealed abstract class Result
 
-    def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a), fromUser = true)
-
-    val exit = new Command {
+    val exit: Command = new Command {
       override def defaultKeys: Seq[Key] = Seq(Escape, Control + "c", Control + "[")
       override def available(a: ClientState): Boolean = true
 
@@ -115,15 +109,12 @@ trait Commands {
     object motion {
 
       abstract class MotionCommand extends Command {
-        id += "motion"
-
       }
 
       // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
       object rich {
 
-        abstract class RichMotionCommand extends motion.MotionCommand {
-          id += "content"
+        abstract class RichBaseCommand extends motion.MotionCommand {
 
           override def available(a: ClientState): Boolean = a.mode match {
             case Some(mode.Node.Content(n, c)) =>
@@ -138,6 +129,9 @@ trait Commands {
               }
             case _ => false
           }
+        }
+
+        abstract class RichMotionCommand extends RichBaseCommand {
 
           def move(content: model.data.Rich, a: IntRange): IntRange
 
@@ -190,7 +184,7 @@ trait Commands {
         // not implemented...??? because it is hard to make columns in a rich text editor
         // bar   N  |            to column N (default: 1)
 
-        abstract class FindCommand extends motion.MotionCommand {
+        abstract class FindCommand extends motion.rich.RichBaseCommand {
 
           def reverse: FindCommand
 
@@ -274,7 +268,7 @@ trait Commands {
           override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
             content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
         }
-        val repeatFind: Command = new motion.MotionCommand {
+        val repeatFind: Command = new motion.rich.RichBaseCommand {
           override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(";")
           override def action(a: ClientState): Client.Update = {
@@ -282,7 +276,7 @@ trait Commands {
           }
           override def repeatable: Boolean = true
         }
-        val repeatFindOppositeDirection: Command = new motion.MotionCommand {
+        val repeatFindOppositeDirection: Command = new motion.rich.RichBaseCommand {
           override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
           override def defaultKeys: Seq[Key] = Seq(",")
           override def action(a: ClientState): Client.Update = {
@@ -419,7 +413,7 @@ trait Commands {
         override def defaultKeys: Seq[Key] = Seq("a")
         override def move(content: Rich, a: IntRange): Int = a.until
       }
-      val appendAtLine: InsertCommand  = new InsertCommand {
+      val appendAtContentEnd: InsertCommand  = new InsertCommand {
         override def defaultKeys: Seq[Key] = Seq("A")
         override def move(content: Rich,a: IntRange): Int = content.size
       }
@@ -428,7 +422,7 @@ trait Commands {
         override def move(content: Rich,a: IntRange): Int = a.start
       }
       // TODO gI    N  gI   insert text in column 1 (N times)
-      val insertAtLine : InsertCommand = new InsertCommand {
+      val insertAtContentBeginning : InsertCommand = new InsertCommand {
         override def defaultKeys: Seq[Key] = Seq("I")
         override def move(content: Rich,a: IntRange): Int = 0
       }

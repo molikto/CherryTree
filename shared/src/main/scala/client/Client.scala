@@ -192,6 +192,7 @@ class Client(
     c => c.keys.filter(k => !k.control && !k.meta && k.a.isInstanceOf[Key.Grapheme]
     ).map(_.a.asInstanceOf[Key.Grapheme] -> c)).toMap
 
+
   def keyDown(key: Key): Boolean = {
     if (isWaitingForGraphemeCommand) {
       key.a match {

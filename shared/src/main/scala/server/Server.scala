@@ -33,7 +33,7 @@ class Server extends Api {
       Text.Plain(Unicode(" some code"))
     )),
     Text.Plain(Unicode(". ")),
-    Text.StrikeThrough(Seq(Text.Plain(Unicode("des text and ")),
+    Text.StrikeThrough(Seq(Text.Emphasis(Seq(Text.Plain(Unicode("des text and ")))),
       Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
     )),
     Text.Plain(Unicode(" ")),

@@ -46,9 +46,7 @@ abstract class View {
 
   def event[T <: Event](ty: String,
     listener: js.Function1[T, _]): Unit = {
-    // TODO this is a hack for Escape key
-    val target = if (ty.contains("key")) document else dom
-    target.addEventListener(ty, listener)
-    defer(_ => target.removeEventListener(ty, listener))
+    dom.addEventListener(ty, listener)
+    defer(_ => dom.removeEventListener(ty, listener))
   }
 }

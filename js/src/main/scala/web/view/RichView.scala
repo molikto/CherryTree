@@ -4,6 +4,7 @@ import scalatags.JsDom.all._
 import model._
 import model.data.{InfoType, Rich, SpecialChar, Text}
 import model.range.IntRange
+import org.scalajs.dom.raw
 import org.scalajs.dom.raw.{Event, CompositionEvent, Node, Range, HTMLImageElement, HTMLSpanElement}
 import org.scalajs.dom.{document, window}
 import org.w3c.dom.css.CSSStyleDeclaration
@@ -91,7 +92,20 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     if (a.isEmpty) {
       parent
     } else {
-      domAt(domChildArray(parent).childNodes.item(a.head), a.tail)
+      var c: Node = null
+      val childArray = domChildArray(parent)
+      if (insertEmptyTextNode == null || insertEmptyTextNode.parentNode != childArray) {
+        c = childArray.childNodes.item(a.head)
+      } else {
+        var i = 0
+        while (i <= a.head) {
+          c = childArray.childNodes.item(i)
+          if (c != insertEmptyTextNode) {
+            i += 1
+          }
+        }
+      }
+      domAt(c, a.tail)
     }
   }
 
@@ -107,36 +121,66 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     parent.childNodes.item(1).childNodes.item(0)
   }
 
-  private def positionToDomPosition(pos: Int): (Node, Int) = {
+  def createTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+    assert (insertEmptyTextNode == null)
+    insertEmptyTextNode = document.createTextNode("")
+    if (i == node.childNodes.length) {
+      node.appendChild(insertEmptyTextNode)
+    } else {
+      node.insertBefore(insertEmptyTextNode, node.childNodes.item(i))
+    }
+    (insertEmptyTextNode, 0)
+  }
+
+  def registerNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+    insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
+    insertNonEmptyTextNodeStartIndex = i
+    (node, i)
+  }
+
+  private def insertCursorAt(pos: Int): (Node, Int) = {
     if (pos == 0) {
-      (domChildArray(dom), 0)
+      if (rich.text.head.isInstanceOf[Text.Plain]) {
+        registerNonEmptyTextNodeIn(domAt(Seq(0)), 0)
+      } else {
+        createTempEmptyTextNodeIn(domChildArray(dom), 0)
+      }
     } else if (pos == rich.size) {
-      (domChildArray(dom), rich.text.size)
+      rich.text.last match {
+        case plain: Text.Plain =>
+          registerNonEmptyTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
+        case _ =>
+          createTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
+      }
     } else {
       val ss = rich.infoSkipLeftAttributes(pos - 1)
       val ee = rich.infoSkipRightAttributes(pos)
       if (ss.ty == InfoType.Plain) {
         if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
-          (domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ee.positionInUnicode))
+          registerNonEmptyTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
         } else {
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Special) {
         if (ee.ty == InfoType.Special) {
-          (domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+          if (ss.nodeCursor.size < ee.nodeCursor.size) {
+            createTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+          } else {
+            createTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+          }
         } else if (ee.ty == InfoType.Plain) {
-          (domAt(ee.nodeCursor), 0)
+          registerNonEmptyTextNodeIn(domAt(ee.nodeCursor), 0)
         } else if (ee.ty == InfoType.Coded) {
-          (domCodeText(domAt(ee.nodeCursor)), 0)
+          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
         } else {
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Coded) {
         val unicode = ss.text.asInstanceOf[Text.Code].content
         if (ee.ty == InfoType.Special) {
-          (domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
+          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
         } else if (ee.ty == InfoType.Coded) {
-          (domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
+          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
         } else {
           throw new IllegalStateException("Not possible")
         }
@@ -233,7 +277,10 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     else inserting.onInput(a)
   })
 
-  private val inserter: RichEditorView = null
+
+  private var insertEmptyTextNode: raw.Text = null
+  private var insertNonEmptyTextNode: raw.Text = null
+  private var insertNonEmptyTextNodeStartIndex: Int = 0
 
   /**
     *
@@ -258,13 +305,16 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   }
 
   private def updateInsertMode(pos: Int): Unit = {
+    val range = document.createRange()
     if (isEmpty) {
       clearEmptyRenderingIfEmptyState()
+      insertEmptyTextNode = document.createTextNode("")
+      dom.appendChild(insertEmptyTextNode)
+    }  else {
+      val start = insertCursorAt(pos)
+      range.setStart(start._1, start._2)
+      range.setEnd(start._1, start._2)
     }
-    val range = document.createRange()
-    val start = positionToDomPosition(pos)
-    range.setStart(start._1, start._2)
-    range.setEnd(start._1, start._2)
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)
