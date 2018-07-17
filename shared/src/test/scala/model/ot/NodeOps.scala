@@ -7,7 +7,7 @@ object NodeOps {
 
 
   def isAsymmetry(n: conflict.Content): Boolean = n match {
-    case conflict.Content.Code(conflict.Unicode.Asymmetry()) => true
+    case conflict.Content.CodeContent(conflict.Unicode.Asymmetry()) => true
     case conflict.Content.Rich(conflict.Unicode.Asymmetry()) => true
     case _ => false
   }

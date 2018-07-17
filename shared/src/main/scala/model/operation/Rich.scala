@@ -84,11 +84,9 @@ object Rich extends OperationObject[data.Rich, Rich] {
         }
         // remove a format
       case 2 =>
-        // add title/image to a subparagraph
-        val randomFormat = r.nextInt(2) match {
-          case 0 => (IntRange.empty(randomParagraphInsertionPoint(d, r)), ImageStart, UrlAttribute, TitleAttribute, ImageEnd)
-          case 1 => (randomSubrich(d, r), LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
-        }
+        // add title to a subparagraph
+        val randomFormat =
+          (randomSubrich(d, r), LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
         Rich(Seq(
           operation.Unicode.Surround(randomFormat._1, data.Unicode(randomFormat._2),
             data.Unicode(randomFormat._3)
@@ -217,30 +215,20 @@ object Rich extends OperationObject[data.Rich, Rich] {
     }
 
     val info = d.infos.zipWithIndex
-    while (true) {
+    var i = 0
+    while (i < 1000000) {
+      i += 1
       val a = info(r.nextInt(d.size))
       val b = info(r.nextInt(d.size - a._2) + a._2)
       if (isValidStart(a._1) && isValidEnd(b._1)) {
         if (a._1.nodeCursor == b._1.nodeCursor) {
-          // single item
-          if (a._2 == b._2) {
-            if (r.nextBoolean()) {
-              // convert to a single one
-              if (r.nextBoolean()) {
-                return IntRange(a._2, a._2)
-              } else {
-                return IntRange(a._2 + 1, a._2 + 1)
-              }
-            } else {
-              return IntRange(a._2, b._2 + 1)
-            }
-          }
+          return IntRange(a._2, b._2 + 1)
         } else if (a._1.nodeCursor.dropRight(1) == b._1.nodeCursor.dropRight(1)) {
           return IntRange(a._2, b._2 + 1)
         }
       }
     }
-    throw new IllegalStateException("Should return before")
+    throw new IllegalStateException("Should return before " + d)
   }
 
 

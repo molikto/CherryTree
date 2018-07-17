@@ -70,13 +70,6 @@ object DataTests extends TestSuite {
       'surround - {
         assert(Unicode("123456").surround(IntRange(1), Unicode("a"), Unicode("b")) == Unicode("1a2b3456"))
       }
-      'codepoints - {
-        for (_ <- 0 until 1000) {
-          val str = new Random().nextString(1000)
-          val u = Unicode(str)
-          assert(u.codePoints == str.codePoints().toArray.toSeq)
-        }
-      }
     }
 
     'implicitlyGenerated - {

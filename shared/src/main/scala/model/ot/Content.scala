@@ -14,7 +14,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
         loser match  {
           case operation.Content.CodeContent(l) =>
             val uc = ot.Unicode.rebase(w, l)
-            Rebased(uc.conflicts.map(conflict.Content.Code),
+            Rebased(uc.conflicts.map(conflict.Content.CodeContent),
               (uc.t._1.map(operation.Content.CodeContent), uc.t._2.map(operation.Content.CodeContent)))
           case operation.Content.CodeLang(l) =>
             free(winner, loser)
@@ -38,7 +38,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
         loser match  {
           case operation.Content.Rich(l) =>
             val uc = ot.Rich.rebase(w, l)
-            Rebased(uc.conflicts.map(conflict.Content.Code),
+            Rebased(uc.conflicts.map(conflict.Content.CodeContent),
               (uc.t._1.map(a => operation.Content.Rich(a)), uc.t._2.map(a => operation.Content.Rich(a))))
           case _ =>
             throw new IllegalStateException("Not applicable operation")

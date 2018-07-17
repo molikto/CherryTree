@@ -37,11 +37,13 @@ case class Info(
   def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
   def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
   def positionInUnicode: Int = {
-    text match {
+    val p = text match {
       case p : Text.Plain if ty == InfoType.Plain => positionInParagraph - nodeStart
       case c : Text.Coded if ty == InfoType.Coded => positionInParagraph - nodeStart - 1
       case _ => throw new NotImplementedError("Not implemented yet!!")
     }
+    assert(p >= 0)
+    p
   }
 
   def extendedGrapheme: Unicode = {
@@ -92,7 +94,9 @@ case class Rich(text: Seq[Text]) {
     var range = start
     while (range.until < size) {
       val info = infoSkipRightAttributes(range.until)
+      val oldRange = range
       range = info.atomicRange
+      assert(oldRange.until < range.until)
       if (info.matchesChar(grapheme, delimitationCodePoints)) {
         return Some(range)
       }
@@ -104,7 +108,9 @@ case class Rich(text: Seq[Text]) {
     var range = start
     while (range.start > 0) {
       val info = infoSkipLeftAttributes(range.start - 1)
+      val oldRange = range
       range = info.atomicRange
+      assert(range.start < oldRange.start)
       if (info.matchesChar(grapheme, delimitationCodePoints)) {
         return Some(range)
       }
@@ -135,7 +141,9 @@ case class Rich(text: Seq[Text]) {
     while (true) {
       val f = info(i)
       if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
+        val oldI = i
         i = f.nodeStart + f.text.size - 1 // the last character
+        assert(i > oldI)
       } else {
         return f
       }
