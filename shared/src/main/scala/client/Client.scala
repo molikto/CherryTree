@@ -126,7 +126,7 @@ class Client(
   private var insertingFlusher: Cancelable = null
 
   private def updateInner(res: Client.UpdateResult): Unit = {
-    if (updatingState) throw new IllegalStateException("You should not udpate state during a state update!!!")
+    if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     println("client update inner: " + res)
     updatingState = true
     state_ = ClientState(res.root, res.mode)

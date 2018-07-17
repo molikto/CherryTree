@@ -45,11 +45,12 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   private var insertNonEmptyTextNodeStartIndex: Int = 0
   private var insertNonEmptyTextLength: Int = 0
   private var astHighlight: HTMLSpanElement = null
+  private var flushSubscription: Cancelable = null
+  private var previousMode = if (isEmpty) 3 else 1
 
   private def initDom(): Unit = {
     if (dom.childNodes.length == 0) {
-      if (isEmpty) dom.appendChild(" ".render)
-      else dom.appendChild(rec(rich.text).render)
+      dom.appendChild(rec(rich.text).render)
     } else {
       throw new IllegalStateException("...")
     }
@@ -60,27 +61,23 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def clearDom(): Unit = {
-    insertEmptyTextNode = null
-    insertNonEmptyTextNode = null
-    astHighlight = null
+    initMode(-1)
     removeAllChild(dom)
   }
 
-  private def clearEmptyRenderingIfEmptyState(): Unit = {
-    if (isEmpty) removeAllChild(dom)
+  private def clearEmptyNormalMode(): Unit = {
+    removeAllChild(dom)
   }
 
-  private def renderEmptyRenderingIfEmptyState(): Unit = {
-    if (isEmpty && dom.childNodes.length == 0) dom.appendChild(" ".render)
-  }
-
-  private def emptyRenderingRange(): Range = {
+  private def initEmptyNormalMode(): Unit = {
+    dom.appendChild("e".render)
     val range = document.createRange()
     range.setStart(dom.childNodes(0), 0)
     range.setEnd(dom.childNodes(0), 1)
-    range
+    val sel = window.getSelection
+    sel.removeAllRanges
+    sel.addRange(range)
   }
-
 
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
@@ -159,68 +156,82 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     parent.childNodes(1).childNodes(0)
   }
 
-  def createTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
-    assert(insertEmptyTextNode == null)
+  def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
     insertEmptyTextNode = document.createTextNode("")
     if (i == node.childNodes.length) {
       node.appendChild(insertEmptyTextNode)
     } else {
       node.insertBefore(insertEmptyTextNode, node.childNodes(i))
     }
+  }
+
+  def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+    if (insertEmptyTextNode != null) {
+      if (i < node.childNodes.length && node.childNodes(i) == insertEmptyTextNode) {
+        // do nothing, we are up to date
+      } else {
+        removeInsertEmptyTextNode()
+        createTempEmptyInsertTextNode(node, i)
+      }
+    } else {
+      createTempEmptyInsertTextNode(node, i)
+    }
     (insertEmptyTextNode, 0)
   }
 
-  def registerNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
-    assert(insertNonEmptyTextNode == null)
+  def updateNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+    if (insertEmptyTextNode == null) {
+      removeInsertEmptyTextNode()
+    }
     insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
     insertNonEmptyTextNodeStartIndex = i
     insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.size
     (node, i)
   }
 
-  private def insertCursorAt(pos: Int): (Node, Int) = {
+  private def updateNonEmptyInsertCursorAt(pos: Int): (Node, Int) = {
     if (pos == 0) {
       if (rich.text.head.isInstanceOf[Text.Plain]) {
-        registerNonEmptyTextNodeIn(domAt(Seq(0)), 0)
+        updateNonEmptyTextNodeIn(domAt(Seq(0)), 0)
       } else {
-        createTempEmptyTextNodeIn(domChildArray(dom), 0)
+        updateTempEmptyTextNodeIn(domChildArray(dom), 0)
       }
     } else if (pos == rich.size) {
       rich.text.last match {
         case plain: Text.Plain =>
-          registerNonEmptyTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
+          updateNonEmptyTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
         case _ =>
-          createTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
+          updateTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
       }
     } else {
       val ss = rich.infoSkipLeftAttributes(pos - 1)
       val ee = rich.infoSkipRightAttributes(pos)
       if (ss.ty == InfoType.Plain) {
         if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
-          registerNonEmptyTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
+          updateNonEmptyTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
         } else {
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Special) {
         if (ee.ty == InfoType.Special) {
           if (ss.nodeCursor.size < ee.nodeCursor.size) {
-            createTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+            updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
           } else {
-            createTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+            updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
           }
         } else if (ee.ty == InfoType.Plain) {
-          registerNonEmptyTextNodeIn(domAt(ee.nodeCursor), 0)
+          updateNonEmptyTextNodeIn(domAt(ee.nodeCursor), 0)
         } else if (ee.ty == InfoType.Coded) {
-          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
+          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
         } else {
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Coded) {
         val unicode = ss.text.asInstanceOf[Text.Code].content
         if (ee.ty == InfoType.Special) {
-          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
+          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
         } else if (ee.ty == InfoType.Coded) {
-          registerNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
+          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
         } else {
           throw new IllegalStateException("Not possible")
         }
@@ -349,7 +360,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (insertEmptyTextNode.textContent.length > 0) {
         str = if (str.isEmpty) insertEmptyTextNode.textContent else str + insertEmptyTextNode.textContent
       }
-      if (next.textContent.length > 0 && next.isInstanceOf[raw.Text]) {
+      if (next != null && next.textContent.length > 0 && next.isInstanceOf[raw.Text]) {
         str = str + next.textContent
       } else {
         next = null
@@ -358,31 +369,34 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (next != null) next.parentNode.removeChild(next)
       if (str.length > 0) {
         insertEmptyTextNode.textContent = str
-        clientView.client.onInsertRichTextAndViewUpdated(Unicode(str))
         insertNonEmptyTextNode = insertEmptyTextNode
         insertNonEmptyTextLength = str.length
         insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
         insertEmptyTextNode = null
+        clientView.client.onInsertRichTextAndViewUpdated(Unicode(str))
       }
     } else if (insertNonEmptyTextNode != null) {
       val newContent = insertNonEmptyTextNode.textContent
       val insertion = newContent.substring(
         insertNonEmptyTextNodeStartIndex, insertNonEmptyTextNodeStartIndex + newContent.length - insertNonEmptyTextLength)
       if (insertion.length > 0) {
-        clientView.client.onInsertRichTextAndViewUpdated(Unicode(insertion))
         insertNonEmptyTextLength = newContent.length
         insertNonEmptyTextNodeStartIndex += insertion.length
+        clientView.client.onInsertRichTextAndViewUpdated(Unicode(insertion))
       }
     }
   }
 
 
-
-  private def clearInsertionMode(): Unit = {
+  private def removeInsertEmptyTextNode(): Unit = {
     if (insertEmptyTextNode != null) {
       insertEmptyTextNode.parentNode.removeChild(insertEmptyTextNode)
       insertEmptyTextNode = null
     }
+  }
+
+  private def clearInsertionMode(): Unit = {
+    removeInsertEmptyTextNode()
     insertNonEmptyTextNode = null
     if (flushSubscription != null) {
       flushSubscription.cancel()
@@ -415,11 +429,16 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     }
     val range = document.createRange()
     if (isEmpty) {
-      clearEmptyRenderingIfEmptyState()
-      insertEmptyTextNode = document.createTextNode("")
-      dom.appendChild(insertEmptyTextNode)
+      if (insertEmptyTextNode != null) {
+        assert(dom.childNodes.length == 1)
+      } else {
+        insertEmptyTextNode = document.createTextNode("")
+        dom.appendChild(insertEmptyTextNode)
+        range.setStart(insertEmptyTextNode, 0)
+        range.setEnd(insertEmptyTextNode, 0)
+      }
     }  else {
-      val start = insertCursorAt(pos)
+      val start = updateNonEmptyInsertCursorAt(pos)
       range.setStart(start._1, start._2)
       range.setEnd(start._1, start._2)
     }
@@ -430,20 +449,15 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
 
   private def updateNormalMode(r: IntRange): Unit = {
-    val range = if (isEmpty) {
-      emptyRenderingRange()
+    val range = document.createRange()
+    if (r.isEmpty) {
+      throw new IllegalStateException("Normal mode should not have empty range if rich is not empty")
     } else {
-      val range = document.createRange()
-      if (r.isEmpty) {
-        throw new IllegalStateException("Normal mode should not have empty range if rich is not empty")
-      } else {
-        val start = nonEmptySelectionToDomRange(r)
-        range.setStart(start._1, start._2)
-        range.setEnd(start._3, start._4)
-        if (start._5 != astHighlight) removeFormattedNodeHighlight()
-        if (start._5 != null) addFormattedNodeHighlight(start._5)
-      }
-      range
+      val start = nonEmptySelectionToDomRange(r)
+      range.setStart(start._1, start._2)
+      range.setEnd(start._3, start._4)
+      if (start._5 != astHighlight) removeFormattedNodeHighlight()
+      if (start._5 != null) addFormattedNodeHighlight(start._5)
     }
     val sel = window.getSelection
     sel.removeAllRanges
@@ -452,9 +466,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   override def clearMode(): Unit = {
     clientView.unmarkEditable(dom)
-    clearNormalMode()
-    clearVisualMode()
-    clearInsertionMode()
+    initMode(-1)
   }
 
   override def initMode(): Unit = {
@@ -462,26 +474,40 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def isInserting = flushSubscription != null
-  private var flushSubscription: Cancelable = null
+
+  private def initMode(i: Int): Unit = {
+    if (previousMode != i) {
+      if (previousMode == 0) {
+        clearInsertionMode()
+      } else if (previousMode == 1) {
+        clearNormalMode()
+      } else if (previousMode == 2) {
+        clearVisualMode()
+      } else if (previousMode == 3) {
+        clearEmptyNormalMode()
+      }
+      if (i == 3) {
+        initEmptyNormalMode()
+      }
+      previousMode = i
+    }
+  }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean): Unit = {
-    if (viewUpdated) return
     aa match {
       case mode.Content.RichInsert(pos) =>
-        clearNormalMode()
-        clearVisualMode()
-        clearEmptyRenderingIfEmptyState()
+        initMode(0)
         updateInsertMode(pos)
       case mode.Content.RichVisual(fix, move) =>
-        clearInsertionMode()
-        clearNormalMode()
-        renderEmptyRenderingIfEmptyState()
+        initMode(1)
         updateVisualMode(fix, move)
       case mode.Content.RichNormal(range) =>
-        clearInsertionMode()
-        clearVisualMode()
-        renderEmptyRenderingIfEmptyState()
-        updateNormalMode(range)
+        if (isEmpty) {
+          initMode(3)
+        } else {
+          initMode(2)
+          updateNormalMode(range)
+        }
     }
   }
 
@@ -490,7 +516,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
      // val cs = c.asInstanceOf[operation.Content.Rich]
-      // TODO incrementally update dom
+      // TODO incrementally update dom remember to clear the empty range when needed
       clearDom()
       initDom()
     }

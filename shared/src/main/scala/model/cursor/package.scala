@@ -66,7 +66,7 @@ package object cursor {
           None
         } else {
           val last = a.last
-          if (last < root(a.dropRight(1)).childs.size) {
+          if (last < root(a.dropRight(1)).childs.size - 1) {
             Some(a.dropRight(1) :+ (last + 1))
           } else {
             None

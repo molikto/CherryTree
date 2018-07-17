@@ -26,7 +26,7 @@ package object mode {
       * empty selection is only valid when document is empty
       */
     case class RichNormal(range: IntRange) extends RichNormalOrVisual with Normal {
-      assert(range.size != 0 || range.start != 0) // try to avoid empty selection error
+      assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual

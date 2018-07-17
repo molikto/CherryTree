@@ -154,8 +154,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             current.initMode()
             focusContent = current
           }
-          window.console.log(at.toString())
-          window.console.log(current.dom)
           aa match {
             case r: model.mode.Content.Rich =>
               current.asInstanceOf[RichView].updateMode(r, viewUpdated)

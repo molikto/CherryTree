@@ -101,7 +101,10 @@ trait Commands {
                   case model.data.Content.Rich(rich) =>
                     c match {
                       case model.mode.Content.RichInsert(pos) =>
-                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(rich.moveLeftAtomic(pos))))
+                        val range = if (pos != 0) rich.moveLeftAtomic(pos)
+                        else if (rich.isEmpty) IntRange(0, 0)
+                        else rich.beginningAtomicRange()
+                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(range)))
                       case model.mode.Content.RichVisual(fix, move) =>
                         modeUpdate(nc.copy(a = model.mode.Content.RichNormal(move)))
                       case _ => noUpdate()
