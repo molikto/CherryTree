@@ -159,6 +159,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
     (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
     (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
+    previousNodeVisual = newVisual
   }
 
   private def clearNodeVisual(): Unit = {

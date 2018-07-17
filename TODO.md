@@ -14,7 +14,6 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* visual delete
 * key sequence: dd
 * single edit commands
 * code mirror!!!
@@ -101,3 +100,4 @@
 * ~~fix empty document~~
 * ~~visual mode~~
 * ~~node visual~~
+* ~~visual delete~~
