@@ -29,11 +29,12 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
-      case mode.Content.Insert(s) =>
-        mode.Content.Insert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
-      case mode.Content.Visual(a, b) =>
-        mode.Content.Visual(transformRange(a), transformRange(b))
-      case mode.Content.Normal(r) => mode.Content.Normal(transformRange(r))
+      case mode.Content.RichInsert(s) =>
+        mode.Content.RichInsert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
+      case mode.Content.RichVisual(a, b) =>
+        mode.Content.RichVisual(transformRange(a), transformRange(b))
+      case mode.Content.RichNormal(r) => mode.Content.RichNormal(transformRange(r))
+      case a => a
     })
   }
   object Delete {
@@ -47,21 +48,22 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       r.transformDeletingRangeAfterDeleted(range)
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
-      case mode.Content.Insert(k) =>
-        Some(mode.Content.Insert(if (k <= r.start) {
+      case mode.Content.RichInsert(k) =>
+        Some(mode.Content.RichInsert(if (k <= r.start) {
           k
         } else if (k >= r.until) {
           k - r.size
         } else {
           k
         }))
-     case mode.Content.Visual(a, b) =>
+     case mode.Content.RichVisual(a, b) =>
        (transformRange(a), transformRange(b)) match {
-         case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))
+         case (Some(aa), Some(bb)) => Some(mode.Content.RichVisual(aa, bb))
          case _ => None
        }
-      case mode.Content.Normal(range) =>
-        transformRange(range).map(r => mode.Content.Normal(r))
+      case mode.Content.RichNormal(range) =>
+        transformRange(range).map(r => mode.Content.RichNormal(r))
+      case a => Some(a)
     }
   }
 
@@ -92,18 +94,19 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
-      case mode.Content.Insert(k) =>
+      case mode.Content.RichInsert(k) =>
         if (r.deletesCursor(k)) {
           throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
         } else if (k <= r.start) {
           i
         } else {
-          mode.Content.Insert(k + sizeDiff)
+          mode.Content.RichInsert(k + sizeDiff)
         }
-      case mode.Content.Visual(a, b) =>
-        mode.Content.Visual(transformRange(a), transformRange(b))
-      case mode.Content.Normal(range) =>
-        mode.Content.Normal(transformRange(range))
+      case mode.Content.RichVisual(a, b) =>
+        mode.Content.RichVisual(transformRange(a), transformRange(b))
+      case mode.Content.RichNormal(range) =>
+        mode.Content.RichNormal(transformRange(range))
+      case a => a
     })
   }
 
@@ -126,15 +129,16 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
-      case mode.Content.Insert(k) =>
-        Some(mode.Content.Insert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
-      case mode.Content.Visual(a, b) =>
+      case mode.Content.RichInsert(k) =>
+        Some(mode.Content.RichInsert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
+      case mode.Content.RichVisual(a, b) =>
         (transformRange(a), transformRange(b)) match {
-          case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))
+          case (Some(aa), Some(bb)) => Some(mode.Content.RichVisual(aa, bb))
           case _ => None
         }
-      case mode.Content.Normal(range) =>
-        transformRange(range).map(a => mode.Content.Normal(a))
+      case mode.Content.RichNormal(range) =>
+        transformRange(range).map(a => mode.Content.RichNormal(a))
+      case a => Some(a)
     }
   }
 

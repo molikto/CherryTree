@@ -4,7 +4,7 @@ import api.ClientUpdate
 import client.Client
 import model.data.{apply => _, _}
 import model.range.IntRange
-import model.{ClientState, mode, operation}
+import model.{ClientState, cursor, mode, operation}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
@@ -91,57 +91,41 @@ trait Commands {
                 a.node(n).content match {
                   case model.data.Content.Rich(rich) =>
                     c match {
-                      case model.mode.Content.Insert(pos) =>
-                        modeUpdate(nc.copy(a = model.mode.Content.Normal(rich.moveLeftAtomic(pos))))
-                      case model.mode.Content.Visual(fix, move) =>
-                        modeUpdate(nc.copy(a = model.mode.Content.Normal(move)))
+                      case model.mode.Content.RichInsert(pos) =>
+                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(rich.moveLeftAtomic(pos))))
+                      case model.mode.Content.RichVisual(fix, move) =>
+                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(move)))
                       case _ => noUpdate()
                     }
                   case model.data.Content.Code(c, _) =>
                     ??? // TODO exit code mode?
-
+                  case _ =>
+                    noUpdate()
                 }
               }
           case None => noUpdate()
         }
       }
     }
+
+    abstract class MotionCommand extends Command {
+      override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
+    }
     /**
       */
     object ContentMotion {
 
       // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
-      abstract class RichBaseCommand extends Command {
 
-        override def available(a: ClientState): Boolean = a.mode match {
-          case Some(mode.Node.Content(n, c)) =>
-            a.node(n).content match {
-              case model.data.Content.Rich(p) =>
-                c match {
-                  case mode.Content.Normal(_) => true
-                  case mode.Content.Visual(_, _) => true
-                  case _ => false
-                }
-              case _ => false
-            }
-          case _ => false
-        }
-      }
-
-      abstract class RichMotionCommand extends RichBaseCommand {
+      abstract class RichMotionCommand extends MotionCommand {
 
         def move(content: model.data.Rich, a: IntRange): IntRange
 
         final override def action(a: ClientState): Client.Update = {
-          a.mode match {
-            case Some(o@mode.Node.Content(n, c)) =>
-              val content = a.node(n).content.asInstanceOf[Content.Rich].content
-              c match {
-                case mode.Content.Normal(r) => modeUpdate(o.copy(a = mode.Content.Normal(move(content, r))))
-                case v@mode.Content.Visual(fix, m) => modeUpdate(o.copy(a = mode.Content.Visual(fix, move(content, m))))
-                case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-              }
-            case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+          val (_, content, m) = a.asRichNormalOrVisual
+          m match {
+            case mode.Content.RichNormal(r) => modeUpdate(a.copyContentMode(mode.Content.RichNormal(move(content, r))))
+            case mode.Content.RichVisual(fix, k) => modeUpdate(a.copyContentMode(mode.Content.RichVisual(fix, move(content, k))))
           }
         }
       }
@@ -181,7 +165,7 @@ trait Commands {
       // not implemented...??? because it is hard to make columns in a rich text editor
       // bar   N  |            to column N (default: 1)
 
-      abstract class FindCommand extends RichBaseCommand {
+      abstract class FindCommand extends MotionCommand {
 
         def reverse: FindCommand
 
@@ -209,27 +193,22 @@ trait Commands {
         }
 
         def findGrapheme(a: ClientState, char: Grapheme, skipCurrent: Boolean): Client.Update = {
-          a.mode match {
-            case Some(o@mode.Node.Content(n, c)) =>
-              val content = a.node(n).content.asInstanceOf[Content.Rich].content
-              c match {
-                case mode.Content.Normal(r) =>
-                  moveSkip(content, r, char, skipCurrent) match {
-                    case Some(move) =>
-                      modeUpdate(o.copy(a = mode.Content.Normal(move)))
-                    case None =>
-                      noUpdate()
-                  }
-                case v@mode.Content.Visual(fix, m) =>
-                  moveSkip(content, m, char, skipCurrent) match {
-                    case Some(move) =>
-                      modeUpdate(o.copy(a = mode.Content.Visual(fix, move)))
-                    case None =>
-                      noUpdate()
-                  }
-                case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+          val (_, content, mm) = a.asRichNormalOrVisual
+          mm match {
+            case mode.Content.RichNormal(r) =>
+              moveSkip(content, r, char, skipCurrent) match {
+                case Some(move) =>
+                  modeUpdate(a.copyContentMode(mode.Content.RichNormal(move)))
+                case None =>
+                  noUpdate()
               }
-            case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+            case mode.Content.RichVisual(fix, m) =>
+              moveSkip(content, m, char, skipCurrent) match {
+                case Some(move) =>
+                  modeUpdate(a.copyContentMode( mode.Content.RichVisual(fix, move)))
+                case None =>
+                  noUpdate()
+              }
           }
         }
 
@@ -265,7 +244,7 @@ trait Commands {
         override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
           content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
       }
-      val repeatFind: Command = new RichBaseCommand {
+      val repeatFind: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override def defaultKeys: Seq[Key] = Seq(";")
         override def action(a: ClientState): Client.Update = {
@@ -273,7 +252,7 @@ trait Commands {
         }
         override def repeatable: Boolean = true
       }
-      val repeatFindOppositeDirection: Command = new RichBaseCommand {
+      val repeatFindOppositeDirection: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override def defaultKeys: Seq[Key] = Seq(",")
         override def action(a: ClientState): Client.Update = {
@@ -335,8 +314,6 @@ trait Commands {
       object NodeMotion {
         /**
           * LATER
-          * k     N  k            up N lines (also: CTRL-P and <Up>)
-          * j     N  j            down N lines (also: CTRL-J, CTRL-N, <NL>, and <Down>)
           * -     N  -            up N lines, on the first non-blank character
           * +     N  +            down N lines, on the first non-blank character (also:
           * CTRL-M and <CR>)
@@ -346,10 +323,56 @@ trait Commands {
           * gg    N  gg           goto line N (default: first line), on the first
           * non-blank character
           */
-//        val up: Command = ???
-//        val down: Command = ???
-//        val visibleBeginning: Command = ???
-//        val visibleEnd: Command = ???
+        abstract class NodeMotionCommand extends Command {
+
+          override def repeatable: Boolean = true
+
+          def move(data: ClientState, a: cursor.Node): cursor.Node
+
+
+          override def available(a: ClientState): Boolean = a.mode match {
+            case Some(m) => m match {
+              case model.mode.Node.Visual(fix, move) => true
+              case model.mode.Node.Content(n, cc) => cc match {
+                case model.mode.Content.RichNormal(n) => true
+                case model.mode.Content.CodeNormal => true
+                case _ => false
+              }
+            }
+            case None => false
+          }
+
+          final override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, Some(a.mode match {
+            case Some(m) => m match {
+              case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm))
+              case kkk@model.mode.Node.Content(n, cc) => kkk.copy(a = cc match {
+                case model.mode.Content.RichNormal(_) =>
+                  a.node(move(a, n)).content.defaultNormalMode()
+                case model.mode.Content.CodeNormal =>
+                  a.node(move(a, n)).content.defaultNormalMode()
+                case _ => throw new MatchError("Not allowed")
+              })
+            }
+            case None => throw new MatchError("Not allowed")
+          }))
+        }
+        val up: Command = new NodeMotionCommand {
+          override def defaultKeys: Seq[Key] = Seq("k", "-") // we always go to first char now
+          override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualUpOrId(a)
+        }
+        val down: Command = new NodeMotionCommand {
+          override def defaultKeys: Seq[Key] = Seq("j", "+")
+          override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualDownOrId(a)
+        }
+//        val visibleBeginning: Command = new NodeMotionCommand {
+//          override def move(a: cursor.Node): cursor.Node = ???
+//
+//          override def defaultKeys: Seq[Key] = ???
+//        }
+//        val visibleEnd: Command = new NodeMotionCommand {
+//          override def move(a: cursor.Node): cursor.Node = ???
+//          override def defaultKeys: Seq[Key] = ???
+//        }
 
         // not implemented for not understand what should it behave
         // * N%    N  %            goto line N percentage down in the file; N must be
@@ -374,6 +397,11 @@ trait Commands {
 
     object EnterVisual {
 
+      val enter = new Command {
+        override def defaultKeys: Seq[Key] = Seq("v")
+        override def available(a: ClientState): Boolean = a.isRichNormal
+        override def action(a: ClientState): Client.Update = noUpdate() // TODO enter visual mode
+      }
     }
 
     object EnterInsert {
@@ -391,20 +419,12 @@ trait Commands {
       abstract class InsertCommand extends Command  {
         def move(content: Rich,a: IntRange): Int
 
-        override def available(a: ClientState): Boolean = a.mode match {
-          case Some(model.mode.Node.Content(n, model.mode.Content.Normal(_))) =>
-            a.node(n).content match {
-              case model.data.Content.Rich(p) =>
-                true
-              case _ => false
-            }
-          case _ => false
-        }
+        override def available(a: ClientState): Boolean = a.isRichNormal
 
-        override def action(a: ClientState): Client.Update = a.mode match {
-          case Some(c@model.mode.Node.Content(n, model.mode.Content.Normal(r))) =>
-            modeUpdate(c.copy(a = model.mode.Content.Insert(move(
-              a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r))))
+        override def action(a: ClientState): Client.Update =  {
+          val (content, normal) = a.asRichNormal
+          modeUpdate(a.copyContentMode(model.mode.Content.RichInsert(move(
+            content, normal.range))))
         }
       }
       val appendAtCursor: InsertCommand = new InsertCommand {
@@ -432,7 +452,7 @@ trait Commands {
         def edit(content: Rich,a: Int): Option[model.operation.Rich]
 
         override def available(a: ClientState): Boolean = a.mode match {
-          case Some(model.mode.Node.Content(n, model.mode.Content.Insert(_))) =>
+          case Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(_))) =>
             a.node(n).content match {
               case model.data.Content.Rich(p) =>
                 true
@@ -441,12 +461,12 @@ trait Commands {
           case _ => false
         }
 
-        override def action(a: ClientState): Client.Update = a.mode match {
-          case Some(c@model.mode.Node.Content(n, model.mode.Content.Insert(r))) =>
-            val res = edit(a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r).map(k => {
-              Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
-            }).getOrElse(Seq.empty)
-            Client.Update(res, None)
+        override def action(a: ClientState): Client.Update = {
+          val (n, content, insert) = a.asRichInsert
+          val res = edit(content, insert.pos).map(k => {
+            Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+          }).getOrElse(Seq.empty)
+          Client.Update(res, None)
         }
       }
       val backspace: Command = new EditCommand {
@@ -529,7 +549,7 @@ trait Commands {
   {
     var ignored: Command = Command.ContentMotion.toNextChar
     ignored = Command.EnterInsert.appendAtCursor
-    ignored = Command.EnterVisual.appendAtCursor
+    ignored = Command.EnterVisual.enter
     ignored = Command.exit
     ignored = Command.InsertModeEdits.backspace
   }

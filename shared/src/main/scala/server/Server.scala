@@ -49,7 +49,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultMode()), version)
+    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultNormalMode()), version)
     clients.update(token, version)
     Right(state)
   }

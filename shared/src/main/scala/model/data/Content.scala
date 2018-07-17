@@ -1,6 +1,7 @@
 package model.data
 
 import boopickle._
+import model.mode.Content
 import model.range.IntRange
 import model.{data, mode}
 
@@ -8,7 +9,7 @@ import scala.util.Random
 
 
 abstract sealed class Content {
-  def defaultMode(): mode.Content = mode.Content.Normal(beginningAtomicRange())
+  def defaultNormalMode(): mode.Content.Normal
   def beginningAtomicRange(): IntRange
 
   def isRich = isInstanceOf[Content.Rich]
@@ -24,10 +25,14 @@ abstract sealed class Content {
 object Content extends DataObject[Content] {
   case class Code(unicode: Unicode, lang: Option[String]) extends Content {
     override def beginningAtomicRange(): IntRange = if (unicode.size == 0) IntRange(0, 0) else unicode.extendedGraphemeRange(0)
+
+    override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
   }
   case class Rich(content: data.Rich) extends Content {
     val size: Int = content.size
     override def beginningAtomicRange(): IntRange = content.beginningAtomicRange()
+
+    override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(beginningAtomicRange())
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

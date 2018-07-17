@@ -8,6 +8,7 @@ import scala.util.Random
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(content: Content, childs: Seq[Node]) {
 
+
   def map(c: cursor.Node, transform: Node => Node): Node = {
     if (c.isEmpty) {
       transform(this)

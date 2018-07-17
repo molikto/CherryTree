@@ -75,12 +75,12 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   ).render
   dom.appendChild(root)
 
-  private var previousFocusContent: ContentView = null
+  private var focusContent: ContentView = null
 
   def removeFocusContent() = {
-    if (previousFocusContent != null) {
-      previousFocusContent.clearMode()
-      previousFocusContent = null
+    if (focusContent != null) {
+      focusContent.clearMode()
+      focusContent = null
     }
   }
 
@@ -98,26 +98,31 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
     mode.textContent = m match {
       case None =>
-        if (previousFocusContent != null) removeFocusContent()
+        if (focusContent != null) removeFocusContent()
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
           val current = contentAt(at)
-          if (current != previousFocusContent) {
+          if (current != focusContent) {
             removeFocusContent()
             current.initMode()
+            focusContent = current
           }
           current.updateMode(aa, viewUpdated)
           aa match {
-            case model.mode.Content.Insert(_) =>
+            case model.mode.Content.RichInsert(_) =>
               "INSERT"
-            case model.mode.Content.Visual(_, _) =>
+            case model.mode.Content.RichVisual(_, _) =>
               "VISUAL"
-            case model.mode.Content.Normal(_) =>
+            case model.mode.Content.RichNormal(_) =>
               "NORMAL"
+            case model.mode.Content.CodeNormal =>
+              "CODE NORMAL"
+            case model.mode.Content.CodeInside =>
+              "CODE INSIDE"
           }
         case model.mode.Node.Visual(_, _) =>
-          if (previousFocusContent != null) removeFocusContent()
+          if (focusContent != null) removeFocusContent()
           "NODE VISUAL"
       }
     }

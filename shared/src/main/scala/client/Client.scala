@@ -131,7 +131,7 @@ class Client(
     state_ = ClientState(res.root, res.mode)
     stateUpdates_.onNext(res)
     updatingState = false
-    if (state_.isInserting) {
+    if (state_.isRichInserting) {
       if (insertingFlusher == null) {
         insertingFlusher = Observable.interval(300.millis).doOnNext(_ => flush()).subscribe()
       }
@@ -290,7 +290,7 @@ class Client(
               false
             }
         }
-      if (state.isInserting) {
+      if (state.isRichInserting) {
         // some keys we MUST keep
         doCommand()
       } else {
@@ -306,13 +306,11 @@ class Client(
     */
   def onInsertRichTextAndViewUpdated(unicode: Unicode): Unit = {
     import model._
-    state.mode match {
-      case Some(mn@mode.Node.Content(n, mode.Content.Insert(p))) if state.node(n).content.isRich =>
-        change(
-          Seq(operation.Node.Content(n, operation.Content.Rich(operation.Rich.insert(p, unicode)))),
-          Some(mn.copy(a = mode.Content.Insert(p + unicode.size))),
-          viewUpdated = true)
-    }
+    val (n, _, insert) = state.asRichInsert
+    change(
+      Seq(operation.Node.Content(n, operation.Content.Rich(operation.Rich.insert(insert.pos, unicode)))),
+      Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
+      viewUpdated = true)
   }
 
 

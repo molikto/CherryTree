@@ -17,6 +17,90 @@ package object cursor {
 
 
   object Node {
+
+    class Mover(root: data.Node, isClosed: Node => Boolean) {
+      def parent(a: Node): Option[Node] = {
+        if (a.isEmpty) None else Some(a.dropRight(1))
+      }
+
+      def firstChild(a: Node): Option[Node] = {
+        val size = root(a).childs.size
+        if (size > 0) {
+          Some(a :+ 0)
+        } else {
+          None
+        }
+      }
+      def lastChild(a: Node): Option[Node] = {
+        val size = root(a).childs.size
+        if (size == 0) {
+          None
+        } else {
+          Some(a :+ (size - 1))
+        }
+      }
+      def previous(a: Node): Option[Node] = {
+        if (a.isEmpty) {
+          None
+        } else {
+          val last = a.last
+          if (last > 0) {
+            Some(a.dropRight(1) :+ (last - 1))
+          } else {
+            None
+          }
+        }
+      }
+
+      def next(a: Node): Option[Node] = {
+        if (a.isEmpty) {
+          None
+        } else {
+          val last = a.last
+          if (last < root(a.dropRight(1)).childs.size) {
+            Some(a.dropRight(1) :+ (last + 1))
+          } else {
+            None
+          }
+        }
+      }
+
+      def visualBottom(k: Node): Node = {
+        if (isClosed(k)) {
+          k
+        } else {
+          lastChild(k) match {
+            case Some(a) => visualBottom(a)
+            case _ => k
+          }
+        }
+      }
+      def visualUpOrId(a: Node): Node = visualUp(a).getOrElse(a)
+
+      def visualUp(a: Node): Option[Node] = {
+        previous(a) match {
+          case None => parent(a)
+          case Some(k) => Some(visualBottom(k))
+        }
+      }
+
+
+      def globalNext(a: Node): Option[Node] = next(a).orElse(parent(a).flatMap(globalNext))
+
+      def visualDownOrId(a: Node): Node = visualDown(a).getOrElse(a)
+
+      def visualDown(a: Node): Option[Node] = {
+        if (!isClosed(a)) {
+          firstChild(a).orElse(globalNext(a))
+        } else {
+          globalNext(a)
+        }
+      }
+    }
+
+
+
+
     val Root: Node = Seq.empty
     /**
       * @return common, left unique, right unique

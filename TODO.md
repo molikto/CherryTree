@@ -14,13 +14,13 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
+* node level sync and operations
+* code mirror!!!
 * insert mode command overrides
 * sync external operation to content
-* node level sync and operations
 * node visual mode
 * single edit commands
 * visual mode
-* code mirror!!!
 * key sequence
 * keyboard editor for rich
 * mouse support
