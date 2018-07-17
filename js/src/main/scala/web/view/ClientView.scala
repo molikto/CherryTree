@@ -109,7 +109,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
           }
           current.updateMode(aa, viewUpdated)
           aa match {
-            case model.mode.Content.Insertion(_) =>
+            case model.mode.Content.Insert(_) =>
               "INSERT"
             case model.mode.Content.Visual(_, _) =>
               "VISUAL"
@@ -158,10 +158,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
           case model.operation.Node.Replace(at, c) =>
             // TODO update node structure
-            ???
           case model.operation.Node.Delete(r) =>
-            // TODO update node structure
-            ???
+            contentAt(r.parent)
           case model.operation.Node.Insert(at, childs) =>
             // TODO update node structure
             ???

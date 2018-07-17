@@ -9,4 +9,6 @@ package object model extends Picklers {
 
 
   def debugModel = false
+
+  var isMac: Boolean = false
 }

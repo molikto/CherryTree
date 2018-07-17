@@ -5,7 +5,7 @@ import model.range.IntRange
 package object mode {
   sealed trait Content
   object Content {
-    case class Insertion(pos: Int) extends Content {
+    case class Insert(pos: Int) extends Content {
     }
     /**
       * second parameter is a range because selection is not just one codepoint
@@ -34,7 +34,7 @@ package object mode {
       override def pickle(obj: Node)(implicit state: PickleState): Unit = {
         import state.enc._
         obj match {
-          case Content(node, mode.Content.Insertion(pos)) =>
+          case Content(node, mode.Content.Insert(pos)) =>
             writeInt(0)
             writeIntArray(node.toArray)
             writeInt(pos)
@@ -57,7 +57,7 @@ package object mode {
       override def unpickle(implicit state: UnpickleState): Node = {
         import state.dec._
         readInt match {
-          case 0 => Content(readIntArray, mode.Content.Insertion(readInt))
+          case 0 => Content(readIntArray, mode.Content.Insert(readInt))
           case 1 => Content(readIntArray, mode.Content.Normal(IntRange.pickler.unpickle))
           case 2 => Content(readIntArray, mode.Content.Visual(IntRange.pickler.unpickle, IntRange.pickler.unpickle))
           case 3 => Visual(readIntArray, readIntArray)

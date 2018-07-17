@@ -10,6 +10,16 @@ import scala.util.{Failure, Random, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
+object ClientInitializerView {
+
+  private var globalInitialized = false
+  def initializeGlobal(): Unit = {
+    if (!globalInitialized) {
+      model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
+      globalInitialized = true
+    }
+  }
+}
 /**
   * when created, starts connection with server
   * @param where an id of a html element, it is assumed that you don't modify it after handling to us

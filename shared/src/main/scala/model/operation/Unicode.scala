@@ -29,8 +29,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
-      case mode.Content.Insertion(s) =>
-        mode.Content.Insertion(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
+      case mode.Content.Insert(s) =>
+        mode.Content.Insert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
       case mode.Content.Visual(a, b) =>
         mode.Content.Visual(transformRange(a), transformRange(b))
       case mode.Content.Normal(r) => mode.Content.Normal(transformRange(r))
@@ -47,8 +47,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       r.transformDeletingRangeAfterDeleted(range)
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
-      case mode.Content.Insertion(k) =>
-        Some(mode.Content.Insertion(if (k <= r.start) {
+      case mode.Content.Insert(k) =>
+        Some(mode.Content.Insert(if (k <= r.start) {
           k
         } else if (k >= r.until) {
           k - r.size
@@ -92,13 +92,13 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = Some(i match {
-      case mode.Content.Insertion(k) =>
+      case mode.Content.Insert(k) =>
         if (r.deletesCursor(k)) {
           throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
         } else if (k <= r.start) {
           i
         } else {
-          mode.Content.Insertion(k + sizeDiff)
+          mode.Content.Insert(k + sizeDiff)
         }
       case mode.Content.Visual(a, b) =>
         mode.Content.Visual(transformRange(a), transformRange(b))
@@ -126,8 +126,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def transform(i: mode.Content): Option[mode.Content] = i match {
-      case mode.Content.Insertion(k) =>
-        Some(mode.Content.Insertion(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
+      case mode.Content.Insert(k) =>
+        Some(mode.Content.Insert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
       case mode.Content.Visual(a, b) =>
         (transformRange(a), transformRange(b)) match {
           case (Some(aa), Some(bb)) => Some(mode.Content.Visual(aa, bb))

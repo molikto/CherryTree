@@ -460,7 +460,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   override def updateMode(aa: mode.Content, viewUpdated: Boolean): Unit = {
     if (viewUpdated) return
     aa match {
-      case mode.Content.Insertion(pos) =>
+      case mode.Content.Insert(pos) =>
         clearNormalMode()
         clearVisualMode()
         clearEmptyRenderingIfEmptyState()

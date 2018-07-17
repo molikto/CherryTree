@@ -91,7 +91,7 @@ trait Commands {
                 a.node(n).content match {
                   case model.data.Content.Rich(rich) =>
                     c match {
-                      case model.mode.Content.Insertion(pos) =>
+                      case model.mode.Content.Insert(pos) =>
                         modeUpdate(nc.copy(a = model.mode.Content.Normal(rich.moveLeftAtomic(pos))))
                       case model.mode.Content.Visual(fix, move) =>
                         modeUpdate(nc.copy(a = model.mode.Content.Normal(move)))
@@ -372,6 +372,10 @@ trait Commands {
       }
     }
 
+    object EnterVisual {
+
+    }
+
     object EnterInsert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
@@ -399,7 +403,7 @@ trait Commands {
 
         override def action(a: ClientState): Client.Update = a.mode match {
           case Some(c@model.mode.Node.Content(n, model.mode.Content.Normal(r))) =>
-            modeUpdate(c.copy(a = model.mode.Content.Insertion(move(
+            modeUpdate(c.copy(a = model.mode.Content.Insert(move(
               a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r))))
         }
       }
@@ -422,13 +426,13 @@ trait Commands {
       }
     }
 
-    object Edits {
+    object InsertModeEdits {
       abstract class EditCommand extends Command  {
         def defaultKeys: Seq[Key] = Seq.empty
         def edit(content: Rich,a: Int): Option[model.operation.Rich]
 
         override def available(a: ClientState): Boolean = a.mode match {
-          case Some(model.mode.Node.Content(n, model.mode.Content.Insertion(_))) =>
+          case Some(model.mode.Node.Content(n, model.mode.Content.Insert(_))) =>
             a.node(n).content match {
               case model.data.Content.Rich(p) =>
                 true
@@ -438,7 +442,7 @@ trait Commands {
         }
 
         override def action(a: ClientState): Client.Update = a.mode match {
-          case Some(c@model.mode.Node.Content(n, model.mode.Content.Insertion(r))) =>
+          case Some(c@model.mode.Node.Content(n, model.mode.Content.Insert(r))) =>
             val res = edit(a.node(n).content.asInstanceOf[model.data.Content.Rich].content, r).map(k => {
               Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
             }).getOrElse(Seq.empty)
@@ -447,7 +451,7 @@ trait Commands {
       }
       val backspace: Command = new EditCommand {
         // TODO these keys should be seperate delete words, etc...
-        override def hardcodeKeys: Seq[Key] = Backspace.withAllModifers ++ Seq(Control + "h")
+        override def hardcodeKeys: Seq[Key] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty)
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
           if (a > 0) {
             Some(operation.Rich.deleteOrUnwrapAt(content, a - 1))
@@ -462,6 +466,41 @@ trait Commands {
         override def hardcodeKeys: Seq[Key] = Enter.withAllModifers
         override def edit(content: Rich, a: Int): Option[operation.Rich] = None
       }
+
+      // LATER seems all very wired
+      // Q_ss          Special keys in Insert mode
+      //
+      //i_CTRL-V      CTRL-V {char}..   insert character literally, or enter decimal
+      //                                     byte value
+      //i_<NL>        <NL> or <CR> or CTRL-M or CTRL-J
+      //                                  begin new line
+      //i_CTRL-E      CTRL-E            insert the character from below the cursor
+      //i_CTRL-Y      CTRL-Y            insert the character from above the cursor
+      //
+      //i_CTRL-A      CTRL-A            insert previously inserted text
+      //i_CTRL-@      CTRL-@            insert previously inserted text and stop
+      //                                     Insert mode
+      //i_CTRL-R      CTRL-R {0-9a-z%#:.-="}  insert the contents of a register
+      //
+      //i_CTRL-N      CTRL-N            insert next match of identifier before the
+      //                                     cursor
+      //i_CTRL-P      CTRL-P            insert previous match of identifier before
+      //                                     the cursor
+      //i_CTRL-X      CTRL-X ...        complete the word before the cursor in
+      //                                     various ways
+      //
+      //i_<BS>        <BS> or CTRL-H    delete the character before the cursor
+      //i_<Del>       <Del>             delete the character under the cursor
+      //i_CTRL-W      CTRL-W            delete word before the cursor
+      //i_CTRL-U      CTRL-U            delete all entered characters in the current
+      //                                     line
+      //i_CTRL-T      CTRL-T            insert one shiftwidth of indent in front of
+      //                                       the current line
+      //i_CTRL-D      CTRL-D            delete one shiftwidth of indent in front of
+      //                                     the current line
+      //i_0_CTRL-D    0 CTRL-D          delete all indent in the current line
+      //i_^_CTRL-D    ^ CTRL-D          delete all indent in the current line,
+      //                                     restore indent in next line
     }
 
     object Scroll {
@@ -490,8 +529,9 @@ trait Commands {
   {
     var ignored: Command = Command.ContentMotion.toNextChar
     ignored = Command.EnterInsert.appendAtCursor
+    ignored = Command.EnterVisual.appendAtCursor
     ignored = Command.exit
-    ignored = Command.Edits.backspace
+    ignored = Command.InsertModeEdits.backspace
   }
 
   // these are currently NOT implemented becuase we want a different mark system
@@ -561,5 +601,22 @@ trait Commands {
   //CTRL-W_z    CTRL-W z          close tag preview window
 
 
+  //Q_di          Digraphs
+  //
+  //:dig     :dig[raphs]          show current list of digraphs
+  //:dig     :dig[raphs] {char1}{char2} {number} ...
+  //                                add digraph(s) to the list
+  //
+  //In Insert or Command-line mode:
+  //i_CTRL-K      CTRL-K {char1} {char2}
+  //                                  enter digraph
+  //i_digraph     {char1} <BS> {char2}
+  //                                  enter digraph if 'digraph' option set
+  //------------------------------------------------------------------------------
+  //Q_si          Special inserts
+  //
+  //:r       :r [file]       insert the contents of [file] below the cursor
+  //:r!      :r! {command}   insert the standard output of {command} below the
+  //                              cursor
 
 }

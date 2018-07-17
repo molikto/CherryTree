@@ -27,6 +27,7 @@
 * copy paste
 * drag drop
 * search and replace
+* line motions??? they are actually pretty useful???
 
 ## server
 
