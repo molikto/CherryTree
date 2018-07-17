@@ -19,7 +19,10 @@ abstract class View {
 
   private var dom_ : HTMLElement = null
 
-  def dom: HTMLElement = dom_
+  def dom: HTMLElement = {
+    if (destroyed) throw new IllegalArgumentException("Already destroyed")
+    dom_
+  }
 
   def dom_=(a: HTMLElement): Unit = {
     if (dom_ == null) {
@@ -30,16 +33,28 @@ abstract class View {
     }
   }
 
-  private val des = ArrayBuffer[Unit => Unit]()
+  private var des = ArrayBuffer[Unit => Unit]()
 
+
+  def destroyed: Boolean = des == null
+
+  /**
+    * will also remove from parent
+    */
   def destroy(): Unit = {
     des.reverse.foreach(_.apply())
+    dom_.parentNode.removeChild(dom_)
+    des = null
   }
 
   def defer(a: Unit => Unit): Unit = {
     des.append(a)
   }
 
+  /**
+    *
+    * the cancelable returned is THE SAME as the argument, and you are not being able to cancel a defer!!!
+    */
   def defer(a: Cancelable): Cancelable = {
     des.append(_ => a.cancel())
     a
@@ -47,6 +62,7 @@ abstract class View {
 
   def event[T <: Event](ty: String,
     listener: js.Function1[T, _]): Unit = {
+    if (des == null) throw new IllegalAccessException("Destroyed!")
     dom.addEventListener(ty, listener)
     defer(_ => dom.removeEventListener(ty, listener))
   }

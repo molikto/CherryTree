@@ -26,7 +26,7 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
   }
-  case class CodeLang(lang: String) extends operation.Content {
+  case class CodeLang(lang: String) extends Code {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Content): data.Content = {
       d match {

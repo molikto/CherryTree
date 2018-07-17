@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.{Commands, Key}
-import model.data.Unicode
+import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
@@ -19,6 +19,7 @@ import scalatags.JsDom.all._
 import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.Future
+import scala.util.Random
 
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
@@ -45,7 +46,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   private val mode = span(
     "").render
 
-  private val debugVersionInfo = span(marginLeft := "12px", "0").render
+  private val debugVersionInfo = span(marginLeft := "12px", "0", onclick := {() =>
+    client.change(model.operation.Node.randomTransaction(2, client.state.node, new Random()), None) }).render
 
   private val debugKeyInfo = span(marginLeft := "12px", "").render
 
@@ -94,6 +96,10 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     currentEditable.focus()
   }
 
+  def unmarkEditableIfEditable(dom: HTMLElement): Unit = {
+    if (dom == currentEditable) unmarkEditable(dom)
+  }
+
   def unmarkEditable(dom: HTMLElement): Unit = {
     if (currentEditable == noEditable) return
     if (currentEditable != dom) {
@@ -110,9 +116,18 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   private def removeFocusContent(): Unit = {
     if (focusContent != null) {
-      focusContent.clearMode()
+      if (!focusContent.destroyed) focusContent.clearMode()
       focusContent = null
     }
+  }
+
+  def childListAt(at: model.cursor.Node): HTMLElement = {
+    def rec(a: Node, b: model.cursor.Node): Node = {
+      if (b.isEmpty) a
+      // ul, li, content
+      else rec(a.childNodes(b.head).childNodes(0).childNodes(1), b.tail)
+    }
+    rec(root.childNodes(0).childNodes(1), at).asInstanceOf[HTMLElement]
   }
 
   def contentAt(at: model.cursor.Node): ContentView.General = {
@@ -129,7 +144,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
     mode.textContent = m match {
       case None =>
-        if (focusContent != null) removeFocusContent()
+        removeFocusContent()
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
@@ -169,30 +184,45 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   {
     val ClientState(node, selection) = client.state
-
-    def initRenderContentRec(root: model.data.Node, parent: html.Element): Unit = {
-      val box = div().render
-      parent.appendChild(box)
-      val content = root.content match {
-        case model.data.Content.Rich(cs) =>
-          new RichView(this, cs).dom
-        case model.data.Content.Code(a, lang) =>
-          new CodeView(this, a, lang).dom
-      }
-      box.appendChild(content)
-      val list = ul().render
-      box.appendChild(list)
-      root.childs.foreach(a => {
-        val item = li().render
-        list.appendChild(item)
-        initRenderContentRec(a, item)
-      })
-    }
-
-    initRenderContentRec(node, root)
-
+    insertNodesRec(node, root)
     updateMode(selection, viewUpdated = false)
   }
+
+  private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
+    val box = div().render
+    parent.appendChild(box)
+    box.appendChild(createContent(root.content).dom)
+    val list = ul().render
+    box.appendChild(list)
+    insertNodes(list, 0, root.childs)
+  }
+
+  private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
+    if (at == list.childNodes.length) {
+      contents.foreach(a => {
+        val item = li().render
+        list.appendChild(item)
+        insertNodesRec(a, item)
+      })
+    } else {
+      val before = list.childNodes(at)
+      contents.foreach(a => {
+        val item = li().render
+        list.insertBefore(item, before)
+        insertNodesRec(a, item)
+      })
+    }
+  }
+
+  private def createContent(c: Content): ContentView.General = {
+    c match {
+      case model.data.Content.Rich(cs) =>
+        new RichView(this, cs).asInstanceOf[ContentView.General]
+      case model.data.Content.Code(a, lang) =>
+        new CodeView(this, a, lang).asInstanceOf[ContentView.General]
+    }
+  }
+
   {
     defer(client.stateUpdates.doOnNext(update => {
       for (t <- update.transaction) {
@@ -200,12 +230,16 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
           case model.operation.Node.Content(at, c) =>
             contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
           case model.operation.Node.Replace(at, c) =>
-            // TODO update node structure
+            val previousContent = contentAt(at)
+            val p = previousContent.dom.parentNode
+            val cc = createContent(c)
+            p.insertBefore(cc.dom, previousContent.dom)
+            previousContent.destroy()
           case model.operation.Node.Delete(r) =>
-            contentAt(r.parent)
+            r.foreach(i => contentAt(i).destroy())
           case model.operation.Node.Insert(at, childs) =>
-            // TODO update node structure
-            ???
+            val root = childListAt(at.dropRight(1))
+            insertNodes(root, at.last, childs)
           case model.operation.Node.Move(_, _) => ???
         }
       }
@@ -317,7 +351,4 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   event("drop", (a: DragEvent) => {
     a.preventDefault()
   })
-
-
-
 }

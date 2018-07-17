@@ -3,14 +3,24 @@ package model
 package object range {
 
 
-  case class IntRange(start: Int, until: Int) {
+  case class IntRange(start: Int, until: Int) extends Iterable[Int] {
 
+    override def iterator: Iterator[Int] = new Iterator[Int] {
+      var i = start
+      override def hasNext: Boolean = i < until
+
+      override def next(): Int = {
+        val r = i
+        i += 1
+        r
+      }
+    }
 
     def deletesCursor(i: Int): Boolean = start < i && until > i
 
-    def size: Int = until - start
+    override def size: Int = until - start
 
-    def isEmpty: Boolean = size == 0
+    override def isEmpty: Boolean = size == 0
 
     def moveBy(a: Int): IntRange = IntRange(start + a, until + a)
 
@@ -70,6 +80,7 @@ package object range {
         }
       }
     }
+
   }
 
 
@@ -98,7 +109,7 @@ package object range {
     * unable to represent a range of the node itself, our app doesn't has this functionality
     */
   case class Node(parent: cursor.Node,
-    childs: IntRange) {
+    childs: IntRange) extends Iterable[cursor.Node] {
 
     def start: cursor.Node = parent :+ childs.start
     def until: cursor.Node = parent :+ childs.until
@@ -133,6 +144,12 @@ package object range {
 
 
     def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
+
+    override def iterator: Iterator[cursor.Node] = new Iterator[cursor.Node] {
+      private val i = childs.iterator
+      override def hasNext: Boolean = i.hasNext
+      override def next(): cursor.Node = parent :+ i.next()
+    }
   }
 
   object Node {

@@ -33,8 +33,15 @@ trait Commands {
 
   private var waitingForCharCommand: Command = null
 
-  // TODO clear in mode change
   def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
+
+  def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
+    if (waitingForCharCommand != null) {
+      if (!waitingForCharCommand.available(state)) {
+        clearWaitingForGraphemeCommand()
+      }
+    }
+  }
 
   def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
     if (waitingForCharCommand != null) {

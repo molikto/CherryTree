@@ -130,7 +130,7 @@ object Text {
       attributes.foreach(a => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = a)
         position += 1
-        attribute(a).codePoints.forEach(c => {
+        attribute(a).codePoints.foreach(c => {
           buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, position, char = c, specialChar = a)
           position += 1
         })
@@ -206,7 +206,7 @@ object Text {
 
     override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
       var position = contentStart
-      content.codePoints.forEach(c => {
+      content.codePoints.foreach(c => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Coded, position, char = c)
         position += 1
       })
@@ -236,7 +236,7 @@ object Text {
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
       var position = selfStart
-      unicode.codePoints.forEach(c => {
+      unicode.codePoints.foreach(c => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Plain, position, char = c)
         position += 1
       })

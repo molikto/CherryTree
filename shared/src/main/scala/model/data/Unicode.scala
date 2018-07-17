@@ -101,7 +101,15 @@ case class Unicode(private var str: String) {
 
   def apply(i: Int): Int = str.codePointAt(i)
 
-  def codePoints: IntStream = str.codePoints()
+  def codePoints: Seq[Int] = {
+    val a = new ArrayBuffer[Int]()
+    var i = 0
+    while (i < str.length) {
+      a.append(str.codePointAt(i))
+      i = str.offsetByCodePoints(i, 1)
+    }
+    a
+  }
 
   private def extendedGraphemeStrRange(pos: Int): (Int, Int) = {
     val strStartIndex = toStringPosition(pos)

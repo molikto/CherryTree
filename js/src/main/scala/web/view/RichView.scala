@@ -495,4 +495,12 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       initDom()
     }
   }
+
+  /**
+    * will also remove from parent
+    */
+  override def destroy(): Unit = {
+    clientView.unmarkEditableIfEditable(dom)
+    super.destroy()
+  }
 }
