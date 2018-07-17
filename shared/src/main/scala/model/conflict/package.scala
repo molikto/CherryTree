@@ -17,7 +17,7 @@ package object conflict {
   abstract sealed class Content()
   object Content {
     case class Code(u: Unicode) extends conflict.Content
-    case class CodeLang(l: Option[String]) extends conflict.Content
+    case class CodeLang(l: String) extends conflict.Content
     case class Rich(u: conflict.Paragraph) extends conflict.Content
   }
 

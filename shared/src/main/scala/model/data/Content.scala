@@ -1,7 +1,6 @@
 package model.data
 
 import boopickle._
-import model.mode.Content
 import model.range.IntRange
 import model.{data, mode}
 
@@ -12,7 +11,7 @@ abstract sealed class Content {
   def defaultNormalMode(): mode.Content.Normal
   def beginningAtomicRange(): IntRange
 
-  def isRich = isInstanceOf[Content.Rich]
+  def isRich: Boolean = isInstanceOf[Content.Rich]
 }
 
 /**
@@ -23,7 +22,7 @@ abstract sealed class Content {
   * but rich it is not, so we need to be sure that the data we are editing is valid
   */
 object Content extends DataObject[Content] {
-  case class Code(unicode: Unicode, lang: Option[String]) extends Content {
+  case class Code(unicode: Unicode, lang: String) extends Content {
     override def beginningAtomicRange(): IntRange = if (unicode.size == 0) IntRange(0, 0) else unicode.extendedGraphemeRange(0)
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
@@ -42,7 +41,7 @@ object Content extends DataObject[Content] {
         case Code(u, l) =>
           writeInt(0)
           Unicode.pickler.pickle(u)
-          writeString(l.getOrElse(""))
+          writeString(l)
         case Rich(p) =>
           writeInt(1)
           data.Rich.pickler.pickle(p)
@@ -53,10 +52,7 @@ object Content extends DataObject[Content] {
       import state.dec._
       readInt match {
         case 0 =>
-          Code(Unicode.pickler.unpickle, readString match {
-            case "" => None
-            case a => Some(a)
-          })
+          Code(Unicode.pickler.unpickle, readString)
         case 1 =>
           Rich(data.Rich.pickler.unpickle)
       }
@@ -67,6 +63,6 @@ object Content extends DataObject[Content] {
     if (r.nextBoolean()) {
       Content.Rich(data.Rich.random(r))
     } else {
-      Content.Code(Unicode.random(r), None)
+      Content.Code(Unicode.random(r), "")
     }
 }

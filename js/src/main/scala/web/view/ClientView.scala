@@ -77,7 +77,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   private var focusContent: ContentView = null
 
-  def removeFocusContent() = {
+  private def removeFocusContent(): Unit = {
     if (focusContent != null) {
       focusContent.clearMode()
       focusContent = null
@@ -139,7 +139,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         case model.data.Content.Rich(cs) =>
           new RichView(this, cs).dom
         case model.data.Content.Code(a, lang) =>
-          p(s"LANGUAGE: $lang", a.toString).render
+          new CodeView(this, a, lang).dom
       }
       box.appendChild(content)
       val list = ul().render
