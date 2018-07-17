@@ -12,6 +12,8 @@ object ClientState {
 
 case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
 
+  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isClosed)
+
   def isClosed(a: cursor.Node): Boolean = {
     false
   }
@@ -47,12 +49,40 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
     case _ => false
   }
 
+  def isVisual: Boolean = mode match {
+    case Some(model.mode.Node.Visual(_, _)) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
+    case _ => false
+  }
+
+  def isNodeVisual: Boolean = mode match {
+    case Some(model.mode.Node.Visual(_, _)) => true
+    case _ => false
+  }
+
+  def asNodeVisual: model.mode.Node.Visual = mode match {
+    case Some(v@model.mode.Node.Visual(_, _)) => v
+    case _ => throw new MatchError("Not possible")
+  }
+
   def asNormal: cursor.Node = {
     mode match {
       case Some(model.mode.Node.Content(n, c)) =>
         c match {
           case model.mode.Content.RichNormal(_) => n
           case model.mode.Content.CodeNormal => n
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
+  }
+
+  def asRichVisual: (cursor.Node, Rich, model.mode.Content.RichVisual) = {
+    mode match {
+      case Some(o@model.mode.Node.Content(n, c)) =>
+        val content = rich(n)
+        c match {
+          case v@model.mode.Content.RichVisual(fix, m) => (n, content, v)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

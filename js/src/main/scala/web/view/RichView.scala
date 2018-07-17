@@ -241,7 +241,14 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     }
   }
 
-  private def nonEmptySelectionToDomRange(range: IntRange): (Node, Int, Node, Int, HTMLSpanElement) = {
+  private def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
+    assert(!range.isEmpty)
+    def createRange(a: Node, b: Int, c: Node, d: Int): Range = {
+      val rr = document.createRange()
+      rr.setStart(a, b)
+      rr.setEnd(c, d)
+      rr
+    }
     // there are three cases of a selection
     // a subparagraph, a sub-code, a delimiter of format/code node
     val ss = rich.info(range.start)
@@ -254,7 +261,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val ast = ss.text.asInstanceOf[Text.Code]
       val sss = ast.content.toStringPosition(ss.positionInUnicode)
       val eee = ast.content.toStringPosition(ee.positionInUnicode + 1)
-      (codeText, sss, codeText, eee, null)
+      (createRange(codeText, sss, codeText, eee), null)
     } else if (range.size == 1 &&
       ss.ty  == InfoType.Special &&
       SpecialChar.startsEnds.contains(ss.specialChar) &&
@@ -262,7 +269,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val isStart = SpecialChar.starts.contains(ss.specialChar)
       val a = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
       val range = if (isStart) (0, 1) else (2, 3)
-      (a, range._1, a, range._2, a)
+      (createRange(a, range._1, a, range._2), a)
     } else {
       val start = if (ss.ty == InfoType.Plain) {
         val text = domAt(ss.nodeCursor)
@@ -282,7 +289,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         val node = domChildArray(domAt(ee.nodeCursor.dropRight(1)))
         (node, ee.nodeCursor.last + 1)
       }
-      (start._1, start._2, end._1, end._2, null)
+      (createRange(start._1, start._2, end._1, end._2), null)
     }
   }
 
@@ -405,10 +412,24 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def clearVisualMode(): Unit = {
-    // TODO visual mode
+    clearSelection()
   }
+
   private def updateVisualMode(fix: IntRange, move: IntRange): Unit = {
-    // TODO visual mode
+    val (r1,_) = nonEmptySelectionToDomRange(fix)
+    val (r2,_) = nonEmptySelectionToDomRange(move)
+    val range = document.createRange()
+    if (r1.compareBoundaryPoints(Range.START_TO_START, r2) == -1) {
+      range.setStart(r1.startContainer, r1.startOffset)
+    } else {
+      range.setStart(r2.startContainer, r2.startOffset)
+    }
+    if (r1.compareBoundaryPoints(Range.END_TO_END, r2) == 1) {
+      range.setEnd(r1.endContainer, r1.endOffset)
+    } else {
+      range.setEnd(r2.endContainer, r2.endOffset)
+    }
+    setSelection(range)
   }
 
   private def clearSelection(): Unit = {
@@ -449,16 +470,13 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
 
   private def updateNormalMode(r: IntRange): Unit = {
-    val range = document.createRange()
-    if (r.isEmpty) {
-      throw new IllegalStateException("Normal mode should not have empty range if rich is not empty")
-    } else {
-      val start = nonEmptySelectionToDomRange(r)
-      range.setStart(start._1, start._2)
-      range.setEnd(start._3, start._4)
-      if (start._5 != astHighlight) removeFormattedNodeHighlight()
-      if (start._5 != null) addFormattedNodeHighlight(start._5)
-    }
+    val (range, light) = nonEmptySelectionToDomRange(r)
+    setSelection(range)
+    if (light != astHighlight) removeFormattedNodeHighlight()
+    if (light != null) addFormattedNodeHighlight(light)
+  }
+
+  private def setSelection(range: Range): Unit = {
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)

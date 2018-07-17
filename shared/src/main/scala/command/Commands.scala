@@ -75,7 +75,7 @@ trait Commands {
     waitingForCharCommand = null
   }
 
-  private var lastFindCommand: Command.ContentMotion.FindCommand = null
+  private var lastFindCommand: Command.RichMotion.FindCommand = null
   private var lastFindCommandArgument: Grapheme = null
 
   def commands: Seq[Command] = commands_
@@ -95,7 +95,8 @@ trait Commands {
         a.mode match {
           case Some(m) =>
             m match {
-              case model.mode.Node.Visual(fix, move) => noUpdate() // TODO exit visual mode
+              case model.mode.Node.Visual(fix, move) =>
+                modeUpdate(model.data.Node.defaultNormalMode(a.node, move))
               case nc@model.mode.Node.Content(n, c) =>
                 a.node(n).content match {
                   case model.data.Content.Rich(rich) =>
@@ -104,13 +105,17 @@ trait Commands {
                         val range = if (pos != 0) rich.moveLeftAtomic(pos)
                         else if (rich.isEmpty) IntRange(0, 0)
                         else rich.beginningAtomicRange()
-                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(range)))
-                      case model.mode.Content.RichVisual(fix, move) =>
-                        modeUpdate(nc.copy(a = model.mode.Content.RichNormal(move)))
+                        modeUpdate(a.copyContentMode(model.mode.Content.RichNormal(range)))
+                      case model.mode.Content.RichVisual(_, move) =>
+                        modeUpdate(a.copyContentMode(model.mode.Content.RichNormal(move)))
                       case _ => noUpdate()
                     }
-                  case model.data.Content.Code(c, _) =>
-                    ??? // TODO exit code mode?
+                  case model.data.Content.Code(_, _) =>
+                    c match {
+                      case model.mode.Content.CodeInside =>
+                        modeUpdate(a.copyContentMode(model.mode.Content.CodeNormal))
+                      case _ => noUpdate()
+                    }
                   case _ =>
                     noUpdate()
                 }
@@ -125,7 +130,7 @@ trait Commands {
     }
     /**
       */
-    object ContentMotion {
+    object RichMotion {
 
       // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
 
@@ -369,24 +374,26 @@ trait Commands {
         }))
       }
       val up: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[Key] = Seq("k", "-") // we always go to first char now
-        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).visualUp(a)
+         // DIFFERENCE we always go to first char now
+        // DIFFERENCE k and - is merged
+        override def defaultKeys: Seq[Key] = Seq("k", "-")
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
       }
       val down: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[Key] = Seq("j", "+")
-        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).visualDown(a)
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
       }
       val parent: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[Key] = Seq("g", "p") // we always go to first char now
-        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).parent(a)
+        override def defaultKeys: Seq[Key] = Seq("g", "p")
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
       }
       val nextSibling: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[Key] = Seq("}")
-        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).next(a)
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
       }
       val previousSibling: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[Key] = Seq("{")
-        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).previous(a)
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
       }
       //        val visibleBeginning: Command = new NodeMotionCommand {
       //          override def move(a: cursor.Node): cursor.Node = ???
@@ -409,30 +416,77 @@ trait Commands {
 
     }
 
-    object EnterVisual {
-
+    object RichVisual {
       val enter: Command = new Command {
         override def defaultKeys: Seq[Key] = Seq("v")
-        override def available(a: ClientState): Boolean = a.isRichNormal
-        override def action(a: ClientState): Client.Update = noUpdate() // TODO enter visual mode
+        override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
+        override def action(a: ClientState): Client.Update = {
+          val (_, rich, m) = a.asRichNormalOrVisual
+          m match {
+            case model.mode.Content.RichNormal(r) =>
+              if (rich.isEmpty) {
+                noUpdate()
+              } else {
+                modeUpdate(a.copyContentMode(model.mode.Content.RichVisual(r, r)))
+              }
+            case model.mode.Content.RichVisual(fix, move) =>
+              modeUpdate(a.copyContentMode(model.mode.Content.RichNormal(move)))
+          }
+        }
+      }
+
+      val swap: Command = new Command {
+        override def defaultKeys: Seq[Key] = Seq("o")
+        override def available(a: ClientState): Boolean = a.isRichVisual
+        override def action(a: ClientState): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
+      }
+    }
+
+    object NodeVisual {
+      // DIFFERENCE going from node visual to content visual is NOT possible
+      // CTRL-V   CTRL-V       start highlighting blockwise   }  highlighted text
+      // v_CTRL-V CTRL-V       highlight blockwise or stop highlighting
+      // gv       gv           start highlighting on previous visual area
+
+    val enter: Command = new Command {
+        override def defaultKeys: Seq[Key] = Seq("V") // DIFFERENCE merged two command
+        override def available(a: ClientState): Boolean = a.mode match {
+          case Some(m) => m match {
+            case model.mode.Node.Content(_, mm) => mm.isNormalOrVisual
+            case model.mode.Node.Visual(_, _) => true
+            case _ => false
+          }
+          case None => false
+        }
+        override def action(a: ClientState): Client.Update = a.mode match {
+          case Some(m) => m match {
+            case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
+              modeUpdate(mode.Node.Visual(at, at))
+            case model.mode.Node.Visual(_, move) =>
+              modeUpdate(model.data.Node.defaultNormalMode(a.node, move))
+            case _ => throw new IllegalArgumentException("Wrong branch")
+          }
+          case None => throw new IllegalArgumentException("Wrong branch")
+        }
+      }
+      val swap: Command = new Command {
+        override def defaultKeys: Seq[Key] = Seq("o")
+        override def available(a: ClientState): Boolean = a.isNodeVisual
+        override def action(a: ClientState): Client.Update = modeUpdate(a.asNodeVisual.swap)
       }
     }
 
 
-    object OpenAndEnterInsert {
+    object OpenAndEnterRichInsert {
 
-      // TODO open new line
-      //o     N  o    open a new line below the current line, append text (N times)
-      //O     N  O    open a new line above the current line, append text (N times)
-
-
+      // DIFFERENCE: currently not repeatable
       val openBellow: Command = new Command {
         override def repeatable: Boolean = true
         override def defaultKeys: Seq[Key] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState): Client.Update = {
           val pos = a.asNormal
-          val mover = new cursor.Node.Mover(a.node, a.isClosed)
+          val mover = a.mover()
           val insertionPoint = if (pos == cursor.Node.root) {
             Seq(0)
           } else {
@@ -462,7 +516,7 @@ trait Commands {
       }
     }
 
-    object EnterInsert {
+    object EnterRichInsert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
       //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
@@ -501,7 +555,7 @@ trait Commands {
       }
     }
 
-    object InsertModeEdits {
+    object RichInsertModeEdits {
       abstract class EditCommand extends Command  {
         def defaultKeys: Seq[Key] = Seq.empty
         def edit(content: Rich,a: Int): Option[model.operation.Rich]
@@ -578,6 +632,34 @@ trait Commands {
       //                                     restore indent in next line
     }
 
+    object Delete {
+      val deleteAfterVisual = new Command {
+        override def defaultKeys: Seq[Key] = Seq("d")
+        override def available(a: ClientState): Boolean = a.isVisual
+        override def action(a: ClientState): Client.Update = a.mode match {
+          case Some(model.mode.Node.Visual(fix , move)) =>
+            cursor.Node.minimalRange(fix, move).map(r =>
+              Client.Update(Seq(operation.Node.Delete(r)), {
+                val mover = a.mover()
+                val pos = if (a.node.get(r.until).isDefined) {
+                  r.until
+                } else {
+                  r.parent
+                }
+                Some(model.data.Node.defaultNormalMode(a.node, pos))
+              })).getOrElse(noUpdate())
+          case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) =>
+            // TODO delete rich visual
+            ???
+          case _ => throw new IllegalArgumentException("Invalid command")
+        }
+      }
+      abstract class RichDeleteCommand extends Command {
+        override def available(a: ClientState): Boolean = ???
+
+        override def action(a: ClientState): Client.Update = ???
+      }
+    }
 
     object Scroll {
 
@@ -690,12 +772,14 @@ trait Commands {
 
 
   {
-    var ignored: Command = Command.ContentMotion.toNextChar
-    ignored = Command.EnterInsert.appendAtCursor
+    var ignored: Command = Command.RichMotion.toNextChar
+    ignored = Command.EnterRichInsert.appendAtCursor
     ignored = Command.NodeMotion.up
-    ignored = Command.OpenAndEnterInsert.openAbove
-    ignored = Command.EnterVisual.enter
+    ignored = Command.OpenAndEnterRichInsert.openAbove
+    ignored = Command.RichVisual.enter
+    ignored = Command.NodeVisual.enter
     ignored = Command.exit
-    ignored = Command.InsertModeEdits.backspace
+    ignored = Command.Delete.deleteAfterVisual
+    ignored = Command.RichInsertModeEdits.backspace
   }
 }

@@ -139,15 +139,42 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     View.fromDom[ContentView.General](rec(root.childNodes(0), at))
   }
 
+  private var previousNodeVisual: (HTMLElement, Int, Int) = null
+
+  private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
+    clearNodeVisual()
+    def update(overall: HTMLElement, start: Int, u: Int): Unit = {
+      for (i <- start until u) {
+        overall.children(i).classList.add("ct-node-visual")
+      }
+      previousNodeVisual = (overall, start, u)
+    }
+    val overall = model.cursor.Node.minimalRange(v.fix, v.move)
+    overall match {
+      case None => update(root, 0, 1)
+      case Some(range) => update(childListAt(range.parent), range.childs.start, range.childs.until)
+    }
+  }
+
+  private def clearNodeVisual(): Unit = {
+    if (previousNodeVisual != null) {
+      val (overall, start, u) = previousNodeVisual
+      for (i <- start until u) {
+        overall.children(i).classList.remove("ct-node-visual")
+      }
+    }
+  }
 
   def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
 
     mode.textContent = m match {
       case None =>
         removeFocusContent()
+        clearNodeVisual()
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
+          clearNodeVisual()
           val current = contentAt(at)
           if (current != focusContent) {
             removeFocusContent()
@@ -172,8 +199,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             case model.mode.Content.CodeInside =>
               "CODE INSIDE"
           }
-        case model.mode.Node.Visual(_, _) =>
-          if (focusContent != null) removeFocusContent()
+        case v@model.mode.Node.Visual(_, _) =>
+          removeFocusContent()
+          updateNodeVisual(v)
           "NODE VISUAL"
       }
     }

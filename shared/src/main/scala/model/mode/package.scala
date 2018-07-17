@@ -4,15 +4,18 @@ import model.range.IntRange
 
 package object mode {
   sealed abstract class Content {
+    def isNormalOrVisual: Boolean = this.isInstanceOf[Content.NormalOrVisual]
+
     def isNormal: Boolean = this.isInstanceOf[Content.Normal]
   }
 
   object Content {
     sealed abstract class Rich extends Content
     sealed abstract class Code extends Content
-    sealed trait Normal extends Content
+    sealed trait NormalOrVisual extends Content
+    sealed trait Normal extends NormalOrVisual
 
-    sealed abstract class RichNormalOrVisual extends Rich {
+    sealed abstract class RichNormalOrVisual extends Rich with NormalOrVisual {
 
     }
     case class RichInsert(pos: Int) extends Rich {
@@ -29,7 +32,9 @@ package object mode {
       assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
     }
-    case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual
+    case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
+      def swap: RichVisual = RichVisual(move, fix)
+    }
 
 
     case object CodeNormal extends Code with Normal //
@@ -41,7 +46,9 @@ package object mode {
   object Node {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node
-    case class Visual(fix: cursor.Node, move: cursor.Node) extends Node
+    case class Visual(fix: cursor.Node, move: cursor.Node) extends Node {
+      def swap: Visual = Visual(move, fix)
+    }
 
 
     val pickler: Pickler[Node] = new Pickler[Node]() {

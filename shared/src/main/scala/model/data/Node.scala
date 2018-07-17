@@ -17,6 +17,9 @@ case class Node(content: Content, childs: Seq[Node]) {
     }
   }
 
+  def get(a: cursor.Node): Option[Node] =
+    if (a.isEmpty) Some(this) else if (a.head >= childs.size) None else childs(a.head).get(a.tail)
+
   def apply(c: cursor.Node): Node = if (c.isEmpty) this else childs(c.head)(c.tail)
 
   def apply(r: range.Node): Seq[Node] = this(r.parent)(r.childs)

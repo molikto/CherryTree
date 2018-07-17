@@ -215,8 +215,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
             free(Seq.empty, Seq.empty)
           } else {
             // merge results
-            val points = Seq(wr.start, wr.until - 1, lr.start, lr.until - 1)
-            val nrange = IntRange(points.min, points.max + 1)
+            val nrange = wr.merge(lr)
             val overall = Surround(nrange, ws, we)
             if (nrange == wr) {
               free(reverseSurround(l) :+ overall, Seq.empty)

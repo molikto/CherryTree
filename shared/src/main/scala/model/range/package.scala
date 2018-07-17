@@ -4,6 +4,8 @@ package object range {
 
 
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
+    def merge(move: IntRange): IntRange = IntRange(start min move.start, until max move.until)
+
 
     override def iterator: Iterator[Int] = new Iterator[Int] {
       var i = start

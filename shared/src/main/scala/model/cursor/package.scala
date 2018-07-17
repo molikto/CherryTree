@@ -1,5 +1,7 @@
 package model
 
+import model.range.IntRange
+
 package object cursor {
   // when used as a insertion point, Seq.empty is generally invalid, because the app will not allow deleting root
 
@@ -19,6 +21,7 @@ package object cursor {
   object Node {
 
     class Mover(root: data.Node, isClosed: Node => Boolean) {
+
 
       def parent(a: Node): Option[Node] = {
         if (a.isEmpty) None else Some(a.dropRight(1))
@@ -111,7 +114,7 @@ package object cursor {
     /**
       * @return common, left unique, right unique
       */
-    def destructRelative(a: Node, b: Node): (Seq[Int], Seq[Int], Seq[Int]) = {
+    private def destructRelative(a: Node, b: Node): (Seq[Int], Seq[Int], Seq[Int]) = {
       val len = a.size min b.size
       val common = (0 until len).takeWhile(i => a(i) == b(i)).lastOption.getOrElse(-1)
       if (common == -1) {
@@ -119,6 +122,20 @@ package object cursor {
       } else {
         val i = common + 1
         (a.take(i), a.drop(i), b.drop(i))
+      }
+    }
+
+    def minimalRange(a: Node, b: Node): Option[range.Node]  = {
+      val (common, lu, ru) = destructRelative(a, b)
+      if (lu.isEmpty || ru.isEmpty) {
+        if (common.isEmpty) {
+          None
+        } else {
+          Some(range.Node(common))
+        }
+      } else {
+        Some(range.Node(common,
+          if (lu.head < ru.head) IntRange(lu.head, ru.head + 1) else IntRange(ru.head, lu.head + 1)))
       }
     }
 
