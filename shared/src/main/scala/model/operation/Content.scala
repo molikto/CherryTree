@@ -13,7 +13,9 @@ abstract sealed class Content extends Operation[data.Content] {
 
 object Content extends OperationObject[data.Content, Content] {
 
-  case class Code(op: operation.Unicode) extends operation.Content {
+  abstract sealed class Code extends operation.Content
+
+  case class CodeContent(op: operation.Unicode) extends Code {
     override def ty: Type = op.ty
     override def apply(d: data.Content): data.Content = {
       d match {
@@ -51,7 +53,7 @@ object Content extends OperationObject[data.Content, Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
-        case Code(u) =>
+        case CodeContent(u) =>
           writeInt(0)
           Unicode.pickler.pickle(u)
         case CodeLang(l) =>
@@ -67,7 +69,7 @@ object Content extends OperationObject[data.Content, Content] {
       import state.dec._
       readInt match {
         case 0 =>
-          Content.Code(Unicode.pickler.unpickle)
+          Content.CodeContent(Unicode.pickler.unpickle)
         case 1 =>
           Content.CodeLang(readString)
         case 2 =>
@@ -81,7 +83,7 @@ object Content extends OperationObject[data.Content, Content] {
       case data.Content.Rich(content) => Rich(operation.Rich.random(content, r))
       case data.Content.Code(unicode, _) =>
         if (r.nextBoolean()) {
-          Code(operation.Unicode.random(unicode, r))
+          CodeContent(operation.Unicode.random(unicode, r))
         } else {
           CodeLang(r.nextInt(10).toString)
         }

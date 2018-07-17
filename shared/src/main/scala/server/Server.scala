@@ -38,7 +38,7 @@ class Server extends Api {
     )),
     Text.Plain(Unicode(" ")),
     Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"))
-  ))), Seq.empty)
+  ))), Seq(data.Node(data.Content.Code(Unicode.random(), ""), Seq.empty)))
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
@@ -49,7 +49,7 @@ class Server extends Api {
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, model.mode.Node.Content(Seq.empty, document.content.defaultNormalMode()), version)
+    val state = ClientInit(document, model.data.Node.defaultNormalMode(document, cursor.Node.root), version)
     clients.update(token, version)
     Right(state)
   }

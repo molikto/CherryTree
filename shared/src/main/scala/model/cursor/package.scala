@@ -101,7 +101,7 @@ package object cursor {
 
 
 
-    val Root: Node = Seq.empty
+    val root: Node = Seq.empty
     /**
       * @return common, left unique, right unique
       */

@@ -16,7 +16,7 @@ import scala.scalajs.js
 /**
   * it should only call methods in client for input related, lazy to build bridges now
   */
-class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
+class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
   /**
     *
@@ -397,9 +397,13 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
     // TODO visual mode
   }
 
-  private def clearNormalMode(): Unit = {
+  private def clearSelection(): Unit = {
     val sel = window.getSelection
     if (sel.rangeCount > 0) sel.removeAllRanges
+  }
+
+  private def clearNormalMode(): Unit = {
+    clearSelection()
     removeFormattedNodeHighlight()
   }
 
@@ -447,17 +451,20 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
   }
 
   override def clearMode(): Unit = {
-    dom.contentEditable = "false"
+    clientView.unmarkEditable(dom)
+    clearNormalMode()
+    clearVisualMode()
+    clearInsertionMode()
   }
 
   override def initMode(): Unit = {
-    dom.contentEditable = "true"
+    clientView.markEditable(dom)
   }
 
   private def isInserting = flushSubscription != null
   private var flushSubscription: Cancelable = null
 
-  override def updateMode(aa: mode.Content, viewUpdated: Boolean): Unit = {
+  override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean): Unit = {
     if (viewUpdated) return
     aa match {
       case mode.Content.RichInsert(pos) =>
@@ -475,12 +482,11 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView  {
         clearVisualMode()
         renderEmptyRenderingIfEmptyState()
         updateNormalMode(range)
-      case _ => throw new MatchError("Not possible")
     }
   }
 
-  override def updateContent(data: model.data.Content, c: operation.Content, viewUpdated: Boolean): Unit = {
-    rich = data.asInstanceOf[model.data.Content.Rich].content
+  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
+    rich = data.content
     isEmpty = rich.isEmpty
     if (!viewUpdated) {
      // val cs = c.asInstanceOf[operation.Content.Rich]

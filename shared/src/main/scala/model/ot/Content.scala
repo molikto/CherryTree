@@ -10,12 +10,12 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
   type RebaseResult = Rebased[conflict.Content, (Seq[operation.Content], Seq[operation.Content])]
   override def rebase(winner: operation.Content, loser: operation.Content): RebaseResult = {
     winner match  {
-      case operation.Content.Code(w) =>
+      case operation.Content.CodeContent(w) =>
         loser match  {
-          case operation.Content.Code(l) =>
+          case operation.Content.CodeContent(l) =>
             val uc = ot.Unicode.rebase(w, l)
             Rebased(uc.conflicts.map(conflict.Content.Code),
-              (uc.t._1.map(operation.Content.Code), uc.t._2.map(operation.Content.Code)))
+              (uc.t._1.map(operation.Content.CodeContent), uc.t._2.map(operation.Content.CodeContent)))
           case operation.Content.CodeLang(l) =>
             free(winner, loser)
           case operation.Content.Rich(l) =>
@@ -23,7 +23,7 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
         }
       case operation.Content.CodeLang(w) =>
         loser match {
-          case operation.Content.Code(l) =>
+          case operation.Content.CodeContent(l) =>
             free(winner, loser)
           case operation.Content.CodeLang(l) =>
             if (w == l) {

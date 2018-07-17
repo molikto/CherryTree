@@ -3,15 +3,13 @@ package model
 import model.range.IntRange
 
 package object mode {
-  sealed trait Content
+  sealed abstract class Content
   object Content {
-    sealed trait Rich extends Content {
+    sealed abstract class Rich extends Content
+    sealed abstract class Code extends Content
+    sealed trait Normal extends Content
 
-    }
-    sealed trait Normal extends Content {
-
-    }
-    sealed trait RichNormalOrVisual extends Rich {
+    sealed abstract class RichNormalOrVisual extends Rich {
 
     }
     case class RichInsert(pos: Int) extends Rich {
@@ -30,7 +28,6 @@ package object mode {
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual
 
-    sealed trait Code extends Rich {}
 
     case object CodeNormal extends Code with Normal //
 

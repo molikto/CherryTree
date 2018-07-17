@@ -24,6 +24,8 @@ import scala.concurrent.Future
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
 
 
+
+
   var theme: ColorScheme = ColorScheme.default
 
   dom = div(
@@ -38,6 +40,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   defer(_ => parent.removeChild(dom))
 
   private val bottomBarSize = "24px"
+
 
   private val mode = span(
     "").render
@@ -75,7 +78,33 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   ).render
   dom.appendChild(root)
 
-  private var focusContent: ContentView = null
+  private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
+  private var currentEditable: HTMLElement = noEditable
+
+  dom.appendChild(noEditable)
+
+  def markEditable(dom: HTMLElement): Unit = {
+    if (currentEditable == dom) return
+    if (currentEditable != noEditable) {
+      throw new IllegalArgumentException("You shouldn't mark editable if other is also editable")
+    }
+    dom.contentEditable = "true"
+    noEditable.contentEditable = "false"
+    currentEditable = dom
+  }
+
+  def unmarkEditable(dom: HTMLElement): Unit = {
+    if (currentEditable == noEditable) return
+    if (currentEditable != dom) {
+      throw new IllegalArgumentException("You shouldn't unmark editable if you are not the one")
+    }
+    dom.contentEditable = "false"
+    currentEditable = noEditable
+    noEditable.contentEditable = "true"
+  }
+
+
+  private var focusContent: ContentView.General = null
 
   private def removeFocusContent(): Unit = {
     if (focusContent != null) {
@@ -84,13 +113,13 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
   }
 
-  def contentAt(at: model.cursor.Node): ContentView = {
+  def contentAt(at: model.cursor.Node): ContentView.General = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a.childNodes(0)
         // ul, li, content
       else rec(a.childNodes(1).childNodes(b.head).childNodes(0), b.tail)
     }
-    View.fromDom[ContentView](rec(root, at).childNodes(0))
+    View.fromDom[ContentView.General](rec(root.childNodes(0), at))
   }
 
 
@@ -108,7 +137,14 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             current.initMode()
             focusContent = current
           }
-          current.updateMode(aa, viewUpdated)
+          window.console.log(at.toString())
+          window.console.log(current.dom)
+          aa match {
+            case r: model.mode.Content.Rich =>
+              current.asInstanceOf[RichView].updateMode(r, viewUpdated)
+            case c: model.mode.Content.Code =>
+              current.asInstanceOf[CodeView].updateMode(c, viewUpdated)
+          }
           aa match {
             case model.mode.Content.RichInsert(_) =>
               "INSERT"

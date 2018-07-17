@@ -43,6 +43,10 @@ case class Node(content: Content, childs: Seq[Node]) {
 }
 
 object Node extends DataObject[Node] {
+  def defaultNormalMode(root: Node, node: cursor.Node): mode.Node.Content = {
+    model.mode.Node.Content(node, root(node).content.defaultNormalMode())
+  }
+
 
   val empty = Node(data.Content.Rich(data.Rich.empty), Seq.empty)
   val pickler: Pickler[Node] = new Pickler[Node] {

@@ -311,88 +311,87 @@ trait Commands {
       //          ]star N  ]*           N times forward to end of comment "*/"
 
 
-      object NodeMotion {
-        /**
-          * LATER
-          * -     N  -            up N lines, on the first non-blank character
-          * +     N  +            down N lines, on the first non-blank character (also:
-          * CTRL-M and <CR>)
-          * _     N  _            down N-1 lines, on the first non-blank character
-          * G     N  G            goto line N (default: last line), on the first
-          * non-blank character
-          * gg    N  gg           goto line N (default: first line), on the first
-          * non-blank character
-          */
-        abstract class NodeMotionCommand extends Command {
+    }
 
-          override def repeatable: Boolean = true
+    object NodeMotion {
+      /**
+        * LATER
+        * -     N  -            up N lines, on the first non-blank character
+        * +     N  +            down N lines, on the first non-blank character (also:
+        * CTRL-M and <CR>)
+        * _     N  _            down N-1 lines, on the first non-blank character
+        * G     N  G            goto line N (default: last line), on the first
+        * non-blank character
+        * gg    N  gg           goto line N (default: first line), on the first
+        * non-blank character
+        */
+      abstract class NodeMotionCommand extends Command {
 
-          def move(data: ClientState, a: cursor.Node): cursor.Node
+        override def repeatable: Boolean = true
+
+        def move(data: ClientState, a: cursor.Node): cursor.Node
 
 
-          override def available(a: ClientState): Boolean = a.mode match {
-            case Some(m) => m match {
-              case model.mode.Node.Visual(fix, move) => true
-              case model.mode.Node.Content(n, cc) => cc match {
-                case model.mode.Content.RichNormal(n) => true
-                case model.mode.Content.CodeNormal => true
-                case _ => false
-              }
+        override def available(a: ClientState): Boolean = a.mode match {
+          case Some(m) => m match {
+            case model.mode.Node.Visual(fix, move) => true
+            case model.mode.Node.Content(n, cc) => cc match {
+              case model.mode.Content.RichNormal(n) => true
+              case model.mode.Content.CodeNormal => true
+              case _ => false
             }
-            case None => false
           }
+          case None => false
+        }
 
-          final override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, Some(a.mode match {
-            case Some(m) => m match {
-              case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm))
-              case kkk@model.mode.Node.Content(n, cc) => kkk.copy(a = cc match {
-                case model.mode.Content.RichNormal(_) =>
-                  a.node(move(a, n)).content.defaultNormalMode()
-                case model.mode.Content.CodeNormal =>
-                  a.node(move(a, n)).content.defaultNormalMode()
-                case _ => throw new MatchError("Not allowed")
-              })
+        final override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, Some(a.mode match {
+          case Some(m) => m match {
+            case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm))
+            case kkk@model.mode.Node.Content(n, cc) => cc match {
+              case _: model.mode.Content.Normal =>
+                model.data.Node.defaultNormalMode(a.node, move(a, n))
+              case _ => throw new MatchError("Not allowed")
             }
-            case None => throw new MatchError("Not allowed")
-          }))
-        }
-        val up: Command = new NodeMotionCommand {
-          override def defaultKeys: Seq[Key] = Seq("k", "-") // we always go to first char now
-          override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualUpOrId(a)
-        }
-        val down: Command = new NodeMotionCommand {
-          override def defaultKeys: Seq[Key] = Seq("j", "+")
-          override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualDownOrId(a)
-        }
-//        val visibleBeginning: Command = new NodeMotionCommand {
-//          override def move(a: cursor.Node): cursor.Node = ???
-//
-//          override def defaultKeys: Seq[Key] = ???
-//        }
-//        val visibleEnd: Command = new NodeMotionCommand {
-//          override def move(a: cursor.Node): cursor.Node = ???
-//          override def defaultKeys: Seq[Key] = ???
-//        }
-
-        // not implemented for not understand what should it behave
-        // * N%    N  %            goto line N percentage down in the file; N must be
-        // * given, otherwise it is the % command
-
-        // screen related not implemented
-//        gk    N  gk           up N screen lines (differs from "k" when line wraps)
-//        gj    N  gj           down N screen lines (differs from "j" when line wraps)
-
-
-        /**
-          * LATER
-          * 'motion-parent': [['g', 'p']],
-          * 'motion-next-sibling': [['}']],
-          * 'motion-prev-sibling': [[' {']],
-          */
-//        val parent: Command = ???
-//        val nextSibling: Command = ???
-//        val previousSibling: Command = ???
+          }
+          case None => throw new MatchError("Not allowed")
+        }))
       }
+      val up: Command = new NodeMotionCommand {
+        override def defaultKeys: Seq[Key] = Seq("k", "-") // we always go to first char now
+        override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualUpOrId(a)
+      }
+      val down: Command = new NodeMotionCommand {
+        override def defaultKeys: Seq[Key] = Seq("j", "+")
+        override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualDownOrId(a)
+      }
+      //        val visibleBeginning: Command = new NodeMotionCommand {
+      //          override def move(a: cursor.Node): cursor.Node = ???
+      //
+      //          override def defaultKeys: Seq[Key] = ???
+      //        }
+      //        val visibleEnd: Command = new NodeMotionCommand {
+      //          override def move(a: cursor.Node): cursor.Node = ???
+      //          override def defaultKeys: Seq[Key] = ???
+      //        }
+
+      // not implemented for not understand what should it behave
+      // * N%    N  %            goto line N percentage down in the file; N must be
+      // * given, otherwise it is the % command
+
+      // screen related not implemented
+      //        gk    N  gk           up N screen lines (differs from "k" when line wraps)
+      //        gj    N  gj           down N screen lines (differs from "j" when line wraps)
+
+
+      /**
+        * LATER
+        * 'motion-parent': [['g', 'p']],
+        * 'motion-next-sibling': [['}']],
+        * 'motion-prev-sibling': [[' {']],
+        */
+      //        val parent: Command = ???
+      //        val nextSibling: Command = ???
+      //        val previousSibling: Command = ???
     }
 
     object EnterVisual {
@@ -549,6 +548,7 @@ trait Commands {
   {
     var ignored: Command = Command.ContentMotion.toNextChar
     ignored = Command.EnterInsert.appendAtCursor
+    ignored = Command.NodeMotion.up
     ignored = Command.EnterVisual.enter
     ignored = Command.exit
     ignored = Command.InsertModeEdits.backspace

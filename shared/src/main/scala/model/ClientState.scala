@@ -15,7 +15,6 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
     false
   }
 
-
   def rich(n: cursor.Node): Rich = node(n).content.asInstanceOf[model.data.Content.Rich].content
 
   def isRich(n: cursor.Node): Boolean = node(n).content.isRich

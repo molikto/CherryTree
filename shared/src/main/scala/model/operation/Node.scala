@@ -127,7 +127,7 @@ object Node extends OperationObject[data.Node, Node] {
 
   def randomCursorAndNode(d: data.Node, r: Random): (cursor.Node, data.Node) = {
     if (d.childs.isEmpty || r.nextInt(3) == 0) {
-      (cursor.Node.Root, d)
+      (cursor.Node.root, d)
     } else {
       val c = r.nextInt(d.childs.size)
       val (aa, bb) = randomCursorAndNode(d.childs(c), r)
@@ -151,7 +151,7 @@ object Node extends OperationObject[data.Node, Node] {
         Replace(c, data.Content.random(r))
       case 2 =>
         val (c, _) = randomCursorAndNode(d, r)
-        if (c != cursor.Node.Root) {
+        if (c != cursor.Node.root) {
           var ran = range.Node(c)
           if (r.nextBoolean() && ran.childs.start > 1) {
             ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 2))

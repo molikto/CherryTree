@@ -127,6 +127,7 @@ class Client(
 
   private def updateInner(res: Client.UpdateResult): Unit = {
     if (updatingState) throw new IllegalStateException("You should not udpate state during a state update!!!")
+    println("client update inner: " + res)
     updatingState = true
     state_ = ClientState(res.root, res.mode)
     stateUpdates_.onNext(res)
