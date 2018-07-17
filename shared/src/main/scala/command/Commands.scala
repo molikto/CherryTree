@@ -633,16 +633,17 @@ trait Commands {
     }
 
     object Delete {
-      val deleteAfterVisual = new Command {
+      val deleteAfterVisual: Command = new Command {
         override def defaultKeys: Seq[Key] = Seq("d")
         override def available(a: ClientState): Boolean = a.isVisual
         override def action(a: ClientState): Client.Update = a.mode match {
           case Some(model.mode.Node.Visual(fix , move)) =>
             cursor.Node.minimalRange(fix, move).map(r =>
               Client.Update(Seq(operation.Node.Delete(r)), {
-                val mover = a.mover()
                 val pos = if (a.node.get(r.until).isDefined) {
                   r.until
+                } else if (r.childs.start > 0) {
+                  r.parent :+ (r.childs.start - 1)
                 } else {
                   r.parent
                 }

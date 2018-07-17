@@ -261,10 +261,11 @@ class Client(
     change(command.action(state))
   }
 
-  private val keyToCommand: Map[Key, Command] = commands.flatMap(c => c.keys.map(_ -> c)).toMap
-  private val graphemeToCommand: Map[Key.Grapheme, Command] = commands.flatMap(
+  // LATER updatable keymap
+  private val keyToCommand: Map[Key, Seq[Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1).map(a => (a._1, a._2.map(_._2)))
+  private val graphemeToCommand: Map[Key.Grapheme, Seq[Command]] = commands.flatMap(
     c => c.keys.filter(k => !k.control && !k.meta && k.a.isInstanceOf[Key.Grapheme]
-    ).map(_.a.asInstanceOf[Key.Grapheme] -> c)).toMap
+    ).map(_.a.asInstanceOf[Key.Grapheme] -> c)).groupBy(_._1).map(a => (a._1, a._2.map(_._2))).toMap
 
 
   def keyDown(key: Key): Boolean = {
@@ -276,22 +277,27 @@ class Client(
       }
       true
     } else {
-      def doCommand(): Boolean = keyToCommand.get(key) match {
-          case Some(command) if command.available(state) =>
-            act(command)
-            true
-          case _ =>
-            if (!key.control && !key.meta && key.a.isInstanceOf[Key.Grapheme]) {
-              graphemeToCommand.get(key.a.asInstanceOf[Key.Grapheme]) match {
-                case Some(command) if command.available(state) =>
-                  act(command)
-                  true
-                case _ => false
-              }
+      def doCommand(): Boolean = {
+        val av = keyToCommand.getOrElse(key, Seq.empty).filter(_.available(state))
+        if (av.nonEmpty) {
+          if (av.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
+          act(av.head)
+          true
+        } else {
+          if (!key.control && !key.meta && key.a.isInstanceOf[Key.Grapheme]) {
+            val av = graphemeToCommand.getOrElse(key.a.asInstanceOf[Key.Grapheme], Seq.empty).filter(_.available(state))
+            if (av.nonEmpty) {
+              if (av.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
+              act(av.head)
+              true
             } else {
               false
             }
+          } else {
+            false
+          }
         }
+      }
       if (state.isRichInserting) {
         // some keys we MUST keep
         doCommand()

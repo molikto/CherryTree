@@ -294,7 +294,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
 
-  private def removeFormattedNodeHighlight(): Unit = {
+  private def clearFormattedNodeHighlight(): Unit = {
     if (astHighlight != null) {
       astHighlight.style.backgroundColor = null
       astHighlight = null
@@ -397,7 +397,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def removeInsertEmptyTextNode(): Unit = {
     if (insertEmptyTextNode != null) {
-      insertEmptyTextNode.parentNode.removeChild(insertEmptyTextNode)
+      if (insertEmptyTextNode.parentNode != null)
+        insertEmptyTextNode.parentNode.removeChild(insertEmptyTextNode)
       insertEmptyTextNode = null
     }
   }
@@ -439,7 +440,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def clearNormalMode(): Unit = {
     clearSelection()
-    removeFormattedNodeHighlight()
+    clearFormattedNodeHighlight()
   }
 
   private def updateInsertMode(pos: Int): Unit = {
@@ -472,7 +473,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   private def updateNormalMode(r: IntRange): Unit = {
     val (range, light) = nonEmptySelectionToDomRange(r)
     setSelection(range)
-    if (light != astHighlight) removeFormattedNodeHighlight()
+    if (light != astHighlight) clearFormattedNodeHighlight()
     if (light != null) addFormattedNodeHighlight(light)
   }
 

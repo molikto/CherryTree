@@ -121,6 +121,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
   }
 
+
   def childListAt(at: model.cursor.Node): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
@@ -139,30 +140,32 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     View.fromDom[ContentView.General](rec(root.childNodes(0), at))
   }
 
-  private var previousNodeVisual: (HTMLElement, Int, Int) = null
+  private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
 
   private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
-    clearNodeVisual()
+    val newVisual = new ArrayBuffer[Element]()
     def update(overall: HTMLElement, start: Int, u: Int): Unit = {
       for (i <- start until u) {
-        overall.children(i).classList.add("ct-node-visual")
+        val c = overall.children(i).children(0)
+        newVisual.append(c)
       }
-      previousNodeVisual = (overall, start, u)
     }
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
-      case None => update(root, 0, 1)
+      case None =>
+        val rd = root.children(0)
+        newVisual.append(rd)
       case Some(range) => update(childListAt(range.parent), range.childs.start, range.childs.until)
     }
+    (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
+    (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
   }
 
   private def clearNodeVisual(): Unit = {
-    if (previousNodeVisual != null) {
-      val (overall, start, u) = previousNodeVisual
-      for (i <- start until u) {
-        overall.children(i).classList.remove("ct-node-visual")
-      }
+    for (c <- previousNodeVisual) {
+      c.classList.remove("ct-node-visual")
     }
+    previousNodeVisual = ArrayBuffer.empty
   }
 
   def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
@@ -214,6 +217,23 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     updateMode(selection, viewUpdated = false)
   }
 
+  private def removeNodes(range: model.range.Node): Unit = {
+    def destroyContents(a: Element, start: Int, u: Int): Unit = {
+      for (i <- start until u) {
+        val ll = a.children(i).children(0).children(1)
+        destroyContents(ll, 0, ll.children.length)
+        View.fromDom[ContentView.General](a.children(i).children(0).children(0)).destroy()
+      }
+    }
+    val p = childListAt(range.parent)
+    destroyContents(p, range.childs.start, range.childs.until)
+    for (_ <- range.childs) {
+      p.removeChild(p.children(range.childs.start))
+    }
+  }
+
+
+
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val box = div().render
     parent.appendChild(box)
@@ -263,8 +283,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             previousContent.destroy()
           case model.operation.Node.Delete(r) =>
             // look out for this!!!
-            val start = r.start
-            r.foreach(_ => contentAt(start).destroy())
+            removeNodes(r)
           case model.operation.Node.Insert(at, childs) =>
             val root = childListAt(at.dropRight(1))
             insertNodes(root, at.last, childs)

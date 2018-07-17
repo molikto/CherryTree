@@ -14,14 +14,13 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* visual mode
-* node visual
+* visual delete
+* key sequence: dd
 * single edit commands
 * code mirror!!!
 * insert mode command overrides
 * make so that the state exposed to view is the partial one
 * sync external operation to content
-* key sequence
 * keyboard editor for rich
 * mouse support
 * copy paste
@@ -100,3 +99,5 @@
 * ~~insert mode~~
 * ~~node level sync and operations~~
 * ~~fix empty document~~
+* ~~visual mode~~
+* ~~node visual~~

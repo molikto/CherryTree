@@ -12,7 +12,7 @@ import scala.scalajs.js
 
 object View {
 
-  def fromDom[T](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
+  def fromDom[T <: View](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
 }
 
 abstract class View {
@@ -40,6 +40,7 @@ abstract class View {
 
   /**
     * will also remove from parent
+    * ALSO make sure you destroy child dom attachments!!!
     */
   def destroy(): Unit = {
     des.reverse.foreach(_.apply())
