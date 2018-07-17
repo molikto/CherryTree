@@ -91,6 +91,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     dom.contentEditable = "true"
     noEditable.contentEditable = "false"
     currentEditable = dom
+    currentEditable.focus()
   }
 
   def unmarkEditable(dom: HTMLElement): Unit = {
@@ -101,6 +102,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     dom.contentEditable = "false"
     currentEditable = noEditable
     noEditable.contentEditable = "true"
+    noEditable.focus()
   }
 
 

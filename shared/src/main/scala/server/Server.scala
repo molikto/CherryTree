@@ -11,7 +11,7 @@ import scala.util.Random
 class Server extends Api {
 
   // states, now in single thread fashion
-  private var document = data.Node(data.Content.Rich(data.Rich(Seq(
+  private val tempRich = data.Content.Rich(data.Rich(Seq(
 
     Text.Plain(Unicode("😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
     Text.Code(Unicode( "\u0628" + "\u064e" + "\u064a"  + "😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
@@ -38,7 +38,10 @@ class Server extends Api {
     )),
     Text.Plain(Unicode(" ")),
     Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"))
-  ))), Seq(data.Node(data.Content.Code(Unicode.random(), ""), Seq.empty)))
+  )))
+  private var document = data.Node(tempRich, Seq(
+    data.Node(tempRich, Seq.empty),
+    data.Node(data.Content.Code(Unicode.random(), ""), Seq.empty)))
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty

@@ -19,6 +19,7 @@ package object cursor {
   object Node {
 
     class Mover(root: data.Node, isClosed: Node => Boolean) {
+
       def parent(a: Node): Option[Node] = {
         if (a.isEmpty) None else Some(a.dropRight(1))
       }
@@ -75,7 +76,6 @@ package object cursor {
           }
         }
       }
-      def visualUpOrId(a: Node): Node = visualUp(a).getOrElse(a)
 
       def visualUp(a: Node): Option[Node] = {
         previous(a) match {
@@ -86,8 +86,6 @@ package object cursor {
 
 
       def globalNext(a: Node): Option[Node] = next(a).orElse(parent(a).flatMap(globalNext))
-
-      def visualDownOrId(a: Node): Node = visualDown(a).getOrElse(a)
 
       def visualDown(a: Node): Option[Node] = {
         if (!isClosed(a)) {

@@ -329,7 +329,7 @@ trait Commands {
 
         override def repeatable: Boolean = true
 
-        def move(data: ClientState, a: cursor.Node): cursor.Node
+        def move(data: ClientState, a: cursor.Node): Option[cursor.Node]
 
 
         override def available(a: ClientState): Boolean = a.mode match {
@@ -346,10 +346,10 @@ trait Commands {
 
         final override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, Some(a.mode match {
           case Some(m) => m match {
-            case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm))
+            case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm).getOrElse(mm))
             case kkk@model.mode.Node.Content(n, cc) => cc match {
               case _: model.mode.Content.Normal =>
-                model.data.Node.defaultNormalMode(a.node, move(a, n))
+                model.data.Node.defaultNormalMode(a.node, move(a, n).getOrElse(n))
               case _ => throw new MatchError("Not allowed")
             }
           }
@@ -358,11 +358,23 @@ trait Commands {
       }
       val up: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[Key] = Seq("k", "-") // we always go to first char now
-        override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualUpOrId(a)
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).visualUp(a)
       }
       val down: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[Key] = Seq("j", "+")
-        override def move(data: ClientState, a: cursor.Node): cursor.Node = new cursor.Node.Mover(data.node, data.isClosed).visualDownOrId(a)
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).visualDown(a)
+      }
+      val parent: Command = new NodeMotionCommand {
+        override def defaultKeys: Seq[Key] = Seq("g", "p") // we always go to first char now
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).parent(a)
+      }
+      val nextSibling: Command = new NodeMotionCommand {
+        override def defaultKeys: Seq[Key] = Seq("}")
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).next(a)
+      }
+      val previousSibling: Command = new NodeMotionCommand {
+        override def defaultKeys: Seq[Key] = Seq("{")
+        override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = new cursor.Node.Mover(data.node, data.isClosed).previous(a)
       }
       //        val visibleBeginning: Command = new NodeMotionCommand {
       //          override def move(a: cursor.Node): cursor.Node = ???
@@ -383,20 +395,11 @@ trait Commands {
       //        gj    N  gj           down N screen lines (differs from "j" when line wraps)
 
 
-      /**
-        * LATER
-        * 'motion-parent': [['g', 'p']],
-        * 'motion-next-sibling': [['}']],
-        * 'motion-prev-sibling': [[' {']],
-        */
-      //        val parent: Command = ???
-      //        val nextSibling: Command = ???
-      //        val previousSibling: Command = ???
     }
 
     object EnterVisual {
 
-      val enter = new Command {
+      val enter: Command = new Command {
         override def defaultKeys: Seq[Key] = Seq("v")
         override def available(a: ClientState): Boolean = a.isRichNormal
         override def action(a: ClientState): Client.Update = noUpdate() // TODO enter visual mode
