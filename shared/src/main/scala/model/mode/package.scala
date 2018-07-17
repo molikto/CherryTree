@@ -3,7 +3,10 @@ package model
 import model.range.IntRange
 
 package object mode {
-  sealed abstract class Content
+  sealed abstract class Content {
+    def isNormal: Boolean = this.isInstanceOf[Content.Normal]
+  }
+
   object Content {
     sealed abstract class Rich extends Content
     sealed abstract class Code extends Content

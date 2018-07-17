@@ -236,7 +236,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             p.insertBefore(cc.dom, previousContent.dom)
             previousContent.destroy()
           case model.operation.Node.Delete(r) =>
-            r.foreach(i => contentAt(i).destroy())
+            // look out for this!!!
+            val start = r.start
+            r.foreach(_ => contentAt(start).destroy())
           case model.operation.Node.Insert(at, childs) =>
             val root = childListAt(at.dropRight(1))
             insertNodes(root, at.last, childs)

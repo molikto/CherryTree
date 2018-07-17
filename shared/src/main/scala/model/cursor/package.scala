@@ -53,6 +53,14 @@ package object cursor {
         }
       }
 
+      def nextOver(a: Node): Node = {
+        if (a.isEmpty) {
+          throw new IllegalArgumentException("Root has no next")
+        } else {
+          a.dropRight(1) :+ (a.last + 1)
+        }
+      }
+
       def next(a: Node): Option[Node] = {
         if (a.isEmpty) {
           None

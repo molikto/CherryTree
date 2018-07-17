@@ -12,6 +12,24 @@ import Key._
 
 // comments from quickref.txt  For Vim version 8.1.  Last change: 2018 Apr 18
 // also a recent version of Vimflowy
+
+abstract class Command {
+
+  def hardcodeKeys: Seq[Key] = Seq.empty
+  def defaultKeys: Seq[Key]
+
+  def keys:  Seq[Key] = defaultKeys ++ hardcodeKeys // TODO key maps
+
+  def repeatable: Boolean = false
+
+  def available(a: ClientState): Boolean
+
+  def action(a: ClientState): Client.Update
+
+  def waitingForGrapheme: Boolean = false
+  def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = throw new NotImplementedError()
+}
+
 trait Commands {
 
   /**
@@ -62,26 +80,10 @@ trait Commands {
 
   def commands: Seq[Command] = commands_
 
-  abstract class Command {
 
-
+  abstract class Command extends command.Command {
     commands_.append(this)
-
-    def hardcodeKeys: Seq[Key] = Seq.empty
-    def defaultKeys: Seq[Key]
-
-    def keys:  Seq[Key] = defaultKeys ++ hardcodeKeys // TODO key maps
-
-    def repeatable: Boolean = false
-
-    def available(a: ClientState): Boolean
-
-    def action(a: ClientState): Client.Update
-
-    def waitingForGrapheme: Boolean = false
-    def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = throw new NotImplementedError()
   }
-
 
   object Command {
 
@@ -413,6 +415,50 @@ trait Commands {
       }
     }
 
+
+    object OpenAndEnterInsert {
+
+      // TODO open new line
+      //o     N  o    open a new line below the current line, append text (N times)
+      //O     N  O    open a new line above the current line, append text (N times)
+
+
+      val openBellow: Command = new Command {
+        override def repeatable: Boolean = true
+        override def defaultKeys: Seq[Key] = Seq("o")
+        override def available(a: ClientState): Boolean = a.isNormal
+        override def action(a: ClientState): Client.Update = {
+          val pos = a.asNormal
+          val mover = new cursor.Node.Mover(a.node, a.isClosed)
+          val insertionPoint = if (pos == cursor.Node.root) {
+            Seq(0)
+          } else {
+            mover.firstChild(pos).getOrElse(mover.nextOver(pos))
+          }
+          Client.Update(
+            Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
+            Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
+        }
+      }
+
+      val openAbove: Command = new Command {
+        override def repeatable: Boolean = true
+        override def defaultKeys: Seq[Key] = Seq("O")
+        override def available(a: ClientState): Boolean = a.isNormal
+        override def action(a: ClientState): Client.Update = {
+          val pos = a.asNormal
+          if (pos == cursor.Node.root) {
+            // LATER wrap?
+            noUpdate()
+          } else {
+            Client.Update(
+              Seq(operation.Node.Insert(pos, Seq(model.data.Node.empty))),
+              Some(model.mode.Node.Content(pos, model.mode.Content.RichInsert(0))))
+          }
+        }
+      }
+    }
+
     object EnterInsert {
       // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
       //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
@@ -422,10 +468,7 @@ trait Commands {
       //v_b_I    I    insert the same text in front of all the selected lines
       //v_b_A    A    append the same text after all the selected lines
 
-      // TODO open new line
-      //o     N  o    open a new line below the current line, append text (N times)
-      //O     N  O    open a new line above the current line, append text (N times)
-      abstract class InsertCommand extends Command  {
+      abstract class EnterInsertCommand extends Command {
         def move(content: Rich,a: IntRange): Int
 
         override def available(a: ClientState): Boolean = a.isRichNormal
@@ -436,20 +479,20 @@ trait Commands {
             content, normal.range))))
         }
       }
-      val appendAtCursor: InsertCommand = new InsertCommand {
+      val appendAtCursor: EnterInsertCommand = new EnterInsertCommand {
         override def defaultKeys: Seq[Key] = Seq("a")
         override def move(content: Rich, a: IntRange): Int = a.until
       }
-      val appendAtContentEnd: InsertCommand  = new InsertCommand {
+      val appendAtContentEnd: EnterInsertCommand  = new EnterInsertCommand {
         override def defaultKeys: Seq[Key] = Seq("A")
         override def move(content: Rich,a: IntRange): Int = content.size
       }
-      val insertAtCursor: InsertCommand  = new InsertCommand {
+      val insertAtCursor: EnterInsertCommand  = new EnterInsertCommand {
         override def defaultKeys: Seq[Key] = Seq("i")
         override def move(content: Rich,a: IntRange): Int = a.start
       }
       // TODO support two char keys gI    N  gI   insert text in column 1 (N times)
-      val insertAtContentBeginning : InsertCommand = new InsertCommand {
+      val insertAtContentBeginning : EnterInsertCommand = new EnterInsertCommand {
         override def defaultKeys: Seq[Key] = Seq("I")
         override def move(content: Rich,a: IntRange): Int = 0
       }
@@ -532,6 +575,7 @@ trait Commands {
       //                                     restore indent in next line
     }
 
+
     object Scroll {
 
       // LATER only some of should be implemented
@@ -553,15 +597,6 @@ trait Commands {
       //zH            N  zH           scroll screen half a screenwidth to the right
       //zL            N  zL           scroll screen half a screenwidth to the left
     }
-  }
-
-  {
-    var ignored: Command = Command.ContentMotion.toNextChar
-    ignored = Command.EnterInsert.appendAtCursor
-    ignored = Command.NodeMotion.up
-    ignored = Command.EnterVisual.enter
-    ignored = Command.exit
-    ignored = Command.InsertModeEdits.backspace
   }
 
   // these are currently NOT implemented becuase we want a different mark system
@@ -649,4 +684,15 @@ trait Commands {
   //:r!      :r! {command}   insert the standard output of {command} below the
   //                              cursor
 
+
+
+  {
+    var ignored: Command = Command.ContentMotion.toNextChar
+    ignored = Command.EnterInsert.appendAtCursor
+    ignored = Command.NodeMotion.up
+    ignored = Command.OpenAndEnterInsert.openAbove
+    ignored = Command.EnterVisual.enter
+    ignored = Command.exit
+    ignored = Command.InsertModeEdits.backspace
+  }
 }

@@ -11,6 +11,7 @@ object ClientState {
 }
 
 case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
+
   def isClosed(a: cursor.Node): Boolean = {
     false
   }
@@ -31,6 +32,11 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
   }
 
 
+  def isNormal: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, a)) if a.isNormal => true
+    case _ => false
+  }
+
   def isRichNormal: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(_))) => true
     case _ => false
@@ -39,6 +45,18 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
   def isRichVisual: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
     case _ => false
+  }
+
+  def asNormal: cursor.Node = {
+    mode match {
+      case Some(model.mode.Node.Content(n, c)) =>
+        c match {
+          case model.mode.Content.RichNormal(_) => n
+          case model.mode.Content.CodeNormal => n
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
   }
 
   def asRichNormalOrVisual: (cursor.Node, Rich, model.mode.Content.RichNormalOrVisual) = {

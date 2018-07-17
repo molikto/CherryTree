@@ -14,9 +14,10 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* node level sync and operations
+* fix empty document
 * code mirror!!!
 * insert mode command overrides
+* make so that the state exposed to view is the partial one
 * sync external operation to content
 * node visual mode
 * single edit commands
@@ -98,3 +99,4 @@
 * ~~motion commands~~
 * ~~vim base structure~~
 * ~~insert mode~~
+* ~~node level sync and operations~~
