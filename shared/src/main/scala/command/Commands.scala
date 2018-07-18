@@ -171,7 +171,7 @@ trait Commands { self: Client =>
   object Command {
 
     val exit: Command = new Command {
-      override def defaultKeys: Seq[KeySeq] = Seq(Escape, Control + "c", Control + "[")
+      override val defaultKeys: Seq[KeySeq] = Seq(Escape, Control + "c", Control + "[")
       override def available(a: ClientState): Boolean = true
 
       override def action(a: ClientState, ignore: Int): Client.Update = {
@@ -238,22 +238,22 @@ trait Commands { self: Client =>
 
 
       val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
-        override def defaultKeys = Seq("h", Backspace, Left)
+        override val defaultKeys = Seq("h", Backspace, Left)
         override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
       }
 
       val right: Command = new RichMotionCommand() {
-        override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
+        override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
         override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
       }
 
       val beginning: Command = new RichMotionCommand() {
-        override def defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
+        override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
         override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
       }
 
       val end: Command = new RichMotionCommand {
-        override def defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
+        override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
         override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
       }
 
@@ -327,39 +327,39 @@ trait Commands { self: Client =>
 
       val findNextChar: FindCommand = new FindCommand {
         override def reverse: FindCommand = findPreviousChar
-        override def defaultKeys: Seq[KeySeq] = Seq("f")
+        override val defaultKeys: Seq[KeySeq] = Seq("f")
         def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
 
       }
       val findPreviousChar: FindCommand = new FindCommand {
         override def reverse: FindCommand = findNextChar
-        override def defaultKeys: Seq[KeySeq] = Seq("F")
+        override val defaultKeys: Seq[KeySeq] = Seq("F")
         def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
       }
       val toNextChar: FindCommand = new FindCommand {
         override def reverse: FindCommand = toPreviousChar
-        override def defaultKeys: Seq[KeySeq] = Seq("t")
+        override val defaultKeys: Seq[KeySeq] = Seq("t")
         override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
         override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
           content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
       }
       val toPreviousChar: FindCommand = new FindCommand {
         override def reverse: FindCommand = toNextChar
-        override def defaultKeys: Seq[KeySeq] = Seq("T")
+        override val defaultKeys: Seq[KeySeq] = Seq("T")
         override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
         override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
           content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
       }
       val repeatFind: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
-        override def defaultKeys: Seq[KeySeq] = Seq(";")
+        override val defaultKeys: Seq[KeySeq] = Seq(";")
         override def action(a: ClientState, count: Int): Client.Update = {
           lastFindCommand.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
       }
       val repeatFindOppositeDirection: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
-        override def defaultKeys: Seq[KeySeq] = Seq(",")
+        override val defaultKeys: Seq[KeySeq] = Seq(",")
         override def action(a: ClientState, count: Int): Client.Update = {
           lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
@@ -457,31 +457,31 @@ trait Commands { self: Client =>
       val up: Command = new NodeMotionCommand {
          // DIFFERENCE we always go to first char now
         // DIFFERENCE k and - is merged
-        override def defaultKeys: Seq[KeySeq] = Seq("k", "-")
+        override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
       }
       val down: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("j", "+")
+        override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
       }
       val parent: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("gp")
+        override val defaultKeys: Seq[KeySeq] = Seq("gp")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
       }
       val nextSibling: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("}")
+        override val defaultKeys: Seq[KeySeq] = Seq("}")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
       }
       val previousSibling: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("{")
+        override val defaultKeys: Seq[KeySeq] = Seq("{")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
       }
       val visibleBeginning: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("gg")
+        override val defaultKeys: Seq[KeySeq] = Seq("gg")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
       }
       val visibleEnd: Command = new NodeMotionCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("G")
+        override val defaultKeys: Seq[KeySeq] = Seq("G")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
       }
 
@@ -498,7 +498,7 @@ trait Commands { self: Client =>
 
     object RichVisual {
       val enter: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("v")
+        override val defaultKeys: Seq[KeySeq] = Seq("v")
         override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
         override def action(a: ClientState, count: Int): Client.Update = {
           val (_, rich, m) = a.asRichNormalOrVisual
@@ -516,7 +516,7 @@ trait Commands { self: Client =>
       }
 
       val swap: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("o")
+        override val defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isRichVisual
         override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
       }
@@ -529,7 +529,7 @@ trait Commands { self: Client =>
       // gv       gv           start highlighting on previous visual area
 
     val enter: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("V") // DIFFERENCE merged two command
+        override val defaultKeys: Seq[KeySeq] = Seq("V") // DIFFERENCE merged two command
         override def available(a: ClientState): Boolean = a.mode match {
           case Some(m) => m match {
             case model.mode.Node.Content(_, mm) => mm.isNormalOrVisual
@@ -550,7 +550,7 @@ trait Commands { self: Client =>
         }
       }
       val swap: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("o")
+        override val defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNodeVisual
         override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.asNodeVisual.swap)
       }
@@ -561,7 +561,7 @@ trait Commands { self: Client =>
 
       // DIFFERENCE: currently not repeatable
       val openBellow: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("o")
+        override val defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
           val pos = a.asNormal._1
@@ -578,7 +578,7 @@ trait Commands { self: Client =>
       }
 
       val openAbove: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("O")
+        override val defaultKeys: Seq[KeySeq] = Seq("O")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
           val pos = a.asNormal._1
@@ -615,20 +615,20 @@ trait Commands { self: Client =>
         }
       }
       val appendAtCursor: EnterInsertCommand = new EnterInsertCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("a")
+        override val defaultKeys: Seq[KeySeq] = Seq("a")
         override def move(content: Rich, a: IntRange): Int = a.until
       }
       val appendAtContentEnd: EnterInsertCommand  = new EnterInsertCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("A")
+        override val defaultKeys: Seq[KeySeq] = Seq("A")
         override def move(content: Rich,a: IntRange): Int = content.size
       }
       val insertAtCursor: EnterInsertCommand  = new EnterInsertCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("i")
+        override val defaultKeys: Seq[KeySeq] = Seq("i")
         override def move(content: Rich,a: IntRange): Int = a.start
       }
       // TODO support two char keys gI    N  gI   insert text in column 1 (N times)
       val insertAtContentBeginning : EnterInsertCommand = new EnterInsertCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq("I")
+        override val defaultKeys: Seq[KeySeq] = Seq("I")
         override def move(content: Rich,a: IntRange): Int = 0
       }
     }
@@ -780,7 +780,7 @@ trait Commands { self: Client =>
       }
 
       val deleteAfterVisual: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
+        override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
         override def available(a: ClientState): Boolean = a.isVisual
         override def action(a: ClientState, count: Int): Client.Update = a.mode match {
           case Some(model.mode.Node.Visual(fix , move)) =>
@@ -792,7 +792,7 @@ trait Commands { self: Client =>
       }
 
       val delete: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("x", Key.Delete)
+        override val defaultKeys: Seq[KeySeq] = Seq("x", Key.Delete)
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
           val (pos, normal) = a.asNormal
@@ -809,7 +809,7 @@ trait Commands { self: Client =>
       }
 
       val deleteBefore: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("X")
+        override val defaultKeys: Seq[KeySeq] = Seq("X")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
           val (pos, normal) = a.asNormal
@@ -828,7 +828,7 @@ trait Commands { self: Client =>
 
 //      // TODO dw etc
 //      val deleteMotion: Command = new Command {
-//        override def defaultKeys: Seq[KeySeq] = Seq("d")
+//        override val defaultKeys: Seq[KeySeq] = Seq("d")
 //        override def available(a: ClientState): Boolean = a.isNormal
 //
 //        override def action(a: ClientState, count: Int): Client.Update = {
@@ -837,7 +837,7 @@ trait Commands { self: Client =>
 //      }
 
       val deleteLines: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("dd")
+        override val defaultKeys: Seq[KeySeq] = Seq("dd")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
       }
