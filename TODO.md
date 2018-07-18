@@ -15,7 +15,6 @@
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * available commands panel
-* smart styling
 * single edit commands
 * copy paste
 * code mirror!!!
@@ -108,3 +107,4 @@
 * ~~visual delete~~
 * ~~wrap simple range~~
 * ~~wrap link~~
+* ~~smart styling~~

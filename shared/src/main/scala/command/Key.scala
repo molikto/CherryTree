@@ -33,6 +33,7 @@ object Key {
   sealed trait Modifier extends V {
     def +(key: Key): Key
     def +(a: String): KeySeq = defaultAsciiKeysToKeySeq(a).map(this + _)
+    def +(a: V): KeySeq = Seq(this + Key(a))
   }
   case object Shift extends Modifier {
     def +(key: Key): Key = key.copy(shift = true)

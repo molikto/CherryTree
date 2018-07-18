@@ -180,9 +180,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   def updateNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
-    if (insertEmptyTextNode == null) {
-      removeInsertEmptyTextNode()
-    }
+    removeInsertEmptyTextNode()
     insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
     insertNonEmptyTextNodeStartIndex = i
     insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.size
@@ -214,9 +212,15 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         }
       } else if (ss.ty == InfoType.Special) {
         if (ee.ty == InfoType.Special) {
-          if (ss.nodeCursor.size < ee.nodeCursor.size) {
+          if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
-          } else {
+          } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
+            if (ee.text.isInstanceOf[Text.Code]) {
+              updateTempEmptyTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
+            } else {
+              updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+            }
+          } else { // different sibling node
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
           }
         } else if (ee.ty == InfoType.Plain) {
@@ -334,6 +338,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
       if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
+        window.console.log(a)
         clientView.client.flush()
       } else {
         window.console.log(a)
@@ -367,7 +372,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (insertEmptyTextNode.textContent.length > 0) {
         str = if (str.isEmpty) insertEmptyTextNode.textContent else str + insertEmptyTextNode.textContent
       }
-      if (next != null && next.textContent.length > 0 && next.isInstanceOf[raw.Text]) {
+      if (next != null && next.isInstanceOf[raw.Text] && next.textContent.length > 0) {
         str = str + next.textContent
       } else {
         next = null
@@ -496,6 +501,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
+      println(s"mode cleared t $i")
       if (previousMode == 0) {
         clearInsertionMode()
       } else if (previousMode == 1) {

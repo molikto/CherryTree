@@ -455,11 +455,11 @@ trait Commands { self: Client =>
       val up: Command = new NodeMotionCommand {
          // DIFFERENCE we always go to first char now
         // DIFFERENCE k and - is merged
-        override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
+        override val defaultKeys: Seq[KeySeq] = Seq("k", "-", Up)
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
       }
       val down: Command = new NodeMotionCommand {
-        override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
+        override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
       }
       val parent: Command = new NodeMotionCommand {
@@ -715,10 +715,10 @@ trait Commands { self: Client =>
           Client.Update(res, None)
         }
       }
-      abstract class OverrideEditCommand extends EditCommand {
+      trait OverrideCommand extends Command {
         def defaultKeys: Seq[KeySeq] = Seq.empty
       }
-      val backspace: Command = new OverrideEditCommand {
+      val backspace: Command = new EditCommand with OverrideCommand {
         // TODO these keys should be seperate delete words, etc...
         override def hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
@@ -730,13 +730,13 @@ trait Commands { self: Client =>
         }
       }
 
-      val enter: Command = new OverrideEditCommand {
+      val enter: Command = new EditCommand with OverrideCommand {
         // TODO what to do on enter???
         override def hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
         override def edit(content: Rich, a: Int): Option[operation.Rich] = None
       }
 
-      val newNodes: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+      val emptyWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
         override def available(a: ClientState): Boolean = a.isRichInserting
         override def action(a: ClientState, count: Int): Client.Update = {
           val (n, content, insert) = a.asRichInsert
@@ -745,6 +745,49 @@ trait Commands { self: Client =>
           Client.Update(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
         }
       }).toMap
+
+      abstract class InsertMovementCommand extends Command {
+        override def available(a: ClientState): Boolean = a.isRichInserting
+        def move(rich: Rich, i: Int): Int
+        override def action(a: ClientState, count: Int): Client.Update = a.asRichInsert match {
+          case (node, rich, insert) =>
+            val m = move(rich, insert.pos)
+            if (m != insert.pos) modeUpdate(a.copyContentMode(mode.Content.RichInsert(m))) else noUpdate()
+        }
+      }
+
+      // LATER  insert movement
+      // i_<S-Left>    shift-left/right  one word left/right
+      //i_<S-Up>      shift-up/down     one screenful backward/forward
+      //i_<End>       <End>             cursor after last character in the line
+      //i_<Home>      <Home>            cursor to first character in the line
+      val moveRight: Command = new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
+        override def defaultKeys: Seq[KeySeq] = Seq(Shift + " ", Right)
+        override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
+      }
+
+      val moveLeft: Command = new InsertMovementCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Shift + Backspace, Left)
+        override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
+      }
+
+      val disableUp: Command = new InsertMovementCommand with OverrideCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Up)
+        override def move(rich: Rich, i: Int): Int = i
+      }
+
+      val disableDown: Command = new InsertMovementCommand with OverrideCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Down)
+        override def move(rich: Rich, i: Int): Int = i
+      }
+
+      // LATER insert movements
+      // moving around:
+      //i_<Up>        cursor keys       move cursor left/right/up/down
+      //i_<S-Left>    shift-left/right  one word left/right
+      //i_<S-Up>      shift-up/down     one screenful backward/forward
+      //i_<End>       <End>             cursor after last character in the line
+      //i_<Home>      <Home>            cursor to first character in the line
 
       // LATER seems all very wired
       // Q_ss          Special keys in Insert mode
