@@ -110,15 +110,15 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
     def overlapSurround(s: Surround, l: Surround, sWins: Boolean): RebaseResult = {
       // s: [], l: ()
-      val order = SpecialChar.surroundStartCodeInToOut
+      val order = SpecialChar.breakOthersOrderedUnicode
       val si = order.indexOf(s.left)
       val li = order.indexOf(l.left)
-      val min = SpecialChar.surroundStartCodeInToOut(Math.min(si, li))
+      val min = SpecialChar.breakOthersOrderedUnicode(Math.min(si, li))
       val r1 = IntRange(s.r.start, l.r.start)
       val r2 = IntRange(l.r.start, s.r.until)
       val r3 = IntRange(s.r.until, l.r.until)
       // [   (   ]   )
-      if (SpecialChar.surroundStartCodeNotSplit.contains(min)) { // cannot split
+      if (SpecialChar.noBreakeeOrderedUnicode.contains(min)) { // cannot split
         // if cannot: [   ]   (  )
         val overall = Seq(Surround(r3, l.left, l.right), Surround(r1, s.left, s.right))
         free(
@@ -232,7 +232,7 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
             free(w.modify(_.r).using(_.moveBy(ls.size)), l.modify(_.r).using(_.modify(_.until).using(_ + ws.size + we.size)))
           if (wr == lr) {
             // some order how should they be applied?
-            val order = SpecialChar.surroundStartCodeInToOut
+            val order = SpecialChar.breakOthersOrderedUnicode
             val wi = order.indexOf(ws)
             val li = order.indexOf(ls)
             if (wi > li) {

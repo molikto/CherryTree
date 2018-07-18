@@ -322,10 +322,11 @@ class Client(
     SpecialChar.Code.end -> '`'.toInt,
     SpecialChar.Strong.start -> '#'.toInt,
     SpecialChar.Strong.start -> '#'.toInt,
-    SpecialChar.LaTeX.start -> '$'.toInt,
-    SpecialChar.LaTeX.end -> '$'.toInt,
+    SpecialChar.LaTeX.start -> '&'.toInt,
+    SpecialChar.LaTeX.end -> '&'.toInt,
     SpecialChar.Link.start -> '['.toInt,
     SpecialChar.Link.end -> ']'.toInt,
+
     SpecialChar.Emphasis.start -> '*'.toInt,
     SpecialChar.Emphasis.end -> '*'.toInt
   )

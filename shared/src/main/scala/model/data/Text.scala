@@ -189,10 +189,10 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Formatted with AtomicSelected {
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with AtomicSelected {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
-    override def content: Seq[Text] = Seq.empty
+    override def content: Unicode = Unicode.empty
   }
 
   sealed trait Coded extends Delimited[Unicode] {

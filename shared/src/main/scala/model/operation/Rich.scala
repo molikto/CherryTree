@@ -22,6 +22,17 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 
 object Rich extends OperationObject[data.Rich, Rich] {
 
+  def wrapAsCoded(a: data.Unicode, r: IntRange, deli: SpecialChar.Delimitation): Rich = {
+    Rich(
+      Seq(
+        Unicode.Insert(r.start, data.Unicode(deli.start).join(a).join(data.Unicode(deli.attributes :+ deli.end))),
+        Unicode.Delete(r.moveBy(r.size + 2 + deli.attributes.size))
+      ), Type.AddDelete)
+  }
+
+
+  def wrap(a: IntRange, d: SpecialChar.Delimitation): operation.Rich = wrapNonOverlappingOrderedRanges(Seq(a), d)
+
   def wrapNonOverlappingOrderedRanges(soc: Seq[IntRange], deli: SpecialChar.Delimitation): operation.Rich = {
     Rich(soc.reverse.map(a => {
       Unicode.Surround(a, data.Unicode(deli.start), data.Unicode(deli.attributes :+ deli.end))
@@ -46,6 +57,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
       Type.Delete
     )
   }
+
 
   def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)), Type.Delete)
 
@@ -79,7 +91,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val rc = r.nextInt(9)
     rc match {
       case 0 =>
-        val randomFormat = SpecialChar.simple(r.nextInt(SpecialChar.simple.size))
+        val randomFormat = SpecialChar.formatLike(r.nextInt(SpecialChar.formatLike.size))
         val range = randomSubrich(d, r)
         Rich(Seq(
           operation.Unicode.Surround(range, randomFormat.startUnicode, randomFormat.endUnicode)), Type.Add)
@@ -105,7 +117,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
         ), Type.Add)
       case 3 =>
         // remove title/image to a subparagraph
-        randomLinked(d, r) match {
+        randomUrlAttributed(d, r) match {
           case Some((a, t)) => Rich(Seq(
             operation.Unicode.Delete(IntRange(t.start - 1, a.until)),
             operation.Unicode.Delete(IntRange(a.start))
@@ -115,7 +127,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
         }
       case 4 =>
         // change title/image url/title
-        randomLinked(d, r) match {
+        randomUrlAttributed(d, r) match {
           case Some((_, t)) => Rich(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextInt().toString))), Type.AddDelete)
           case None => fallback()
         }
@@ -155,17 +167,17 @@ object Rich extends OperationObject[data.Rich, Rich] {
     else randomSubrich(d, r).start
   }
 
-  private def randomLinked(d: data.Rich, r: Random): Option[(IntRange, IntRange)] = {
+  private def randomUrlAttributed(d: data.Rich, r: Random): Option[(IntRange, IntRange)] = {
     val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.linked.exists(j => a._1.isSpecialChar(j.start))
+      case InfoType.Special => SpecialChar.urlAttributed.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {
       None
     } else {
       val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Formatted]
+      val text = t._1.text.asInstanceOf[data.Text.Delimited[Any]]
       val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
       val urlStart = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes.head)).get._2 + 1
       val urlEnd = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes(1))).get._2
@@ -176,14 +188,14 @@ object Rich extends OperationObject[data.Rich, Rich] {
   private def randomFormatted(d: data.Rich, r: Random): Option[IntRange] = {
     val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.simple.exists(j => a._1.isSpecialChar(j.start))
+      case InfoType.Special => SpecialChar.formatLike.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {
       None
     } else {
       val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Formatted]
+      val text = t._1.text.asInstanceOf[data.Text.Delimited[Any]]
       val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor  && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
       Some(IntRange(t._2, end))
     }
@@ -206,34 +218,19 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
 
+
   private def randomSubrich(d: data.Rich, r: Random): IntRange = {
     if (d.size == 0) {
       return IntRange(0, 0)
     }
-    def isValidStart(_1: Info): Boolean = _1.ty match {
-      case InfoType.Plain => true
-      case InfoType.Special => SpecialChar.starts.contains(_1.specialChar)
-      case _ => false
-    }
-
-    def isValidEnd(_1: Info): Boolean = _1.ty match {
-      case InfoType.Plain => true
-      case InfoType.Special => SpecialChar.ends.contains(_1.specialChar)
-      case _ => false
-    }
-
-    val info = d.infos.zipWithIndex
     var i = 0
     while (i < 1000000) {
       i += 1
-      val a = info(r.nextInt(d.size))
-      val b = info(r.nextInt(d.size - a._2) + a._2)
-      if (isValidStart(a._1) && isValidEnd(b._1)) {
-        if (a._1.nodeCursor == b._1.nodeCursor) {
-          return IntRange(a._2, b._2 + 1)
-        } else if (a._1.nodeCursor.dropRight(1) == b._1.nodeCursor.dropRight(1)) {
-          return IntRange(a._2, b._2 + 1)
-        }
+      val a = r.nextInt(d.size)
+      val b = r.nextInt(d.size - a) + a
+      val range = IntRange(a, b + 1)
+      if (d.isSubRich(range))  {
+        return range
       }
     }
     throw new IllegalStateException("Should return before " + d)

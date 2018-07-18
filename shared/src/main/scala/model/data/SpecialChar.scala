@@ -32,9 +32,6 @@ object SpecialChar {
     Delimitation(StrongStart, StrongEnd)
   val StrikeThrough =
     Delimitation(StrikeThroughStart, StrikeThroughEnd)
-  val simple = Seq(
-    Emphasis, Strong, StrikeThrough
-  )
 
 
   val attributes = Seq(UrlAttribute, TitleAttribute)
@@ -43,40 +40,52 @@ object SpecialChar {
     Delimitation(LinkStart, LinkEnd, attributes)
 
   val Image =
-    Delimitation(ImageStart, ImageEnd, attributes)
+    Delimitation(ImageStart, ImageEnd, attributes, isAtomic = true)
 
-  val complexAtomic = Seq(Image)
-
-
-  val complex = Seq(Link)
-
-  val linked = Seq(
-    Link, Image
-  )
 
   val Code =
     Delimitation(CodeStart, CodeEnd)
 
   val LaTeX =
-    Delimitation(LaTeXStart, LaTeXEnd)
+    Delimitation(LaTeXStart, LaTeXEnd, isAtomic = true)
+
+  /**
+    */
+  val formatLike = Seq(
+    Emphasis, Strong, StrikeThrough
+  )
+
+  val linkLike = Seq(Link)
+
+  val imageLike = Seq(Image)
+
+
+  val latexLike = Seq(LaTeX)
+
+  val codeLike = Seq(Code)
+
+
+  val urlAttributed = Seq(
+    Link, Image
+  )
 
   val coded = Seq(Code, LaTeX)
 
-  val all: Seq[Delimitation] = coded ++ simple ++ linked
+  val all: Seq[Delimitation] = coded ++ formatLike ++ urlAttributed
 
-  val splittableOrdered: Seq[Delimitation] = simple ++ linked
-  val nonSplittableOrdered: Seq[Delimitation] = linked
+  val breakOthersOrdered: Seq[Delimitation] = formatLike ++ linkLike
+  val noBreakeeOrdered: Seq[Delimitation] = linkLike
   //** from inner to outer
   // also inner splits
-  val surroundStartCodeInToOut: Seq[Unicode] = (simple ++ complex).map(a => a.startUnicode)
-  val surroundStartCodeNotSplit: Seq[Unicode] = complex.map(a => a.startUnicode)
+  val breakOthersOrderedUnicode: Seq[Unicode] = breakOthersOrdered.map(a => a.startUnicode)
+  val noBreakeeOrderedUnicode: Seq[Unicode] = noBreakeeOrdered.map(a => a.startUnicode)
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
 
   val startsEnds: Seq[SpecialChar] = starts ++ ends
 
-  case class Delimitation(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty) {
+  case class Delimitation(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty, isAtomic: Boolean = false) {
     private[model] def startUnicode = Unicode(start)
     private[model] def endUnicode = Unicode(end)
   }

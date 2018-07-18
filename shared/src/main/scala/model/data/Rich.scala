@@ -201,6 +201,31 @@ case class Rich(text: Seq[Text]) {
     case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(a.unicode.size - 1).moveBy(size - a.size) // because plain cannot be empty
     case None => IntRange(0, 0)
   }
+
+  def isSubRich(range: IntRange): Boolean = {
+    if (range.size == 0) return true
+    def isValidStart(_1: Info): Boolean = _1.ty match {
+      case InfoType.Plain => true
+      case InfoType.Special => SpecialChar.starts.contains(_1.specialChar)
+      case _ => false
+    }
+
+    def isValidEnd(_1: Info): Boolean = _1.ty match {
+      case InfoType.Plain => true
+      case InfoType.Special => SpecialChar.ends.contains(_1.specialChar)
+      case _ => false
+    }
+    val a = info(range.start)
+    val b = info(range.until - 1)
+    if (isValidStart(a) && isValidEnd(b)) {
+      if (a.nodeCursor == b.nodeCursor) {
+        return true
+      } else if (a.nodeCursor.dropRight(1) == b.nodeCursor.dropRight(1)) {
+        return true
+      }
+    }
+    false
+  }
 }
 
 object Rich extends DataObject[Rich] {

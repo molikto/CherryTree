@@ -97,6 +97,11 @@ object Unicode extends DataObject[Unicode] {
     Unicode(a.map(apply).mkString)
   }
 
+
+  def ofCodePoints(a: Seq[Int]): Unicode = {
+    Unicode(a.map(apply).mkString)
+  }
+
   def apply(a: Int): Unicode = {
     Unicode(new String(Character.toChars(a)))
   }

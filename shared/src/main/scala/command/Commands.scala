@@ -512,17 +512,76 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
       }
 
-      val simpleWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.simple.map(deli => deli -> new Command {
+      abstract class WrapCommand(deli: SpecialChar.Delimitation) extends Command {
         override def defaultKeys: Seq[KeySeq] = Seq(delimitationCodePoints(deli.start).toChar.toString)
         override def available(a: ClientState): Boolean = a.isRichVisual
+      }
+
+      val formatLikeWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.formatLike.map(deli => deli -> new WrapCommand(deli) {
         override def action(a: ClientState, count: Int): Client.Update = a.asRichVisual match {
           case (cursor, rich, visual) =>
             val r = visual.merged
             val (_, soc, _) = rich.infoAndSingleSpecials(r)
             val remaining = r.minus(soc)
+            val range = (r.start, r.until + remaining.size * (2 + deli.attributes.size) - 1)
+            val fakePoints = if (visual.fix.start <= visual.move.start) {
+                mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
+              } else {
+                mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
+              }
             Client.Update(Seq(operation.Node.Content(cursor,
               operation.Content.Rich(operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli)))),
-              None)
+              Some(a.copyContentMode(fakePoints)))
+        }
+      }).toMap
+
+      /**
+        * code wrap CANNOT use surround!!! because this breaks cursor placement and might insert special char inside code
+        * also we currently only wraps plain text
+        */
+      val codedWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
+        override def action(a: ClientState, count: Int): Client.Update = a.asRichVisual match {
+          case (cursor, rich, visual) =>
+            val r = visual.merged
+            val ifs = rich.info(r)
+            val fakeMode =
+              if (deli.isAtomic) {
+                val p = IntRange(r.start, r.until + 2 + deli.attributes.size)
+                mode.Content.RichVisual(p, p)
+              } else if (visual.fix.start <= visual.move.start) {
+                mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + 1 + deli.attributes.size))
+              } else {
+                mode.Content.RichVisual(IntRange(r.until + 1 + deli.attributes.size), IntRange(r.start))
+              }
+            if (ifs.forall(_.ty == InfoType.Plain)) {
+              Client.Update(Seq(
+                operation.Node.Content(cursor,
+                  operation.Content.Rich(operation.Rich.wrapAsCoded(model.data.Unicode.ofCodePoints(ifs.map(_.char)), r, deli)))),
+                Some(a.copyContentMode(fakeMode)))
+            } else {
+              noUpdate()
+            }
+        }
+      }).toMap
+
+      val linkLikeWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
+        override def action(a: ClientState, count: Int): Client.Update = a.asRichVisual match {
+          case (cursor, rich, visual) =>
+            val r = visual.merged
+            if (rich.isSubRich(r)) {
+              val fakeMode =
+                if (visual.fix.start <= visual.move.start) {
+                  mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + 1 + deli.attributes.size))
+                } else {
+                  mode.Content.RichVisual(IntRange(r.until + 1 + deli.attributes.size), IntRange(r.start))
+                }
+              Client.Update(Seq(
+                operation.Node.Content(cursor,
+                  operation.Content.Rich(operation.Rich.wrap(r, deli)))),
+                Some(a.copyContentMode(fakeMode)))
+            } else {
+              noUpdate()
+            }
         }
       }).toMap
 

@@ -14,6 +14,8 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
+* wrap simple range
+* wrap link
 * available commands panel
 * smart styling
 * single edit commands
