@@ -18,7 +18,6 @@ import util._
 import model._
 import model.data.{SpecialChar, Unicode}
 import command._
-import command.Key.KeySeq
 import monix.reactive.subjects.PublishSubject
 
 
@@ -258,9 +257,9 @@ class Client(
   }
 
 
-  def act(command: Command): Unit = {
+  def act(command: Command, count: Int): Unit = {
     flush()
-    change(command.action(state))
+    change(command.action(state, count))
   }
 
 
@@ -325,7 +324,7 @@ class Client(
     SpecialChar.Emphasis -> Unicode("*")
   )
 
-  override def additionalKeyMaps: Map[String, Seq[KeySeq]] = Map.empty
+  override def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 
-  override def removedDefaultKeyMaps: Map[String, Seq[KeySeq]] = Map.empty
+  override def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 }

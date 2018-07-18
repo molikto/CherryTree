@@ -33,5 +33,4 @@ package object util extends ObservablePropertyImplicits  {
       (b, a)
     }
   }
-
 }

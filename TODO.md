@@ -14,7 +14,7 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* key sequence: dd
+* repeatable: test if find works ok
 * visual delete
 * single edit commands
 * code mirror!!!
@@ -102,3 +102,4 @@
 * ~~visual mode~~
 * ~~node visual~~
 * ~~visual delete~~
+* ~~key sequence: dd~~

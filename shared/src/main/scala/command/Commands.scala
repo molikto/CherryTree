@@ -10,7 +10,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 import Key._
 import monix.reactive.subjects.PublishSubject
-import org.scalajs.dom.raw.KeyboardEvent
 import util.ObservableProperty
 
 // comments from quickref.txt  For Vim version 8.1.  Last change: 2018 Apr 18
@@ -27,24 +26,43 @@ abstract class Command {
 
   def available(a: ClientState): Boolean
 
-  def action(a: ClientState): Client.Update
+  def action(a: ClientState, count: Int): Client.Update
 
   def waitingForGrapheme: Boolean = false
-  def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = throw new NotImplementedError()
+  def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = throw new NotImplementedError()
 }
 
 trait Commands { self: Client =>
 
-  // LATER updatable keymap
-  private val keyToCommand: Map[Key, Seq[Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
 
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[Command]
+  private val commands_ = new ArrayBuffer[Command]()
+  private var waitingForCharCommand: (Command, Int) = null
+
+  private var commandCounts: Int = 1
+
+
+  {
+    var ignored: Command = Command.RichMotion.toNextChar
+    ignored = Command.EnterRichInsert.appendAtCursor
+    ignored = Command.NodeMotion.up
+    ignored = Command.OpenAndEnterRichInsert.openAbove
+    ignored = Command.RichVisual.enter
+    ignored = Command.NodeVisual.enter
+    ignored = Command.exit
+    ignored = Command.Delete.deleteAfterVisual
+    ignored = Command.RichInsertModeEdits.backspace
+  }
+  // LATER updatable keymap
+  private val keyToCommand: Map[Key, Seq[Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
 
   /**
     * return false if no command is exec and not waiting
     */
   def tryDoCommandExact(): Boolean = {
+    println(commandPartConfirmed)
+    println(commandsToConfirm.map(_.keys))
     val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state))
     if (availableCommands.isEmpty) {
       commandPartConfirmed = Seq.empty
@@ -55,7 +73,11 @@ trait Commands { self: Client =>
       if (exacts.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
       exacts.headOption match {
         case Some(exact) =>
-          act(exact)
+          commandsToConfirm = Seq.empty
+          commandPartConfirmed = Seq.empty
+          val c = commandCounts
+          commandCounts = 1
+          act(exact, c)
         case None =>
           commandsToConfirm = availableCommands
       }
@@ -89,7 +111,11 @@ trait Commands { self: Client =>
         // some keys we MUST keep
         doCommand()
       } else {
-        doCommand()
+        key.a match {
+          case Key.Grapheme(a) if a.isDigit => commandCounts = commandCounts * 10 + a.asDigit
+          case _ =>
+            doCommand()
+        }
         true
       }
     }
@@ -109,15 +135,11 @@ trait Commands { self: Client =>
   def additionalKeyMaps: Map[String, Seq[KeySeq]]
   def removedDefaultKeyMaps: Map[String, Seq[KeySeq]]
 
-  private val commands_ = new ArrayBuffer[Command]()
-
-  private var waitingForCharCommand: Command = null
-
   def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
 
   def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
     if (waitingForCharCommand != null) {
-      if (!waitingForCharCommand.available(state)) {
+      if (!waitingForCharCommand._1.available(state)) {
         clearWaitingForGraphemeCommand()
       }
     }
@@ -125,7 +147,7 @@ trait Commands { self: Client =>
 
   def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
     if (waitingForCharCommand != null) {
-      val res = waitingForCharCommand.actionOnGrapheme(state, a)
+      val res = waitingForCharCommand._1.actionOnGrapheme(state, a, waitingForCharCommand._2)
       waitingForCharCommand = null
       res
     } else {
@@ -153,7 +175,7 @@ trait Commands { self: Client =>
       override def defaultKeys: Seq[KeySeq] = Seq(Escape, Control + "c", Control + "[")
       override def available(a: ClientState): Boolean = true
 
-      override def action(a: ClientState): Client.Update = {
+      override def action(a: ClientState, ignore: Int): Client.Update = {
         a.mode match {
           case Some(m) =>
             m match {
@@ -200,11 +222,12 @@ trait Commands { self: Client =>
 
         def move(content: model.data.Rich, a: IntRange): IntRange
 
-        final override def action(a: ClientState): Client.Update = {
+        final override def action(a: ClientState, count: Int): Client.Update = {
           val (_, content, m) = a.asRichNormalOrVisual
+          def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr) }
           m match {
-            case mode.Content.RichNormal(r) => modeUpdate(a.copyContentMode(mode.Content.RichNormal(move(content, r))))
-            case mode.Content.RichVisual(fix, k) => modeUpdate(a.copyContentMode(mode.Content.RichVisual(fix, move(content, k))))
+            case mode.Content.RichNormal(r) => modeUpdate(a.copyContentMode(mode.Content.RichNormal(act(r))))
+            case mode.Content.RichVisual(fix, k) => modeUpdate(a.copyContentMode(mode.Content.RichVisual(fix, act(k))))
           }
         }
       }
@@ -248,8 +271,8 @@ trait Commands { self: Client =>
 
         def reverse: FindCommand
 
-        override def action(a: ClientState): Client.Update = {
-          waitingForCharCommand = this
+        override def action(a: ClientState, count: Int): Client.Update = {
+          waitingForCharCommand = (this, count)
           noUpdate()
         }
 
@@ -271,18 +294,21 @@ trait Commands { self: Client =>
           }
         }
 
-        def findGrapheme(a: ClientState, char: Grapheme, skipCurrent: Boolean): Client.Update = {
+        def findGrapheme(a: ClientState, char: Grapheme, count: Int, skipCurrent: Boolean): Client.Update = {
           val (_, content, mm) = a.asRichNormalOrVisual
+          def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, _) =>
+            r.flatMap(rr => moveSkip(content, rr, char, skipCurrent))
+          }
           mm match {
             case mode.Content.RichNormal(r) =>
-              moveSkip(content, r, char, skipCurrent) match {
+              act(r) match {
                 case Some(move) =>
                   modeUpdate(a.copyContentMode(mode.Content.RichNormal(move)))
                 case None =>
                   noUpdate()
               }
             case mode.Content.RichVisual(fix, m) =>
-              moveSkip(content, m, char, skipCurrent) match {
+              act(m) match {
                 case Some(move) =>
                   modeUpdate(a.copyContentMode( mode.Content.RichVisual(fix, move)))
                 case None =>
@@ -291,10 +317,10 @@ trait Commands { self: Client =>
           }
         }
 
-        final override def actionOnGrapheme(a: ClientState, char: Grapheme): Client.Update = {
+        final override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
           lastFindCommand = this
           lastFindCommandArgument = char
-          findGrapheme(a, char, skipCurrent = false)
+          findGrapheme(a, char, count, skipCurrent = false)
         }
       }
 
@@ -326,16 +352,16 @@ trait Commands { self: Client =>
       val repeatFind: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override def defaultKeys: Seq[KeySeq] = Seq(";")
-        override def action(a: ClientState): Client.Update = {
-          lastFindCommand.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
+        override def action(a: ClientState, count: Int): Client.Update = {
+          lastFindCommand.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
         override def repeatable: Boolean = true
       }
       val repeatFindOppositeDirection: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override def defaultKeys: Seq[KeySeq] = Seq(",")
-        override def action(a: ClientState): Client.Update = {
-          lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, skipCurrent = true)
+        override def action(a: ClientState, count: Int): Client.Update = {
+          lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
         override def repeatable: Boolean = true
       }
@@ -417,17 +443,20 @@ trait Commands { self: Client =>
           case None => false
         }
 
-        final override def action(a: ClientState): Client.Update = Client.Update(Seq.empty, Some(a.mode match {
-          case Some(m) => m match {
-            case v@model.mode.Node.Visual(_, mm) => v.copy(move = move(a, mm).getOrElse(mm))
-            case kkk@model.mode.Node.Content(n, cc) => cc match {
-              case _: model.mode.Content.Normal =>
-                model.data.Node.defaultNormalMode(a.node, move(a, n).getOrElse(n))
-              case _ => throw new MatchError("Not allowed")
+        final override def action(a: ClientState, count: Int): Client.Update = {
+          def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
+          Client.Update(Seq.empty, Some(a.mode match {
+            case Some(m) => m match {
+              case v@model.mode.Node.Visual(_, mm) => v.copy(move = act(mm))
+              case kkk@model.mode.Node.Content(n, cc) => cc match {
+                case _: model.mode.Content.Normal =>
+                  model.data.Node.defaultNormalMode(a.node, act(n))
+                case _ => throw new MatchError("Not allowed")
+              }
             }
-          }
-          case None => throw new MatchError("Not allowed")
-        }))
+            case None => throw new MatchError("Not allowed")
+          }))
+        }
       }
       val up: Command = new NodeMotionCommand {
          // DIFFERENCE we always go to first char now
@@ -454,7 +483,6 @@ trait Commands { self: Client =>
       val visibleBeginning: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[KeySeq] = Seq("gg")
         override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
-
       }
       val visibleEnd: Command = new NodeMotionCommand {
         override def defaultKeys: Seq[KeySeq] = Seq("G")
@@ -476,7 +504,7 @@ trait Commands { self: Client =>
       val enter: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("v")
         override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
-        override def action(a: ClientState): Client.Update = {
+        override def action(a: ClientState, count: Int): Client.Update = {
           val (_, rich, m) = a.asRichNormalOrVisual
           m match {
             case model.mode.Content.RichNormal(r) =>
@@ -494,7 +522,7 @@ trait Commands { self: Client =>
       val swap: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isRichVisual
-        override def action(a: ClientState): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
+        override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
       }
     }
 
@@ -514,7 +542,7 @@ trait Commands { self: Client =>
           }
           case None => false
         }
-        override def action(a: ClientState): Client.Update = a.mode match {
+        override def action(a: ClientState, count: Int): Client.Update = a.mode match {
           case Some(m) => m match {
             case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
               modeUpdate(mode.Node.Visual(at, at))
@@ -528,7 +556,7 @@ trait Commands { self: Client =>
       val swap: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNodeVisual
-        override def action(a: ClientState): Client.Update = modeUpdate(a.asNodeVisual.swap)
+        override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.asNodeVisual.swap)
       }
     }
 
@@ -540,7 +568,7 @@ trait Commands { self: Client =>
         override def repeatable: Boolean = true
         override def defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNormal
-        override def action(a: ClientState): Client.Update = {
+        override def action(a: ClientState, count: Int): Client.Update = {
           val pos = a.asNormal
           val mover = a.mover()
           val insertionPoint = if (pos == cursor.Node.root) {
@@ -558,7 +586,7 @@ trait Commands { self: Client =>
         override def repeatable: Boolean = true
         override def defaultKeys: Seq[KeySeq] = Seq("O")
         override def available(a: ClientState): Boolean = a.isNormal
-        override def action(a: ClientState): Client.Update = {
+        override def action(a: ClientState, count: Int): Client.Update = {
           val pos = a.asNormal
           if (pos == cursor.Node.root) {
             // LATER wrap?
@@ -586,7 +614,7 @@ trait Commands { self: Client =>
 
         override def available(a: ClientState): Boolean = a.isRichNormal
 
-        override def action(a: ClientState): Client.Update =  {
+        override def action(a: ClientState, count: Int): Client.Update =  {
           val (content, normal) = a.asRichNormal
           modeUpdate(a.copyContentMode(model.mode.Content.RichInsert(move(
             content, normal.range))))
@@ -626,7 +654,7 @@ trait Commands { self: Client =>
           case _ => false
         }
 
-        override def action(a: ClientState): Client.Update = {
+        override def action(a: ClientState, count: Int): Client.Update = {
           val (n, content, insert) = a.asRichInsert
           val res = edit(content, insert.pos).map(k => {
             Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
@@ -692,7 +720,7 @@ trait Commands { self: Client =>
       val deleteAfterVisual: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("d")
         override def available(a: ClientState): Boolean = a.isVisual
-        override def action(a: ClientState): Client.Update = a.mode match {
+        override def action(a: ClientState, count: Int): Client.Update = a.mode match {
           case Some(model.mode.Node.Visual(fix , move)) =>
             cursor.Node.minimalRange(fix, move).map(r =>
               Client.Update(Seq(operation.Node.Delete(r)), {
@@ -710,11 +738,6 @@ trait Commands { self: Client =>
             ???
           case _ => throw new IllegalArgumentException("Invalid command")
         }
-      }
-      abstract class RichDeleteCommand extends Command {
-        override def available(a: ClientState): Boolean = ???
-
-        override def action(a: ClientState): Client.Update = ???
       }
     }
 
@@ -826,17 +849,4 @@ trait Commands { self: Client =>
   //:r!      :r! {command}   insert the standard output of {command} below the
   //                              cursor
 
-
-
-  {
-    var ignored: Command = Command.RichMotion.toNextChar
-    ignored = Command.EnterRichInsert.appendAtCursor
-    ignored = Command.NodeMotion.up
-    ignored = Command.OpenAndEnterRichInsert.openAbove
-    ignored = Command.RichVisual.enter
-    ignored = Command.NodeVisual.enter
-    ignored = Command.exit
-    ignored = Command.Delete.deleteAfterVisual
-    ignored = Command.RichInsertModeEdits.backspace
-  }
 }

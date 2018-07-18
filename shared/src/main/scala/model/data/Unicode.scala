@@ -196,4 +196,8 @@ case class Unicode(private var str: String) {
     val s = slice(r)
     delete(r).insert(r.transformAfterDeleted(at).get, s)
   }
+
+  val isDigit: Boolean = str.length == 1 && Character.isDigit(str.charAt(0))
+
+  def asDigit: Int = str.toInt
 }
