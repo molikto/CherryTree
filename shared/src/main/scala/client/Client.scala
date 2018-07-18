@@ -266,9 +266,9 @@ class Client(
   }
 
 
-  def act(command: command.Command, count: Int): Unit = {
+  def act(c: command.Command, count: Int): Unit = {
     flush()
-    change(command.action(state, count))
+    change(c.action(state, count))
   }
 
 

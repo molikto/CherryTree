@@ -312,7 +312,7 @@ trait Commands { self: Client =>
       // not implemented...??? because it is hard to make columns in a rich text editor
       // bar   N  |            to column N (default: 1)
 
-      abstract class FindCommand extends SideEffectingCommand {
+      abstract class FindCommand extends MotionCommand with SideEffectingCommand {
 
         def reverse: FindCommand
 
