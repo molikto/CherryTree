@@ -4,6 +4,8 @@ package model.ot
 import boopickle.Pickler
 import model._
 import com.softwaremill.quicklens._
+import model.conflict.Node
+import model.operation.Node
 import model.range.IntRange
 
 import scala.util.Random
@@ -12,8 +14,19 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
 
   type RebaseResult = Rebased[conflict.Node, (Seq[operation.Node], Seq[operation.Node])]
 
+
   // LATER handle move
   override def rebase(winner: operation.Node, loser: operation.Node): RebaseResult = {
+
+    def insertMove(i: operation.Node.Insert, d: operation.Node.Move): RebaseResult = {
+      ???
+    }
+    def deleteMove(w: operation.Node.Delete, m: operation.Node.Move, deleteConflict : => conflict.Node): RebaseResult = {
+      // the location that moves to is deleted
+      // the original is deleted / partially deleted
+      // we don't affect each other
+      ???
+    }
     def insertDelete(i: operation.Node.Insert, d: operation.Node.Delete, deleteConflict : => conflict.Node): RebaseResult = {
       if (d.r.sameParent(i.at)) {
         val at = i.at.last
@@ -70,8 +83,8 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               case Some(p) => free(w.copy(at = p), loser)
               case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (Seq.empty, Seq(loser)))
             }
-          case operation.Node.Move(lr, la) =>
-            ???
+          case m@operation.Node.Move(lr, la) =>
+            free(w.copy(at = lr.transformNodeAfterMoved(la, wc)), m)
         }
       case w@operation.Node.Replace(wc, _) =>
         loser match {
@@ -94,8 +107,8 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               case Some(p) => free(w.copy(at = p), loser)
               case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (Seq.empty, Seq(loser)))
             }
-          case operation.Node.Move(lr, la) =>
-            ???
+          case m@operation.Node.Move(lr, la) =>
+            free(w.copy(at = lr.transformNodeAfterMoved(la, wc)), m)
         }
       case w@operation.Node.Insert(wc, wcs) =>
         loser match {
@@ -111,8 +124,8 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             }
           case d@operation.Node.Delete(_) =>
             insertDelete(w, d, conflict.Node.LoserDeletesWinner())
-          case operation.Node.Move(lr, la) =>
-            ???
+          case m@operation.Node.Move(_, _) =>
+            insertMove(w, m)
         }
       case d@operation.Node.Delete(wr) =>
         loser match {
@@ -132,19 +145,19 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             val wp = lr.transformDeletingRangeAfterDeleted(wr).map(operation.Node.Delete).toSeq
             val lp = wr.transformDeletingRangeAfterDeleted(lr).map(operation.Node.Delete).toSeq
             Rebased(Set.empty, (wp, lp))
-          case operation.Node.Move(lr, la) =>
-            ???
+          case m@operation.Node.Move(_, _) =>
+            deleteMove(d, m, conflict.Node.WinnerDeletesLoser())
         }
-      case operation.Node.Move(wr, wa) =>
+      case w@operation.Node.Move(wr, wa) =>
         loser match {
-          case operation.Node.Content(lc, lo) =>
-            ???
-          case operation.Node.Replace(lc, lo) =>
-            ???
-          case operation.Node.Insert(lc, lcs) =>
-            ???
-          case operation.Node.Delete(lr) =>
-            ???
+          case l@operation.Node.Content(lc, lo) =>
+            free(w, l.copy(at = wr.transformNodeAfterMoved(wa, lc)))
+          case l@operation.Node.Replace(lc, lo) =>
+            free(w, l.copy(at = wr.transformNodeAfterMoved(wa, lc)))
+          case i@operation.Node.Insert(lc, lcs) =>
+            reverse(insertMove(i, w))
+          case d@operation.Node.Delete(_) =>
+            reverse(deleteMove(d, w, conflict.Node.LoserDeletesWinner()))
           case operation.Node.Move(lr, la) =>
             ???
         }

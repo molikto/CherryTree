@@ -39,6 +39,12 @@ object Client {
     transaction: model.transaction.Node,
     mode: Option[model.mode.Node],
     viewUpdated: Boolean = false)
+
+  sealed trait ViewMessage {
+  }
+  object ViewMessage {
+    case class VisitUrl(url: String) extends ViewMessage
+  }
 }
 
 class Client(
@@ -57,6 +63,9 @@ class Client(
 
   val errors: ObservableProperty[Option[Throwable]] = ObservableProperty(None)
 
+  protected val viewMessages_ : PublishSubject[Client.ViewMessage] = PublishSubject()
+
+  def viewMessages: Observable[Client.ViewMessage] = viewMessages_
 
   private var subscription: Cancelable = null
 
@@ -257,7 +266,7 @@ class Client(
   }
 
 
-  def act(command: Command, count: Int): Unit = {
+  def act(command: command.Command, count: Int): Unit = {
     flush()
     change(command.action(state, count))
   }

@@ -14,7 +14,9 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* save content
+* easy motion
+* rebase move
+* node type
 * available commands panel
 * single edit commands
 * copy paste
@@ -27,7 +29,7 @@
 * clicking
 * drag drop
 * search and replace
-* line motions??? they are actually pretty useful???
+* line motions? they are actually pretty useful?
 
 ## server
 
@@ -109,3 +111,5 @@
 * ~~wrap simple range~~
 * ~~wrap link~~
 * ~~smart styling~~
+* ~~temp save content~~
+* ~~tab~~

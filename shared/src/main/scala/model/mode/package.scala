@@ -16,7 +16,9 @@ package object mode {
     sealed trait Normal extends NormalOrVisual
 
     sealed abstract class RichNormalOrVisual extends Rich with NormalOrVisual {
+      def copyWithNewFocus(range: IntRange): RichNormalOrVisual
 
+      def focus: IntRange
     }
     case class RichInsert(pos: Int) extends Rich {
     }
@@ -31,10 +33,15 @@ package object mode {
     case class RichNormal(range: IntRange) extends RichNormalOrVisual with Normal {
       assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
+
+      override def focus: IntRange = range
+      override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
       def swap: RichVisual = RichVisual(move, fix)
       def merged: IntRange = fix.merge(move)
+      override def focus: IntRange = move
+      override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
     }
 
 
@@ -48,6 +55,8 @@ package object mode {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node {
+      def minimalRange: Option[range.Node] = cursor.Node.minimalRange(fix, move)
+
       def swap: Visual = Visual(move, fix)
     }
 

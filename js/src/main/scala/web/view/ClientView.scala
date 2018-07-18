@@ -1,6 +1,7 @@
 package web.view
 
 import client.Client
+import command.Key.KeySeq
 import command.{Commands, Key}
 import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
@@ -281,6 +282,10 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   }
 
   {
+    defer(client.viewMessages.doOnNext {
+      case Client.ViewMessage.VisitUrl(url) =>
+        window.open(url)
+    }.subscribe())
     defer(client.stateUpdates.doOnNext(update => {
       for (t <- update.transaction) {
         t match {
@@ -412,4 +417,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   event("drop", (a: DragEvent) => {
     a.preventDefault()
   })
+
+
 }

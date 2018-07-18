@@ -1,13 +1,15 @@
 package command
 
+import java.net.URL
+
 import api.ClientUpdate
 import client.Client
 import model.data.{apply => _, _}
 import model.range.IntRange
-import model.{ClientState, cursor, mode, operation}
+import model.{ClientState, cursor, mode, operation, range}
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
+import scala.util.{Success, Try}
 import Key._
 import monix.reactive.subjects.PublishSubject
 import util.ObservableProperty
@@ -45,8 +47,8 @@ trait Commands { self: Client =>
 
 
   private var commandPartConfirmed: KeySeq = Seq.empty
-  private var commandsToConfirm = Seq.empty[Command]
-  private var waitingForCharCommand: (Command, Int) = null
+  private var commandsToConfirm = Seq.empty[command.Command]
+  private var waitingForCharCommand: (command.Command, Int) = null
 
   private var commandCounts: String = ""
   def commandCountsText: String = commandCounts
@@ -60,7 +62,9 @@ trait Commands { self: Client =>
     }
   }
 
-  private val commands_ = new ArrayBuffer[Command]()
+  private val commands_ = new ArrayBuffer[command.Command]()
+
+  def registerCommand(c: command.Command): Unit = commands_.append(c)
 
   {
     var ignored: Command = Command.RichMotion.toNextChar
@@ -72,9 +76,10 @@ trait Commands { self: Client =>
     ignored = Command.exit
     ignored = Command.Delete.deleteAfterVisual
     ignored = Command.RichInsertModeEdits.backspace
+    ignored = Command.NodeMove.tab
   }
   // LATER updatable keymap
-  private val keyToCommand: Map[Key, Seq[Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
+  private val keyToCommand: Map[Key, Seq[command.Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
 
   /**
     * return false if no command is exec and not waiting
@@ -170,12 +175,11 @@ trait Commands { self: Client =>
   private var lastFindCommand: Command.RichMotion.FindCommand = null
   private var lastFindCommandArgument: Grapheme = null
 
-  def commands: Seq[Command] = commands_
+  def commands: Seq[command.Command] = commands_
 
 
   abstract class Command extends command.Command {
-
-    commands_.append(this)
+    registerCommand(this)
   }
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
@@ -187,12 +191,16 @@ trait Commands { self: Client =>
 
   object Command {
 
-    val exit: Command = new Command {
+    // LATER commands that modify Commands state, currently only a mark, we might need to do something in the future
+    // our action is always imm applied now, so we have no problem
+    trait SideEffectingCommand extends Command  {
+
+    }
+    val exit: Command = new SideEffectingCommand {
       override val defaultKeys: Seq[KeySeq] = Seq(Escape, Control + "c", Control + "[")
       override def available(a: ClientState): Boolean = true
 
       override def action(a: ClientState, ignore: Int): Client.Update = {
-        // LATER is this good? modify state on the go???
         commandCounts = ""
         commandsToConfirm = Seq.empty
         commandPartConfirmed = Seq.empty
@@ -230,6 +238,27 @@ trait Commands { self: Client =>
       }
     }
 
+
+    val visitUrl: SideEffectingCommand = new SideEffectingCommand {
+      override def defaultKeys: Seq[KeySeq] = Seq("gx")
+
+      override def available(a: ClientState): Boolean = a.isRichNormalOrVisual && {
+        val (_, rich, nv) = a.asRichNormalOrVisual
+        val t = rich.info(nv.focus.start).text
+        t.isInstanceOf[model.data.Text.Delimited[Any]] && t.asInstanceOf[model.data.Text.Delimited[Any]].delimitation.attributes.contains(model.data.UrlAttribute)
+      }
+
+      override def action(a: ClientState, count: Int): Client.Update = {
+        val (_, rich, nv) = a.asRichNormalOrVisual
+        val t = rich.info(nv.focus.start).text
+        val url = t.asInstanceOf[model.data.Text.Delimited[Any]].attribute(model.data.UrlAttribute).toString
+        Try {new URL(url)} match {
+          case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))
+        }
+        noUpdate()
+      }
+    }
+
     abstract class MotionCommand extends Command {
       override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
     }
@@ -246,10 +275,7 @@ trait Commands { self: Client =>
         final override def action(a: ClientState, count: Int): Client.Update = {
           val (_, content, m) = a.asRichNormalOrVisual
           def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr) }
-          m match {
-            case mode.Content.RichNormal(r) => modeUpdate(a.copyContentMode(mode.Content.RichNormal(act(r))))
-            case mode.Content.RichVisual(fix, k) => modeUpdate(a.copyContentMode(mode.Content.RichVisual(fix, act(k))))
-          }
+          modeUpdate(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
         }
       }
 
@@ -286,7 +312,7 @@ trait Commands { self: Client =>
       // not implemented...??? because it is hard to make columns in a rich text editor
       // bar   N  |            to column N (default: 1)
 
-      abstract class FindCommand extends MotionCommand {
+      abstract class FindCommand extends SideEffectingCommand {
 
         def reverse: FindCommand
 
@@ -317,21 +343,11 @@ trait Commands { self: Client =>
           def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
             r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
           }
-          mm match {
-            case mode.Content.RichNormal(r) =>
-              act(r) match {
-                case Some(move) =>
-                  modeUpdate(a.copyContentMode(mode.Content.RichNormal(move)))
-                case None =>
-                  noUpdate()
-              }
-            case mode.Content.RichVisual(fix, m) =>
-              act(m) match {
-                case Some(move) =>
-                  modeUpdate(a.copyContentMode( mode.Content.RichVisual(fix, move)))
-                case None =>
-                  noUpdate()
-              }
+          act(mm.focus) match {
+            case Some(move) =>
+              modeUpdate(a.copyContentMode(mm.copyWithNewFocus(move)))
+            case None =>
+              noUpdate()
           }
         }
 
@@ -382,8 +398,10 @@ trait Commands { self: Client =>
         }
       }
 
+
+
       /**
-        * LATER
+        * TODO
         * w     N  w            N words forward
         * W     N  W            N blank-separated WORDs forward
         * e     N  e            forward to the end of the Nth word
@@ -844,6 +862,24 @@ trait Commands { self: Client =>
       //                                     restore indent in next line
     }
 
+    object NodeMove {
+
+      val tab: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq(Tab)
+        override def available(a: ClientState): Boolean = a.isNodeVisual || a.isNormal
+
+        def move(node: Option[range.Node]): Option[operation.Node.Move] = ???
+
+        override def action(a: ClientState, count: Int): Client.Update = {
+          Client.Update((if (a.isNormal) {
+            move(Some(range.Node(a.asNormal._1)))
+          } else {
+            move(a.asNodeVisual.minimalRange)
+          }).toSeq, None)
+        }
+      }
+    }
+
     object Delete {
       // LATER
       // J     N  J            join N-1 lines (delete <EOL>s)
@@ -906,8 +942,8 @@ trait Commands { self: Client =>
         override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
         override def available(a: ClientState): Boolean = a.isVisual
         override def action(a: ClientState, count: Int): Client.Update = a.mode match {
-          case Some(model.mode.Node.Visual(fix , move)) =>
-            cursor.Node.minimalRange(fix, move).map(r => deleteNodeRange(a, r)).getOrElse(noUpdate())
+          case Some(v@model.mode.Node.Visual(_, _)) =>
+            v.minimalRange.map(r => deleteNodeRange(a, r)).getOrElse(noUpdate())
           case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
             deleteRichNormalRange(a, pos, v.merged)
           case _ => throw new IllegalArgumentException("Invalid command")

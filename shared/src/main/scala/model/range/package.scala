@@ -1,5 +1,7 @@
 package model
 
+import model.ot.Node.RebaseResult
+
 package object range {
 
 
@@ -121,6 +123,21 @@ package object range {
     */
   case class Node(parent: cursor.Node,
     childs: IntRange) extends Iterable[cursor.Node] {
+
+
+    def transformNodeAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
+      if (contains(a)) {
+        (to.dropRight(1) :+ (to.last + (a(parent.size) - childs.start))) ++ a.drop(parent.size + 1)
+      } else {
+        cursor.Node.transformAfterInserted(transformAfterDeleted(to).get, childs.size, transformAfterDeleted(a).get)
+      }
+    }
+
+    // move don't affect insert cursors before it, it is also inserted BEFORE the target insertion cursor
+    def transformInsertionPointAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
+      ???
+    }
+
 
     def start: cursor.Node = parent :+ childs.start
     def until: cursor.Node = parent :+ childs.until

@@ -46,7 +46,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   private var insertNonEmptyTextLength: Int = 0
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
-  private var previousMode = if (isEmpty) 3 else 2
+  private var previousMode = -1
 
   private def initDom(): Unit = {
     if (dom.childNodes.length == 0) {

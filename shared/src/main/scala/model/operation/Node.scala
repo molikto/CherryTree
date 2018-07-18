@@ -74,11 +74,15 @@ object Node extends OperationObject[data.Node, Node] {
         }
     }
   }
-  case class Move(r: range.Node, at: cursor.Node) extends Node {
+  case class Move(r: range.Node, to: cursor.Node) extends Node {
+    assert(!r.contains(to))
     override def ty: Type = Type.Structural
-    override def apply(d: data.Node): data.Node = d.move(r, at)
+    override def apply(d: data.Node): data.Node = d.move(r, to)
 
-    override def transform(a: mode.Node): Option[mode.Node] = ???
+    override def transform(a: mode.Node): Option[mode.Node] = Some(a match {
+      case mode.Node.Visual(fix, move) => mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(move, fix))
+      case mode.Node.Content(node, b) => mode.Node.Content(r.transformNodeAfterMoved(to, node), b)
+    })
   }
 
   override val pickler: Pickler[Node] = new Pickler[Node] {
