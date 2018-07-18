@@ -32,9 +32,10 @@ object SpecialChar {
     Delimitation(StrongStart, StrongEnd)
   val StrikeThrough =
     Delimitation(StrikeThroughStart, StrikeThroughEnd)
-  val formatted = Seq(
+  val simple = Seq(
     Emphasis, Strong, StrikeThrough
   )
+
 
   val attributes = Seq(UrlAttribute, TitleAttribute)
 
@@ -43,6 +44,11 @@ object SpecialChar {
 
   val Image =
     Delimitation(ImageStart, ImageEnd, attributes)
+
+  val complexAtomic = Seq(Image)
+
+
+  val complex = Seq(Link)
 
   val linked = Seq(
     Link, Image
@@ -56,14 +62,14 @@ object SpecialChar {
 
   val coded = Seq(Code, LaTeX)
 
-  val all: Seq[Delimitation] = coded ++ formatted ++ linked
+  val all: Seq[Delimitation] = coded ++ simple ++ linked
 
-  val splittableOrdered: Seq[Delimitation] = formatted ++ linked
+  val splittableOrdered: Seq[Delimitation] = simple ++ linked
   val nonSplittableOrdered: Seq[Delimitation] = linked
   //** from inner to outer
   // also inner splits
-  val surroundStartCodeInToOut: Seq[Unicode] = splittableOrdered.map(a => a.startUnicode)
-  val surroundStartCodeNotSplit: Seq[Unicode] = nonSplittableOrdered.map(a => a.startUnicode)
+  val surroundStartCodeInToOut: Seq[Unicode] = (simple ++ complex).map(a => a.startUnicode)
+  val surroundStartCodeNotSplit: Seq[Unicode] = complex.map(a => a.startUnicode)
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)

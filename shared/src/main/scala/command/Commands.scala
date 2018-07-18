@@ -132,15 +132,6 @@ trait Commands { self: Client =>
   private def noUpdate(): Client.Update = Client.Update(Seq.empty, None)
   private def modeUpdate(a: mode.Node) = Client.Update(Seq.empty, Some(a))
 
-  /**
-    * these are settings??
-    */
-  def delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode]
-
-
-  def additionalKeyMaps: Map[String, Seq[KeySeq]]
-  def removedDefaultKeyMaps: Map[String, Seq[KeySeq]]
-
   def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
 
 
@@ -520,6 +511,21 @@ trait Commands { self: Client =>
         override def available(a: ClientState): Boolean = a.isRichVisual
         override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
       }
+
+      val simpleWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.simple.map(deli => deli -> new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq(delimitationCodePoints(deli.start).toChar.toString)
+        override def available(a: ClientState): Boolean = a.isRichVisual
+        override def action(a: ClientState, count: Int): Client.Update = a.asRichVisual match {
+          case (cursor, rich, visual) =>
+            val r = visual.merged
+            val (_, soc, _) = rich.infoAndSingleSpecials(r)
+            val remaining = r.minus(soc)
+            Client.Update(Seq(operation.Node.Content(cursor,
+              operation.Content.Rich(operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli)))),
+              None)
+        }
+      }).toMap
+
     }
 
     object NodeVisual {
@@ -719,47 +725,28 @@ trait Commands { self: Client =>
       //:d    :[range]d [x]   delete [range] lines [into register x]
 
       private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
-        val soc = new ArrayBuffer[IntRange]()
-        val roc = new ArrayBuffer[IntRange]()
         val rich = a.node(pos).content.asInstanceOf[Content.Rich].content
-        val ifs = rich.info(r)
-        for (i <- ifs) {
-          if (i.isStart) {
-            val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
-            val end = i.nodeStart + i.text.size - 1
-            if (!r.contains(end)) {
-              soc.append(IntRange(i.nodeStart))
-              roc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
-            }
-          } else if (i.isEnd) {
-            val start = i.nodeStart
-            if (!r.contains(start)) {
-              val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
-              soc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
-              roc.append(IntRange(i.nodeStart))
-            }
-          }
-        }
-        val ds = (Seq(r.start) ++ soc.flatMap(a => Seq(a.start, a.until)) ++ Seq(r.until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
+        val (ifs, soc, roc) = rich.infoAndSingleSpecials(r)
+        val ds = r.minus(soc)
         def deleteRanges(i: Seq[IntRange]): Client.Update = {
           val posTo = rich.moveRightAtomic(r).moveByOrZeroZero(-i.filter(_.until <= r.until).map(_.size).sum)
           Client.Update(
             Seq(operation.Node.Content(pos,
-              operation.Content.Rich(operation.Rich.delete(i))
+              operation.Content.Rich(operation.Rich.deleteNoneOverlappingOrderedRanges(i))
             )),
             Some(mode.Node.Content(pos, mode.Content.RichNormal(posTo)))
           )
         }
         if (ds.isEmpty) {
           if (ifs.forall(_.isStart)) {
-            deleteRanges((roc ++ Seq(r)).sortBy(-_.start))
+            deleteRanges((roc ++ Seq(r)).sortBy(_.start))
           } else if (ifs.forall(_.isEndOrAttributeTagOrContent)) {
-            deleteRanges((roc ++ Seq(r)).sortBy(-_.start))
+            deleteRanges((roc ++ Seq(r)).sortBy(_.start))
           } else {
             noUpdate()
           }
         } else {
-          deleteRanges(ds.reverse)
+          deleteRanges(ds)
         }
       }
 
@@ -785,8 +772,8 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = a.mode match {
           case Some(model.mode.Node.Visual(fix , move)) =>
             cursor.Node.minimalRange(fix, move).map(r => deleteNodeRange(a, r)).getOrElse(noUpdate())
-          case Some(model.mode.Node.Content(pos, model.mode.Content.RichVisual(f, m))) =>
-            deleteRichNormalRange(a, pos, f.merge(m))
+          case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
+            deleteRichNormalRange(a, pos, v.merged)
           case _ => throw new IllegalArgumentException("Invalid command")
         }
       }

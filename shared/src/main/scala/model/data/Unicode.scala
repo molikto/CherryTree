@@ -93,6 +93,10 @@ object Unicode extends DataObject[Unicode] {
     Unicode(new String(Character.toChars(SpecialCharStart + a.id)))
   }
 
+  def apply(a: Seq[SpecialChar]): Unicode = {
+    Unicode(a.map(apply).mkString)
+  }
+
   def apply(a: Int): Unicode = {
     Unicode(new String(Character.toChars(a)))
   }

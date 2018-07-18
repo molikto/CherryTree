@@ -21,6 +21,13 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+
+  def wrapNonOverlappingOrderedRanges(soc: Seq[IntRange], deli: SpecialChar.Delimitation): operation.Rich = {
+    Rich(soc.reverse.map(a => {
+      Unicode.Surround(a, data.Unicode(deli.start), data.Unicode(deli.attributes :+ deli.end))
+    }), Type.Add)
+  }
+
   def deleteOrUnwrapAt(content: data.Rich, i: Int): Rich = {
     val info = content.infoSkipLeftAttributes(i)
     if (info.ty == InfoType.Special && !info.text.isAtomicViewed) {
@@ -40,9 +47,9 @@ object Rich extends OperationObject[data.Rich, Rich] {
     )
   }
 
-  def delete(range: Seq[IntRange]): Rich = Rich(range.map(a => Unicode.Delete(a)), Type.Delete)
+  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)), Type.Delete)
 
-  def delete(range: IntRange): Rich = delete(Seq(range))
+  def delete(range: IntRange): Rich = deleteNoneOverlappingOrderedRanges(Seq(range))
 
   def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
 
@@ -72,7 +79,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val rc = r.nextInt(9)
     rc match {
       case 0 =>
-        val randomFormat = SpecialChar.formatted(r.nextInt(SpecialChar.formatted.size))
+        val randomFormat = SpecialChar.simple(r.nextInt(SpecialChar.simple.size))
         val range = randomSubrich(d, r)
         Rich(Seq(
           operation.Unicode.Surround(range, randomFormat.startUnicode, randomFormat.endUnicode)), Type.Add)
@@ -169,7 +176,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   private def randomFormatted(d: data.Rich, r: Random): Option[IntRange] = {
     val info = d.infos.zipWithIndex
     val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.formatted.exists(j => a._1.isSpecialChar(j.start))
+      case InfoType.Special => SpecialChar.simple.exists(j => a._1.isSpecialChar(j.start))
       case _ => false
     })
     if (starts.isEmpty) {

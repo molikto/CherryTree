@@ -24,9 +24,9 @@ case class Info(
   specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
   char: Int = 0 // only valid not Special
 ) {
-  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar.Delimitation, Unicode]): Boolean = {
-    if (ty == InfoType.Special) {
-      delimitationCodePoints.get(text.asInstanceOf[Text.Delimited[Any]].delimitation).contains(grapheme)
+  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Int]): Boolean = {
+    if (ty == InfoType.Special && grapheme.size == 1) {
+      delimitationCodePoints.get(specialChar).contains(grapheme.codePoints.head)
     } else {
       extendedGrapheme == grapheme
     }
@@ -91,7 +91,7 @@ case class Rich(text: Seq[Text]) {
   def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes((aaa - 1) max 0).atomicRange
   def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes((bbb + 1) min (size - 1)).atomicRange
 
-  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar.Delimitation, Unicode]): Option[IntRange] = {
+  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Int]): Option[IntRange] = {
     var range = start
     while (range.until < size) {
       val info = infoSkipRightAttributes(range.until)
@@ -105,7 +105,7 @@ case class Rich(text: Seq[Text]) {
     None
   }
 
-  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode]): Option[IntRange] = {
+  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Int]): Option[IntRange] = {
     var range = start
     while (range.start > 0) {
       val info = infoSkipLeftAttributes(range.start - 1)
@@ -159,6 +159,31 @@ case class Rich(text: Seq[Text]) {
   }
 
   def info(a: IntRange): Seq[Info] = infos.slice(a.start, a.start + a.size)
+
+  def infoAndSingleSpecials(a: IntRange): (Seq[Info], Seq[IntRange], Seq[IntRange]) = {
+    val ifs = info(a)
+    val soc = new ArrayBuffer[IntRange]()
+    val roc = new ArrayBuffer[IntRange]()
+    for (i <- ifs) {
+      if (i.isStart) {
+        val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+        val end = i.nodeStart + i.text.size - 1
+        if (!a.contains(end)) {
+          soc.append(IntRange(i.nodeStart))
+          roc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
+        }
+      } else if (i.isEnd) {
+        val start = i.nodeStart
+        if (!a.contains(start)) {
+          val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+          soc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
+          roc.append(IntRange(i.nodeStart))
+        }
+      }
+    }
+    (ifs, soc, roc)
+  }
+
   def info(a: Int): Info = Text.info(Seq.empty[Int], 0, text, a)
 
   def beginningAtomicRange(): IntRange = text.headOption match {

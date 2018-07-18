@@ -62,7 +62,7 @@ class Client(
 
   def start(): Unit = {
     // LATER make this an option. so it is easier to debug...
-    subscription = Observable.interval(5000.millis).doOnNext(_ => sync()).subscribe()
+    subscription = Observable.interval(10000.millis).doOnNext(_ => sync()).subscribe()
   }
 
   def stop(): Unit = {
@@ -308,23 +308,29 @@ class Client(
     if (changed) {
       updateState(ClientState(d, m), changes, viewUpdated = viewUpdated)
       uncommitted = uncommitted :+ changes
-      if (sync) self.sync()
+      //if (sync) self.sync()
     }
   }
 
   /**
     * these are settings??
     */
-  override def delimitationCodePoints: Map[SpecialChar.Delimitation, Unicode] = Map(
-    SpecialChar.StrikeThrough -> Unicode("-"),
-    SpecialChar.Code -> Unicode("`"),
-    SpecialChar.Strong -> Unicode("#"),
-    SpecialChar.LaTeX -> Unicode("$"),
-    SpecialChar.Link -> Unicode("["),
-    SpecialChar.Emphasis -> Unicode("*")
+  def delimitationCodePoints: Map[SpecialChar, Int] = Map(
+    SpecialChar.StrikeThrough.start -> '-'.toInt,
+    SpecialChar.StrikeThrough.end -> '-'.toInt,
+    SpecialChar.Code.start -> '`'.toInt,
+    SpecialChar.Code.end -> '`'.toInt,
+    SpecialChar.Strong.start -> '#'.toInt,
+    SpecialChar.Strong.start -> '#'.toInt,
+    SpecialChar.LaTeX.start -> '$'.toInt,
+    SpecialChar.LaTeX.end -> '$'.toInt,
+    SpecialChar.Link.start -> '['.toInt,
+    SpecialChar.Link.end -> ']'.toInt,
+    SpecialChar.Emphasis.start -> '*'.toInt,
+    SpecialChar.Emphasis.end -> '*'.toInt
   )
 
-  override def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
+  def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 
-  override def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
+  def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 }

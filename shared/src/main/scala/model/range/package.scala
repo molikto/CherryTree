@@ -11,6 +11,10 @@ package object range {
     def merge(move: IntRange): IntRange = IntRange(start min move.start, until max move.until)
 
 
+    def minus(except: Seq[IntRange]): Seq[IntRange] = {
+      (Seq(start) ++ except.flatMap(a => Seq(a.start, a.until)) ++ Seq(until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
+    }
+
     override def iterator: Iterator[Int] = new Iterator[Int] {
       var i = start
       override def hasNext: Boolean = i < until

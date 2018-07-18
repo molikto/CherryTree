@@ -119,6 +119,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         Some(range.moveBy(left.size))
       } else if (range.contains(r)) {
         Some(IntRange(range.start, range.until + left.size + right.size))
+      } else if (r.contains(range)) {
+        Some(IntRange(range.start + left.size, range.until + left.size))
       } else if (range.overlap(r)) {
         None
       } else if (range.start < r.start) {

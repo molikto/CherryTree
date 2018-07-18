@@ -34,6 +34,7 @@ package object mode {
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
       def swap: RichVisual = RichVisual(move, fix)
+      def merged: IntRange = fix.merge(move)
     }
 
 
