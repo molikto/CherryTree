@@ -114,12 +114,12 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
     }
   }
 
-  def asRichNormal: (Rich, model.mode.Content.RichNormal) = {
+  def asRichNormal: (cursor.Node, Rich, model.mode.Content.RichNormal) = {
     mode match {
       case Some(o@model.mode.Node.Content(n, c)) =>
         val content = rich(n)
         c match {
-          case n@model.mode.Content.RichNormal(r) => (content, n)
+          case nor@model.mode.Content.RichNormal(r) => (n, content, nor)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

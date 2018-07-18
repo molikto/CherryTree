@@ -20,6 +20,17 @@ abstract class Command {
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
 
+  // TODO user keymap
+  def keyLevel(c: KeySeq): Int = {
+    if (defaultKeys.contains(c)) {
+      1
+    } else if (hardcodeKeys.contains(c)) {
+      0
+    } else {
+      -1
+    }
+  }
+
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
 
   def available(a: ClientState): Boolean
@@ -75,8 +86,15 @@ trait Commands { self: Client =>
       commandsToConfirm = Seq.empty
       false
     } else {
-      val exacts = availableCommands.filter(_.keys.contains(commandPartConfirmed))
-      if (exacts.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
+      var exacts = availableCommands.filter(_.keys.contains(commandPartConfirmed))
+      if (exacts.size > 1) {
+        // defferent settings of key might override depending on how the key is set
+        val sorted = exacts.map(a => (a ,a.keyLevel(commandPartConfirmed))).sortBy(-_._2)
+        if (sorted(1)._2 == sorted.head._2) {
+          errors.update(Some(new Exception("Multiple commands with same key")))
+        }
+        exacts = Seq(sorted.head._1)
+      }
       exacts.headOption match {
         case Some(exact) =>
           commandsToConfirm = Seq.empty
@@ -156,6 +174,7 @@ trait Commands { self: Client =>
 
 
   abstract class Command extends command.Command {
+
     commands_.append(this)
   }
 
@@ -528,7 +547,7 @@ trait Commands { self: Client =>
           case (cursor, rich, visual) =>
             val r = visual.merged
             val (_, soc, _) = rich.infoAndSingleSpecials(r)
-            val remaining = r.minus(soc)
+            val remaining = r.minusOrderedInside(soc)
             val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
             val fakePoints = if (visual.fix.start <= visual.move.start) {
                 mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
@@ -680,7 +699,7 @@ trait Commands { self: Client =>
         override def available(a: ClientState): Boolean = a.isRichNormal
 
         override def action(a: ClientState, count: Int): Client.Update =  {
-          val (content, normal) = a.asRichNormal
+          val (cursor, content, normal) = a.asRichNormal
           modeUpdate(a.copyContentMode(model.mode.Content.RichInsert(move(
             content, normal.range))))
         }
@@ -720,7 +739,7 @@ trait Commands { self: Client =>
       }
       val backspace: Command = new EditCommand with OverrideCommand {
         // TODO these keys should be seperate delete words, etc...
-        override def hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
+        override val hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
           if (a > 0) {
             Some(operation.Rich.deleteOrUnwrapAt(content, a - 1)) // we don't explicitly set mode, as insert mode transformation is always correct
@@ -732,7 +751,7 @@ trait Commands { self: Client =>
 
       val enter: Command = new EditCommand with OverrideCommand {
         // TODO what to do on enter???
-        override def hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
+        override val hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
         override def edit(content: Rich, a: Int): Option[operation.Rich] = None
       }
 
@@ -836,9 +855,17 @@ trait Commands { self: Client =>
       private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
         val rich = a.node(pos).content.asInstanceOf[Content.Rich].content
         val (ifs, soc, roc) = rich.infoAndSingleSpecials(r)
-        val ds = r.minus(soc)
+        val ds = r.minusOrderedInside(soc)
         def deleteRanges(i: Seq[IntRange]): Client.Update = {
-          val posTo = rich.moveRightAtomic(r).moveByOrZeroZero(-i.filter(_.until <= r.until).map(_.size).sum)
+          val remaining = IntRange(0, rich.size).minusOrderedInside(i)
+          val posTo = if (remaining.isEmpty) {
+            IntRange(0, 0) // all deleted
+          } else {
+            // for all remaining bits
+            val p = remaining.find(_.until > r.start).map(_.start max r.start).map(a => a).getOrElse(remaining.last.until - 1)
+            val tempPos = rich.info(p).atomicRange
+            tempPos.moveByOrZeroZero(-i.filter(_.start < tempPos.start).map(_.size).sum)
+          }
           Client.Update(
             Seq(operation.Node.Content(pos,
               operation.Content.Rich(operation.Rich.deleteNoneOverlappingOrderedRanges(i))
@@ -932,8 +959,8 @@ trait Commands { self: Client =>
 //        }
 //      }
 
-      val deleteLines: Command = new Command {
-        override val defaultKeys: Seq[KeySeq] = Seq("dd")
+      val deleteSiblings: Command = new Command {
+        override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
           val r = a.asNormal._1
@@ -941,7 +968,23 @@ trait Commands { self: Client =>
           else deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
         }
       }
-      // TODO D     N  D            delete to the end of the line (and N-1 more lines)
+
+      val deleteUntilEnd: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("D")
+        override def available(a: ClientState): Boolean = a.isRichNormal
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val (c, rich, normal) = a.asRichNormal
+          val deleteLines = if (c == cursor.Node.root || count <= 1) {
+            Seq.empty
+          } else {
+            val p = c.dropRight(1)
+            val parent = a.node(p)
+            Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
+          }
+          val deleteFirstLine = deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size))
+          deleteFirstLine.copy(transaction = deleteFirstLine.transaction ++ deleteLines)
+        }
+      }
     }
 
     object Scroll {
