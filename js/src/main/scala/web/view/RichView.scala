@@ -46,7 +46,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   private var insertNonEmptyTextLength: Int = 0
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
-  private var previousMode = if (isEmpty) 3 else 1
+  private var previousMode = if (isEmpty) 3 else 2
 
   private def initDom(): Unit = {
     if (dom.childNodes.length == 0) {
@@ -338,7 +338,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
       if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
-        window.console.log(a)
+        //window.console.log(a)
         clientView.client.flush()
       } else {
         window.console.log(a)
@@ -501,7 +501,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
-      println(s"mode cleared t $i")
+      if (debugView) println(s"mode cleared t $i")
       if (previousMode == 0) {
         clearInsertionMode()
       } else if (previousMode == 1) {

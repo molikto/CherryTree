@@ -128,7 +128,7 @@ class Client(
 
   private def updateInner(res: Client.UpdateResult): Unit = {
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
-    println("client update inner: " + res)
+    if (debugView) println("client update inner: " + res)
     updatingState = true
     state_ = ClientState(res.root, res.mode)
     onBeforeUpdateUpdateCommandState(state_)
@@ -308,7 +308,7 @@ class Client(
     if (changed) {
       updateState(ClientState(d, m), changes, viewUpdated = viewUpdated)
       uncommitted = uncommitted :+ changes
-      //if (sync) self.sync()
+      if (sync) self.sync()
     }
   }
 

@@ -8,40 +8,14 @@ import model.ot.Rebased
 import scala.collection.mutable
 import scala.util.Random
 
-class Server extends Api {
+trait Server extends Api {
+  def save(a: data.Node)
+  def load(): data.Node
 
   // states, now in single thread fashion
-  private val tempRich = data.Content.Rich(data.Rich(Seq(
 
-    Text.Plain(Unicode("😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
-    Text.Code(Unicode( "\u0628" + "\u064e" + "\u064a"  + "😀💩👮🏿‍♀️👩‍👩‍👧‍👧🇫🇮 some latex ")),
-    Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
-    Text.Plain(Unicode(" and <b>should be escaped</b> spaces   some image " + "\u0628" + "\u064e" + "\u064a" +
-      "\u0652" + "\u067a" + "\u064f ")),
-    Text.Image(Unicode("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAMAAAC67D+PAAAADFBMVEX///8AAP8AAADd3d0jH/slAAAAGElEQVQImWNgAAFGEGAghckEAswgQAoTABVtAJfgZiRGAAAAAElFTkSuQmCC")),
-    Text.Strong(Seq(
-      Text.Plain(Unicode("strong text and ")),
-      Text.Code(Unicode("div")),
 
-      Text.Plain(Unicode(" some code")),
-    )),
-    Text.Plain(Unicode(" plain text with some ")),
-    Text.Plain(Unicode(" and ")),
-    Text.Emphasis(Seq(
-      Text.Plain(Unicode("em text and ")),
-      Text.Code(Unicode("html")),
-      Text.Plain(Unicode(" some code"))
-    )),
-    Text.Plain(Unicode(". ")),
-    Text.StrikeThrough(Seq(Text.Emphasis(Seq(Text.Plain(Unicode("des text and ")))),
-      Text.Strong(Seq(Text.Plain(Unicode("strong text inside")))),
-    )),
-    Text.Plain(Unicode(" ")),
-    Text.Link(Seq(Text.Plain(Unicode("link text and ")), Text.Code(Unicode("CODE INSIDE"))), Unicode("http:www.google.com"))
-  )))
-  private var document = data.Node(tempRich, Seq(
-    data.Node(tempRich, Seq.empty),
-    data.Node(data.Content.Code(Unicode.random(), ""), Seq.empty)))
+  private var document = load()
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
@@ -101,11 +75,12 @@ class Server extends Api {
         var debugTopDocument = document
         document = operation.Node.applyT(transformed, document)
         changes = changes ++ transformed
-        for (t <- transformed) {
-          debugTopDocument = operation.Node.apply(t, debugTopDocument)
-          debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
-        }
+        save(document)
         if (debugModel) {
+          for (t <- transformed) {
+            debugTopDocument = operation.Node.apply(t, debugTopDocument)
+            debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+          }
           assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
         }
         clients.update(authentication, version)

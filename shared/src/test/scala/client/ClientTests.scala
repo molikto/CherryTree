@@ -3,6 +3,7 @@ package client
 
 import api.{Api, Authentication}
 import model._
+import model.data.Node
 import model.ot.NodeOps
 import server.Server
 import utest._
@@ -15,7 +16,10 @@ import scala.util.{Random, Try}
 object ClientTests extends TestSuite  {
 
   val tests = Tests {
-    val s = new server.Server()
+    val s = new server.Server() {
+      override def save(a: Node): Unit = {}
+      override def load(): Node = Node.random()
+    }
     val api = {
       val k = new TestAutowireClient(s)
       k[Api]
