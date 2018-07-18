@@ -86,8 +86,14 @@ object SpecialChar {
   val startsEnds: Seq[SpecialChar] = starts ++ ends
 
   case class Delimitation(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty, isAtomic: Boolean = false) {
+
+    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start).join(a).join(Unicode(attributes :+ end))
+
+
     private[model] def startUnicode = Unicode(start)
     private[model] def endUnicode = Unicode(end)
+
+    def wrapSizeOffset = 2 + attributes.size
   }
 
 }

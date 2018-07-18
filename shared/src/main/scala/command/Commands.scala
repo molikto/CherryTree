@@ -159,6 +159,13 @@ trait Commands { self: Client =>
     commands_.append(this)
   }
 
+  abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
+    override def defaultKeys: Seq[KeySeq] = delimitationCodePoints.get(deli.start) match {
+      case Some(a) => Seq(a.toChar.toString)
+      case None => Seq.empty
+    }
+  }
+
   object Command {
 
     val exit: Command = new Command {
@@ -512,8 +519,7 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = modeUpdate(a.copyContentMode(a.asRichVisual._3.swap))
       }
 
-      abstract class WrapCommand(deli: SpecialChar.Delimitation) extends Command {
-        override def defaultKeys: Seq[KeySeq] = Seq(delimitationCodePoints(deli.start).toChar.toString)
+      abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
         override def available(a: ClientState): Boolean = a.isRichVisual
       }
 
@@ -523,7 +529,7 @@ trait Commands { self: Client =>
             val r = visual.merged
             val (_, soc, _) = rich.infoAndSingleSpecials(r)
             val remaining = r.minus(soc)
-            val range = (r.start, r.until + remaining.size * (2 + deli.attributes.size) - 1)
+            val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
             val fakePoints = if (visual.fix.start <= visual.move.start) {
                 mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
               } else {
@@ -546,12 +552,12 @@ trait Commands { self: Client =>
             val ifs = rich.info(r)
             val fakeMode =
               if (deli.isAtomic) {
-                val p = IntRange(r.start, r.until + 2 + deli.attributes.size)
+                val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
                 mode.Content.RichVisual(p, p)
               } else if (visual.fix.start <= visual.move.start) {
-                mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + 1 + deli.attributes.size))
+                mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + deli.wrapSizeOffset - 1))
               } else {
-                mode.Content.RichVisual(IntRange(r.until + 1 + deli.attributes.size), IntRange(r.start))
+                mode.Content.RichVisual(IntRange(r.until + deli.wrapSizeOffset - 1), IntRange(r.start))
               }
             if (ifs.forall(_.ty == InfoType.Plain)) {
               Client.Update(Seq(
@@ -571,9 +577,9 @@ trait Commands { self: Client =>
             if (rich.isSubRich(r)) {
               val fakeMode =
                 if (visual.fix.start <= visual.move.start) {
-                  mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + 1 + deli.attributes.size))
+                  mode.Content.RichVisual(IntRange(r.start), IntRange(r.until - 1 + deli.wrapSizeOffset))
                 } else {
-                  mode.Content.RichVisual(IntRange(r.until + 1 + deli.attributes.size), IntRange(r.start))
+                  mode.Content.RichVisual(IntRange(r.until - 1 + deli.wrapSizeOffset), IntRange(r.start))
                 }
               Client.Update(Seq(
                 operation.Node.Content(cursor,
@@ -691,28 +697,16 @@ trait Commands { self: Client =>
         override val defaultKeys: Seq[KeySeq] = Seq("i")
         override def move(content: Rich,a: IntRange): Int = a.start
       }
-      // TODO support two char keys gI    N  gI   insert text in column 1 (N times)
       val insertAtContentBeginning : EnterInsertCommand = new EnterInsertCommand {
-        override val defaultKeys: Seq[KeySeq] = Seq("I")
+        override val defaultKeys: Seq[KeySeq] = Seq("I", "gI") // command merged
         override def move(content: Rich,a: IntRange): Int = 0
       }
     }
 
     object RichInsertModeEdits {
-      abstract class EditCommand extends Command  {
-        def defaultKeys: Seq[KeySeq] = Seq.empty
+      trait EditCommand extends Command  {
         def edit(content: Rich,a: Int): Option[model.operation.Rich]
-
-        override def available(a: ClientState): Boolean = a.mode match {
-          case Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(_))) =>
-            a.node(n).content match {
-              case model.data.Content.Rich(p) =>
-                true
-              case _ => false
-            }
-          case _ => false
-        }
-
+        override def available(a: ClientState): Boolean = a.isRichInserting
         override def action(a: ClientState, count: Int): Client.Update = {
           val (n, content, insert) = a.asRichInsert
           val res = edit(content, insert.pos).map(k => {
@@ -721,7 +715,10 @@ trait Commands { self: Client =>
           Client.Update(res, None)
         }
       }
-      val backspace: Command = new EditCommand {
+      abstract class OverrideEditCommand extends EditCommand {
+        def defaultKeys: Seq[KeySeq] = Seq.empty
+      }
+      val backspace: Command = new OverrideEditCommand {
         // TODO these keys should be seperate delete words, etc...
         override def hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
@@ -733,11 +730,21 @@ trait Commands { self: Client =>
         }
       }
 
-      val enter: Command = new EditCommand {
+      val enter: Command = new OverrideEditCommand {
         // TODO what to do on enter???
         override def hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
         override def edit(content: Rich, a: Int): Option[operation.Rich] = None
       }
+
+      val newNodes: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+        override def available(a: ClientState): Boolean = a.isRichInserting
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val (n, content, insert) = a.asRichInsert
+          val k = operation.Rich.insert(insert.pos, deli.wrap())
+          val res = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+          Client.Update(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
+        }
+      }).toMap
 
       // LATER seems all very wired
       // Q_ss          Special keys in Insert mode
@@ -891,6 +898,7 @@ trait Commands { self: Client =>
           else deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
         }
       }
+      // TODO D     N  D            delete to the end of the line (and N-1 more lines)
     }
 
     object Scroll {

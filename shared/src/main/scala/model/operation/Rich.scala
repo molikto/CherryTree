@@ -25,8 +25,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def wrapAsCoded(a: data.Unicode, r: IntRange, deli: SpecialChar.Delimitation): Rich = {
     Rich(
       Seq(
-        Unicode.Insert(r.start, data.Unicode(deli.start).join(a).join(data.Unicode(deli.attributes :+ deli.end))),
-        Unicode.Delete(r.moveBy(r.size + 2 + deli.attributes.size))
+        Unicode.Insert(r.start, deli.wrap(a)),
+        Unicode.Delete(r.moveBy(r.size + deli.wrapSizeOffset))
       ), Type.AddDelete)
   }
 
