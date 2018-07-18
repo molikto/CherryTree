@@ -44,7 +44,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
 
   private val mode = span(
-    "").render
+    "", onclick := { () => println(client.commands.filter(_.available(client.state)).map(_.keys)) }).render
 
   private val debugVersionInfo = span(marginLeft := "12px", "0", onclick := {() =>
     client.change(model.operation.Node.randomTransaction(2, client.state.node, new Random()), None) }).render
@@ -169,13 +169,35 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     previousNodeVisual = ArrayBuffer.empty
   }
 
-  def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+  private def updateModeIndicator(): Unit = {
+    mode.textContent = Seq(client.state.mode match {
+      case None =>
+        ""
+      case Some(mm) => mm match {
+        case model.mode.Node.Content(at, aa) =>
+          aa match {
+            case model.mode.Content.RichInsert(_) =>
+              "INSERT"
+            case model.mode.Content.RichVisual(_, _) =>
+              "VISUAL"
+            case model.mode.Content.RichNormal(_) =>
+              "NORMAL"
+            case model.mode.Content.CodeNormal =>
+              "CODE NORMAL"
+            case model.mode.Content.CodeInside =>
+              "CODE INSIDE"
+          }
+        case v@model.mode.Node.Visual(_, _) =>
+          "NODE VISUAL"
+      }
+    }, client.commandCountsText, client.commandNotConfirmed.map(_.toString).mkString("")).filter(_.nonEmpty).mkString(" ")
+  }
 
-    mode.textContent = m match {
+  def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+    m match {
       case None =>
         removeFocusContent()
         clearNodeVisual()
-        ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
           clearNodeVisual()
@@ -191,22 +213,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             case c: model.mode.Content.Code =>
               current.asInstanceOf[CodeView].updateMode(c, viewUpdated)
           }
-          aa match {
-            case model.mode.Content.RichInsert(_) =>
-              "INSERT"
-            case model.mode.Content.RichVisual(_, _) =>
-              "VISUAL"
-            case model.mode.Content.RichNormal(_) =>
-              "NORMAL"
-            case model.mode.Content.CodeNormal =>
-              "CODE NORMAL"
-            case model.mode.Content.CodeInside =>
-              "CODE INSIDE"
-          }
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
           updateNodeVisual(v)
-          "NODE VISUAL"
       }
     }
   }
@@ -216,6 +225,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     val ClientState(node, selection) = client.state
     insertNodesRec(node, root)
     updateMode(selection, viewUpdated = false)
+    updateModeIndicator()
   }
 
   private def removeNodes(range: model.range.Node): Unit = {
@@ -292,6 +302,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         }
       }
       updateMode(update.mode, update.viewUpdated)
+      updateModeIndicator()
       debugVersionInfo.textContent = client.version.toString
     }).subscribe())
 
@@ -310,6 +321,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
     val kd = client.keyDown(kk)
+    updateModeIndicator()
     debugKeyInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString + " " + kd
     if (kd) {
       event.preventDefault()

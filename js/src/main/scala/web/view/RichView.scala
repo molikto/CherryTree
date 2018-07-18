@@ -70,7 +70,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def initEmptyNormalMode(): Unit = {
-    dom.appendChild("e".render)
+    dom.appendChild(span("∅", color := "#636e83").render)
     val range = document.createRange()
     range.setStart(dom.childNodes(0), 0)
     range.setEnd(dom.childNodes(0), 1)

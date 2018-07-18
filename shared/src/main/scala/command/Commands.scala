@@ -35,10 +35,11 @@ trait Commands { self: Client =>
 
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[Command]
-  private val commands_ = new ArrayBuffer[Command]()
   private var waitingForCharCommand: (Command, Int) = null
 
   private var commandCounts: String = ""
+  def commandCountsText: String = commandCounts
+  def commandNotConfirmed: KeySeq = commandPartConfirmed
 
   def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
     if (waitingForCharCommand != null) {
@@ -47,6 +48,8 @@ trait Commands { self: Client =>
       }
     }
   }
+
+  private val commands_ = new ArrayBuffer[Command]()
 
   {
     var ignored: Command = Command.RichMotion.toNextChar
@@ -172,6 +175,11 @@ trait Commands { self: Client =>
       override def available(a: ClientState): Boolean = true
 
       override def action(a: ClientState, ignore: Int): Client.Update = {
+        // LATER is this good? modify state on the go???
+        commandCounts = ""
+        commandsToConfirm = Seq.empty
+        commandPartConfirmed = Seq.empty
+        waitingForCharCommand = null
         a.mode match {
           case Some(m) =>
             m match {
@@ -653,7 +661,7 @@ trait Commands { self: Client =>
         override def hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
           if (a > 0) {
-            Some(operation.Rich.deleteOrUnwrapAt(content, a - 1))
+            Some(operation.Rich.deleteOrUnwrapAt(content, a - 1)) // we don't explicitly set mode, as insert mode transformation is always correct
           } else {
             None
           }
@@ -734,7 +742,7 @@ trait Commands { self: Client =>
         }
         val ds = (Seq(r.start) ++ soc.flatMap(a => Seq(a.start, a.until)) ++ Seq(r.until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
         def deleteRanges(i: Seq[IntRange]): Client.Update = {
-          val posTo = rich.moveRightAtomic(r).moveByOrZeroZero(-i.map(_.size).sum)
+          val posTo = rich.moveRightAtomic(r).moveByOrZeroZero(-i.filter(_.until <= r.until).map(_.size).sum)
           Client.Update(
             Seq(operation.Node.Content(pos,
               operation.Content.Rich(operation.Rich.delete(i))
@@ -818,15 +826,15 @@ trait Commands { self: Client =>
         }
       }
 
-      // TODO dw etc
-      val deleteMotion: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("d")
-        override def available(a: ClientState): Boolean = a.isNormal
-
-        override def action(a: ClientState, count: Int): Client.Update = {
-          noUpdate()
-        }
-      }
+//      // TODO dw etc
+//      val deleteMotion: Command = new Command {
+//        override def defaultKeys: Seq[KeySeq] = Seq("d")
+//        override def available(a: ClientState): Boolean = a.isNormal
+//
+//        override def action(a: ClientState, count: Int): Client.Update = {
+//          noUpdate()
+//        }
+//      }
 
       val deleteLines: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("dd")

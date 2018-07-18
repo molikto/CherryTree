@@ -14,6 +14,7 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
+* avaliable commands panel
 * single edit commands
 * copy paste
 * code mirror!!!

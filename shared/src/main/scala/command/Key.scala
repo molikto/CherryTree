@@ -14,6 +14,7 @@ case class Key(
   control: Boolean = false,
   meta: Boolean = false) {
 
+
   def withAllModifers: Seq[KeySeq] = {
     import Key._
     val allTrue = copy(shift = true, alt = true, control = true, meta = true)
