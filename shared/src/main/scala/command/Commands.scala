@@ -761,18 +761,20 @@ trait Commands { self: Client =>
         }
       }
 
-      private def deleteNodeRange(a: ClientState, r: model.range.Node): Client.Update = {
-           Client.Update(Seq(operation.Node.Delete(r)), {
-                val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
-                  (r.until, r.start)
-                } else if (r.childs.start > 0) {
-                  val p = r.parent :+ (r.childs.start - 1)
-                  (p, p)
-                } else {
-                  (r.parent, r.parent)
-                }
-                Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
-              })
+      private def deleteNodeRange(a: ClientState, rr: model.range.Node): Client.Update = {
+        val parent = a.node(rr.parent)
+        val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
+        Client.Update(Seq(operation.Node.Delete(r)), {
+          val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
+            (r.until, r.start)
+          } else if (r.childs.start > 0) {
+            val p = r.parent :+ (r.childs.start - 1)
+            (p, p)
+          } else {
+            (r.parent, r.parent)
+          }
+          Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
+        })
       }
 
       val deleteAfterVisual: Command = new Command {
