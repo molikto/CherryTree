@@ -296,7 +296,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def clearFormattedNodeHighlight(): Unit = {
     if (astHighlight != null) {
-      astHighlight.style.backgroundColor = null
+      astHighlight.style.backgroundColor = "#FFFFFF00"
       astHighlight = null
     }
   }
@@ -499,9 +499,9 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (previousMode == 0) {
         clearInsertionMode()
       } else if (previousMode == 1) {
-        clearNormalMode()
-      } else if (previousMode == 2) {
         clearVisualMode()
+      } else if (previousMode == 2) {
+        clearNormalMode()
       } else if (previousMode == 3) {
         clearEmptyNormalMode()
       }

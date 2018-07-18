@@ -18,7 +18,7 @@ class Server extends Api {
     Text.LaTeX(Unicode("a + b + \\frac{c}{\\frac{b}{\\sqrt{2321312} + 2} + \\inf}")),
     Text.Plain(Unicode(" and <b>should be escaped</b> spaces   some image " + "\u0628" + "\u064e" + "\u064a" +
       "\u0652" + "\u067a" + "\u064f ")),
-    Text.Image(Unicode("https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Comiclogo.svg/106px-Comiclogo.svg")),
+    Text.Image(Unicode("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAMAAAC67D+PAAAADFBMVEX///8AAP8AAADd3d0jH/slAAAAGElEQVQImWNgAAFGEGAghckEAswgQAoTABVtAJfgZiRGAAAAAElFTkSuQmCC")),
     Text.Strong(Seq(
       Text.Plain(Unicode("strong text and ")),
       Text.Code(Unicode("div")),

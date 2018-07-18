@@ -15,13 +15,14 @@
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * single edit commands
+* copy paste
 * code mirror!!!
 * insert mode command overrides
 * make so that the state exposed to view is the partial one
 * sync external operation to content
 * keyboard editor for rich
 * mouse support
-* copy paste
+* clicking
 * drag drop
 * search and replace
 * line motions??? they are actually pretty useful???

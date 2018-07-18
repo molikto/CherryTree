@@ -6,6 +6,8 @@
 .ct-root {
   word-wrap: break-word;
   white-space: pre-wrap;
+  font-family: 'Gentium Book Basic', serif;
+  font-size: 20px;
 }
 
 .ct-root::-webkit-scrollbar {
@@ -44,7 +46,7 @@
     font-style: normal;
     font-weight:normal;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    font-size: 90%;
+    font-size: 85%;
     color: #f0c5ce;
 }
 

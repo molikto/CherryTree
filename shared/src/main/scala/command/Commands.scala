@@ -22,8 +22,6 @@ abstract class Command {
 
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
 
-  def repeatable: Boolean = false
-
   def available(a: ClientState): Boolean
 
   def action(a: ClientState, count: Int): Client.Update
@@ -234,13 +232,11 @@ trait Commands { self: Client =>
       val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
         override def defaultKeys = Seq("h", Backspace, Left)
         override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
-        override def repeatable: Boolean = true
       }
 
       val right: Command = new RichMotionCommand() {
         override def defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
         override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
-        override def repeatable: Boolean = true
       }
 
       val beginning: Command = new RichMotionCommand() {
@@ -275,7 +271,6 @@ trait Commands { self: Client =>
         }
 
         override def waitingForGrapheme: Boolean = true
-        override def repeatable: Boolean = true
         def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
         def skip(a: Rich, range: IntRange): IntRange = range
         def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
@@ -353,7 +348,6 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = {
           lastFindCommand.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
-        override def repeatable: Boolean = true
       }
       val repeatFindOppositeDirection: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
@@ -361,7 +355,6 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = {
           lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
         }
-        override def repeatable: Boolean = true
       }
 
       /**
@@ -423,9 +416,6 @@ trait Commands { self: Client =>
         * _     N  _            down N-1 lines, on the first non-blank character
         */
       abstract class NodeMotionCommand extends Command {
-
-        override def repeatable: Boolean = true
-
         def move(data: ClientState, a: cursor.Node): Option[cursor.Node]
 
 
@@ -563,7 +553,6 @@ trait Commands { self: Client =>
 
       // DIFFERENCE: currently not repeatable
       val openBellow: Command = new Command {
-        override def repeatable: Boolean = true
         override def defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
@@ -581,7 +570,6 @@ trait Commands { self: Client =>
       }
 
       val openAbove: Command = new Command {
-        override def repeatable: Boolean = true
         override def defaultKeys: Seq[KeySeq] = Seq("O")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
@@ -715,6 +703,12 @@ trait Commands { self: Client =>
     }
 
     object Delete {
+      // LATER
+      // J     N  J            join N-1 lines (delete <EOL>s)
+      //v_J      {visual}J    join the highlighted lines
+      //gJ    N  gJ           like "J", but without inserting spaces
+      //v_gJ     {visual}gJ   like "{visual}J", but without inserting spaces
+      //:d    :[range]d [x]   delete [range] lines [into register x]
 
       private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
         val soc = new ArrayBuffer[IntRange]()
@@ -824,6 +818,7 @@ trait Commands { self: Client =>
         }
       }
 
+      // TODO dw etc
       val deleteMotion: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("d")
         override def available(a: ClientState): Boolean = a.isNormal
@@ -835,9 +830,7 @@ trait Commands { self: Client =>
 
       val deleteLines: Command = new Command {
         override def defaultKeys: Seq[KeySeq] = Seq("dd")
-
         override def available(a: ClientState): Boolean = a.isNormal
-
         override def action(a: ClientState, count: Int): Client.Update = deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
       }
     }
