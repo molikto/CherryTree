@@ -93,6 +93,10 @@ object Unicode extends DataObject[Unicode] {
     Unicode(new String(Character.toChars(SpecialCharStart + a.id)))
   }
 
+  def apply(a: Int): Unicode = {
+    Unicode(new String(Character.toChars(a)))
+  }
+
   override def random(r: Random): Unicode = Unicode(r.nextLong().toString)
   val empty = Unicode("")
 }
@@ -120,6 +124,17 @@ case class Unicode(private var str: String) {
       end = GraphemeSplitter.nextBreak(str, start)
     }
     (start, end)
+  }
+
+  def graphemes: Seq[Unicode] = {
+    val aa = new ArrayBuffer[Unicode]()
+    var start = 0
+    var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
+    while (end < str.length) {
+      start = end
+      end = GraphemeSplitter.nextBreak(str, start)
+    }
+    aa
   }
 
   def extendedGrapheme(pos: Int): Unicode = {

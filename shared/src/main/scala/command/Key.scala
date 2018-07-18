@@ -5,6 +5,8 @@ import util.GraphemeSplitter
 
 // key is a unicode codepoint
 
+import Key.KeySeq
+
 case class Key(
   a: Key.V,
   shift: Boolean = false,
@@ -12,7 +14,7 @@ case class Key(
   control: Boolean = false,
   meta: Boolean = false) {
 
-  def withAllModifers: Seq[Key] = {
+  def withAllModifers: Seq[KeySeq] = {
     import Key._
     val allTrue = copy(shift = true, alt = true, control = true, meta = true)
     Seq(this,
@@ -20,14 +22,16 @@ case class Key(
       copy(shift = true, meta = true), copy(shift = true, control = true), copy(shift = true, meta = true),
       copy(alt = true, control = true), copy(alt = true, meta = true), copy(control = true, meta = true),
       allTrue.copy(shift = false), allTrue.copy(alt = false), allTrue.copy(control = false), allTrue.copy(meta = false),
-      allTrue)
+      allTrue).map(a => Seq(a))
   }
 }
 
 object Key {
+  type KeySeq = Seq[Key]
 
   sealed trait Modifier extends V {
     def +(key: Key): Key
+    def +(a: String): KeySeq = defaultAsciiKeysToKeySeq(a).map(this + _)
   }
   case object Shift extends Modifier {
     def +(key: Key): Key = key.copy(shift = true)
@@ -43,6 +47,7 @@ object Key {
   }
 
   sealed trait V {
+    def withAllModifers: Seq[KeySeq] = Key(this).withAllModifers
   }
 
   case object Home extends V
@@ -68,13 +73,13 @@ object Key {
   def isUnicodeKey(s: String): Boolean = s.length == 1 ||
     GraphemeSplitter.nextBreak(s) == s.length
 
-  implicit def stringToKeyImplicit(s: String): Key = {
-    assert(isUnicodeKey(s))
-    Key(Grapheme(Unicode(s)))
-  }
+  // LATER is all keyboard layout like this????
+  private val shifted = Unicode("~!@#$%^&*()_+{}:\"|><?QWERTYUIOPASDFGHJKLZXCVBNM").codePoints
 
-  implicit def singleToKey(s: V): Key = {
-    Key(s)
-  }
+  private def assciiKeyWithModifier(a: Int): Key = Key(Grapheme(Unicode(a)), shift = shifted.contains(a))
+
+  implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).codePoints.map(assciiKeyWithModifier)
+
+  implicit def singleToKey(s: V): KeySeq = Seq(Key(s))
 }
 

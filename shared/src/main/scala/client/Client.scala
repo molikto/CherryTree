@@ -13,12 +13,14 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
-import command.{Commands, Key}
 import model.ot.Rebased
 import util._
 import model._
 import model.data.{SpecialChar, Unicode}
+import command._
+import command.Key.KeySeq
 import monix.reactive.subjects.PublishSubject
+
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -261,53 +263,6 @@ class Client(
     change(command.action(state))
   }
 
-  // LATER updatable keymap
-  private val keyToCommand: Map[Key, Seq[Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1).map(a => (a._1, a._2.map(_._2)))
-  private val graphemeToCommand: Map[Key.Grapheme, Seq[Command]] = commands.flatMap(
-    c => c.keys.filter(k => !k.control && !k.meta && k.a.isInstanceOf[Key.Grapheme]
-    ).map(_.a.asInstanceOf[Key.Grapheme] -> c)).groupBy(_._1).map(a => (a._1, a._2.map(_._2))).toMap
-
-
-  def keyDown(key: Key): Boolean = {
-    if (isWaitingForGraphemeCommand) {
-      key.a match {
-        case g@Key.Grapheme(a) => change(consumeByWaitingForGraphemeCommand(state, g))
-        case _: Key.Modifier => // ignore modifier only keys
-        case _ => clearWaitingForGraphemeCommand()
-      }
-      true
-    } else {
-      def doCommand(): Boolean = {
-        val av = keyToCommand.getOrElse(key, Seq.empty).filter(_.available(state))
-        if (av.nonEmpty) {
-          if (av.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
-          act(av.head)
-          true
-        } else {
-          if (!key.control && !key.meta && key.a.isInstanceOf[Key.Grapheme]) {
-            val av = graphemeToCommand.getOrElse(key.a.asInstanceOf[Key.Grapheme], Seq.empty).filter(_.available(state))
-            if (av.nonEmpty) {
-              if (av.size > 1) errors.update(Some(new Exception("Multiple commands with same key")))
-              act(av.head)
-              true
-            } else {
-              false
-            }
-          } else {
-            false
-          }
-        }
-      }
-      if (state.isRichInserting) {
-        // some keys we MUST keep
-        doCommand()
-      } else {
-        doCommand()
-        true
-      }
-    }
-  }
-
 
   /**
     * view calls this method to insert text at current insertion point,
@@ -370,7 +325,7 @@ class Client(
     SpecialChar.Emphasis -> Unicode("*")
   )
 
-  override def additionalKeyMaps: Map[String, Seq[Key]] = Map.empty
+  override def additionalKeyMaps: Map[String, Seq[KeySeq]] = Map.empty
 
-  override def removedDefaultKeyMaps: Map[String, Seq[Key]] = Map.empty
+  override def removedDefaultKeyMaps: Map[String, Seq[KeySeq]] = Map.empty
 }
