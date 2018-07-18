@@ -15,6 +15,7 @@
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * key sequence: dd
+* visual delete
 * single edit commands
 * code mirror!!!
 * insert mode command overrides

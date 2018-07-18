@@ -309,8 +309,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-    debugKeyInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString
-    if (client.keyDown(kk)) {
+    val kd = client.keyDown(kk)
+    debugKeyInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString + " " + kd
+    if (kd) {
       event.preventDefault()
     }
   })

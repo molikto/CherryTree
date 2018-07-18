@@ -122,33 +122,21 @@ case class Rich(text: Seq[Text]) {
 
 
   def infoSkipLeftAttributes(pos: Int): Info = {
-    var i = pos
-    while (i >= 0) {
-      val f = info(i)
-      if (f.ty == InfoType.AttributeUnicode) {
-        i -= f.positionInUnicode + 1
-      } else if (f.isAttributeTag) {
-        i -= 1
-      } else {
-        return f
-      }
+    val f = info(pos)
+    if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
+      info(f.nodeStart + f.text.asInstanceOf[Text.Delimited[Any]].contentSize)
+    } else {
+      f
     }
-    throw new IllegalStateException("Invalid xml structure")
   }
 
   def infoSkipRightAttributes(pos: Int): Info = {
-    var i = pos
-    while (true) {
-      val f = info(i)
-      if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
-        val oldI = i
-        i = f.nodeStart + f.text.size - 1 // the last character
-        assert(i > oldI)
-      } else {
-        return f
-      }
+    val f = info(pos)
+    if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
+      info(f.nodeStart + f.text.size - 1)
+    } else {
+      f
     }
-    throw new IllegalStateException("Invalid xml structure")
   }
 
 
