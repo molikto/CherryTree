@@ -839,7 +839,11 @@ trait Commands { self: Client =>
       val deleteLines: Command = new Command {
         override val defaultKeys: Seq[KeySeq] = Seq("dd")
         override def available(a: ClientState): Boolean = a.isNormal
-        override def action(a: ClientState, count: Int): Client.Update = deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val r = a.asNormal._1
+          if (r == cursor.Node.root) noUpdate()
+          else deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
+        }
       }
     }
 
