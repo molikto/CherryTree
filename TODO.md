@@ -14,8 +14,6 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* repeatable: test if find works ok
-* visual delete
 * single edit commands
 * code mirror!!!
 * insert mode command overrides
@@ -52,7 +50,7 @@
 
 ## good to have
 
-* find a method to disable Chinese input in normal/visual mode, i.e. different selection rendering
+* find a method to disable Chinese input in normal/visual mode, also dictation on Mac, i.e. different selection rendering
 * patch chrome/electron so we get a better looking selection
 * macros
 * theme system
@@ -101,5 +99,7 @@
 * ~~fix empty document~~
 * ~~visual mode~~
 * ~~node visual~~
-* ~~visual delete~~
+* ~~visual node delete~~
 * ~~key sequence: dd~~
+* ~~repeatable: test if find works ok~~
+* ~~visual delete~~

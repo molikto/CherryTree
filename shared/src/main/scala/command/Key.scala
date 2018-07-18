@@ -62,6 +62,7 @@ object Key {
   case object Backspace extends V
   case object Tab extends V
   case object Escape extends V
+  object Delete extends V
 
   case class Unknown(k: String) extends V // a key not yet defined here...
 
@@ -81,5 +82,7 @@ object Key {
   implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).codePoints.map(assciiKeyWithModifier)
 
   implicit def singleToKey(s: V): KeySeq = Seq(Key(s))
+
+
 }
 

@@ -4,6 +4,10 @@ package object range {
 
 
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
+
+
+    override def toString(): String = s"($start, $until)"
+
     def merge(move: IntRange): IntRange = IntRange(start min move.start, until max move.until)
 
 
@@ -22,10 +26,13 @@ package object range {
 
     override def size: Int = until - start
 
+    override def nonEmpty: Boolean = size > 0
     override def isEmpty: Boolean = size == 0
 
     def moveBy(a: Int): IntRange = IntRange(start + a, until + a)
 
+    def moveByOrZeroZero(a: Int): IntRange =
+      if (start + a >= 0) IntRange(start + a, until + a) else IntRange(0, 0)
     /**
       * positions: 0 1 2 3
       * range: [1, 2]
@@ -87,8 +94,6 @@ package object range {
 
 
   object IntRange {
-
-    def empty(a: Int) = IntRange(a, a)
 
     def apply(a: Int): IntRange = IntRange(a, a + 1)
 

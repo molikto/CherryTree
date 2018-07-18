@@ -40,8 +40,9 @@ object Rich extends OperationObject[data.Rich, Rich] {
     )
   }
 
+  def delete(range: Seq[IntRange]): Rich = Rich(range.map(a => Unicode.Delete(a)), Type.Delete)
 
-  def delete(range: IntRange): Rich = Rich(Seq(Unicode.Delete(range)), Type.Delete)
+  def delete(range: IntRange): Rich = delete(Seq(range))
 
   def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
 

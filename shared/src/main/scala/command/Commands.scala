@@ -40,8 +40,15 @@ trait Commands { self: Client =>
   private val commands_ = new ArrayBuffer[Command]()
   private var waitingForCharCommand: (Command, Int) = null
 
-  private var commandCounts: Int = 1
+  private var commandCounts: String = ""
 
+  def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
+    if (waitingForCharCommand != null) {
+      if (!waitingForCharCommand._1.available(state)) {
+        clearWaitingForGraphemeCommand()
+      }
+    }
+  }
 
   {
     var ignored: Command = Command.RichMotion.toNextChar
@@ -61,8 +68,6 @@ trait Commands { self: Client =>
     * return false if no command is exec and not waiting
     */
   def tryDoCommandExact(): Boolean = {
-    println(commandPartConfirmed)
-    println(commandsToConfirm.map(_.keys))
     val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state))
     if (availableCommands.isEmpty) {
       commandPartConfirmed = Seq.empty
@@ -75,8 +80,8 @@ trait Commands { self: Client =>
         case Some(exact) =>
           commandsToConfirm = Seq.empty
           commandPartConfirmed = Seq.empty
-          val c = commandCounts
-          commandCounts = 1
+          val c = if (commandCounts.isEmpty) 1 else commandCounts.toInt
+          commandCounts = ""
           act(exact, c)
         case None =>
           commandsToConfirm = availableCommands
@@ -112,7 +117,7 @@ trait Commands { self: Client =>
         doCommand()
       } else {
         key.a match {
-          case Key.Grapheme(a) if a.isDigit => commandCounts = commandCounts * 10 + a.asDigit
+          case Key.Grapheme(a) if a.isDigit && (commandCounts.length > 0 || a.asDigit != 0) => commandCounts = commandCounts + a
           case _ =>
             doCommand()
         }
@@ -137,13 +142,6 @@ trait Commands { self: Client =>
 
   def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
 
-  def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
-    if (waitingForCharCommand != null) {
-      if (!waitingForCharCommand._1.available(state)) {
-        clearWaitingForGraphemeCommand()
-      }
-    }
-  }
 
   def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
     if (waitingForCharCommand != null) {
@@ -296,8 +294,8 @@ trait Commands { self: Client =>
 
         def findGrapheme(a: ClientState, char: Grapheme, count: Int, skipCurrent: Boolean): Client.Update = {
           val (_, content, mm) = a.asRichNormalOrVisual
-          def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, _) =>
-            r.flatMap(rr => moveSkip(content, rr, char, skipCurrent))
+          def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
+            r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
           }
           mm match {
             case mode.Content.RichNormal(r) =>
@@ -569,7 +567,7 @@ trait Commands { self: Client =>
         override def defaultKeys: Seq[KeySeq] = Seq("o")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
-          val pos = a.asNormal
+          val pos = a.asNormal._1
           val mover = a.mover()
           val insertionPoint = if (pos == cursor.Node.root) {
             Seq(0)
@@ -587,7 +585,7 @@ trait Commands { self: Client =>
         override def defaultKeys: Seq[KeySeq] = Seq("O")
         override def available(a: ClientState): Boolean = a.isNormal
         override def action(a: ClientState, count: Int): Client.Update = {
-          val pos = a.asNormal
+          val pos = a.asNormal._1
           if (pos == cursor.Node.root) {
             // LATER wrap?
             noUpdate()
@@ -717,26 +715,116 @@ trait Commands { self: Client =>
     }
 
     object Delete {
+
+      private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
+        val soc = new ArrayBuffer[IntRange]()
+        val roc = new ArrayBuffer[IntRange]()
+        val rich = a.node(pos).content.asInstanceOf[Content.Rich].content
+        val ifs = rich.info(r)
+        for (i <- ifs) {
+          if (i.isStart) {
+            val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+            val end = i.nodeStart + i.text.size - 1
+            if (!r.contains(end)) {
+              soc.append(IntRange(i.nodeStart))
+              roc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
+            }
+          } else if (i.isEnd) {
+            val start = i.nodeStart
+            if (!r.contains(start)) {
+              val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+              soc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
+              roc.append(IntRange(i.nodeStart))
+            }
+          }
+        }
+        val ds = (Seq(r.start) ++ soc.flatMap(a => Seq(a.start, a.until)) ++ Seq(r.until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
+        def deleteRanges(i: Seq[IntRange]): Client.Update = {
+          val posTo = rich.moveRightAtomic(r).moveByOrZeroZero(-i.map(_.size).sum)
+          Client.Update(
+            Seq(operation.Node.Content(pos,
+              operation.Content.Rich(operation.Rich.delete(i))
+            )),
+            Some(mode.Node.Content(pos, mode.Content.RichNormal(posTo)))
+          )
+        }
+        if (ds.isEmpty) {
+          if (ifs.forall(_.isStart)) {
+            deleteRanges((roc ++ Seq(r)).sortBy(-_.start))
+          } else if (ifs.forall(_.isEndOrAttributeTagOrContent)) {
+            deleteRanges((roc ++ Seq(r)).sortBy(-_.start))
+          } else {
+            noUpdate()
+          }
+        } else {
+          deleteRanges(ds.reverse)
+        }
+      }
+
       val deleteAfterVisual: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("d")
+        override def defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
         override def available(a: ClientState): Boolean = a.isVisual
         override def action(a: ClientState, count: Int): Client.Update = a.mode match {
           case Some(model.mode.Node.Visual(fix , move)) =>
             cursor.Node.minimalRange(fix, move).map(r =>
               Client.Update(Seq(operation.Node.Delete(r)), {
-                val pos = if (a.node.get(r.until).isDefined) {
-                  r.until
+                val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
+                  (r.until, r.start)
                 } else if (r.childs.start > 0) {
-                  r.parent :+ (r.childs.start - 1)
+                  val p = r.parent :+ (r.childs.start - 1)
+                  (p, p)
                 } else {
-                  r.parent
+                  (r.parent, r.parent)
                 }
-                Some(model.data.Node.defaultNormalMode(a.node, pos))
+                Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
               })).getOrElse(noUpdate())
-          case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) =>
-            // TODO delete rich visual
-            ???
+          case Some(model.mode.Node.Content(pos, model.mode.Content.RichVisual(f, m))) =>
+            deleteRichNormalRange(a, pos, f.merge(m))
           case _ => throw new IllegalArgumentException("Invalid command")
+        }
+      }
+
+      val delete: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("x", Key.Delete)
+        override def available(a: ClientState): Boolean = a.isNormal
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val (pos, normal) = a.asNormal
+          normal match {
+            case model.mode.Content.RichNormal(r) =>
+              val rich = a.node(pos).content.asInstanceOf[model.data.Content.Rich].content
+              val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
+              deleteRichNormalRange(a, pos, r.merge(fr))
+            case model.mode.Content.CodeNormal =>
+              Client.Update(Seq(operation.Node.Replace(pos, a.node(pos).content.asInstanceOf[model.data.Content.Code].copy(unicode = Unicode.empty))),
+                a.mode)
+          }
+        }
+      }
+
+      val deleteBefore: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("X")
+        override def available(a: ClientState): Boolean = a.isNormal
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val (pos, normal) = a.asNormal
+          normal match {
+            case model.mode.Content.RichNormal(r) =>
+              val rich = a.node(pos).content.asInstanceOf[model.data.Content.Rich].content
+              val rr = rich.moveLeftAtomic(r)
+              val fr = (1 until count).foldLeft(rr) {(r, _) => rich.moveLeftAtomic(r) }
+              deleteRichNormalRange(a, pos, rr.merge(fr))
+            case model.mode.Content.CodeNormal =>
+              Client.Update(Seq(operation.Node.Replace(pos, a.node(pos).content.asInstanceOf[model.data.Content.Code].copy(unicode = Unicode.empty))),
+                a.mode)
+          }
+        }
+      }
+
+      val deleteMotion: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("d")
+        override def available(a: ClientState): Boolean = a.isNormal
+
+        override def action(a: ClientState, count: Int): Client.Update = {
+          noUpdate()
         }
       }
     }

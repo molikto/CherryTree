@@ -39,6 +39,7 @@ package object view {
       "Shift" -> Shift,
       "Meta" -> Meta,
       "Control" -> Control,
+      "Delete" -> Delete,
       "Alt" -> Alt
     )
   }

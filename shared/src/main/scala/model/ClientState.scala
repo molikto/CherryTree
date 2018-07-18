@@ -65,12 +65,12 @@ case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
     case _ => throw new MatchError("Not possible")
   }
 
-  def asNormal: cursor.Node = {
+  def asNormal: (cursor.Node, model.mode.Content.Normal) = {
     mode match {
       case Some(model.mode.Node.Content(n, c)) =>
         c match {
-          case model.mode.Content.RichNormal(_) => n
-          case model.mode.Content.CodeNormal => n
+          case t@model.mode.Content.RichNormal(_) => (n, t)
+          case t@model.mode.Content.CodeNormal => (n, t)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

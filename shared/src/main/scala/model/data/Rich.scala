@@ -35,6 +35,7 @@ case class Info(
   def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
   def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
   def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
+  def isEndOrAttributeTagOrContent: Boolean = isEnd || isAttributeTag || ty == InfoType.AttributeUnicode
   def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
   def positionInUnicode: Int = {
     val p = text match {
@@ -157,6 +158,7 @@ case class Rich(text: Seq[Text]) {
     buffer.toVector
   }
 
+  def info(a: IntRange): Seq[Info] = infos.slice(a.start, a.start + a.size)
   def info(a: Int): Info = Text.info(Seq.empty[Int], 0, text, a)
 
   def beginningAtomicRange(): IntRange = text.headOption match {
