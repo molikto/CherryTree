@@ -761,13 +761,8 @@ trait Commands { self: Client =>
         }
       }
 
-      val deleteAfterVisual: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
-        override def available(a: ClientState): Boolean = a.isVisual
-        override def action(a: ClientState, count: Int): Client.Update = a.mode match {
-          case Some(model.mode.Node.Visual(fix , move)) =>
-            cursor.Node.minimalRange(fix, move).map(r =>
-              Client.Update(Seq(operation.Node.Delete(r)), {
+      private def deleteNodeRange(a: ClientState, r: model.range.Node): Client.Update = {
+           Client.Update(Seq(operation.Node.Delete(r)), {
                 val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
                   (r.until, r.start)
                 } else if (r.childs.start > 0) {
@@ -777,7 +772,15 @@ trait Commands { self: Client =>
                   (r.parent, r.parent)
                 }
                 Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
-              })).getOrElse(noUpdate())
+              })
+      }
+
+      val deleteAfterVisual: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Key.Delete)
+        override def available(a: ClientState): Boolean = a.isVisual
+        override def action(a: ClientState, count: Int): Client.Update = a.mode match {
+          case Some(model.mode.Node.Visual(fix , move)) =>
+            cursor.Node.minimalRange(fix, move).map(r => deleteNodeRange(a, r)).getOrElse(noUpdate())
           case Some(model.mode.Node.Content(pos, model.mode.Content.RichVisual(f, m))) =>
             deleteRichNormalRange(a, pos, f.merge(m))
           case _ => throw new IllegalArgumentException("Invalid command")
@@ -826,6 +829,14 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = {
           noUpdate()
         }
+      }
+
+      val deleteLines: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("dd")
+
+        override def available(a: ClientState): Boolean = a.isNormal
+
+        override def action(a: ClientState, count: Int): Client.Update = deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
       }
     }
 
