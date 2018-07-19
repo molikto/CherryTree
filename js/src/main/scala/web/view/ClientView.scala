@@ -308,13 +308,13 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             val toParent = childListAt(to.dropRight(1))
             val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
             if (to.last < toParent.childNodes.length) {
-              nodes.foreach(n => {
-                toParent.appendChild(n)
-              })
-            } else {
               val before = toParent.childNodes.item(to.last)
               nodes.foreach(n => {
                 toParent.insertBefore(n, before)
+              })
+            } else {
+              nodes.foreach(n => {
+                toParent.appendChild(n)
               })
             }
         }
