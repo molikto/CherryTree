@@ -231,7 +231,7 @@ trait Commands { self: Client =>
 
     }
     val exit: Command = new SideEffectingCommand {
-      override val defaultKeys: Seq[KeySeq] = Seq(Escape, Control + "c", Control + "[")
+      override val defaultKeys: Seq[KeySeq] = Seq(Escape, Ctrl + "c", Ctrl + "[")
       override def available(a: ClientState): Boolean = true
 
       override def action(a: ClientState, ignore: Int): Client.Update = {
@@ -797,7 +797,7 @@ trait Commands { self: Client =>
       }
       val backspace: Command = new EditCommand with OverrideCommand {
         // TODO these keys should be seperate delete words, etc...
-        override val hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Control + "h") else Seq.empty[KeySeq])
+        override val hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
         override def edit(content: Rich, a: Int): Option[operation.Rich] = {
           if (a > 0) {
             Some(operation.Rich.deleteOrUnwrapAt(content, a - 1)) // we don't explicitly set mode, as insert mode transformation is always correct
@@ -949,24 +949,24 @@ trait Commands { self: Client =>
         }
       }
       val unindent: Command = new IndentCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Control + "h")
+        override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h")
         override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
           mover.parent(node.start).flatMap(p => {
             mover.parent(p).map(pp => pp :+ (p.last + 1))
           })
       }
       val indent: Command = new IndentCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq(Tab, Control + "l")
+        override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l")
         override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
           mover.previous(node.start).map(a => a :+ mover.size(a))
       }
       val swapDown: Command = new MoveCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq(Control + "j")
+        override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "j")
         override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
           mover.next(node).map(k => mover.nextOver(k))
       }
       val swapUp: Command = new MoveCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq(Control + "k")
+        override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k")
         override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
           mover.previous(node)
       }

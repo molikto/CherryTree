@@ -3,6 +3,8 @@ package command
 import model.data.Unicode
 import util.GraphemeSplitter
 
+import scala.collection.mutable.ArrayBuffer
+
 // key is a unicode codepoint
 
 import Key.KeySeq
@@ -15,11 +17,21 @@ case class Key(
   meta: Boolean = false) {
 
 
+  override def toString: String = {
+    val sb = new ArrayBuffer[String]()
+    if (shift) sb.append("Shift")
+    if (alt) sb.append("Ctrl")
+    if (alt) sb.append("Alt")
+    if (meta) sb.append("Meta")
+    sb.append(a.toString)
+    sb.mkString("+")
+  }
+
   def withAllModifers: Seq[KeySeq] = {
     import Key._
     val allTrue = copy(shift = true, alt = true, control = true, meta = true)
     Seq(this,
-      Shift + this, Meta + this, Control + this, Alt + this,
+      Shift + this, Meta + this, Ctrl + this, Alt + this,
       copy(shift = true, meta = true), copy(shift = true, control = true), copy(shift = true, meta = true),
       copy(alt = true, control = true), copy(alt = true, meta = true), copy(control = true, meta = true),
       allTrue.copy(shift = false), allTrue.copy(alt = false), allTrue.copy(control = false), allTrue.copy(meta = false),
@@ -41,7 +53,7 @@ object Key {
   case object Meta extends Modifier {
     def +(key: Key): Key = key.copy(meta = true)
   }
-  case object Control extends Modifier {
+  case object Ctrl extends Modifier {
     def +(key: Key): Key = key.copy(control = true)
   }
   case object Alt extends Modifier {
@@ -64,7 +76,6 @@ object Key {
   case object Backspace extends V
   case object Tab extends V
   case object Escape extends V
-  case object ShiftShift extends V
   object Delete extends V
 
   case class Unknown(k: String) extends V // a key not yet defined here...

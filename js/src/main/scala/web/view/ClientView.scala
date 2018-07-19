@@ -66,7 +66,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     divider(),
     commandStatus,
     divider(),
-    debugVersionInfo,
     debugErrorInfo
   ).render
   dom.appendChild(bottomBar)
@@ -209,7 +208,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       }
     }
     if (text == "") {
-      mode.textContent = "NO MODE"
+      mode.textContent = EmptyStr
       mode.style.color = theme.disalbedInfo
     } else {
       mode.textContent = text
@@ -346,7 +345,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       }
       updateMode(update.mode, update.viewUpdated)
       updateModeIndicator()
-      debugVersionInfo.textContent = client.version.toString
     }).subscribe())
 
     defer(client.errors.doOnNext {
