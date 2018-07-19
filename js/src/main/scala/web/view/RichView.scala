@@ -369,6 +369,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         previous = center.previousSibling
       }
       while (next != null && next.isInstanceOf[raw.Text]) {
+
         next.parentNode.removeChild(next)
         next = center.nextSibling
       }

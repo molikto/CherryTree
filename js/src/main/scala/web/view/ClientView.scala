@@ -317,6 +317,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
                 toParent.appendChild(n)
               })
             }
+            // might lost focus due to implementation, so we force a update!
+            updateMode(None, viewUpdated = false)
         }
       }
       updateMode(update.mode, update.viewUpdated)

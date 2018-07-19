@@ -891,18 +891,15 @@ trait Commands { self: Client =>
         }
       }
       abstract class IndentCommand extends  Command {
-        override def available(a: ClientState): Boolean = a.isNodeVisual || a.isNormal
+        override def available(a: ClientState): Boolean = a.mode.nonEmpty
         def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
 
         override def action(a: ClientState, count: Int): Client.Update = {
           def act(r: range.Node) = targetTo(a.mover(), r).map(k => operation.Node.Move(r, k))
-          val res = if (a.isNormal) {
-            a.asNormal._1 match {
-              case cursor.Node.root => None
-              case w => act(range.Node(w))
-            }
-          } else {
-            a.asNodeVisual.minimalRange.flatMap(k => act(k))
+          val res = a.mode.get match {
+            case v: model.mode.Node.Visual =>
+              a.asNodeVisual.minimalRange.flatMap(k => act(k))
+            case c@model.mode.Node.Content(at, _) => if (at == cursor.Node.root) None else act(range.Node(at))
           }
           Client.Update(res.toSeq, None, unfoldBefore = res.toSeq.map(_.to))
         }
