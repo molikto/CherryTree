@@ -76,7 +76,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def initEmptyContent(): Unit = {
-    dom.appendChild(span("∅", color := "#636e83").render)
+    dom.appendChild(span(EmptyStr, color := clientView.theme.disalbedInfo).render)
   }
 
   private def initEmptyNormalMode(): Unit = {

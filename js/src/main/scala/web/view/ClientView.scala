@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{Commands, Key}
+import command.{CommandStatus, Commands, Key}
 import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -41,15 +41,15 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   private val bottomBarSize = "24px"
 
 
-  private val mode = span(
-    "", onclick := { () => println(client.commands.filter(_.available(client.state)).map(_.keys)) }).render
+  private val mode = span("").render
+  private val commandStatus = span("").render
 
   private val debugVersionInfo = span(marginLeft := "12px", "0", onclick := {() =>
     client.change(model.operation.Node.randomTransaction(2, client.state.node, new Random()), None) }).render
 
-  private val debugKeyInfo = span(marginLeft := "12px", "").render
-
   private val debugErrorInfo = span(color := "red", marginLeft := "12px", "").render
+
+  private def divider() = span(" | ", color := theme.disalbedInfo)
 
   private val bottomBar = div(
     width := "100%",
@@ -63,8 +63,10 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     flexDirection := "row",
     color := theme.bottomBarText,
     mode,
+    divider(),
+    commandStatus,
+    divider(),
     debugVersionInfo,
-    debugKeyInfo,
     debugErrorInfo
   ).render
   dom.appendChild(bottomBar)
@@ -167,8 +169,25 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     previousNodeVisual = ArrayBuffer.empty
   }
 
+  {
+    defer(client.commandStatus.doOnNext(c => {
+      val (text, color) = c match {
+        case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
+        case CommandStatus.InputtingCount(a: String) => (a, null)
+        case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
+        case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
+        case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
+          (Seq(count, renderKeySeq(k), char.map(_.toString).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
+        case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
+          (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
+      }
+      commandStatus.textContent = text
+      mode.style.color = color
+    }).subscribe())
+  }
+
   private def updateModeIndicator(): Unit = {
-    mode.textContent = Seq(client.state.mode match {
+    val text = client.state.mode match {
       case None =>
         ""
       case Some(mm) => mm match {
@@ -188,7 +207,14 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         case v@model.mode.Node.Visual(_, _) =>
           "NODE VISUAL"
       }
-    }, client.commandCountsText, client.commandNotConfirmed.map(_.toString).mkString("")).filter(_.nonEmpty).mkString(" ")
+    }
+    if (text == "") {
+      mode.textContent = "NO MODE"
+      mode.style.color = theme.disalbedInfo
+    } else {
+      mode.textContent = text
+      mode.style.color = null
+    }
   }
 
   def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
@@ -339,7 +365,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
     val kd = client.keyDown(kk)
     updateModeIndicator()
-    debugKeyInfo.textContent = System.currentTimeMillis().toString.takeRight(10) + " " + event.key + " " + kk.toString + " " + kd
     if (kd) {
       event.preventDefault()
     }

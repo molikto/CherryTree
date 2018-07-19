@@ -1,6 +1,7 @@
 package web
 
 import command.Key
+import command.Key.KeySeq
 import org.scalajs.dom
 import org.scalajs.dom.raw.{HTMLDivElement, HTMLElement}
 import org.scalajs.dom.{Event, Node, html}
@@ -9,6 +10,8 @@ import scala.scalajs.js
 
 
 package object view {
+
+  val EmptyStr = "∅"
   def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
 
   def removeAllChild(a: HTMLElement): Unit = {
@@ -42,5 +45,13 @@ package object view {
       "Delete" -> Delete,
       "Alt" -> Alt
     )
+  }
+
+  def renderKeySeq(k: KeySeq): String = {
+    if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
+      k.map(_.a.asInstanceOf[Key.Grapheme].a.toString).mkString("")
+    } else {
+      k.toString()
+    }
   }
 }

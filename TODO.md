@@ -36,6 +36,7 @@
 * drag drop
 * search and replace
 * line motions? they are actually pretty useful?
+* clean up interaction of info and command too nasty
 
 ## server
 

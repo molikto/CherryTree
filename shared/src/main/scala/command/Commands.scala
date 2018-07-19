@@ -13,16 +13,20 @@ import scala.util.{Success, Try}
 import Key._
 import model.cursor.Node
 import model.operation.Node
+import monix.reactive.Observable
 import monix.reactive.subjects.PublishSubject
 import util.ObservableProperty
 
 // comments from quickref.txt  For Vim version 8.1.  Last change: 2018 Apr 18
 // also a recent version of Vimflowy
 
+
 abstract class Command {
 
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
+  
+  def needsChar: Boolean = false
 
   // TODO user keymap
   def keyLevel(c: KeySeq): Int = {
@@ -42,10 +46,12 @@ abstract class Command {
 
 trait Commands { self: Client =>
 
-
+  private val status =  PublishSubject[CommandStatus]()
+  def commandStatus: Observable[CommandStatus] = status
+  
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[command.Command]
-  private var waitingForCharCommand: (command.Command, Int) = null
+  private var waitingForCharCommand: (command.Command, KeySeq, String) = null
   private var lastFindCommand: (Command.RichMotion.FindCommand, Grapheme) = null
 
   private var commandCounts: String = ""
@@ -58,6 +64,10 @@ trait Commands { self: Client =>
         clearWaitingForGraphemeCommand()
       }
     }
+  }
+  
+  def startWaitingForChar(a: command.Command): Unit = {
+    
   }
 
   private val commands_ = new ArrayBuffer[command.Command]()
@@ -86,8 +96,14 @@ trait Commands { self: Client =>
   def tryDoCommandExact(): Boolean = {
     val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state))
     if (availableCommands.isEmpty) {
-      commandPartConfirmed = Seq.empty
-      commandsToConfirm = Seq.empty
+      if (!commandPartConfirmed.forall(_.a.isInstanceOf[Modifier])) {
+        val pCounts = commandCounts
+        val ptoConfirm = commandPartConfirmed
+        commandCounts = ""
+        commandPartConfirmed = Seq.empty
+        commandsToConfirm = Seq.empty
+        status.onNext(CommandStatus.LastNotFound(pCounts, ptoConfirm))
+      }
       false
     } else {
       var exacts = availableCommands.filter(_.keys.contains(commandPartConfirmed))
@@ -101,13 +117,26 @@ trait Commands { self: Client =>
       }
       exacts.headOption match {
         case Some(exact) =>
+          val pCounts = commandCounts
+          val ptoConfirm = commandPartConfirmed
           commandsToConfirm = Seq.empty
           commandPartConfirmed = Seq.empty
           val c = if (commandCounts.isEmpty) 1 else commandCounts.toInt
           commandCounts = ""
-          act(exact, c)
+          if (exact.needsChar) {
+            waitingForCharCommand = (exact, ptoConfirm, pCounts)
+            status.onNext(CommandStatus.WaitingForChar(pCounts, ptoConfirm))
+          } else {
+            act(exact, c)
+            if (exact == Command.exit) {
+              status.onNext(CommandStatus.Empty)
+            } else {
+              status.onNext(CommandStatus.LastPerformed(pCounts, ptoConfirm, None))
+            }
+          }
         case None =>
           commandsToConfirm = availableCommands
+          status.onNext(CommandStatus.WaitingForConfirm(commandCounts, commandPartConfirmed))
       }
       true
     }
@@ -140,7 +169,9 @@ trait Commands { self: Client =>
         doCommand()
       } else {
         key.a match {
-          case Key.Grapheme(a) if a.isDigit && (commandCounts.length > 0 || a.asDigit != 0) => commandCounts = commandCounts + a
+          case Key.Grapheme(a) if a.isDigit && (commandCounts.length > 0 || a.asDigit != 0) => 
+            commandCounts = commandCounts + a
+            status.onNext(CommandStatus.InputtingCount(commandCounts))
           case _ =>
             doCommand()
         }
@@ -157,17 +188,19 @@ trait Commands { self: Client =>
   def isWaitingForGraphemeCommand: Boolean = waitingForCharCommand != null
 
 
-  def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
+  private def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
     if (waitingForCharCommand != null) {
-      val res = waitingForCharCommand._1.actionOnGrapheme(state, a, waitingForCharCommand._2)
+      val ww = waitingForCharCommand
+      val res = ww._1.actionOnGrapheme(state, a, if (ww._3 == "") 1 else ww._3.toInt)
       waitingForCharCommand = null
+      status.onNext(CommandStatus.LastPerformed(ww._3, ww._2, Some(a.a)))
       res
     } else {
       noUpdate()
     }
   }
 
-  def clearWaitingForGraphemeCommand(): Unit = {
+  private def clearWaitingForGraphemeCommand(): Unit = {
     waitingForCharCommand = null
   }
 
@@ -176,6 +209,11 @@ trait Commands { self: Client =>
 
   abstract class Command extends command.Command {
     registerCommand(this)
+  }
+  
+  trait NeedsCharCommand extends Command {
+    override def needsChar: Boolean = true
+    override def action(a: ClientState, count: Int): Client.Update = throw new IllegalArgumentException("Not need this method")
   }
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
@@ -320,14 +358,10 @@ trait Commands { self: Client =>
       // bar   N  |            to column N (default: 1)
 
       // TODO make find not side effecting
-      abstract class FindCommand extends MotionCommand with SideEffectingCommand {
+      abstract class FindCommand extends MotionCommand with NeedsCharCommand  {
 
         def reverse: FindCommand
-
-        override def action(a: ClientState, count: Int): Client.Update = {
-          waitingForCharCommand = (this, count)
-          noUpdate()
-        }
+        
         def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
         def skip(a: Rich, range: IntRange): IntRange = range
         def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
@@ -1105,14 +1139,9 @@ trait Commands { self: Client =>
 
     object RichChange {
 
-      val replace: Command = new Command {
+      val replace: Command = new NeedsCharCommand {
         override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
         override def available(a: ClientState): Boolean = a.isRichNormal
-
-        override def action(a: ClientState, count: Int): Client.Update = {
-          waitingForCharCommand = (this, count)
-          noUpdate()
-        }
 
         override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
           val (cursor, rich, v) = a.asRichNormal
