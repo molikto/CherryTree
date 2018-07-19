@@ -25,9 +25,6 @@ import scala.util.Random
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
 
-
-
-
   var theme: ColorScheme = ColorScheme.default
 
   dom = div(
@@ -333,7 +330,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   }
 
 
-  event("keydown", (event: KeyboardEvent) => {
+  event(root, "keydown", (event: KeyboardEvent) => {
     var key = KeyMap.get(event.key).orNull
     if (key == null && Key.isUnicodeKey(event.key)) {
       key = Key.Grapheme(model.data.Unicode(event.key))
@@ -348,11 +345,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
   })
 
-  event("keyup", (event: KeyboardEvent) => {
+  event(root, "keyup", (event: KeyboardEvent) => {
     //window.console.log(event)
   })
 
-  event("keypress", (event: KeyboardEvent) => {
+  event(root, "keypress", (event: KeyboardEvent) => {
     //window.console.log(event)
   })
 
@@ -367,17 +364,17 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     * // LATER copy paste in normal mode??
     */
 
-  event("copy", (a: ClipboardEvent) => {
+  event(root, "copy", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
 
-  event("cut", (a: ClipboardEvent) => {
+  event(root, "cut", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
 
-  event("paste", (a: ClipboardEvent) => {
+  event(root, "paste", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
@@ -390,12 +387,12 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     */
 
-  event("mousedown", (a: MouseEvent) => {
+  event(root, "mousedown", (a: MouseEvent) => {
     a.preventDefault()
   })
 
 
-  event("mouseup", (a: MouseEvent) => {
+  event(root, "mouseup", (a: MouseEvent) => {
     // window.setTimeout(() => window.console.log(window.getSelection()), 1)
     a.preventDefault()
   })
@@ -403,7 +400,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   class MouseDown {
   }
 
-  event("contextmenu", (a: MouseEvent) => {
+  event(root, "contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
   })
@@ -418,23 +415,23 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     */
 
-  event("dragstart", (a: DragEvent) => {
+  event(root, "dragstart", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event("dragend", (a: DragEvent) => {
+  event(root, "dragend", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event("dragover", (a: DragEvent) => {
+  event(root, "dragover", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event("dragenter", (a: DragEvent) => {
+  event(root, "dragenter", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event("drop", (a: DragEvent) => {
+  event(root, "drop", (a: DragEvent) => {
     a.preventDefault()
   })
 

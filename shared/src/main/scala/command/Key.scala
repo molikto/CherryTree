@@ -64,6 +64,7 @@ object Key {
   case object Backspace extends V
   case object Tab extends V
   case object Escape extends V
+  case object ShiftShift extends V
   object Delete extends V
 
   case class Unknown(k: String) extends V // a key not yet defined here...

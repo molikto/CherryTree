@@ -67,4 +67,11 @@ abstract class View {
     dom.addEventListener(ty, listener)
     defer(_ => dom.removeEventListener(ty, listener))
   }
+
+  def event[T <: Event](node: HTMLElement, ty: String,
+    listener: js.Function1[T, _]): Unit = {
+    if (des == null) throw new IllegalAccessException("Destroyed!")
+    node.addEventListener(ty, listener)
+    defer(_ => node.removeEventListener(ty, listener))
+  }
 }
