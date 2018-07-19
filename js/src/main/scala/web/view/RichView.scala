@@ -361,6 +361,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def mergeTextsFix(center: raw.Text): String = {
     if (center.wholeText != center.textContent) {
+      center.textContent = center.wholeText
       var previous = center.previousSibling
       var next = center.nextSibling
       while (previous != null && previous.isInstanceOf[raw.Text]) {
@@ -371,11 +372,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         next.parentNode.removeChild(next)
         next = center.nextSibling
       }
-      center.textContent = center.wholeText
-      center.wholeText
-    } else {
-      center.textContent
     }
+    center.textContent
   }
 
   /**
