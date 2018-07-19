@@ -5,7 +5,6 @@ import model.range.IntRange
 package object mode {
   sealed abstract class Content {
     def isNormalOrVisual: Boolean = this.isInstanceOf[Content.NormalOrVisual]
-
     def isNormal: Boolean = this.isInstanceOf[Content.Normal]
   }
 

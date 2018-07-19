@@ -50,9 +50,9 @@ case class Info(
 
   def extendedGrapheme: Unicode = {
     if (ty == InfoType.Plain) {
-      text.asInstanceOf[Text.Plain].unicode.extendedGrapheme(positionInUnicode)
+      text.asPlain.unicode.extendedGrapheme(positionInUnicode)
     } else if (ty == InfoType.Coded) {
-      text.asInstanceOf[Text.Coded].content.extendedGrapheme(positionInUnicode)
+      text.asCoded.content.extendedGrapheme(positionInUnicode)
     } else {
       throw new IllegalStateException("Invalid xml structure")
     }
@@ -60,9 +60,9 @@ case class Info(
 
   def extendedGraphemeRange: IntRange = {
     if (ty == InfoType.Plain) {
-      text.asInstanceOf[Text.Plain].unicode.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart)
+      text.asPlain.unicode.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart)
     } else if (ty == InfoType.Coded) {
-      text.asInstanceOf[Text.Coded].content.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart + 1)
+      text.asCoded.content.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart + 1)
     } else {
       throw new IllegalStateException("Invalid xml structure")
     }
@@ -134,7 +134,7 @@ case class Rich(text: Seq[Text]) {
   def infoSkipLeftAttributes(pos: Int): Info = {
     val f = info(pos)
     if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
-      info(f.nodeStart + f.text.asInstanceOf[Text.Delimited[Any]].contentSize)
+      info(f.nodeStart + f.text.asDelimited.contentSize)
     } else {
       f
     }
@@ -175,7 +175,7 @@ case class Rich(text: Seq[Text]) {
     val roc = new ArrayBuffer[IntRange]()
     for (i <- ifs) {
       if (i.isStart) {
-        val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+        val contentSize = i.text.asDelimited.contentSize
         val end = i.nodeStart + i.text.size - 1
         if (!a.contains(end)) {
           soc.append(IntRange(i.nodeStart))
@@ -184,7 +184,7 @@ case class Rich(text: Seq[Text]) {
       } else if (i.isEnd) {
         val start = i.nodeStart
         if (!a.contains(start)) {
-          val contentSize = i.text.asInstanceOf[Text.Delimited[Any]].contentSize
+          val contentSize = i.text.asDelimited.contentSize
           soc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
           roc.append(IntRange(i.nodeStart))
         }

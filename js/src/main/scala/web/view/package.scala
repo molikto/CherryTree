@@ -47,6 +47,15 @@ package object view {
     )
   }
 
+  val jQ: js.Dynamic = js.Dynamic.global.jQuery
+
+  def jsObject(a: js.Dynamic => Unit): js.Dynamic = {
+    val k =
+      js.Object().asInstanceOf[js.Dynamic]
+    a(k)
+    k
+  }
+
   def renderKeySeq(k: KeySeq): String = {
     if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
       k.map(_.a.asInstanceOf[Key.Grapheme].a.toString).mkString("")

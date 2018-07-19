@@ -38,7 +38,7 @@
 }
 
 ::selection {
-    background: #58917488;
+    background: #98617488;
 }
 
 
@@ -65,6 +65,11 @@
     font-style: normal;
     color: #636e83;
     font-weight:normal;
+}
+
+.ct-splitter {
+    cursor: col-resize;
+    max-width: 50%
 }
 
 /*

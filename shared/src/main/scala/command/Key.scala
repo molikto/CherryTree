@@ -16,6 +16,10 @@ case class Key(
   control: Boolean = false,
   meta: Boolean = false) {
 
+  def isModifier: Boolean = a match {
+    case m: Key.Modifier => true
+    case _ => false
+  }
 
   override def toString: String = {
     val sb = new ArrayBuffer[String]()

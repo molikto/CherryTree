@@ -14,7 +14,7 @@ import Key._
 import model.cursor.Node
 import model.operation.Node
 import monix.reactive.Observable
-import monix.reactive.subjects.PublishSubject
+import monix.reactive.subjects.{BehaviorSubject, PublishSubject}
 import util.ObservableProperty
 
 // comments from quickref.txt  For Vim version 8.1.  Last change: 2018 Apr 18
@@ -46,7 +46,7 @@ abstract class Command {
 
 trait Commands { self: Client =>
 
-  private val status =  PublishSubject[CommandStatus]()
+  private val status =  BehaviorSubject[CommandStatus](CommandStatus.Empty)
   def commandStatus: Observable[CommandStatus] = status
   
   private var commandPartConfirmed: KeySeq = Seq.empty
@@ -64,10 +64,6 @@ trait Commands { self: Client =>
         clearWaitingForGraphemeCommand()
       }
     }
-  }
-  
-  def startWaitingForChar(a: command.Command): Unit = {
-    
   }
 
   private val commands_ = new ArrayBuffer[command.Command]()
@@ -101,7 +97,7 @@ trait Commands { self: Client =>
       commandCounts = ""
       commandPartConfirmed = Seq.empty
       commandsToConfirm = Seq.empty
-      if (!commandPartConfirmed.forall(_.a.isInstanceOf[Modifier])) {
+      if (!commandPartConfirmed.forall(_.isModifier)) {
         status.onNext(CommandStatus.LastNotFound(pCounts, ptoConfirm))
       }
       false
@@ -279,13 +275,13 @@ trait Commands { self: Client =>
       override def available(a: ClientState): Boolean = a.isRichNormalOrVisual && {
         val (_, rich, nv) = a.asRichNormalOrVisual
         val t = rich.info(nv.focus.start).text
-        t.isInstanceOf[model.data.Text.Delimited[Any]] && t.asInstanceOf[model.data.Text.Delimited[Any]].delimitation.attributes.contains(model.data.UrlAttribute)
+        t.isDelimited && t.asDelimited.delimitation.attributes.contains(model.data.UrlAttribute)
       }
 
       override def action(a: ClientState, count: Int): Client.Update = {
         val (_, rich, nv) = a.asRichNormalOrVisual
         val t = rich.info(nv.focus.start).text
-        val url = t.asInstanceOf[model.data.Text.Delimited[Any]].attribute(model.data.UrlAttribute).toString
+        val url = t.asDelimited.attribute(model.data.UrlAttribute).toString
         import io.lemonlabs.uri._
         Try {Url.parse(url)} match {
           case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))
@@ -981,7 +977,7 @@ trait Commands { self: Client =>
       //:d    :[range]d [x]   delete [range] lines [into register x]
 
       private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
-        val rich = a.node(pos).content.asInstanceOf[Content.Rich].content
+        val rich = a.rich(pos)
         val (ifs, soc, roc) = rich.infoAndSingleSpecials(r)
         val ds = r.minusOrderedInside(soc)
         def deleteRanges(i: Seq[IntRange]): Client.Update = {
@@ -1044,36 +1040,24 @@ trait Commands { self: Client =>
 
       val delete: Command = new Command {
         override val defaultKeys: Seq[KeySeq] = Seq("x", Key.Delete)
-        override def available(a: ClientState): Boolean = a.isNormal
+        override def available(a: ClientState): Boolean = a.isRichNormal
         override def action(a: ClientState, count: Int): Client.Update = {
-          val (pos, normal) = a.asNormal
-          normal match {
-            case model.mode.Content.RichNormal(r) =>
-              val rich = a.node(pos).content.asInstanceOf[model.data.Content.Rich].content
-              val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
-              deleteRichNormalRange(a, pos, r.merge(fr))
-            case model.mode.Content.CodeNormal =>
-              Client.Update(Seq(operation.Node.Replace(pos, a.node(pos).content.asInstanceOf[model.data.Content.Code].copy(unicode = Unicode.empty))),
-                a.mode)
-          }
+          val (pos, rich, normal) = a.asRichNormal
+          val r = normal.range
+          val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
+          deleteRichNormalRange(a, pos, r.merge(fr))
         }
       }
 
       val deleteBefore: Command = new Command {
         override val defaultKeys: Seq[KeySeq] = Seq("X")
-        override def available(a: ClientState): Boolean = a.isNormal
+        override def available(a: ClientState): Boolean = a.isRichNormal
         override def action(a: ClientState, count: Int): Client.Update = {
-          val (pos, normal) = a.asNormal
-          normal match {
-            case model.mode.Content.RichNormal(r) =>
-              val rich = a.node(pos).content.asInstanceOf[model.data.Content.Rich].content
-              val rr = rich.moveLeftAtomic(r)
-              val fr = (1 until count).foldLeft(rr) {(r, _) => rich.moveLeftAtomic(r) }
-              deleteRichNormalRange(a, pos, rr.merge(fr))
-            case model.mode.Content.CodeNormal =>
-              Client.Update(Seq(operation.Node.Replace(pos, a.node(pos).content.asInstanceOf[model.data.Content.Code].copy(unicode = Unicode.empty))),
-                a.mode)
-          }
+          val (pos, rich, normal) = a.asRichNormal
+          val r = normal.range
+          val rr = rich.moveLeftAtomic(r)
+          val fr = (1 until count).foldLeft(rr) {(r, _) => rich.moveLeftAtomic(r) }
+          deleteRichNormalRange(a, pos, rr.merge(fr))
         }
       }
 
@@ -1168,8 +1152,8 @@ trait Commands { self: Client =>
                   }
 
                   def wrapUnwrap(): Client.Update = {
-                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
-                    val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asInstanceOf[Text.Delimited[Any]].contentSize), deli._1)
+                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
+                    val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asDelimited.contentSize), deli._1)
                     Client.Update(
                       Seq(
                         operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
@@ -1181,8 +1165,8 @@ trait Commands { self: Client =>
                   if (SpecialChar.coded.contains(deli._1)) {
                     in.text match {
                       case formatted: Text.Formatted if formatted.content.size == 1 && formatted.content.head.isPlain =>
-                        val unicode = formatted.content.head.asInstanceOf[Text.Plain].unicode
-                        val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
+                        val unicode = formatted.content.head.asPlain.unicode
+                        val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
                         val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
                         return Client.Update(
                           Seq(

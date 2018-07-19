@@ -50,7 +50,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def deleteOrUnwrapAt(content: data.Rich, i: Int): Rich = {
     val info = content.infoSkipLeftAttributes(i)
     if (info.ty == InfoType.Special && !info.text.isAtomicViewed) {
-      operation.Rich.unwrap(info.nodeStart, info.text.asInstanceOf[Text.Delimited[Any]])
+      operation.Rich.unwrap(info.nodeStart, info.text.asDelimited)
     } else {
       operation.Rich.delete(info.atomicRange)
     }
@@ -185,7 +185,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
       None
     } else {
       val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Delimited[Any]]
+      val text = t._1.text.asDelimited
       val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
       val urlStart = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes.head)).get._2 + 1
       val urlEnd = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes(1))).get._2
@@ -203,7 +203,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
       None
     } else {
       val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Delimited[Any]]
+      val text = t._1.text.asDelimited
       val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor  && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
       Some(IntRange(t._2, end))
     }
@@ -219,7 +219,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
       None
     } else {
       val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asInstanceOf[data.Text.Coded]
+      val text = t._1.text.asCoded
       val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
       Some(IntRange(t._2, end))
     }

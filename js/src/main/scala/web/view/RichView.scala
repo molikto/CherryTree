@@ -199,7 +199,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def updateNonEmptyInsertCursorAt(pos: Int): (Node, Int) = {
     if (pos == 0) {
-      if (rich.text.head.isInstanceOf[Text.Plain]) {
+      if (rich.text.head.isPlain) {
         updateExistingTextNodeIn(domAt(Seq(0)), 0)
       } else {
         updateTempEmptyTextNodeIn(domChildArray(dom), 0)
@@ -216,7 +216,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val ee = rich.infoSkipRightAttributes(pos)
       if (ss.ty == InfoType.Plain) {
         if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
-          updateExistingTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
+          updateExistingTextNodeIn(domAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(ss.positionInUnicode + 1))
         } else {
           throw new IllegalStateException("Not possible")
         }
@@ -225,7 +225,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
           if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
           } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-            if (ee.text.isInstanceOf[Text.Code]) {
+            if (ee.text.isCode) {
               updateExistingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
             } else {
               updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
@@ -241,7 +241,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Coded) {
-        val unicode = ss.text.asInstanceOf[Text.Code].content
+        val unicode = ss.text.asCoded.content
         if (ee.ty == InfoType.Special) {
           updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
         } else if (ee.ty == InfoType.Coded) {
@@ -270,16 +270,16 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     if (ss.ty == InfoType.Coded &&
       ee.ty == InfoType.Coded &&
       ss.nodeCursor == ee.nodeCursor &&
-      ss.text.isInstanceOf[Text.Code]) {
+      ss.text.isCode) {
       val codeText = domCodeText(domAt(ss.nodeCursor))
-      val ast = ss.text.asInstanceOf[Text.Code]
+      val ast = ss.text.asCoded
       val sss = ast.content.toStringPosition(ss.positionInUnicode)
       val eee = ast.content.toStringPosition(ee.positionInUnicode + 1)
       (createRange(codeText, sss, codeText, eee), null)
     } else if (range.size == 1 &&
       ss.ty  == InfoType.Special &&
       SpecialChar.startsEnds.contains(ss.specialChar) &&
-      !ss.text.isInstanceOf[Text.AtomicSelected]) {
+      !ss.text.isAtomicViewed) {
       val isStart = SpecialChar.starts.contains(ss.specialChar)
       val a = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
       val range = if (isStart) (0, 1) else (2, 3)
@@ -287,7 +287,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     } else {
       val start = if (ss.ty == InfoType.Plain) {
         val text = domAt(ss.nodeCursor)
-        val s = ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode)
+        val s = ss.text.asPlain.unicode.toStringPosition(ss.positionInUnicode)
         (text, s)
       } else {
         assert(ss.isStart)
@@ -296,7 +296,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       }
       val end = if (ee.ty == InfoType.Plain) {
         val text = domAt(ee.nodeCursor)
-        val e = ee.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1)
+        val e = ee.text.asPlain.unicode.toStringPosition(ss.positionInUnicode + 1)
         (text, e)
       } else {
         assert(ee.isEnd)
@@ -500,8 +500,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   override def clearMode(): Unit = {
-    clientView.unmarkEditable(dom)
     initMode(if (isEmpty) -2 else -1)
+    clientView.unmarkEditable(dom)
   }
 
   override def initMode(): Unit = {

@@ -25,7 +25,12 @@ import scala.util.Random
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
 
-  var theme: ColorScheme = ColorScheme.default
+  /**
+    *
+    *
+    * create view
+    *
+    */
 
   dom = div(
     width := "100%",
@@ -38,51 +43,52 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   parent.appendChild(dom)
   defer(_ => parent.removeChild(dom))
 
-  private val bottomBarSize = "24px"
+  val bottomBar = new BottomBarView(client)
 
+  dom.appendChild(bottomBar.dom)
 
-  private val mode = span("").render
-  private val commandStatus = span("").render
-
-  private val debugVersionInfo = span(marginLeft := "12px", "0", onclick := {() =>
-    client.change(model.operation.Node.randomTransaction(2, client.state.node, new Random()), None) }).render
-
-  private val debugErrorInfo = span(color := "red", marginLeft := "12px", "").render
-
-  private def divider() = span(" | ", color := theme.disalbedInfo)
-
-  private val bottomBar = div(
+  private val topPanels = div(
     width := "100%",
-    paddingTop := "1px",
-    paddingLeft := "8px",
-    fontSize := "14px",
-    attr("user-select") := "none",
-    alignSelf := "flex-end",
-    height := bottomBarSize,
-    backgroundColor := theme.bottomBarBackground,
+    height := "100%",
+    display := "flex",
     flexDirection := "row",
-    color := theme.bottomBarText,
-    mode,
-    divider(),
-    commandStatus,
-    divider(),
-    debugErrorInfo
-  ).render
-  dom.appendChild(bottomBar)
+    overflow := "hidden").render
 
-  private val root = div(width := "100%",
+  val leftPanel = new CommandListView()
+
+  private val topPanelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
+
+  topPanels.appendChild(leftPanel.dom)
+  topPanels.appendChild(topPanelSplitter)
+
+  private val nodeRoot = div(
+    width := "100%",
     height := "100%",
     padding := "48px",
     color := theme.contentText,
     `class` := "ct-root",
     overflowY := "scroll"
   ).render
-  dom.appendChild(root)
+  topPanels.appendChild(nodeRoot)
 
+  dom.appendChild(topPanels)
+
+  jQ(leftPanel.dom).resizable(jsObject(a => {
+    a.handleSelector = "#ctTopPanelSplitter"
+    a.resizeHeight = "false"
+  }))
+
+  /**
+    *
+    *
+    *
+    * state
+    *
+    *
+    */
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   private var currentEditable: HTMLElement = noEditable
 
-  dom.appendChild(noEditable)
 
   def markEditable(dom: HTMLElement): Unit = {
     if (currentEditable == dom) return
@@ -110,7 +116,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     noEditable.focus()
   }
 
-
   private var focusContent: ContentView.General = null
 
   private def removeFocusContent(): Unit = {
@@ -120,14 +125,19 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
   }
 
-
+  /**
+    *
+    * node list
+    *
+    *
+    */
   def childListAt(at: model.cursor.Node): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       // ul, li, content
       else rec(a.childNodes(b.head).childNodes(0).childNodes(1), b.tail)
     }
-    rec(root.childNodes(0).childNodes(1), at).asInstanceOf[HTMLElement]
+    rec(nodeRoot.childNodes(0).childNodes(1), at).asInstanceOf[HTMLElement]
   }
 
   def contentAt(at: model.cursor.Node): ContentView.General = {
@@ -136,7 +146,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         // ul, li, content
       else rec(a.childNodes(1).childNodes(b.head).childNodes(0), b.tail)
     }
-    View.fromDom[ContentView.General](rec(root.childNodes(0), at))
+    View.fromDom[ContentView.General](rec(nodeRoot.childNodes(0), at))
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
@@ -152,7 +162,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
       case None =>
-        val rd = root.children(0)
+        val rd = nodeRoot.children(0)
         newVisual.append(rd)
       case Some(range) => update(childListAt(range.parent), range.childs.start, range.childs.until)
     }
@@ -168,51 +178,56 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     previousNodeVisual = ArrayBuffer.empty
   }
 
-  {
-    defer(client.commandStatus.doOnNext(c => {
-      val (text, color) = c match {
-        case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
-        case CommandStatus.InputtingCount(a: String) => (a, null)
-        case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-        case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-        case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
-          (Seq(count, renderKeySeq(k), char.map(_.toString).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
-        case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
-          (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
-      }
-      commandStatus.textContent = text
-      commandStatus.style.color = color
-    }).subscribe())
-  }
 
-  private def updateModeIndicator(): Unit = {
-    val text = client.state.mode match {
-      case None =>
-        ""
-      case Some(mm) => mm match {
-        case model.mode.Node.Content(at, aa) =>
-          aa match {
-            case model.mode.Content.RichInsert(_) =>
-              "INSERT"
-            case model.mode.Content.RichVisual(_, _) =>
-              "VISUAL"
-            case model.mode.Content.RichNormal(_) =>
-              "NORMAL"
-            case model.mode.Content.CodeNormal =>
-              "CODE NORMAL"
-            case model.mode.Content.CodeInside =>
-              "CODE INSIDE"
-          }
-        case v@model.mode.Node.Visual(_, _) =>
-          "NODE VISUAL"
+
+  private def removeNodes(range: model.range.Node): Unit = {
+    def destroyContents(a: Element, start: Int, u: Int): Unit = {
+      for (i <- start until u) {
+        val ll = a.children(i).children(0).children(1)
+        destroyContents(ll, 0, ll.children.length)
+        View.fromDom[ContentView.General](a.children(i).children(0).children(0)).destroy()
       }
     }
-    if (text == "") {
-      mode.textContent = EmptyStr
-      mode.style.color = theme.disalbedInfo
+    val p = childListAt(range.parent)
+    destroyContents(p, range.childs.start, range.childs.until)
+    for (_ <- range.childs) {
+      p.removeChild(p.children(range.childs.start))
+    }
+  }
+
+  private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
+    if (at == list.childNodes.length) {
+      contents.foreach(a => {
+        val item = li().render
+        list.appendChild(item)
+        insertNodesRec(a, item)
+      })
     } else {
-      mode.textContent = text
-      mode.style.color = null
+      val before = list.childNodes(at)
+      contents.foreach(a => {
+        val item = li().render
+        list.insertBefore(item, before)
+        insertNodesRec(a, item)
+      })
+    }
+  }
+
+  private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
+    val box = div().render
+    parent.insertBefore(box, parent.firstChild)
+    box.appendChild(createContent(root.content).dom)
+    val list = ul().render
+    box.appendChild(list)
+    insertNodes(list, 0, root.childs)
+  }
+
+
+  private def createContent(c: Content): ContentView.General = {
+    c match {
+      case model.data.Content.Rich(cs) =>
+        new RichView(this, cs).asInstanceOf[ContentView.General]
+      case model.data.Content.Code(a, lang) =>
+        new CodeView(this, a, lang).asInstanceOf[ContentView.General]
     }
   }
 
@@ -246,62 +261,19 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   {
     val ClientState(node, selection) = client.state
-    insertNodesRec(node, root)
+    insertNodesRec(node, nodeRoot)
+    nodeRoot.appendChild(noEditable) // nodeRoot contains this random thing, this is ok now, but... damn
     updateMode(selection, viewUpdated = false)
-    updateModeIndicator()
   }
 
-  private def removeNodes(range: model.range.Node): Unit = {
-    def destroyContents(a: Element, start: Int, u: Int): Unit = {
-      for (i <- start until u) {
-        val ll = a.children(i).children(0).children(1)
-        destroyContents(ll, 0, ll.children.length)
-        View.fromDom[ContentView.General](a.children(i).children(0).children(0)).destroy()
-      }
-    }
-    val p = childListAt(range.parent)
-    destroyContents(p, range.childs.start, range.childs.until)
-    for (_ <- range.childs) {
-      p.removeChild(p.children(range.childs.start))
-    }
-  }
+  /**
+    *
+    *
+    *
+    * bottom bar view update
+    *
+    */
 
-
-
-  private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
-    val box = div().render
-    parent.appendChild(box)
-    box.appendChild(createContent(root.content).dom)
-    val list = ul().render
-    box.appendChild(list)
-    insertNodes(list, 0, root.childs)
-  }
-
-  private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
-    if (at == list.childNodes.length) {
-      contents.foreach(a => {
-        val item = li().render
-        list.appendChild(item)
-        insertNodesRec(a, item)
-      })
-    } else {
-      val before = list.childNodes(at)
-      contents.foreach(a => {
-        val item = li().render
-        list.insertBefore(item, before)
-        insertNodesRec(a, item)
-      })
-    }
-  }
-
-  private def createContent(c: Content): ContentView.General = {
-    c match {
-      case model.data.Content.Rich(cs) =>
-        new RichView(this, cs).asInstanceOf[ContentView.General]
-      case model.data.Content.Code(a, lang) =>
-        new CodeView(this, a, lang).asInstanceOf[ContentView.General]
-    }
-  }
 
   {
     defer(client.viewMessages.doOnNext {
@@ -344,17 +316,12 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
         }
       }
       updateMode(update.mode, update.viewUpdated)
-      updateModeIndicator()
     }).subscribe())
 
-    defer(client.errors.doOnNext {
-      case Some(e) => debugErrorInfo.textContent = e.getMessage
-      case _ =>
-    }.subscribe())
   }
 
 
-  event(root, "keydown", (event: KeyboardEvent) => {
+  event(nodeRoot, "keydown", (event: KeyboardEvent) => {
     var key = KeyMap.get(event.key).orNull
     if (key == null && Key.isUnicodeKey(event.key)) {
       key = Key.Grapheme(model.data.Unicode(event.key))
@@ -362,17 +329,16 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
     val kd = client.keyDown(kk)
-    updateModeIndicator()
     if (kd) {
       event.preventDefault()
     }
   })
 
-  event(root, "keyup", (event: KeyboardEvent) => {
+  event(nodeRoot, "keyup", (event: KeyboardEvent) => {
     //window.console.log(event)
   })
 
-  event(root, "keypress", (event: KeyboardEvent) => {
+  event(nodeRoot, "keypress", (event: KeyboardEvent) => {
     //window.console.log(event)
   })
 
@@ -387,17 +353,17 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     * // LATER copy paste in normal mode??
     */
 
-  event(root, "copy", (a: ClipboardEvent) => {
+  event(nodeRoot, "copy", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
 
-  event(root, "cut", (a: ClipboardEvent) => {
+  event(nodeRoot, "cut", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
 
-  event(root, "paste", (a: ClipboardEvent) => {
+  event(nodeRoot, "paste", (a: ClipboardEvent) => {
     window.console.log(a)
     a.preventDefault()
   })
@@ -410,12 +376,12 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     */
 
-  event(root, "mousedown", (a: MouseEvent) => {
+  event(nodeRoot, "mousedown", (a: MouseEvent) => {
     a.preventDefault()
   })
 
 
-  event(root, "mouseup", (a: MouseEvent) => {
+  event(nodeRoot, "mouseup", (a: MouseEvent) => {
     // window.setTimeout(() => window.console.log(window.getSelection()), 1)
     a.preventDefault()
   })
@@ -423,7 +389,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   class MouseDown {
   }
 
-  event(root, "contextmenu", (a: MouseEvent) => {
+  event(nodeRoot, "contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
   })
@@ -438,23 +404,23 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     */
 
-  event(root, "dragstart", (a: DragEvent) => {
+  event(nodeRoot, "dragstart", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event(root, "dragend", (a: DragEvent) => {
+  event(nodeRoot, "dragend", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event(root, "dragover", (a: DragEvent) => {
+  event(nodeRoot, "dragover", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event(root, "dragenter", (a: DragEvent) => {
+  event(nodeRoot, "dragenter", (a: DragEvent) => {
     a.preventDefault()
   })
 
-  event(root, "drop", (a: DragEvent) => {
+  event(nodeRoot, "drop", (a: DragEvent) => {
     a.preventDefault()
   })
 

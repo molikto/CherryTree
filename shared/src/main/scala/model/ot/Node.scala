@@ -4,8 +4,6 @@ package model.ot
 import boopickle.Pickler
 import model._
 import com.softwaremill.quicklens._
-import model.conflict.Node
-import model.operation.Node
 import model.range.IntRange
 
 import scala.util.Random
