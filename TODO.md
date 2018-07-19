@@ -14,6 +14,7 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
+* closing marks
 * available commands panel
 * easy motion
 * multi char find/change
