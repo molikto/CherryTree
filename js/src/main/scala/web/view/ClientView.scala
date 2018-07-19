@@ -182,7 +182,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
           (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
       }
       commandStatus.textContent = text
-      mode.style.color = color
+      commandStatus.style.color = color
     }).subscribe())
   }
 

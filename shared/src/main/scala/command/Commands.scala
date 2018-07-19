@@ -96,12 +96,12 @@ trait Commands { self: Client =>
   def tryDoCommandExact(): Boolean = {
     val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state))
     if (availableCommands.isEmpty) {
+      val pCounts = commandCounts
+      val ptoConfirm = commandPartConfirmed
+      commandCounts = ""
+      commandPartConfirmed = Seq.empty
+      commandsToConfirm = Seq.empty
       if (!commandPartConfirmed.forall(_.a.isInstanceOf[Modifier])) {
-        val pCounts = commandCounts
-        val ptoConfirm = commandPartConfirmed
-        commandCounts = ""
-        commandPartConfirmed = Seq.empty
-        commandsToConfirm = Seq.empty
         status.onNext(CommandStatus.LastNotFound(pCounts, ptoConfirm))
       }
       false
