@@ -76,7 +76,7 @@ class Client(
 
   def start(): Unit = {
     // LATER make this an option. so it is easier to debug...
-    subscription = Observable.interval(10000.millis).doOnNext(_ => sync()).subscribe()
+    subscription = Observable.interval(3000.millis).doOnNext(_ => sync()).subscribe()
   }
 
   def stop(): Unit = {
@@ -154,7 +154,7 @@ class Client(
     updatingState = false
     if (state_.isRichInserting) {
       if (insertingFlusher == null) {
-        insertingFlusher = Observable.interval(3000.millis).doOnNext(_ => flush()).subscribe()
+        insertingFlusher = Observable.interval(100.millis).doOnNext(_ => flush()).subscribe()
       }
     } else {
       if (insertingFlusher != null) {
@@ -334,7 +334,7 @@ class Client(
     * these are settings??
     */
   val delimitationSettings = Seq(
-    (SpecialChar.StrikeThrough, '-'.toInt, '-'.toInt),
+    (SpecialChar.StrikeThrough, '~'.toInt, '~'.toInt),
     (SpecialChar.Code, '`'.toInt, '`'.toInt),
     (SpecialChar.Strong, '#'.toInt, '#'.toInt),
     (SpecialChar.LaTeX, '&'.toInt, '&'.toInt),

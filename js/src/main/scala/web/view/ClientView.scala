@@ -364,18 +364,21 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     * copy paste currently disabled for entire document
     *
-    *
+    * // LATER copy paste in normal mode??
     */
 
   event("copy", (a: ClipboardEvent) => {
+    window.console.log(a)
     a.preventDefault()
   })
 
   event("cut", (a: ClipboardEvent) => {
+    window.console.log(a)
     a.preventDefault()
   })
 
   event("paste", (a: ClipboardEvent) => {
+    window.console.log(a)
     a.preventDefault()
   })
 
@@ -394,6 +397,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   event("mouseup", (a: MouseEvent) => {
     // window.setTimeout(() => window.console.log(window.getSelection()), 1)
+    a.preventDefault()
   })
 
   class MouseDown {
@@ -401,6 +405,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   event("contextmenu", (a: MouseEvent) => {
     window.console.log(a)
+    // LATER fix this??
   })
 
 

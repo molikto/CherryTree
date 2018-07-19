@@ -819,7 +819,7 @@ trait Commands { self: Client =>
       //i_<End>       <End>             cursor after last character in the line
       //i_<Home>      <Home>            cursor to first character in the line
       val moveRight: Command = new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
-        override def defaultKeys: Seq[KeySeq] = Seq(Shift + " ", Right)
+        override def defaultKeys: Seq[KeySeq] = Seq(Alt + " ", Right)
         override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
       }
 

@@ -14,6 +14,7 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
+* available commands panel
 * easy motion
 * multi char find/change
 * closing node
@@ -23,7 +24,6 @@
 * node type
 * replace mode
 * insert image?
-* available commands panel
 * single edit commands
 * copy paste
 * code mirror!!!
