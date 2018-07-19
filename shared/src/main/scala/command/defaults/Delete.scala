@@ -3,8 +3,9 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
+import doc.{DocState, DocTransaction}
 import model.range.IntRange
-import model.{ClientState, cursor, mode, operation}
+import model.{cursor, mode, operation}
 
 trait Delete extends CommandCollector {
 
@@ -16,11 +17,11 @@ trait Delete extends CommandCollector {
   //v_gJ     {visual}gJ   like "{visual}J", but without inserting spaces
   //:d    :[range]d [x]   delete [range] lines [into register x]
 
-  private def deleteRichNormalRange(a: ClientState, pos: cursor.Node, r: IntRange): Client.Update = {
+  private def deleteRichNormalRange(a: DocState, pos: cursor.Node, r: IntRange): DocTransaction = {
     val rich = a.rich(pos)
     val (ifs, soc, roc) = rich.infoAndSingleSpecials(r)
     val ds = r.minusOrderedInside(soc)
-    def deleteRanges(i: Seq[IntRange]): Client.Update = {
+    def deleteRanges(i: Seq[IntRange]): DocTransaction = {
       val remaining = IntRange(0, rich.size).minusOrderedInside(i)
       val posTo = if (remaining.isEmpty) {
         IntRange(0, 0) // all deleted
@@ -30,7 +31,7 @@ trait Delete extends CommandCollector {
         val tempPos = rich.info(p).atomicRange
         tempPos.moveByOrZeroZero(-i.filter(_.start < tempPos.start).map(_.size).sum)
       }
-      Client.Update(
+      DocTransaction(
         Seq(operation.Node.Content(pos,
           operation.Content.Rich(operation.Rich.deleteNoneOverlappingOrderedRanges(i))
         )),
@@ -43,17 +44,17 @@ trait Delete extends CommandCollector {
       } else if (ifs.forall(_.isEndOrAttributeTagOrContent)) {
         deleteRanges((roc ++ Seq(r)).sortBy(_.start))
       } else {
-        Client.Update.empty
+        DocTransaction.empty
       }
     } else {
       deleteRanges(ds)
     }
   }
 
-  private def deleteNodeRange(a: ClientState, rr: model.range.Node): Client.Update = {
+  private def deleteNodeRange(a: DocState, rr: model.range.Node): DocTransaction = {
     val parent = a.node(rr.parent)
     val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
-    Client.Update(Seq(operation.Node.Delete(r)), {
+    DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
         (r.until, r.start)
       } else if (r.childs.start > 0) {
@@ -68,10 +69,10 @@ trait Delete extends CommandCollector {
 
   val deleteAfterVisual: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
-    override def available(a: ClientState): Boolean = a.isVisual
-    override def action(a: ClientState, count: Int): Client.Update = a.mode match {
+    override def available(a: DocState): Boolean = a.isVisual
+    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
       case Some(v@model.mode.Node.Visual(_, _)) =>
-        v.minimalRange.map(r => deleteNodeRange(a, r)).getOrElse(Client.Update.empty)
+        v.minimalRange.map(r => deleteNodeRange(a, r)).getOrElse(DocTransaction.empty)
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
         deleteRichNormalRange(a, pos, v.merged)
       case _ => throw new IllegalArgumentException("Invalid command")
@@ -80,8 +81,8 @@ trait Delete extends CommandCollector {
 
   val delete: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
-    override def available(a: ClientState): Boolean = a.isRichNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isRichNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
       val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
@@ -91,8 +92,8 @@ trait Delete extends CommandCollector {
 
   val deleteBefore: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("X")
-    override def available(a: ClientState): Boolean = a.isRichNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isRichNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
       val rr = rich.moveLeftAtomic(r)
@@ -106,25 +107,25 @@ trait Delete extends CommandCollector {
   //        override val defaultKeys: Seq[KeySeq] = Seq("d")
   //        override def available(a: ClientState): Boolean = a.isNormal
   //
-  //        override def action(a: ClientState, count: Int): Client.Update = {
-  //          Client.Update.empty
+  //        override def action(a: ClientState, count: Int): DocTransaction = {
+  //          DocTransaction.empty
   //        }
   //      }
 
   val deleteSiblings: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
-    override def available(a: ClientState): Boolean = a.isNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val r = a.asNormal._1
-      if (r == cursor.Node.root) Client.Update.empty
+      if (r == cursor.Node.root) DocTransaction.empty
       else deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
     }
   }
 
   val deleteUntilEnd: Command = new Command {
     override def defaultKeys: Seq[KeySeq] = Seq("D")
-    override def available(a: ClientState): Boolean = a.isRichNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isRichNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (c, rich, normal) = a.asRichNormal
       val deleteLines = if (c == cursor.Node.root || count <= 1) {
         Seq.empty

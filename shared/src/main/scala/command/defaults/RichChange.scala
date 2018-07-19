@@ -3,18 +3,19 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
+import doc.{DocState, DocTransaction}
 import model.data.{Info, InfoType, SpecialChar, Text}
 import model.range.IntRange
-import model.{ClientState, mode, operation}
+import model.{mode, operation}
 
 trait RichChange extends CommandCollector {
 
 
   val replace: Command = new NeedsCharCommand {
     override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
-    override def available(a: ClientState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isRichNormal
 
-    override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
+    override def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = {
       val (cursor, rich, v) = a.asRichNormal
 
       def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
@@ -35,13 +36,13 @@ trait RichChange extends CommandCollector {
           delimitationSettings.find(_._2 == codepoint) match {
             case Some(deli) =>
               if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
-                return Client.Update.empty
+                return DocTransaction.empty
               }
 
-              def wrapUnwrap(): Client.Update = {
+              def wrapUnwrap(): DocTransaction = {
                 val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
                 val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asDelimited.contentSize), deli._1)
-                Client.Update(
+                DocTransaction(
                   Seq(
                     operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
                   ),
@@ -55,7 +56,7 @@ trait RichChange extends CommandCollector {
                     val unicode = formatted.content.head.asPlain.unicode
                     val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
                     val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
-                    return Client.Update(
+                    return DocTransaction(
                       Seq(
                         operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
                       ),
@@ -78,10 +79,10 @@ trait RichChange extends CommandCollector {
           operation.Rich.insert(v.range.start, char.a
           ), operation.Type.AddDelete)
         val focus = IntRange(v.range.start, v.range.start + char.a.size)
-        Client.Update(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
+        DocTransaction(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
           Some(a.copyContentMode(mode.Content.RichNormal(focus))))
       } else {
-        Client.Update.empty
+        DocTransaction.empty
       }
     }
   }
@@ -89,13 +90,13 @@ trait RichChange extends CommandCollector {
   //      val replace: Command = new Command {
   //        override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode
   //        override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
-  //        override def action(a: ClientState, count: Int): Client.Update = {
+  //        override def action(a: ClientState, count: Int): DocTransaction = {
   //          waitingForCharCommand = (this, count)
-  //          Client.Update.empty
+  //          DocTransaction.empty
   //        }
   //
   //
-  //        override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
+  //        override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): DocTransaction = {
   //          val (cursor, rich, v) = a.asRichNormalOrVisual
   //          def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
   //            val rafter = operation.Rich.apply(riches, rich)
@@ -114,12 +115,12 @@ trait RichChange extends CommandCollector {
   //              delimitationSettings.find(_._2 == codepoint) match {
   //                case Some(deli) =>
   //                  if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
-  //                    return Client.Update.empty
+  //                    return DocTransaction.empty
   //                  }
-  //                  def wrapUnwrap(): Client.Update = {
+  //                  def wrapUnwrap(): DocTransaction = {
   //                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
   //                    val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asInstanceOf[Text.Coded].contentSize), deli._1)
-  //                    Client.Update(
+  //                    DocTransaction(
   //                      Seq(
   //                        operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
   //                      ),
@@ -131,7 +132,7 @@ trait RichChange extends CommandCollector {
   //                      val unicode = in.text.asInstanceOf[Text.Formatted].content.head.asInstanceOf[Text.Plain].unicode
   //                      val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
   //                      val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
-  //                      return Client.Update(
+  //                      return DocTransaction(
   //                        Seq(
   //                          operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
   //                        ),
@@ -154,7 +155,7 @@ trait RichChange extends CommandCollector {
   //          val notPlain = rich.info(merged).filter(_.ty != InfoType.Plain).map(a => IntRange(a.positionInParagraph))
   //          val plains = merged.minusOrderedInside(notPlain)
   //          if (plains.isEmpty) {
-  //            Client.Update.empty
+  //            DocTransaction.empty
   //          } else {
   //            val gcs = plains.map(a => rich.subPlain(a)).map(a => (a, a.graphemesCount))
   //            println(plains)
@@ -181,7 +182,7 @@ trait RichChange extends CommandCollector {
   //              IntRange(end -ss, end)
   //            }
   //
-  //            Client.Update(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
+  //            DocTransaction(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
   //              Some(a.copyContentMode(mode.Content.RichNormal(focus))))
   //          }
   //        }

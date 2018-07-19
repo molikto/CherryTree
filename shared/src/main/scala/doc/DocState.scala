@@ -1,16 +1,14 @@
-package model
+package doc
 
-import client.Client
-import model.cursor.Node
+import model.cursor
 import model.data.Rich
-import model.mode.{Content, Node}
 
 
-object ClientState {
-  val empty = ClientState(model.data.Node.empty, Some(model.mode.Node.Content(Seq.empty, model.mode.Content.RichInsert(0))))
+object DocState {
+  val empty = DocState(model.data.Node.empty, Some(model.mode.Node.Content(Seq.empty, model.mode.Content.RichInsert(0))))
 }
 
-case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
+case class DocState(node: model.data.Node, mode: Option[model.mode.Node]) {
 
   def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isFolded)
 

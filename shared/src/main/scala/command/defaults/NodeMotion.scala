@@ -3,7 +3,8 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
-import model.{ClientState, cursor}
+import doc.{DocState, DocTransaction}
+import model.cursor
 
 trait NodeMotion extends CommandCollector {
 
@@ -13,10 +14,10 @@ trait NodeMotion extends CommandCollector {
     */
   // LATER these
   abstract class NodeMotionCommand extends Command {
-    def move(data: ClientState, a: cursor.Node): Option[cursor.Node]
+    def move(data: DocState, a: cursor.Node): Option[cursor.Node]
 
 
-    override def available(a: ClientState): Boolean = a.mode match {
+    override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
         case model.mode.Node.Visual(fix, move) => true
         case model.mode.Node.Content(n, cc) => cc match {
@@ -28,9 +29,9 @@ trait NodeMotion extends CommandCollector {
       case None => false
     }
 
-    final override def action(a: ClientState, count: Int): Client.Update = {
+    final override def action(a: DocState, count: Int): DocTransaction = {
       def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
-      Client.Update(Seq.empty, Some(a.mode match {
+      DocTransaction(Seq.empty, Some(a.mode match {
         case Some(m) => m match {
           case v@model.mode.Node.Visual(_, mm) => v.copy(move = act(mm))
           case kkk@model.mode.Node.Content(n, cc) => cc match {
@@ -47,31 +48,31 @@ trait NodeMotion extends CommandCollector {
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-", Up)
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
   }
   val down: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
   }
   val parent: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("gp")
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
   }
   val nextSibling: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("}")
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
   }
   val previousSibling: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("{")
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
   }
   val visibleBeginning: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("gg")
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
   }
   val visibleEnd: Command = new NodeMotionCommand {
     override val defaultKeys: Seq[KeySeq] = Seq("G")
-    override def move(data: ClientState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
   }
 
   // not implemented for not understand what should it behave

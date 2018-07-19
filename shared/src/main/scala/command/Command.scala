@@ -2,7 +2,7 @@ package command
 
 import client.Client
 import command.Key.{Grapheme, KeySeq}
-import model.ClientState
+import doc.{DocState, DocTransaction}
 
 abstract class Command {
 
@@ -22,8 +22,8 @@ abstract class Command {
     }
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
-  def available(a: ClientState): Boolean
-  def action(a: ClientState, count: Int): Client.Update
-  def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = throw new NotImplementedError()
+  def available(a: DocState): Boolean
+  def action(a: DocState, count: Int): DocTransaction
+  def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = throw new NotImplementedError()
 }
 

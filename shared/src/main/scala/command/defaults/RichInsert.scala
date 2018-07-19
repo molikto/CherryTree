@@ -3,7 +3,8 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
-import model.{ClientState, mode, operation}
+import doc.{DocState, DocTransaction}
+import model.{mode, operation}
 import model.data.{Rich, SpecialChar}
 import model.range.IntRange
 
@@ -12,13 +13,13 @@ trait RichInsert extends CommandCollector {
 
   trait EditCommand extends Command  {
     def edit(content: Rich,a: Int): Option[model.operation.Rich]
-    override def available(a: ClientState): Boolean = a.isRichInserting
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isRichInserting
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       val res = edit(content, insert.pos).map(k => {
         Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
       }).getOrElse(Seq.empty)
-      Client.Update(res, None)
+      DocTransaction(res, None)
     }
   }
   val backspace: Command = new EditCommand with OverrideCommand {
@@ -36,26 +37,26 @@ trait RichInsert extends CommandCollector {
   new OverrideCommand {
     // TODO what to do on enter???
     override val hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
-    override def available(a: ClientState): Boolean = a.isRichInserting
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isRichInserting
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
       if (insert.pos == rich.size) {
         val n = a.mover().nextOver(node)
-        Client.Update(
+        DocTransaction(
           Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
           , Some(model.mode.Node.Content(n, model.mode.Content.RichNormal(IntRange(0, 0)))))
       } else {
-        Client.Update.empty
+        DocTransaction.empty
       }
     }
   }
 
   val emptyWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-    override def available(a: ClientState): Boolean = a.isRichInserting && {
+    override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert
       !rich.insertionInsideCoded(insert.pos)
     }
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       val res = if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end)) {
         Seq.empty
@@ -63,17 +64,17 @@ trait RichInsert extends CommandCollector {
         val k = operation.Rich.insert(insert.pos, deli.wrap())
         Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
       }
-      Client.Update(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
+      DocTransaction(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
     }
   }).toMap
 
   abstract class InsertMovementCommand extends Command {
-    override def available(a: ClientState): Boolean = a.isRichInserting
+    override def available(a: DocState): Boolean = a.isRichInserting
     def move(rich: Rich, i: Int): Int
-    override def action(a: ClientState, count: Int): Client.Update = a.asRichInsert match {
+    override def action(a: DocState, count: Int): DocTransaction = a.asRichInsert match {
       case (node, rich, insert) =>
         val m = move(rich, insert.pos)
-        if (m != insert.pos) Client.Update.mode(a.copyContentMode(mode.Content.RichInsert(m))) else Client.Update.empty
+        if (m != insert.pos) DocTransaction.mode(a.copyContentMode(mode.Content.RichInsert(m))) else DocTransaction.empty
     }
   }
 

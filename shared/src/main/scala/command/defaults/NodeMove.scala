@@ -3,7 +3,8 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
-import model.{ClientState, cursor, operation, range}
+import doc.{DocState, DocTransaction}
+import model.{cursor, operation, range}
 
 trait NodeMove extends CommandCollector {
 
@@ -13,25 +14,25 @@ trait NodeMove extends CommandCollector {
   //indent-row	>
 
   abstract class MoveCommand extends  Command {
-    override def available(a: ClientState): Boolean = a.isNormal
+    override def available(a: DocState): Boolean = a.isNormal
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       val mm = a.asNormal._1
-      Client.Update(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
+      DocTransaction(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
     }
   }
   abstract class IndentCommand extends  Command {
-    override def available(a: ClientState): Boolean = a.mode.nonEmpty
+    override def available(a: DocState): Boolean = a.mode.nonEmpty
     def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
 
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       def act(r: range.Node) = targetTo(a.mover(), r).map(k => operation.Node.Move(r, k))
       val res = a.mode.get match {
         case v: model.mode.Node.Visual =>
           a.asNodeVisual.minimalRange.flatMap(k => act(k))
         case c@model.mode.Node.Content(at, _) => if (at == cursor.Node.root) None else act(range.Node(at))
       }
-      Client.Update(res.toSeq, None, unfoldBefore = res.toSeq.map(_.to))
+      DocTransaction(res.toSeq, None, unfoldBefore = res.toSeq.map(_.to))
     }
   }
   val unindent: Command = new IndentCommand {

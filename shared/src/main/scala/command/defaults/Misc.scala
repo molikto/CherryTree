@@ -3,7 +3,7 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
-import model.ClientState
+import doc.{DocState, DocTransaction}
 import model.range.IntRange
 
 trait Misc extends CommandCollector {
@@ -11,14 +11,14 @@ trait Misc extends CommandCollector {
 
   val exit: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq(Escape, Ctrl + "c", Ctrl + "[")
-    override def available(a: ClientState): Boolean = true
+    override def available(a: DocState): Boolean = true
 
-    override def action(a: ClientState, ignore: Int): Client.Update = {
+    override def action(a: DocState, ignore: Int): DocTransaction = {
       a.mode match {
         case Some(m) =>
           m match {
             case model.mode.Node.Visual(fix, move) =>
-              Client.Update.mode(model.data.Node.defaultNormalMode(a.node, move))
+              DocTransaction.mode(model.data.Node.defaultNormalMode(a.node, move))
             case nc@model.mode.Node.Content(n, c) =>
               a.node(n).content match {
                 case model.data.Content.Rich(rich) =>
@@ -27,22 +27,22 @@ trait Misc extends CommandCollector {
                       val range = if (pos != 0) rich.moveLeftAtomic(pos)
                       else if (rich.isEmpty) IntRange(0, 0)
                       else rich.beginningAtomicRange()
-                      Client.Update.mode(a.copyContentMode(model.mode.Content.RichNormal(range)))
+                      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(range)))
                     case model.mode.Content.RichVisual(_, move) =>
-                      Client.Update.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))
-                    case _ => Client.Update.empty
+                      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))
+                    case _ => DocTransaction.empty
                   }
                 case model.data.Content.Code(_, _) =>
                   c match {
                     case model.mode.Content.CodeInside =>
-                      Client.Update.mode(a.copyContentMode(model.mode.Content.CodeNormal))
-                    case _ => Client.Update.empty
+                      DocTransaction.mode(a.copyContentMode(model.mode.Content.CodeNormal))
+                    case _ => DocTransaction.empty
                   }
                 case _ =>
-                  Client.Update.empty
+                  DocTransaction.empty
               }
           }
-        case None => Client.Update.empty
+        case None => DocTransaction.empty
       }
     }
   }

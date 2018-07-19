@@ -4,7 +4,7 @@ import client.Client
 import command.Key.KeySeq
 import command.{CommandStatus, Key}
 import model.data.{Content, Unicode}
-import model.{ClientState, cursor, data, mode}
+import model.{cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
 import org.scalajs.dom.window
@@ -22,10 +22,11 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class CommandListView(val client: Client) extends View {
+class CommandListView(parent: HTMLElement, val client: Client) extends View {
 
 
   dom = div(flex := "0 0 auto",height := "100%", minWidth := "150px", background := theme.bottomBarBackground).render
+  parent.appendChild(dom)
 
   observe(client.stateUpdates.doOnNext(_ => {
     update()

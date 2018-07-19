@@ -2,6 +2,7 @@
 package client
 
 import api.{Api, Authentication}
+import doc.DocTransaction
 import model._
 import model.data.Node
 import model.ot.NodeOps
@@ -103,7 +104,7 @@ object ClientTests extends TestSuite  {
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(operation.Node.randomTransaction(1, clients(j).state.node, random))
+            clients(j).change(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
@@ -114,7 +115,7 @@ object ClientTests extends TestSuite  {
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(operation.Node.randomTransaction(2, clients(j).state.node, random))
+            clients(j).change(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()

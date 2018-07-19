@@ -1,6 +1,7 @@
-package web.view
+package web.view.content
 
 import model._
+import web.view.View
 
 object ContentView {
   type General = ContentView[data.Content, model.operation.Content, model.mode.Content]

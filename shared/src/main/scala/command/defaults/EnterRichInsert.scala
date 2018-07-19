@@ -3,9 +3,10 @@ package command.defaults
 import client.Client
 import command.CommandCollector
 import command.Key._
+import doc.{DocState, DocTransaction}
 import model.data.Rich
 import model.range.IntRange
-import model.{ClientState, cursor, operation}
+import model.{cursor, operation}
 
 trait EnterRichInsert extends CommandCollector {
 
@@ -13,8 +14,8 @@ trait EnterRichInsert extends CommandCollector {
   // DIFFERENCE: currently not repeatable
   val openBellow: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("o")
-    override def available(a: ClientState): Boolean = a.isNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val pos = a.asNormal._1
       val mover = a.mover()
       val insertionPoint = if (pos == cursor.Node.root) {
@@ -22,7 +23,7 @@ trait EnterRichInsert extends CommandCollector {
       } else {
         mover.firstChild(pos).getOrElse(mover.nextOver(pos))
       }
-      Client.Update(
+      DocTransaction(
         Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
     }
@@ -30,14 +31,14 @@ trait EnterRichInsert extends CommandCollector {
 
   val openAbove: Command = new Command {
     override val defaultKeys: Seq[KeySeq] = Seq("O")
-    override def available(a: ClientState): Boolean = a.isNormal
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def available(a: DocState): Boolean = a.isNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
       val pos = a.asNormal._1
       if (pos == cursor.Node.root) {
         // LATER wrap?
-        Client.Update.empty
+        DocTransaction.empty
       } else {
-        Client.Update(
+        DocTransaction(
           Seq(operation.Node.Insert(pos, Seq(model.data.Node.empty))),
           Some(model.mode.Node.Content(pos, model.mode.Content.RichInsert(0))))
       }
@@ -55,11 +56,11 @@ trait EnterRichInsert extends CommandCollector {
   abstract class EnterInsertCommand extends Command {
     def move(content: Rich,a: IntRange): Int
 
-    override def available(a: ClientState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isRichNormal
 
-    override def action(a: ClientState, count: Int): Client.Update =  {
+    override def action(a: DocState, count: Int): DocTransaction =  {
       val (cursor, content, normal) = a.asRichNormal
-      Client.Update.mode(a.copyContentMode(model.mode.Content.RichInsert(move(
+      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichInsert(move(
         content, normal.range))))
     }
   }

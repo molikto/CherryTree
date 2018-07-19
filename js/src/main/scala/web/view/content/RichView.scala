@@ -1,23 +1,19 @@
-package web.view
+package web.view.content
 
-import scalatags.JsDom.all._
 import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
-import org.scalajs.dom.raw
-import org.scalajs.dom.raw.{CompositionEvent, Event, HTMLElement, HTMLImageElement, HTMLSpanElement, Node, Range}
-import org.scalajs.dom.{document, window}
-import org.w3c.dom.css.CSSStyleDeclaration
+import org.scalajs.dom.raw.{CompositionEvent, Event, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.{document, raw, window}
+import scalatags.JsDom.all._
+import view.EditorInterface
+import web.view.doc.DocumentView
+import web.view.{EmptyStr, removeAllChild, theme}
 
-import monix.execution.Scheduler.Implicits.global
 import scala.scalajs.js
 
-/**
-  * it should only call methods in client for input related, lazy to build bridges now
-  */
-class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
-  val client = clientView.client
+class RichView(documentView: DocumentView, val controller: EditorInterface,  var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
   /**
     *
@@ -327,7 +323,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
 
   event("compositionstart", (a: CompositionEvent) => {
-    if (isInserting) client.disableStateUpdate = true
+    if (isInserting) controller.disableStateUpdate = true
     else a.preventDefault()
   })
 
@@ -336,7 +332,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   })
 
   event("compositionend", (a: CompositionEvent) => {
-    if (isInserting) client.disableStateUpdate = false
+    if (isInserting) controller.disableStateUpdate = false
     else a.preventDefault()
   })
 
@@ -347,7 +343,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
         //window.console.log(a)
-        client.flush()
+        controller.flush()
       } else {
         window.console.log(a)
       }
@@ -394,7 +390,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         insertNonEmptyTextLength = str.length
         insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
         insertEmptyTextNode = null
-        client.onInsertRichTextAndViewUpdated(Unicode(str))
+        controller.onInsertRichTextAndViewUpdated(Unicode(str))
       }
     } else if (insertNonEmptyTextNode != null) {
       val newContent = mergeTextsFix(insertNonEmptyTextNode)
@@ -403,7 +399,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (insertion.length > 0) {
         insertNonEmptyTextLength = newContent.length
         insertNonEmptyTextNodeStartIndex += insertion.length
-        client.onInsertRichTextAndViewUpdated(Unicode(insertion))
+        controller.onInsertRichTextAndViewUpdated(Unicode(insertion))
       }
     }
   }
@@ -459,7 +455,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def updateInsertMode(pos: Int): Unit = {
     if (flushSubscription == null) {
-      flushSubscription = observe(client.flushes.doOnNext(_ => {
+      flushSubscription = observe(controller.flushes.doOnNext(_ => {
         flushInsertionMode()
       }))
     }
@@ -499,11 +495,11 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   override def clearMode(): Unit = {
     initMode(if (isEmpty) -2 else -1)
-    clientView.unmarkEditable(dom)
+    documentView.unmarkEditable(dom)
   }
 
   override def initMode(): Unit = {
-    clientView.markEditable(dom)
+    documentView.markEditable(dom)
   }
 
   private def isInserting = flushSubscription != null
@@ -564,7 +560,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     * will also remove from parent
     */
   override def destroy(): Unit = {
-    clientView.unmarkEditableIfEditable(dom)
+    documentView.unmarkEditableIfEditable(dom)
     super.destroy()
   }
 }

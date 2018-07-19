@@ -1,12 +1,11 @@
-package web.view
+package web.view.content
 
-import model.data.{Content, Unicode}
-import model.mode
-import model.mode.Content
-import model.operation.Content
+import model.data.Unicode
 import scalatags.JsDom.all._
+import view.EditorInterface
+import web.view.doc.DocumentView
 
-class CodeView(clientView: ClientView, var code: Unicode, var lang: String) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+class CodeView(documentView: DocumentView, controller: EditorInterface, var code: Unicode, var lang: String) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
   dom = pre(code.toString).render
 

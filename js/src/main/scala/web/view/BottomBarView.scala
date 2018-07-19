@@ -4,7 +4,7 @@ import client.Client
 import command.Key.KeySeq
 import command.{CommandStatus, Key}
 import model.data.{Content, Unicode}
-import model.{ClientState, cursor, data, mode}
+import model.{cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
 import monix.reactive.observers.Subscriber
 import org.scalajs.dom.window
@@ -22,7 +22,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class BottomBarView(val client: Client) extends View {
+class BottomBarView(parent: HTMLElement, val client: Client) extends View {
 
 
   val size = "24px"
@@ -55,6 +55,7 @@ class BottomBarView(val client: Client) extends View {
     divider(),
     debugErrorInfo
   ).render
+  parent.appendChild(dom)
 
   {
     observe(client.commandStatus.doOnNext(c => {

@@ -19,7 +19,9 @@ import util._
 import model._
 import model.data.{SpecialChar, Unicode}
 import command._
+import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import monix.reactive.subjects.PublishSubject
+import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -29,25 +31,7 @@ import scala.util.{Failure, Success}
 object Client {
   type Proxy = ClientProxy[Api, ByteBuffer, boopickle.Pickler, boopickle.Pickler]
 
-  case class Update(
-    transaction: model.transaction.Node,
-    mode: Option[model.mode.Node],
-    // TODO make use of them
-    unfoldBefore: Seq[cursor.Node] = Seq.empty,
-    foldBefore: Seq[cursor.Node] = Seq.empty,
-    // TODO zoom options
-    viewUpdated: Boolean = false) {
-  }
-  object Update {
-    val empty = Client.Update(Seq.empty, None)
-    def mode(a: model.mode.Node) = Client.Update(Seq.empty, Some(a))
-  }
 
-  case class UpdateResult(
-    root: model.data.Node,
-    transaction: model.transaction.Node,
-    mode: Option[model.mode.Node],
-    viewUpdated: Boolean = false)
 
   sealed trait ViewMessage {
   }
@@ -60,10 +44,14 @@ class Client(
   private val server: Client.Proxy,
   private val initial: ClientInit,
   private val authentication: Authentication.Token
-) extends KeyboardCommandHandler { self =>
+) extends KeyboardCommandHandler
+  with EditorInterface
+  with DocInterface { self =>
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
+
+
 
   /**
     * connection state
@@ -103,7 +91,7 @@ class Client(
     *
     * editor queue
     */
-  private var state_ = ClientState(committed, Some(initial.mode))
+  private var state_ = DocState(committed, Some(initial.mode))
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
@@ -136,15 +124,15 @@ class Client(
 
 
 
-  private val disabledStateUpdates = ArrayBuffer[Client.UpdateResult]()
+  private val disabledStateUpdates = ArrayBuffer[DocUpdate]()
 
-  private val stateUpdates_ : PublishSubject[Client.UpdateResult] = PublishSubject[Client.UpdateResult]()
+  private val stateUpdates_ : PublishSubject[DocUpdate] = PublishSubject[DocUpdate]()
 
-  def stateUpdates: Observable[Client.UpdateResult] = stateUpdates_
+  def stateUpdates: Observable[DocUpdate] = stateUpdates_
 
   private var insertingFlusher: Cancelable = null
 
-  private def updateInner(res: Client.UpdateResult): Unit = {
+  private def updateInner(res: DocUpdate): Unit = {
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debugView) {
       println("client update inner root: " + res.root)
@@ -152,7 +140,7 @@ class Client(
       println("client update inner mode: " + res.mode)
     }
     updatingState = true
-    state_ = ClientState(res.root, res.mode)
+    state_ = DocState(res.root, res.mode)
     onBeforeUpdateUpdateCommandState(state_)
     stateUpdates_.onNext(res)
     updatingState = false
@@ -168,8 +156,8 @@ class Client(
     }
   }
 
-  private def updateState(a: ClientState, from: model.transaction.Node, viewUpdated: Boolean): Unit = {
-    val res = Client.UpdateResult(a.node, from, a.mode, viewUpdated)
+  private def updateState(a: DocState, from: model.transaction.Node, viewUpdated: Boolean): Unit = {
+    val res = DocUpdate(a.node, from, a.mode, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (disableStateUpdate_) {
       disabledStateUpdates.append(res)
@@ -177,7 +165,7 @@ class Client(
       updateInner(res)
     }
   }
-  def state: ClientState = state_
+  def state: DocState = state_
 
   /**
     * request queue
@@ -271,7 +259,7 @@ class Client(
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
       if (wp0.nonEmpty) updateState(
-        ClientState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, viewUpdated = false)
+        DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, viewUpdated = false)
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -292,23 +280,14 @@ class Client(
     import model._
     val (n, _, insert) = state.asRichInsert
     change(
-      Seq(operation.Node.Content(n, operation.Content.Rich(operation.Rich.insert(insert.pos, unicode)))),
+      DocTransaction(Seq(operation.Node.Content(n, operation.Content.Rich(operation.Rich.insert(insert.pos, unicode)))),
       Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
-      viewUpdated = true)
+      viewUpdated = true))
   }
 
-
-  def change(update: Client.Update): Unit = change(update.transaction, update.mode, viewUpdated = update.viewUpdated)
-  /**
-    * submit a change to local state, a sync might follow
-    *
-    * if mode is defined, it is explicitly set **after** the change is applied
-    * if not, the mode is transformed by the change
-    */
-  def change(changes: transaction.Node,
-    mode: Option[model.mode.Node] = None,
-    viewUpdated: Boolean = false,
-    sync: Boolean = true): Unit = self.synchronized {
+  def change(update: DocTransaction): Boolean = {
+    val changes = update.transaction
+    val mode = update.mode
     var changed = false
     val d = if (changes.nonEmpty) {
       changed = true
@@ -328,9 +307,12 @@ class Client(
         }
     }
     if (changed) {
-      updateState(ClientState(d, m), changes, viewUpdated = viewUpdated)
+      updateState(DocState(d, m), changes, viewUpdated = update.viewUpdated)
       uncommitted = uncommitted :+ changes
-      if (sync) self.sync()
+      self.sync()
     }
+    changed
   }
+
+  override def onKeyDown(k: Key): Boolean = keyDown(k)
 }

@@ -2,9 +2,9 @@ package command.defaults
 
 import client.Client
 import command.CommandCollector
-import model.ClientState
 import model.range.IntRange
 import command.Key._
+import doc.{DocState, DocTransaction}
 import model.data.Rich
 
 trait RichMotion extends CommandCollector {
@@ -16,10 +16,10 @@ trait RichMotion extends CommandCollector {
 
     def move(content: model.data.Rich, a: IntRange): IntRange
 
-    final override def action(a: ClientState, count: Int): Client.Update = {
+    final override def action(a: DocState, count: Int): DocTransaction = {
       val (_, content, m) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr) }
-      Client.Update.mode(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
+      DocTransaction.mode(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
     }
   }
 
@@ -77,20 +77,20 @@ trait RichMotion extends CommandCollector {
       }
     }
 
-    def findGrapheme(a: ClientState, char: Grapheme, count: Int, skipCurrent: Boolean): Client.Update = {
+    def findGrapheme(a: DocState, char: Grapheme, count: Int, skipCurrent: Boolean): DocTransaction = {
       val (_, content, mm) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
         r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
       }
       act(mm.focus) match {
         case Some(move) =>
-          Client.Update.mode(a.copyContentMode(mm.copyWithNewFocus(move)))
+          DocTransaction.mode(a.copyContentMode(mm.copyWithNewFocus(move)))
         case None =>
-          Client.Update.empty
+          DocTransaction.empty
       }
     }
 
-    final override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
+    final override def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = {
       findGrapheme(a, char, count, skipCurrent = false)
     }
   }

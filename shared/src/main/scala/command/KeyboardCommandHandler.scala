@@ -2,7 +2,7 @@ package command
 
 import client.Client
 import command.Key._
-import model.ClientState
+import doc.{DocState, DocTransaction}
 import model.range.IntRange
 import monix.reactive.Observable
 import monix.reactive.subjects._
@@ -36,7 +36,7 @@ class KeyboardCommandHandler extends Settings
 
   private var commandCounts: String = ""
 
-  def onBeforeUpdateUpdateCommandState(state: ClientState): Unit = {
+  def onBeforeUpdateUpdateCommandState(state: DocState): Unit = {
     if (waitingForCharCommand != null) {
       if (!waitingForCharCommand._1.available(state)) {
         clearWaitingForGraphemeCommand()
@@ -147,7 +147,7 @@ class KeyboardCommandHandler extends Settings
     waitingForCharCommand = null
   }
 
-  private def consumeByWaitingForGraphemeCommand(state: ClientState, a: Grapheme): Client.Update = {
+  private def consumeByWaitingForGraphemeCommand(state: DocState, a: Grapheme): DocTransaction = {
     if (waitingForCharCommand != null) {
       val ww = waitingForCharCommand
       ww._1 match {
@@ -160,7 +160,7 @@ class KeyboardCommandHandler extends Settings
       status.onNext(CommandStatus.LastPerformed(ww._3, ww._2, Some(a.a)))
       res
     } else {
-      Client.Update.empty
+      DocTransaction.empty
     }
   }
 
@@ -172,13 +172,13 @@ class KeyboardCommandHandler extends Settings
   val visitUrl: SideEffectingCommand = new SideEffectingCommand {
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
-    override def available(a: ClientState): Boolean = a.isRichNormalOrVisual && {
+    override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {
       val (_, rich, nv) = a.asRichNormalOrVisual
       val t = rich.info(nv.focus.start).text
       t.isDelimited && t.asDelimited.delimitation.attributes.contains(model.data.UrlAttribute)
     }
 
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       val (_, rich, nv) = a.asRichNormalOrVisual
       val t = rich.info(nv.focus.start).text
       val url = t.asDelimited.attribute(model.data.UrlAttribute).toString
@@ -187,22 +187,22 @@ class KeyboardCommandHandler extends Settings
         case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))
         case _ =>
       }
-      Client.Update.empty
+      DocTransaction.empty
     }
   }
 
   // LATER they are currently here...
   val repeatFind: Command = new MotionCommand {
-    override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
+    override def available(a: DocState): Boolean = super.available(a) && lastFindCommand != null
     override val defaultKeys: Seq[KeySeq] = Seq(";")
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       lastFindCommand._1.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
     }
   }
   val repeatFindOppositeDirection: Command = new MotionCommand {
-    override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
+    override def available(a: DocState): Boolean = super.available(a) && lastFindCommand != null
     override val defaultKeys: Seq[KeySeq] = Seq(",")
-    override def action(a: ClientState, count: Int): Client.Update = {
+    override def action(a: DocState, count: Int): DocTransaction = {
       lastFindCommand._1.reverse.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
     }
   }
