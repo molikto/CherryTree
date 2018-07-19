@@ -27,6 +27,7 @@ object Deps {
     "com.lihaoyi" %%% "utest" % Version.utest % "test" ::
     "io.monix" %%% "monix" % Version.monix ::
     "com.softwaremill.quicklens" %%% "quicklens" % "1.4.11" ::
+    "io.lemonlabs" %%% "scala-uri" % "1.1.4" ::
       Nil)
 
   val server = Def.setting(shared.value ++ (

@@ -11,6 +11,8 @@ import model.{ClientState, cursor, mode, operation, range}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
 import Key._
+import model.cursor.Node
+import model.operation.Node
 import monix.reactive.subjects.PublishSubject
 import util.ObservableProperty
 
@@ -49,6 +51,7 @@ trait Commands { self: Client =>
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[command.Command]
   private var waitingForCharCommand: (command.Command, Int) = null
+  private var lastFindCommand: (Command.RichMotion.FindCommand, Grapheme) = null
 
   private var commandCounts: String = ""
   def commandCountsText: String = commandCounts
@@ -76,7 +79,7 @@ trait Commands { self: Client =>
     ignored = Command.exit
     ignored = Command.Delete.deleteAfterVisual
     ignored = Command.RichInsertModeEdits.backspace
-    ignored = Command.NodeMove.tab
+    ignored = Command.NodeMove.indent
   }
   // LATER updatable keymap
   private val keyToCommand: Map[Key, Seq[command.Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
@@ -172,9 +175,6 @@ trait Commands { self: Client =>
     waitingForCharCommand = null
   }
 
-  private var lastFindCommand: Command.RichMotion.FindCommand = null
-  private var lastFindCommandArgument: Grapheme = null
-
   def commands: Seq[command.Command] = commands_
 
 
@@ -252,8 +252,10 @@ trait Commands { self: Client =>
         val (_, rich, nv) = a.asRichNormalOrVisual
         val t = rich.info(nv.focus.start).text
         val url = t.asInstanceOf[model.data.Text.Delimited[Any]].attribute(model.data.UrlAttribute).toString
-        Try {new URL(url)} match {
+        import io.lemonlabs.uri._
+        Try {Url.parse(url)} match {
           case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))
+          case _ =>
         }
         noUpdate()
       }
@@ -262,6 +264,15 @@ trait Commands { self: Client =>
     abstract class MotionCommand extends Command {
       override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
     }
+
+
+
+    object Fold {
+      // TODO fold-toggle	z
+      //fold-open
+      //fold-close
+    }
+
     /**
       */
     object RichMotion {
@@ -309,9 +320,10 @@ trait Commands { self: Client =>
       //                           when lines wrap)
       //gm       gm           to middle of the screen line
 
-      // not implemented...??? because it is hard to make columns in a rich text editor
+      // not implemented...?? because it is hard to make columns in a rich text editor
       // bar   N  |            to column N (default: 1)
 
+      // TODO make find not side effecting
       abstract class FindCommand extends MotionCommand with SideEffectingCommand {
 
         def reverse: FindCommand
@@ -352,8 +364,7 @@ trait Commands { self: Client =>
         }
 
         final override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
-          lastFindCommand = this
-          lastFindCommandArgument = char
+          lastFindCommand = (this, char)
           findGrapheme(a, char, count, skipCurrent = false)
         }
       }
@@ -387,14 +398,14 @@ trait Commands { self: Client =>
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override val defaultKeys: Seq[KeySeq] = Seq(";")
         override def action(a: ClientState, count: Int): Client.Update = {
-          lastFindCommand.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
+          lastFindCommand._1.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
         }
       }
       val repeatFindOppositeDirection: Command = new MotionCommand {
         override def available(a: ClientState): Boolean = super.available(a) && lastFindCommand != null
         override val defaultKeys: Seq[KeySeq] = Seq(",")
         override def action(a: ClientState, count: Int): Client.Update = {
-          lastFindCommand.reverse.findGrapheme(a, lastFindCommandArgument, count, skipCurrent = true)
+          lastFindCommand._1.reverse.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
         }
       }
 
@@ -864,19 +875,56 @@ trait Commands { self: Client =>
 
     object NodeMove {
 
-      val tab: Command = new Command {
-        override def defaultKeys: Seq[KeySeq] = Seq(Tab)
-        override def available(a: ClientState): Boolean = a.isNodeVisual || a.isNormal
+      // LATER
+      //unindent-row	<
+      //indent-row	>
 
-        def move(node: Option[range.Node]): Option[operation.Node.Move] = ???
+      abstract class MoveCommand extends  Command {
+        override def available(a: ClientState): Boolean = a.isNormal
+        def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val mm = a.asNormal._1
+          Client.Update(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
+        }
+      }
+      abstract class IndentCommand extends  Command {
+        override def available(a: ClientState): Boolean = a.isNodeVisual || a.isNormal
+        def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
 
         override def action(a: ClientState, count: Int): Client.Update = {
-          Client.Update((if (a.isNormal) {
-            move(Some(range.Node(a.asNormal._1)))
+          def act(r: range.Node) = targetTo(a.mover(), r).map(k => operation.Node.Move(r, k))
+          val res = if (a.isNormal) {
+            a.asNormal._1 match {
+              case cursor.Node.root => None
+              case w => act(range.Node(w))
+            }
           } else {
-            move(a.asNodeVisual.minimalRange)
-          }).toSeq, None)
+            a.asNodeVisual.minimalRange.flatMap(k => act(k))
+          }
+          Client.Update(res.toSeq, None, unfoldBefore = res.toSeq.map(_.to))
         }
+      }
+      val unindent: Command = new IndentCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Control + "h")
+        override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
+          mover.parent(node.start).flatMap(p => {
+            mover.parent(p).map(pp => pp :+ (p.last + 1))
+          })
+      }
+      val indent: Command = new IndentCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Tab, Control + "l")
+        override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
+          mover.previous(node.start).map(a => a :+ mover.size(a))
+      }
+      val swapDown: Command = new MoveCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Control + "j")
+        override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
+          mover.next(node).map(k => mover.nextOver(k))
+      }
+      val swapUp: Command = new MoveCommand {
+        override def defaultKeys: Seq[KeySeq] = Seq(Control + "k")
+        override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
+          mover.previous(node)
       }
     }
 

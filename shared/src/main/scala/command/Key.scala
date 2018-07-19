@@ -76,7 +76,7 @@ object Key {
   def isUnicodeKey(s: String): Boolean = s.length == 1 ||
     GraphemeSplitter.nextBreak(s) == s.length
 
-  // LATER is all keyboard layout like this????
+  // LATER is all keyboard layout like this??
   private val shifted = Unicode("~!@#$%^&*()_+{}:\"|><?QWERTYUIOPASDFGHJKLZXCVBNM").codePoints
 
   private def assciiKeyWithModifier(a: Int): Key = Key(Grapheme(Unicode(a)), shift = shifted.contains(a))

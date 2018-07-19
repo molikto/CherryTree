@@ -20,27 +20,35 @@ package object cursor {
 
   object Node {
 
-    class Mover(root: data.Node, isClosed: Node => Boolean) {
+    class Mover(root: data.Node, isFolded: Node => Boolean) {
 
 
       def parent(a: Node): Option[Node] = {
         if (a.isEmpty) None else Some(a.dropRight(1))
       }
 
+      def size(a: Node): Int = root(a).childs.size
+
       def firstChild(a: Node): Option[Node] = {
-        val size = root(a).childs.size
-        if (size > 0) {
-          Some(a :+ 0)
-        } else {
-          None
+        if (isFolded(a)) None
+        else {
+          val size = root(a).childs.size
+          if (size > 0) {
+            Some(a :+ 0)
+          } else {
+            None
+          }
         }
       }
       def lastChild(a: Node): Option[Node] = {
-        val size = root(a).childs.size
-        if (size == 0) {
-          None
-        } else {
-          Some(a :+ (size - 1))
+        if (isFolded(a)) None
+        else {
+          val size = root(a).childs.size
+          if (size == 0) {
+            None
+          } else {
+            Some(a :+ (size - 1))
+          }
         }
       }
       def previous(a: Node): Option[Node] = {
@@ -78,13 +86,9 @@ package object cursor {
       }
 
       def visualBottom(k: Node): Node = {
-        if (isClosed(k)) {
-          k
-        } else {
-          lastChild(k) match {
-            case Some(a) => visualBottom(a)
-            case _ => k
-          }
+        lastChild(k) match {
+          case Some(a) => visualBottom(a)
+          case _ => k
         }
       }
 
@@ -99,11 +103,7 @@ package object cursor {
       def globalNext(a: Node): Option[Node] = next(a).orElse(parent(a).flatMap(globalNext))
 
       def visualDown(a: Node): Option[Node] = {
-        if (!isClosed(a)) {
-          firstChild(a).orElse(globalNext(a))
-        } else {
-          globalNext(a)
-        }
+        firstChild(a).orElse(globalNext(a))
       }
     }
 

@@ -15,6 +15,9 @@
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * easy motion
+* closing node
+* modal editor for link like
+* modal editor for LaTeX
 * rebase move
 * node type
 * available commands panel
@@ -112,4 +115,5 @@
 * ~~wrap link~~
 * ~~smart styling~~
 * ~~temp save content~~
-* ~~tab~~
+* ~~visit links~~
+* ~~node move~~

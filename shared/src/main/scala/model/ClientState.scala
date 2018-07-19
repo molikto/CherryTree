@@ -12,9 +12,9 @@ object ClientState {
 
 case class ClientState(node: model.data.Node, mode: Option[model.mode.Node]) {
 
-  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isClosed)
+  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isFolded)
 
-  def isClosed(a: cursor.Node): Boolean = {
+  def isFolded(a: cursor.Node): Boolean = {
     false
   }
 

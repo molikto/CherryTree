@@ -360,7 +360,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   def flushInsertionMode(): Unit = {
     if (insertEmptyTextNode != null) {
-      // this is really ugly, but somehow Chrome create a new TextNode???
+      // this is really ugly, but somehow Chrome create a new TextNode??
       var previous = insertEmptyTextNode.previousSibling
       var next = insertEmptyTextNode.nextSibling
       var str = ""

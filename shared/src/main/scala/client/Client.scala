@@ -32,6 +32,10 @@ object Client {
   case class Update(
     transaction: model.transaction.Node,
     mode: Option[model.mode.Node],
+    // TODO make use of them
+    unfoldBefore: Seq[cursor.Node] = Seq.empty,
+    foldBefore: Seq[cursor.Node] = Seq.empty,
+    // TODO zoom options
     viewUpdated: Boolean = false)
 
   case class UpdateResult(

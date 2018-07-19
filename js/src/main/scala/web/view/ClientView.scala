@@ -303,7 +303,20 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
           case model.operation.Node.Insert(at, childs) =>
             val root = childListAt(at.dropRight(1))
             insertNodes(root, at.last, childs)
-          case model.operation.Node.Move(_, _) => ???
+          case model.operation.Node.Move(range, to) =>
+            val parent = childListAt(range.parent)
+            val toParent = childListAt(to.dropRight(1))
+            val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
+            if (to.last < toParent.childNodes.length) {
+              nodes.foreach(n => {
+                toParent.appendChild(n)
+              })
+            } else {
+              val before = toParent.childNodes.item(to.last)
+              nodes.foreach(n => {
+                toParent.insertBefore(n, before)
+              })
+            }
         }
       }
       updateMode(update.mode, update.viewUpdated)
