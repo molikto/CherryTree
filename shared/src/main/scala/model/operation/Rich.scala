@@ -51,8 +51,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def unwrap(start: Int, value: Text.Delimited[Any]): operation.Rich = {
     operation.Rich(
       Seq(
-        Unicode.Delete(start, start + 1),
-        Unicode.Delete(start + value.contentSize + 1, start + value.size - 1)
+        Unicode.Delete(start + value.contentSize + 1, start + value.size),
+        Unicode.Delete(start, start + 1)
       ),
       Type.Delete
     )

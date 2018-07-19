@@ -189,25 +189,25 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     (insertEmptyTextNode, 0)
   }
 
-  def updateNonEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+  def updateExistingTextNodeIn(node: Node, i: Int): (Node, Int) = {
     removeInsertEmptyTextNode()
     insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
     insertNonEmptyTextNodeStartIndex = i
-    insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.size
+    insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.length
     (node, i)
   }
 
   private def updateNonEmptyInsertCursorAt(pos: Int): (Node, Int) = {
     if (pos == 0) {
       if (rich.text.head.isInstanceOf[Text.Plain]) {
-        updateNonEmptyTextNodeIn(domAt(Seq(0)), 0)
+        updateExistingTextNodeIn(domAt(Seq(0)), 0)
       } else {
         updateTempEmptyTextNodeIn(domChildArray(dom), 0)
       }
     } else if (pos == rich.size) {
       rich.text.last match {
         case plain: Text.Plain =>
-          updateNonEmptyTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
+          updateExistingTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
         case _ =>
           updateTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
       }
@@ -216,7 +216,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       val ee = rich.infoSkipRightAttributes(pos)
       if (ss.ty == InfoType.Plain) {
         if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
-          updateNonEmptyTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
+          updateExistingTextNodeIn(domAt(ss.nodeCursor), ss.text.asInstanceOf[Text.Plain].unicode.toStringPosition(ss.positionInUnicode + 1))
         } else {
           throw new IllegalStateException("Not possible")
         }
@@ -226,7 +226,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
           } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
             if (ee.text.isInstanceOf[Text.Code]) {
-              updateNonEmptyTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
+              updateExistingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
             } else {
               updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
             }
@@ -234,18 +234,18 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
           }
         } else if (ee.ty == InfoType.Plain) {
-          updateNonEmptyTextNodeIn(domAt(ee.nodeCursor), 0)
+          updateExistingTextNodeIn(domAt(ee.nodeCursor), 0)
         } else if (ee.ty == InfoType.Coded) {
-          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
+          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
         } else {
           throw new IllegalStateException("Not possible")
         }
       } else if (ss.ty == InfoType.Coded) {
         val unicode = ss.text.asInstanceOf[Text.Code].content
         if (ee.ty == InfoType.Special) {
-          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
+          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
         } else if (ee.ty == InfoType.Coded) {
-          updateNonEmptyTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
+          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
         } else {
           throw new IllegalStateException("Not possible")
         }
@@ -359,6 +359,25 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   })
 
 
+  private def mergeTextsFix(center: raw.Text): String = {
+    if (center.wholeText != center.textContent) {
+      var previous = center.previousSibling
+      var next = center.nextSibling
+      while (previous != null && previous.isInstanceOf[raw.Text]) {
+        previous.parentNode.removeChild(previous)
+        previous = center.previousSibling
+      }
+      while (next != null && next.isInstanceOf[raw.Text]) {
+        next.parentNode.removeChild(next)
+        next = center.nextSibling
+      }
+      center.textContent = center.wholeText
+      center.wholeText
+    } else {
+      center.textContent
+    }
+  }
+
   /**
     *
     * mode rendering
@@ -370,25 +389,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   def flushInsertionMode(): Unit = {
     if (insertEmptyTextNode != null) {
+      val str = mergeTextsFix(insertEmptyTextNode)
       // this is really ugly, but somehow Chrome create a new TextNode??
-      var previous = insertEmptyTextNode.previousSibling
-      var next = insertEmptyTextNode.nextSibling
-      var str = ""
-      if (previous != null && previous.isInstanceOf[raw.Text]) {
-        str = str + previous.textContent
-      } else {
-        previous = null
-      }
-      if (insertEmptyTextNode.textContent.length > 0) {
-        str = if (str.isEmpty) insertEmptyTextNode.textContent else str + insertEmptyTextNode.textContent
-      }
-      if (next != null && next.isInstanceOf[raw.Text] && next.textContent.length > 0) {
-        str = str + next.textContent
-      } else {
-        next = null
-      }
-      if (previous != null) previous.parentNode.removeChild(previous)
-      if (next != null) next.parentNode.removeChild(next)
       if (str.length > 0) {
         insertEmptyTextNode.textContent = str
         insertNonEmptyTextNode = insertEmptyTextNode
@@ -398,7 +400,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         clientView.client.onInsertRichTextAndViewUpdated(Unicode(str))
       }
     } else if (insertNonEmptyTextNode != null) {
-      val newContent = insertNonEmptyTextNode.textContent
+      val newContent = mergeTextsFix(insertNonEmptyTextNode)
       val insertion = newContent.substring(
         insertNonEmptyTextNodeStartIndex, insertNonEmptyTextNodeStartIndex + newContent.length - insertNonEmptyTextLength)
       if (insertion.length > 0) {

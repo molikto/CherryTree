@@ -153,7 +153,7 @@ class Client(
     updatingState = false
     if (state_.isRichInserting) {
       if (insertingFlusher == null) {
-        insertingFlusher = Observable.interval(300.millis).doOnNext(_ => flush()).subscribe()
+        insertingFlusher = Observable.interval(3000.millis).doOnNext(_ => flush()).subscribe()
       }
     } else {
       if (insertingFlusher != null) {
