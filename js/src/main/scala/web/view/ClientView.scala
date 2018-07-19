@@ -43,7 +43,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   parent.appendChild(dom)
   defer(_ => parent.removeChild(dom))
 
-  val bottomBar = new BottomBarView(client)
+  private val bottomBar = new BottomBarView(client)
 
   dom.appendChild(bottomBar.dom)
 
@@ -54,7 +54,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     flexDirection := "row",
     overflow := "hidden").render
 
-  val leftPanel = new CommandListView()
+  private val leftPanel = new CommandListView()
 
   private val topPanelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
 
@@ -131,7 +131,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     *
     *
     */
-  def childListAt(at: model.cursor.Node): HTMLElement = {
+  private def childListAt(at: model.cursor.Node): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       // ul, li, content
@@ -140,7 +140,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     rec(nodeRoot.childNodes(0).childNodes(1), at).asInstanceOf[HTMLElement]
   }
 
-  def contentAt(at: model.cursor.Node): ContentView.General = {
+  private def contentAt(at: model.cursor.Node): ContentView.General = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a.childNodes(0)
         // ul, li, content
@@ -231,7 +231,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
   }
 
-  def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
     m match {
       case None =>
         removeFocusContent()

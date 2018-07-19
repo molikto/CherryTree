@@ -17,6 +17,7 @@ import scala.scalajs.js
   * it should only call methods in client for input related, lazy to build bridges now
   */
 class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
+  val client = clientView.client
 
   /**
     *
@@ -76,7 +77,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def initEmptyContent(): Unit = {
-    dom.appendChild(span(EmptyStr, color := clientView.theme.disalbedInfo).render)
+    dom.appendChild(span(EmptyStr, color := theme.disalbedInfo).render)
   }
 
   private def initEmptyNormalMode(): Unit = {
@@ -166,7 +167,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     parent.childNodes(1).childNodes(0)
   }
 
-  def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
+  private def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
     insertEmptyTextNode = document.createTextNode("")
     if (i == node.childNodes.length) {
       node.appendChild(insertEmptyTextNode)
@@ -175,7 +176,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     }
   }
 
-  def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
+  private def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
     if (insertEmptyTextNode != null) {
       if (i < node.childNodes.length && node.childNodes(i) == insertEmptyTextNode) {
         // do nothing, we are up to date
@@ -189,7 +190,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     (insertEmptyTextNode, 0)
   }
 
-  def updateExistingTextNodeIn(node: Node, i: Int): (Node, Int) = {
+  private def updateExistingTextNodeIn(node: Node, i: Int): (Node, Int) = {
     removeInsertEmptyTextNode()
     insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
     insertNonEmptyTextNodeStartIndex = i
@@ -317,7 +318,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def addFormattedNodeHighlight(_5: HTMLSpanElement): Unit = {
     astHighlight = _5
-    _5.style.backgroundColor = clientView.theme.astHighlight
+    _5.style.backgroundColor = theme.astHighlight
   }
 
   /**
@@ -329,7 +330,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
 
   event("compositionstart", (a: CompositionEvent) => {
-    if (isInserting) clientView.client.disableStateUpdate = true
+    if (isInserting) client.disableStateUpdate = true
     else a.preventDefault()
   })
 
@@ -338,7 +339,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   })
 
   event("compositionend", (a: CompositionEvent) => {
-    if (isInserting) clientView.client.disableStateUpdate = false
+    if (isInserting) client.disableStateUpdate = false
     else a.preventDefault()
   })
 
@@ -349,7 +350,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
         //window.console.log(a)
-        clientView.client.flush()
+        client.flush()
       } else {
         window.console.log(a)
       }
@@ -386,7 +387,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
     *
     */
 
-  def flushInsertionMode(): Unit = {
+  private def flushInsertionMode(): Unit = {
     if (insertEmptyTextNode != null) {
       val str = mergeTextsFix(insertEmptyTextNode)
       // this is really ugly, but somehow Chrome create a new TextNode??
@@ -396,7 +397,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         insertNonEmptyTextLength = str.length
         insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
         insertEmptyTextNode = null
-        clientView.client.onInsertRichTextAndViewUpdated(Unicode(str))
+        client.onInsertRichTextAndViewUpdated(Unicode(str))
       }
     } else if (insertNonEmptyTextNode != null) {
       val newContent = mergeTextsFix(insertNonEmptyTextNode)
@@ -405,7 +406,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
       if (insertion.length > 0) {
         insertNonEmptyTextLength = newContent.length
         insertNonEmptyTextNodeStartIndex += insertion.length
-        clientView.client.onInsertRichTextAndViewUpdated(Unicode(insertion))
+        client.onInsertRichTextAndViewUpdated(Unicode(insertion))
       }
     }
   }
@@ -461,7 +462,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def updateInsertMode(pos: Int): Unit = {
     if (flushSubscription == null) {
-      flushSubscription = defer(clientView.client.flushes.doOnNext(_ => {
+      flushSubscription = defer(client.flushes.doOnNext(_ => {
         flushInsertionMode()
       }).subscribe())
     }
