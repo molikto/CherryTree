@@ -127,7 +127,11 @@ package object range {
 
     def transformNodeAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
       if (contains(a)) {
-        (to.dropRight(1) :+ (to.last + (a(parent.size) - childs.start))) ++ a.drop(parent.size + 1)
+        if (to.dropRight(1) == parent && to.last >= childs.until) {
+          (to.dropRight(1) :+ (to.last + a(parent.size) - childs.until)) ++ a.drop(parent.size + 1)
+        } else {
+          (to.dropRight(1) :+ (to.last + a(parent.size) - childs.start)) ++ a.drop(parent.size + 1)
+        }
       } else {
         cursor.Node.transformAfterInserted(transformAfterDeleted(to).get, childs.size, transformAfterDeleted(a).get)
       }

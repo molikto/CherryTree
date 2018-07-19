@@ -55,7 +55,6 @@ object Node extends OperationObject[data.Node, Node] {
         Some(mode.Node.Visual(
           cursor.Node.transformAfterInserted(at, childs.size, fix),
           cursor.Node.transformAfterInserted(at, childs.size, move)))
-
     }
   }
   case class Delete(r: range.Node) extends Node {

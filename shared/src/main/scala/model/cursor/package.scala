@@ -142,8 +142,8 @@ package object cursor {
     /**
       * @param inserted the previous insertion point
       * @param len the previous insertion point length
-      * @param ref the current insertion point (not rebased)
-      * @return the rebased current insertion point
+      * @param ref the pos
+      * @return the rebased pos
       */
     def transformAfterInserted(inserted: Node, len: Int, ref: Node): Node = {
       val (common, ii, rr) = destructRelative(inserted, ref)
