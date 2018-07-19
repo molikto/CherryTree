@@ -824,7 +824,7 @@ trait Commands { self: Client =>
       }
 
       val moveLeft: Command = new InsertMovementCommand {
-        override def defaultKeys: Seq[KeySeq] = Seq(Shift + Backspace, Left)
+        override def defaultKeys: Seq[KeySeq] = Seq(Left)
         override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
       }
 
