@@ -785,7 +785,10 @@ trait Commands { self: Client =>
       }
 
       val emptyWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-        override def available(a: ClientState): Boolean = a.isRichInserting
+        override def available(a: ClientState): Boolean = a.isRichInserting && {
+          val (node, rich, insert) = a.asRichInsert
+          !rich.insertionInsideCoded(insert.pos)
+        }
         override def action(a: ClientState, count: Int): Client.Update = {
           val (n, content, insert) = a.asRichInsert
           val k = operation.Rich.insert(insert.pos, deli.wrap())

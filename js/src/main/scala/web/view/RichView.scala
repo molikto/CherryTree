@@ -37,6 +37,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   dom = p(`class` := "ct-content").render
 
+
   dom.style = "outline: 0px solid transparent;"
 
 
@@ -46,11 +47,12 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   private var insertNonEmptyTextLength: Int = 0
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
-  private var previousMode = -1
+  private var previousMode = if (isEmpty) -2 else -1
 
   private def initDom(): Unit = {
     if (dom.childNodes.length == 0) {
       dom.appendChild(rec(rich.text).render)
+      if (isEmpty) initEmptyContent()
     } else {
       throw new IllegalStateException("...")
     }
@@ -61,16 +63,24 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
   }
 
   private def clearDom(): Unit = {
-    initMode(-1)
+    initMode(if (isEmpty) -2 else -1)
     removeAllChild(dom)
   }
 
   private def clearEmptyNormalMode(): Unit = {
+    removeEmptyContent()
+  }
+
+  private def removeEmptyContent(): Unit = {
     removeAllChild(dom)
   }
 
-  private def initEmptyNormalMode(): Unit = {
+  private def initEmptyContent(): Unit = {
     dom.appendChild(span("∅", color := "#636e83").render)
+  }
+
+  private def initEmptyNormalMode(): Unit = {
+    initEmptyContent()
     val range = document.createRange()
     range.setStart(dom.childNodes(0), 0)
     range.setEnd(dom.childNodes(0), 1)
@@ -216,7 +226,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
             updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
           } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
             if (ee.text.isInstanceOf[Text.Code]) {
-              updateTempEmptyTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
+              updateNonEmptyTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
             } else {
               updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
             }
@@ -490,7 +500,7 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   override def clearMode(): Unit = {
     clientView.unmarkEditable(dom)
-    initMode(-1)
+    initMode(if (isEmpty) -2 else -1)
   }
 
   override def initMode(): Unit = {
@@ -510,9 +520,13 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
         clearNormalMode()
       } else if (previousMode == 3) {
         clearEmptyNormalMode()
+      } else if (previousMode == -2) {
+        removeEmptyContent()
       }
       if (i == 3) {
         initEmptyNormalMode()
+      } else if (i == -2) {
+        initEmptyContent()
       }
       previousMode = i
     }

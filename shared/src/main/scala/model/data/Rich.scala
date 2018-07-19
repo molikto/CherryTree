@@ -84,6 +84,12 @@ case class Info(
 case class Rich(text: Seq[Text]) {
 
 
+  def insertionInsideCoded(pos: Int): Boolean = {
+    if (pos == size) false
+    else {
+      info(pos).text.isCoded
+    }
+  }
 
   def moveLeftAtomic(a: IntRange): IntRange = if (a.start == 0) a else moveLeftAtomic(a.start)
   def moveRightAtomic(a: IntRange): IntRange = if (a.until == size) a else moveRightAtomic(a.until - 1)

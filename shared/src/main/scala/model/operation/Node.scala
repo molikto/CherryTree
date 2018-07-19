@@ -79,7 +79,7 @@ object Node extends OperationObject[data.Node, Node] {
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
     override def transform(a: mode.Node): Option[mode.Node] = Some(a match {
-      case mode.Node.Visual(fix, move) => mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(move, fix))
+      case mode.Node.Visual(fix, move) => mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move))
       case mode.Node.Content(node, b) => mode.Node.Content(r.transformNodeAfterMoved(to, node), b)
     })
   }
