@@ -797,8 +797,12 @@ trait Commands { self: Client =>
         }
         override def action(a: ClientState, count: Int): Client.Update = {
           val (n, content, insert) = a.asRichInsert
-          val k = operation.Rich.insert(insert.pos, deli.wrap())
-          val res = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+          val res = if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end)) {
+            Seq.empty
+          } else {
+            val k = operation.Rich.insert(insert.pos, deli.wrap())
+            Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+          }
           Client.Update(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
         }
       }).toMap
