@@ -169,11 +169,8 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
     insertEmptyTextNode = document.createTextNode("")
-    if (i == node.childNodes.length) {
-      node.appendChild(insertEmptyTextNode)
-    } else {
-      node.insertBefore(insertEmptyTextNode, node.childNodes(i))
-    }
+    val before = if (i == node.childNodes.length) null else node.childNodes(i)
+    node.insertBefore(insertEmptyTextNode, before)
   }
 
   private def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
@@ -462,9 +459,9 @@ class RichView(clientView: ClientView, var rich: Rich) extends ContentView[model
 
   private def updateInsertMode(pos: Int): Unit = {
     if (flushSubscription == null) {
-      flushSubscription = defer(client.flushes.doOnNext(_ => {
+      flushSubscription = observe(client.flushes.doOnNext(_ => {
         flushInsertionMode()
-      }).subscribe())
+      }))
     }
     val range = document.createRange()
     if (isEmpty) {

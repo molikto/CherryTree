@@ -3,6 +3,7 @@ package web.view
 
 import monix.execution.Cancelable
 import monix.execution.rstreams.Subscription
+import monix.reactive.Observable
 
 import scala.collection.mutable.ArrayBuffer
 import org.scalajs.dom._
@@ -55,10 +56,13 @@ abstract class View {
   /**
     *
     * the cancelable returned is THE SAME as the argument, and you are not being able to cancel a defer!!!
+    * // LATER cancel this
     */
-  def defer(a: Cancelable): Cancelable = {
-    des.append(_ => a.cancel())
-    a
+  def observe[T](a: Observable[T]): Cancelable = {
+    import monix.execution.Scheduler.Implicits.global
+    val cancelable = a.subscribe()
+    des.append(_ => cancelable.cancel())
+    cancelable
   }
 
   def event[T <: Event](ty: String,

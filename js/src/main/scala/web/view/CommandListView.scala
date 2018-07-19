@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{CommandStatus, Commands, Key}
+import command.{CommandStatus, Key}
 import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -22,9 +22,19 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class CommandListView extends View {
+class CommandListView(val client: Client) extends View {
 
 
   dom = div(flex := "0 0 auto",height := "100%", minWidth := "150px", background := theme.bottomBarBackground).render
+
+  observe(client.stateUpdates.doOnNext(_ => {
+    update()
+  }))
+
+  update()
+
+  def update(): Unit = {
+    removeAllChild(dom)
+  }
 
 }

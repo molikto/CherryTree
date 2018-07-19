@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{CommandStatus, Commands, Key}
+import command.{CommandStatus, Key}
 import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -41,7 +41,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     flexDirection := "column-reverse",
     overflow := "hidden").render
   parent.appendChild(dom)
-  defer(_ => parent.removeChild(dom))
 
   private val bottomBar = new BottomBarView(client)
 
@@ -54,7 +53,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     flexDirection := "row",
     overflow := "hidden").render
 
-  private val leftPanel = new CommandListView()
+  private val leftPanel = new CommandListView(client)
 
   private val topPanelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
 
@@ -196,27 +195,19 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   }
 
   private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
-    if (at == list.childNodes.length) {
-      contents.foreach(a => {
-        val item = li().render
-        list.appendChild(item)
-        insertNodesRec(a, item)
-      })
-    } else {
-      val before = list.childNodes(at)
-      contents.foreach(a => {
-        val item = li().render
-        list.insertBefore(item, before)
-        insertNodesRec(a, item)
-      })
-    }
+    val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
+    contents.foreach(a => {
+      val item = div(paddingLeft := "24px").render
+      list.insertBefore(item, before)
+      insertNodesRec(a, item)
+    })
   }
 
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val box = div().render
     parent.insertBefore(box, parent.firstChild)
     box.appendChild(createContent(root.content).dom)
-    val list = ul().render
+    val list = div().render
     box.appendChild(list)
     insertNodes(list, 0, root.childs)
   }
@@ -276,11 +267,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
 
   {
-    defer(client.viewMessages.doOnNext {
+    observe(client.viewMessages.doOnNext {
       case Client.ViewMessage.VisitUrl(url) =>
         window.open(url)
-    }.subscribe())
-    defer(client.stateUpdates.doOnNext(update => {
+    })
+    observe(client.stateUpdates.doOnNext(update => {
       for (t <- update.transaction) {
         t match {
           case model.operation.Node.Content(at, c) =>
@@ -301,22 +292,16 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
             val parent = childListAt(range.parent)
             val toParent = childListAt(to.dropRight(1))
             val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
-            if (to.last < toParent.childNodes.length) {
-              val before = toParent.childNodes.item(to.last)
-              nodes.foreach(n => {
-                toParent.insertBefore(n, before)
-              })
-            } else {
-              nodes.foreach(n => {
-                toParent.appendChild(n)
-              })
-            }
+            val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
+            nodes.foreach(n => {
+              toParent.insertBefore(n, before)
+            })
             // might lost focus due to implementation, so we force a update!
             updateMode(None, viewUpdated = false)
         }
       }
       updateMode(update.mode, update.viewUpdated)
-    }).subscribe())
+    }))
 
   }
 
@@ -328,9 +313,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     }
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-    val kd = client.keyDown(kk)
-    if (kd) {
-      event.preventDefault()
+    if (!kk.meta) { // for meta keys, we ignore it, it is mostly browser keys
+      val kd = client.keyDown(kk)
+      if (kd) {
+        event.preventDefault()
+      }
     }
   })
 

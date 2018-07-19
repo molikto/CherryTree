@@ -38,6 +38,10 @@ object Client {
     // TODO zoom options
     viewUpdated: Boolean = false) {
   }
+  object Update {
+    val empty = Client.Update(Seq.empty, None)
+    def mode(a: model.mode.Node) = Client.Update(Seq.empty, Some(a))
+  }
 
   case class UpdateResult(
     root: model.data.Node,
@@ -56,7 +60,7 @@ class Client(
   private val server: Client.Proxy,
   private val initial: ClientInit,
   private val authentication: Authentication.Token
-) extends Commands { self =>
+) extends KeyboardCommandHandler { self =>
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
@@ -275,7 +279,7 @@ class Client(
   }
 
 
-  def act(c: command.Command, count: Int): Unit = {
+  protected def act(c: command.Command, count: Int): Unit = {
     flush()
     change(c.action(state, count))
   }
@@ -329,22 +333,4 @@ class Client(
       if (sync) self.sync()
     }
   }
-
-  /**
-    * these are settings??
-    */
-  val delimitationSettings = Seq(
-    (SpecialChar.StrikeThrough, '~'.toInt, '~'.toInt),
-    (SpecialChar.Code, '`'.toInt, '`'.toInt),
-    (SpecialChar.Strong, '#'.toInt, '#'.toInt),
-    (SpecialChar.LaTeX, '&'.toInt, '&'.toInt),
-    (SpecialChar.Link, '['.toInt, ']'.toInt),
-    (SpecialChar.Emphasis, '*'.toInt, '*'.toInt)
-  )
-
-  val delimitationCodePoints: Map[SpecialChar, Int] = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._2)).toMap
-
-  def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
-
-  def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 }

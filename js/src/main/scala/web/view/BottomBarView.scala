@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{CommandStatus, Commands, Key}
+import command.{CommandStatus, Key}
 import model.data.{Content, Unicode}
 import model.{ClientState, cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -57,7 +57,7 @@ class BottomBarView(val client: Client) extends View {
   ).render
 
   {
-    defer(client.commandStatus.doOnNext(c => {
+    observe(client.commandStatus.doOnNext(c => {
       val (text, color) = c match {
         case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
         case CommandStatus.InputtingCount(a: String) => (a, null)
@@ -70,7 +70,7 @@ class BottomBarView(val client: Client) extends View {
       }
       commandStatus.textContent = text
       commandStatus.style.color = color
-    }).subscribe())
+    }))
   }
 
   private def updateModeIndicator(): Unit = {
@@ -107,22 +107,14 @@ class BottomBarView(val client: Client) extends View {
 
   {
     updateModeIndicator()
-    updateAvailableCommands()
 
-    defer(client.stateUpdates.doOnNext(update => {
+    observe(client.stateUpdates.doOnNext(update => {
       updateModeIndicator()
-      updateAvailableCommands()
-    }).subscribe())
+    }))
 
-    defer(client.errors.doOnNext {
+    observe(client.errors.doOnNext {
       case Some(e) => debugErrorInfo.textContent = e.getMessage
       case _ =>
-    }.subscribe())
-  }
-
-
-
-  def updateAvailableCommands(): Unit = {
-
+    })
   }
 }
