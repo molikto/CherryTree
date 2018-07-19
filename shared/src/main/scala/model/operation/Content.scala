@@ -49,6 +49,7 @@ object Content extends OperationObject[data.Content, Content] {
     override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
   }
 
+
   override val pickler: Pickler[Content] = new Pickler[Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {
       import state.enc._

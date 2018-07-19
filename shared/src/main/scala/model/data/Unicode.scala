@@ -112,6 +112,11 @@ object Unicode extends DataObject[Unicode] {
 
 case class Unicode(private var str: String) {
 
+  def times(size: Int): Unicode = {
+    Unicode(str * size)
+  }
+
+
   def apply(i: Int): Int = str.codePointAt(i)
 
   def codePoints: Seq[Int] = {
@@ -135,15 +140,20 @@ case class Unicode(private var str: String) {
     (start, end)
   }
 
-  def graphemes: Seq[Unicode] = {
-    val aa = new ArrayBuffer[Unicode]()
-    var start = 0
-    var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
-    while (end < str.length) {
-      start = end
-      end = GraphemeSplitter.nextBreak(str, start)
+  def graphemesCount: Int = {
+    if (isEmpty) {
+      0
+    } else {
+      var start = 0
+      var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
+      var size = 1
+      while (end < str.length) {
+        start = end
+        end = GraphemeSplitter.nextBreak(str, start)
+        size += 1
+      }
+      size
     }
-    aa
   }
 
   def extendedGrapheme(pos: Int): Unicode = {

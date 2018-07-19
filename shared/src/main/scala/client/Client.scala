@@ -13,13 +13,13 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
+import command.Key.KeySeq
 import model.ot.Rebased
 import util._
 import model._
 import model.data.{SpecialChar, Unicode}
 import command._
 import monix.reactive.subjects.PublishSubject
-
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -36,7 +36,8 @@ object Client {
     unfoldBefore: Seq[cursor.Node] = Seq.empty,
     foldBefore: Seq[cursor.Node] = Seq.empty,
     // TODO zoom options
-    viewUpdated: Boolean = false)
+    viewUpdated: Boolean = false) {
+  }
 
   case class UpdateResult(
     root: model.data.Node,
@@ -332,21 +333,16 @@ class Client(
   /**
     * these are settings??
     */
-  def delimitationCodePoints: Map[SpecialChar, Int] = Map(
-    SpecialChar.StrikeThrough.start -> '-'.toInt,
-    SpecialChar.StrikeThrough.end -> '-'.toInt,
-    SpecialChar.Code.start -> '`'.toInt,
-    SpecialChar.Code.end -> '`'.toInt,
-    SpecialChar.Strong.start -> '#'.toInt,
-    SpecialChar.Strong.start -> '#'.toInt,
-    SpecialChar.LaTeX.start -> '&'.toInt,
-    SpecialChar.LaTeX.end -> '&'.toInt,
-    SpecialChar.Link.start -> '['.toInt,
-    SpecialChar.Link.end -> ']'.toInt,
-
-    SpecialChar.Emphasis.start -> '*'.toInt,
-    SpecialChar.Emphasis.end -> '*'.toInt
+  val delimitationSettings = Seq(
+    (SpecialChar.StrikeThrough, '-'.toInt, '-'.toInt),
+    (SpecialChar.Code, '`'.toInt, '`'.toInt),
+    (SpecialChar.Strong, '#'.toInt, '#'.toInt),
+    (SpecialChar.LaTeX, '&'.toInt, '&'.toInt),
+    (SpecialChar.Link, '['.toInt, ']'.toInt),
+    (SpecialChar.Emphasis, '*'.toInt, '*'.toInt)
   )
+
+  val delimitationCodePoints: Map[SpecialChar, Int] = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._2)).toMap
 
   def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 

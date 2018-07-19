@@ -4,7 +4,7 @@ import java.net.URL
 
 import api.ClientUpdate
 import client.Client
-import model.data.{apply => _, _}
+import model.data._
 import model.range.IntRange
 import model.{ClientState, cursor, mode, operation, range}
 
@@ -34,14 +34,9 @@ abstract class Command {
       -1
     }
   }
-
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
-
   def available(a: ClientState): Boolean
-
   def action(a: ClientState, count: Int): Client.Update
-
-  def waitingForGrapheme: Boolean = false
   def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = throw new NotImplementedError()
 }
 
@@ -78,11 +73,12 @@ trait Commands { self: Client =>
     ignored = Command.NodeVisual.enter
     ignored = Command.exit
     ignored = Command.Delete.deleteAfterVisual
+    ignored = Command.RichChange.replace
     ignored = Command.RichInsertModeEdits.backspace
     ignored = Command.NodeMove.indent
   }
   // LATER updatable keymap
-  private val keyToCommand: Map[Key, Seq[command.Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
+  private lazy val keyToCommand: Map[Key, Seq[command.Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
 
   /**
     * return false if no command is exec and not waiting
@@ -332,8 +328,6 @@ trait Commands { self: Client =>
           waitingForCharCommand = (this, count)
           noUpdate()
         }
-
-        override def waitingForGrapheme: Boolean = true
         def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
         def skip(a: Rich, range: IntRange): IntRange = range
         def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
@@ -597,7 +591,6 @@ trait Commands { self: Client =>
         override def action(a: ClientState, count: Int): Client.Update = a.asRichVisual match {
           case (cursor, rich, visual) =>
             val r = visual.merged
-            val ifs = rich.info(r)
             val fakeMode =
               if (deli.isAtomic) {
                 val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
@@ -607,15 +600,17 @@ trait Commands { self: Client =>
               } else {
                 mode.Content.RichVisual(IntRange(r.until + deli.wrapSizeOffset - 1), IntRange(r.start))
               }
+            val ifs = rich.info(r)
             if (ifs.forall(_.ty == InfoType.Plain)) {
               Client.Update(Seq(
                 operation.Node.Content(cursor,
-                  operation.Content.Rich(operation.Rich.wrapAsCoded(model.data.Unicode.ofCodePoints(ifs.map(_.char)), r, deli)))),
+                  operation.Content.Rich(operation.Rich.wrapAsCoded(rich.subPlain(r), r, deli)))),
                 Some(a.copyContentMode(fakeMode)))
             } else {
               noUpdate()
             }
         }
+
       }).toMap
 
       val linkLikeWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
@@ -778,10 +773,21 @@ trait Commands { self: Client =>
         }
       }
 
-      val enter: Command = new EditCommand with OverrideCommand {
+      val enter: Command = new OverrideCommand {
         // TODO what to do on enter???
         override val hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
-        override def edit(content: Rich, a: Int): Option[operation.Rich] = None
+        override def available(a: ClientState): Boolean = a.isRichInserting
+        override def action(a: ClientState, count: Int): Client.Update = {
+          val (node, rich, insert) =  a.asRichInsert
+          if (insert.pos == rich.size) {
+            val n = a.mover().nextOver(node)
+            Client.Update(
+              Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
+            , Some(model.mode.Node.Content(n, model.mode.Content.RichNormal(IntRange(0, 0)))))
+          } else {
+            noUpdate()
+          }
+        }
       }
 
       val emptyWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
@@ -1092,6 +1098,244 @@ trait Commands { self: Client =>
       //zH            N  zH           scroll screen half a screenwidth to the right
       //zL            N  zL           scroll screen half a screenwidth to the left
     }
+
+    object RichChange {
+
+      val replace: Command = new Command {
+        override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
+        override def available(a: ClientState): Boolean = a.isRichNormal
+
+        override def action(a: ClientState, count: Int): Client.Update = {
+          waitingForCharCommand = (this, count)
+          noUpdate()
+        }
+
+        override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
+          val (cursor, rich, v) = a.asRichNormal
+
+          def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
+            val rafter = operation.Rich.apply(riches, rich)
+            val range = if (in.isStart) {
+              rafter.info(in.nodeStart).atomicRange
+            } else {
+              rafter.info(in.nodeStart + rafter.info(in.nodeStart).text.size - 1).atomicRange
+            }
+            Some(a.copyContentMode(mode.Content.RichNormal(range)))
+          }
+
+          if (v.range.size == 1 && char.a.size == 1) {
+            val point = v.range.start
+            val in = rich.info(point)
+            if (in.isStartOrEnd) {
+              val codepoint = char.a.codePoints.head
+              delimitationSettings.find(_._2 == codepoint) match {
+                case Some(deli) =>
+                  if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
+                    return noUpdate()
+                  }
+
+                  def wrapUnwrap(): Client.Update = {
+                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
+                    val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asInstanceOf[Text.Delimited[Any]].contentSize), deli._1)
+                    Client.Update(
+                      Seq(
+                        operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+                      ),
+                      makeMode(in, Seq(op1, op2))
+                    )
+                  }
+
+                  if (SpecialChar.coded.contains(deli._1)) {
+                    in.text match {
+                      case formatted: Text.Formatted if formatted.content.size == 1 && formatted.content.head.isPlain =>
+                        val unicode = formatted.content.head.asInstanceOf[Text.Plain].unicode
+                        val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
+                        val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
+                        return Client.Update(
+                          Seq(
+                            operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+                          ),
+                          makeMode(in, Seq(op1, op2))
+                        )
+                      case _ => if (in.text.isCoded) {
+                        return wrapUnwrap()
+                      }
+                    }
+                  } else if (SpecialChar.formatLike.contains(deli._1) || SpecialChar.linkLike.contains(deli._1)) {
+                    return wrapUnwrap()
+                  }
+                case None =>
+              }
+            }
+          }
+          if (rich.info(v.range.start).ty != InfoType.Special) {
+            val ops = operation.Rich.merge(
+              operation.Rich.delete(v.range),
+              operation.Rich.insert(v.range.start, char.a
+              ), operation.Type.AddDelete)
+            val focus = IntRange(v.range.start, v.range.start + char.a.size)
+            Client.Update(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
+              Some(a.copyContentMode(mode.Content.RichNormal(focus))))
+          } else {
+            noUpdate()
+          }
+        }
+      }
+
+//      val replace: Command = new Command {
+//        override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode
+//        override def available(a: ClientState): Boolean = a.isRichNormalOrVisual
+//        override def action(a: ClientState, count: Int): Client.Update = {
+//          waitingForCharCommand = (this, count)
+//          noUpdate()
+//        }
+//
+//
+//        override def actionOnGrapheme(a: ClientState, char: Grapheme, count: Int): Client.Update = {
+//          val (cursor, rich, v) = a.asRichNormalOrVisual
+//          def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
+//            val rafter = operation.Rich.apply(riches, rich)
+//            val range = if (in.isStart) {
+//              rafter.info(in.nodeStart).atomicRange
+//            } else {
+//              rafter.info(in.nodeStart + rafter.info(in.nodeStart).text.size - 1).atomicRange
+//            }
+//            Some(a.copyContentMode(mode.Content.RichNormal(range)))
+//          }
+//          if (v.merged.size == 1 && char.a.size == 1 && count == 1) {
+//            val point = v.merged.start
+//            val in = rich.info(point)
+//            if (in.isStartOrEnd) {
+//              val codepoint = char.a.codePoints.head
+//              delimitationSettings.find(_._2 == codepoint) match {
+//                case Some(deli) =>
+//                  if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
+//                    return noUpdate()
+//                  }
+//                  def wrapUnwrap(): Client.Update = {
+//                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
+//                    val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asInstanceOf[Text.Coded].contentSize), deli._1)
+//                    Client.Update(
+//                      Seq(
+//                        operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+//                      ),
+//                      makeMode(in, Seq(op1, op2))
+//                    )
+//                  }
+//                  if (SpecialChar.coded.contains(deli)) {
+//                    if (in.text.asInstanceOf[Text.Formatted].content.size == 1 &&  in.text.asInstanceOf[Text.Formatted].content.head.isPlain) {
+//                      val unicode = in.text.asInstanceOf[Text.Formatted].content.head.asInstanceOf[Text.Plain].unicode
+//                      val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
+//                      val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
+//                      return Client.Update(
+//                        Seq(
+//                          operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+//                        ),
+//                        makeMode(in, Seq(op1, op2))
+//                      )
+//                    } else if (in.text.isCoded) {
+//                      return wrapUnwrap()
+//                    }
+//                  } else if (SpecialChar.formatLike.contains(deli) || SpecialChar.linkLike.contains(deli)) {
+//                    return wrapUnwrap()
+//                  }
+//                case None =>
+//              }
+//            }
+//          }
+//          val merged = v match {
+//            case mode.Content.RichNormal(r) => IntRange(r.start, (0 until count).foldLeft(r) { (rr, _) => rich.moveRightAtomic(r) }.until)
+//            case v: mode.Content.RichVisual => v.merged
+//          }
+//          val notPlain = rich.info(merged).filter(_.ty != InfoType.Plain).map(a => IntRange(a.positionInParagraph))
+//          val plains = merged.minusOrderedInside(notPlain)
+//          if (plains.isEmpty) {
+//            noUpdate()
+//          } else {
+//            val gcs = plains.map(a => rich.subPlain(a)).map(a => (a, a.graphemesCount))
+//            println(plains)
+//            println(gcs)
+//            val newSize = gcs.map(_._2).sum * char.a.size
+//            val oldSize = gcs.map(_._1.size).sum
+//            val ops = operation.Rich.merge(plains.zip(gcs).reverse.flatMap(r => Seq(
+//              operation.Rich.delete(r._1),
+//              operation.Rich.insert(r._1.start, char.a.times(r._2._2))
+//            )), operation.Type.AddDelete)
+//            val focus = if (v.isNormal || v.focus.start == merged.start) {
+//              if (plains.head.start == merged.start) {
+//                IntRange(v.focus.start, v.focus.start + char.a.size) // changed
+//              } else {
+//                v.focus // not changed
+//              }
+//            } else {
+//              val ss = if (plains.last.until == merged.until) {
+//                char.a.size
+//              } else {
+//                v.focus.size
+//              }
+//              val end = v.focus.until + newSize - oldSize
+//              IntRange(end -ss, end)
+//            }
+//
+//            Client.Update(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
+//              Some(a.copyContentMode(mode.Content.RichNormal(focus))))
+//          }
+//        }
+//      }
+
+      // LATER change/replaces
+      // R       N  R          enter Replace mode (repeat the entered text N times)
+      //gR      N  gR         enter virtual Replace mode: Like Replace mode but
+      //                           without affecting layout
+      //v_b_r      {visual}r{char}
+      //                        in Visual block mode: Replace each char of the
+      //                           selected text with {char}
+      //
+      //        (change = delete text and enter Insert mode)
+      //c       N  c{motion}  change the text that is moved over with {motion}
+      //v_c        {visual}c  change the highlighted text
+      //cc      N  cc         change N lines
+      //S       N  S          change N lines
+      //C       N  C          change to the end of the line (and N-1 more lines)
+      //s       N  s          change N characters
+      //v_b_c      {visual}c  in Visual block mode: Change each of the selected
+      //                           lines with the entered text
+      //v_b_C      {visual}C  in Visual block mode: Change each of the selected
+      //                           lines until end-of-line with the entered text
+      //
+      //~       N  ~          switch case for N characters and advance cursor
+      //v_~        {visual}~  switch case for highlighted text
+      //v_u        {visual}u  make highlighted text lowercase
+      //v_U        {visual}U  make highlighted text uppercase
+      //g~         g~{motion} switch case for the text that is moved over with
+      //                           {motion}
+      //gu         gu{motion} make the text that is moved over with {motion}
+      //                           lowercase
+      //gU         gU{motion} make the text that is moved over with {motion}
+      //                           uppercase
+      //v_g?       {visual}g? perform rot13 encoding on highlighted text
+      //g?         g?{motion} perform rot13 encoding on the text that is moved over
+      //                           with {motion}
+      //
+      //CTRL-A  N  CTRL-A     add N to the number at or after the cursor
+      //CTRL-X  N  CTRL-X     subtract N from the number at or after the cursor
+      //
+      //<       N  <{motion}  move the lines that are moved over with {motion} one
+      //                           shiftwidth left
+      //<<      N  <<         move N lines one shiftwidth left
+      //>       N  >{motion}  move the lines that are moved over with {motion} one
+      //                           shiftwidth right
+      //>>      N  >>         move N lines one shiftwidth right
+      //gq      N  gq{motion} format the lines that are moved over with {motion} to
+      //                           'textwidth' length
+      //:ce     :[range]ce[nter] [width]
+      //                        center the lines in [range]
+      //:le     :[range]le[ft] [indent]
+      //                        left-align the lines in [range] (with [indent])
+      //:ri     :[range]ri[ght] [width]
+      //                        right-align the lines in [range]
+    }
+
   }
 
   // these are currently NOT implemented becuase we want a different mark system

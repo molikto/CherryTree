@@ -14,7 +14,7 @@ package object range {
 
 
     def minusOrderedInside(except: Seq[IntRange]): Seq[IntRange] = {
-      (Seq(start) ++ except.flatMap(a => Seq(a.start, a.until)) ++ Seq(until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
+      (Seq(start) ++ except.flatMap(a => Seq(a.start, a.until)) ++ Seq(until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toVector
     }
 
     override def iterator: Iterator[Int] = new Iterator[Int] {

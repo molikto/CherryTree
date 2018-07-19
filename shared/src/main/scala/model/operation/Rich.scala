@@ -21,6 +21,14 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+  def merge(op1: Rich, op2: Rich, ty: Type): Rich = {
+    Rich(op1.u ++ op2.u, ty)
+  }
+
+  def merge(op1: Seq[Rich], ty: Type): Rich = {
+    Rich(op1.flatMap(_.u), ty)
+  }
+
 
   def wrapAsCoded(a: data.Unicode, r: IntRange, deli: SpecialChar.Delimitation): Rich = {
     Rich(

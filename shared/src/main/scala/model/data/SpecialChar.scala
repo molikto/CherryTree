@@ -50,18 +50,31 @@ object SpecialChar {
     Delimitation(LaTeXStart, LaTeXEnd, isAtomic = true)
 
   /**
+    * things with content, split-able
     */
   val formatLike = Seq(
     Emphasis, Strong, StrikeThrough
   )
 
+  /**
+    * things with content, not split-able
+    */
   val linkLike = Seq(Link)
 
+  /**
+    * coded, no content
+    */
   val imageLike = Seq(Image)
 
 
+  /**
+    * coded, atomic
+    */
   val latexLike = Seq(LaTeX)
 
+  /**
+    * coded, not atomic
+    */
   val codeLike = Seq(Code)
 
 

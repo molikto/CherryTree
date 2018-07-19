@@ -35,6 +35,7 @@ case class Info(
   def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
   def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
   def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
+  def isStartOrEnd: Boolean = ty == InfoType.Special && SpecialChar.startsEnds.contains(specialChar)
   def isEndOrAttributeTagOrContent: Boolean = isEnd || isAttributeTag || ty == InfoType.AttributeUnicode
   def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
   def positionInUnicode: Int = {
@@ -82,6 +83,8 @@ case class Info(
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+
+  def subPlain(p: IntRange): Unicode = serialize().slice(p)
 
 
   def insertionInsideCoded(pos: Int): Boolean = {

@@ -15,11 +15,14 @@
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * easy motion
+* multi char find/change
 * closing node
 * modal editor for link like
 * modal editor for LaTeX
 * rebase move
 * node type
+* replace mode
+* insert image?
 * available commands panel
 * single edit commands
 * copy paste

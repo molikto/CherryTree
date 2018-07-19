@@ -17,8 +17,8 @@ package object mode {
 
     sealed abstract class RichNormalOrVisual extends Rich with NormalOrVisual {
       def copyWithNewFocus(range: IntRange): RichNormalOrVisual
-
       def focus: IntRange
+      def merged: IntRange
     }
     case class RichInsert(pos: Int) extends Rich {
     }
@@ -35,12 +35,13 @@ package object mode {
       def isEmpty: Boolean = range.isEmpty
 
       override def focus: IntRange = range
+      override def merged: IntRange = range
       override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
       def swap: RichVisual = RichVisual(move, fix)
-      def merged: IntRange = fix.merge(move)
       override def focus: IntRange = move
+      override def merged: IntRange = fix.merge(move)
       override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
     }
 

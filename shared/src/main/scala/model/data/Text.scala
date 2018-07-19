@@ -9,6 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 abstract sealed class Text {
   def isAtomicViewed: Boolean = this.isInstanceOf[Text.AtomicSelected]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
+  def isPlain: Boolean = this.isInstanceOf[Text.Plain]
 
   private[data] def serialize(buffer: UnicodeWriter)
   private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int)
@@ -158,7 +159,7 @@ object Text {
     }
   }
 
-  sealed private[model] trait Formatted extends Delimited[Seq[Text]] {
+  sealed trait Formatted extends Delimited[Seq[Text]] {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
