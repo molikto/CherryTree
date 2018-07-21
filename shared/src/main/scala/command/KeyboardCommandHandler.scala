@@ -16,18 +16,19 @@ class KeyboardCommandHandler extends Settings with CommandState
   private val richMotion = new defaults.RichMotion()
 
   private val misc = new defaults.Misc()
-  val commands = Seq(misc,
-    new defaults.NodeDelete(),
-    new defaults.NodeFold(),
+  val commands = Seq(
+    misc,
     richMotion,
-    new defaults.NodeMove(),
-    new defaults.NodeVisual(),
-    new defaults.NodeMotion(),
+    new defaults.RichInsertEnter(),
+    new defaults.RichInsert(),
+    new defaults.RichVisual(),
     new defaults.RichChange(),
     new defaults.RichDelete(),
-    new defaults.RichInsert(),
-    new defaults.RichInsertEnter(),
-    new defaults.RichVisual(),
+    new defaults.NodeMotion(),
+    new defaults.NodeVisual(),
+    new defaults.NodeMove(),
+    new defaults.NodeDelete(),
+    new defaults.NodeFold(),
     new defaults.Scroll()).flatMap(_.commands)
 
   val commandsByCategory = commands.groupBy(_.category)

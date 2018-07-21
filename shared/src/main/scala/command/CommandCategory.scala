@@ -12,8 +12,6 @@ class CommandCategory(val name: String) extends Settings {
 
   val commands = new ArrayBuffer[command.Command]()
 
-
-
   abstract class Command extends command.Command {
     commands.append(this)
     override def category: String = name
