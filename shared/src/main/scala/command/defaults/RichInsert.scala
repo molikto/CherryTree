@@ -46,7 +46,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
         val n = a.mover().nextOver(node)
         DocTransaction(
           Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
-          , Some(model.mode.Node.Content(n, model.mode.Content.RichNormal(IntRange(0, 0)))))
+          , Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(0))))
       } else {
         DocTransaction.empty
       }
@@ -89,7 +89,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   //i_<Home>      <Home>            cursor to first character in the line
   new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
     override def description: String = "move cursor right"
-    override def defaultKeys: Seq[KeySeq] = Seq(Alt + " ", Right)
+    override def defaultKeys: Seq[KeySeq] = Seq(Right)
     override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
   }
 
