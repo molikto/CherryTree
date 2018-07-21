@@ -1,18 +1,19 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Rich
 import model.range.IntRange
 import model.{cursor, operation}
 
-trait EnterRichInsert extends CommandCollector {
+class RichInsertEnter extends CommandCategory("ways to start insert text") {
 
 
   // DIFFERENCE: currently not repeatable
-  val openBellow: Command = new Command {
+  new Command {
+    override def description: String = "open a line bellow"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -27,9 +28,11 @@ trait EnterRichInsert extends CommandCollector {
         Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
     }
+
   }
 
-  val openAbove: Command = new Command {
+  new Command {
+    override def description: String = "open a line above"
     override val defaultKeys: Seq[KeySeq] = Seq("O")
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -64,19 +67,23 @@ trait EnterRichInsert extends CommandCollector {
         content, normal.range))))
     }
   }
-  val appendAtCursor: EnterInsertCommand = new EnterInsertCommand {
+  new EnterInsertCommand {
+    override def description: String = "append text"
     override val defaultKeys: Seq[KeySeq] = Seq("a")
     override def move(content: Rich, a: IntRange): Int = a.until
   }
-  val appendAtContentEnd: EnterInsertCommand  = new EnterInsertCommand {
+  new EnterInsertCommand {
+    override def description: String = "append at text end"
     override val defaultKeys: Seq[KeySeq] = Seq("A")
     override def move(content: Rich,a: IntRange): Int = content.size
   }
-  val insertAtCursor: EnterInsertCommand  = new EnterInsertCommand {
+  new EnterInsertCommand {
+    override def description: String = "insert text before cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("i")
     override def move(content: Rich,a: IntRange): Int = a.start
   }
-  val insertAtContentBeginning : EnterInsertCommand = new EnterInsertCommand {
+  new EnterInsertCommand {
+    override def description: String = "insert text at content beginning"
     override val defaultKeys: Seq[KeySeq] = Seq("I", "gI") // command merged
     override def move(content: Rich,a: IntRange): Int = 0
   }

@@ -1,17 +1,18 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{InfoType, SpecialChar}
 import model.{mode, operation}
 import model.range.IntRange
 
-trait RichVisual extends CommandCollector {
+class RichVisual extends CommandCategory("text visual mode") {
 
 
   new Command {
+    override def description: String = "enter text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -27,9 +28,11 @@ trait RichVisual extends CommandCollector {
           DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))
       }
     }
+
   }
 
   new Command {
+    override def description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isRichVisual
     override def action(a: DocState, count: Int): DocTransaction = DocTransaction.mode(a.copyContentMode(a.asRichVisual._3.swap))
@@ -39,7 +42,8 @@ trait RichVisual extends CommandCollector {
     override def available(a: DocState): Boolean = a.isRichVisual
   }
 
-  val formatLikeWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.formatLike.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.formatLike.map(deli => deli -> new WrapCommand(deli) {
+    override def description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
@@ -61,7 +65,8 @@ trait RichVisual extends CommandCollector {
     * code wrap CANNOT use surround!!! because this breaks cursor placement and might insert special char inside code
     * also we currently only wraps plain text
     */
-  val codedWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
+    override def description: String = s"wrap selection as ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
@@ -87,7 +92,8 @@ trait RichVisual extends CommandCollector {
 
   }).toMap
 
-  val linkLikeWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
+    override def description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged

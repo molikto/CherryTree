@@ -1,14 +1,14 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation}
 import model.data.{Rich, SpecialChar}
 import model.range.IntRange
 
-trait RichInsert extends CommandCollector {
+class RichInsert extends CommandCategory("when in insert mode") {
 
 
   trait EditCommand extends Command  {
@@ -22,9 +22,10 @@ trait RichInsert extends CommandCollector {
       DocTransaction(res, None)
     }
   }
-  val backspace: Command = new EditCommand with OverrideCommand {
+  new EditCommand with OverrideCommand {
+    override def description: String = "delete text before cursor"
     // TODO these keys should be seperate delete words, etc...
-    override val hardcodeKeys: Seq[KeySeq] = Backspace.withAllModifers ++ (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
+    override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Option[operation.Rich] = {
       if (a > 0) {
         Some(operation.Rich.deleteOrUnwrapAt(content, a - 1)) // we don't explicitly set mode, as insert mode transformation is always correct
@@ -35,8 +36,9 @@ trait RichInsert extends CommandCollector {
   }
 
   new OverrideCommand {
+    override def description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter???
-    override val hardcodeKeys: Seq[KeySeq] = Enter.withAllModifers
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
     override def available(a: DocState): Boolean = a.isRichInserting
     override def action(a: DocState, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
@@ -51,7 +53,8 @@ trait RichInsert extends CommandCollector {
     }
   }
 
-  val emptyWraps: Map[SpecialChar.Delimitation, Command] = SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+  SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+    override def description: String = s"insert a new ${deli.name}"
     override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert
       !rich.insertionInsideCoded(insert.pos)
@@ -66,6 +69,7 @@ trait RichInsert extends CommandCollector {
       }
       DocTransaction(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
     }
+
   }).toMap
 
   abstract class InsertMovementCommand extends Command {
@@ -83,23 +87,21 @@ trait RichInsert extends CommandCollector {
   //i_<S-Up>      shift-up/down     one screenful backward/forward
   //i_<End>       <End>             cursor after last character in the line
   //i_<Home>      <Home>            cursor to first character in the line
-  val moveRight: Command = new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
+  new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
+    override def description: String = "move cursor right"
     override def defaultKeys: Seq[KeySeq] = Seq(Alt + " ", Right)
     override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
   }
 
-  val moveLeft: Command = new InsertMovementCommand {
+  new InsertMovementCommand {
+    override def description: String = "move cursor left"
     override def defaultKeys: Seq[KeySeq] = Seq(Left)
     override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
   }
 
-  val disableUp: Command = new InsertMovementCommand with OverrideCommand {
-    override def defaultKeys: Seq[KeySeq] = Seq(Up)
-    override def move(rich: Rich, i: Int): Int = i
-  }
-
-  val disableDown: Command = new InsertMovementCommand with OverrideCommand {
-    override def defaultKeys: Seq[KeySeq] = Seq(Down)
+  new InsertMovementCommand with OverrideCommand {
+    override def description: String = ""
+    override def defaultKeys: Seq[KeySeq] = Seq(Down, Up)
     override def move(rich: Rich, i: Int): Int = i
   }
 

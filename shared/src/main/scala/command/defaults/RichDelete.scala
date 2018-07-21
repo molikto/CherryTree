@@ -1,13 +1,13 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
-trait Delete extends CommandCollector {
+class RichDelete extends CommandCategory("delete text") {
 
 
   // LATER
@@ -51,35 +51,21 @@ trait Delete extends CommandCollector {
     }
   }
 
-  private def deleteNodeRange(a: DocState, rr: model.range.Node): DocTransaction = {
-    val parent = a.node(rr.parent)
-    val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
-    DocTransaction(Seq(operation.Node.Delete(r)), {
-      val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
-        (r.until, r.start)
-      } else if (r.childs.start > 0) {
-        val p = r.parent :+ (r.childs.start - 1)
-        (p, p)
-      } else {
-        (r.parent, r.parent)
-      }
-      Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
-    })
-  }
 
-  val deleteAfterVisual: Command = new Command {
+  new Command {
+    override def description: String = "delete selected text"
     override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
-    override def available(a: DocState): Boolean = a.isVisual
+    override def available(a: DocState): Boolean = a.isRichVisual
     override def action(a: DocState, count: Int): DocTransaction = a.mode match {
-      case Some(v@model.mode.Node.Visual(_, _)) =>
-        v.minimalRange.map(r => deleteNodeRange(a, r)).getOrElse(DocTransaction.empty)
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
         deleteRichNormalRange(a, pos, v.merged)
       case _ => throw new IllegalArgumentException("Invalid command")
     }
   }
 
-  val delete: Command = new Command {
+  new Command {
+    override def repeatable: Boolean = true
+    override def description: String = "delete under cursor, and more after if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -88,9 +74,12 @@ trait Delete extends CommandCollector {
       val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
       deleteRichNormalRange(a, pos, r.merge(fr))
     }
+
   }
 
-  val deleteBefore: Command = new Command {
+  new Command {
+    override def repeatable: Boolean = true
+    override def description: String = "delete before cursor, and more if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("X")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -112,17 +101,8 @@ trait Delete extends CommandCollector {
   //        }
   //      }
 
-  val deleteSiblings: Command = new Command {
-    override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
-    override def available(a: DocState): Boolean = a.isNormal
-    override def action(a: DocState, count: Int): DocTransaction = {
-      val r = a.asNormal._1
-      if (r == cursor.Node.root) DocTransaction.empty
-      else deleteNodeRange(a, model.range.Node(a.asNormal._1, count))
-    }
-  }
-
-  val deleteUntilEnd: Command = new Command {
+  new Command {
+    override def description: String = "delete text cursor until text end"
     override def defaultKeys: Seq[KeySeq] = Seq("D")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {

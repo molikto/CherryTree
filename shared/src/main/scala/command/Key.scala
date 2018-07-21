@@ -24,14 +24,14 @@ case class Key(
   override def toString: String = {
     val sb = new ArrayBuffer[String]()
     if (shift) sb.append("Shift")
-    if (alt) sb.append("Ctrl")
+    if (control) sb.append("Ctrl")
     if (alt) sb.append("Alt")
     if (meta) sb.append("Meta")
     sb.append(a.toString)
     sb.mkString("+")
   }
 
-  def withAllModifers: Seq[KeySeq] = {
+  def withAllModifiers: Seq[KeySeq] = {
     import Key._
     val allTrue = copy(shift = true, alt = true, control = true, meta = true)
     Seq(this,
@@ -65,7 +65,7 @@ object Key {
   }
 
   sealed trait V {
-    def withAllModifers: Seq[KeySeq] = Key(this).withAllModifers
+    def withAllModifiers: Seq[KeySeq] = Key(this).withAllModifiers
   }
 
   case object Home extends V
@@ -80,14 +80,16 @@ object Key {
   case object Backspace extends V
   case object Tab extends V
   case object Escape extends V
-  object Delete extends V
+  case object Delete extends V
 
   case class Unknown(k: String) extends V // a key not yet defined here...
 
   /**
     * the value is combined with modifiers
     */
-  case class Grapheme(a: Unicode) extends V
+  case class Grapheme(a: Unicode) extends V {
+    override def toString: String = a.toString
+  }
 
   def isUnicodeKey(s: String): Boolean = s.length == 1 ||
     GraphemeSplitter.nextBreak(s) == s.length

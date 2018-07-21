@@ -1,12 +1,12 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.cursor
 
-trait NodeMotion extends CommandCollector {
+class NodeMotion extends CommandCategory("move among notes") {
 
   /**
     * CTRL-M and <CR>)
@@ -14,8 +14,8 @@ trait NodeMotion extends CommandCollector {
     */
   // LATER these
   abstract class NodeMotionCommand extends Command {
+    override def repeatable: Boolean = true
     def move(data: DocState, a: cursor.Node): Option[cursor.Node]
-
 
     override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
@@ -45,32 +45,40 @@ trait NodeMotion extends CommandCollector {
     }
   }
   val up: Command = new NodeMotionCommand {
+    override def description: String = "move up"
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-", Up)
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
+
   }
   val down: Command = new NodeMotionCommand {
+    override def description: String = "move down"
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
   }
   val parent: Command = new NodeMotionCommand {
+    override def description: String = "move to parent"
     override val defaultKeys: Seq[KeySeq] = Seq("gp")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
   }
   val nextSibling: Command = new NodeMotionCommand {
+    override def description: String = "move to next sibling"
     override val defaultKeys: Seq[KeySeq] = Seq("}")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
   }
   val previousSibling: Command = new NodeMotionCommand {
+    override def description: String = "move to previous sibling"
     override val defaultKeys: Seq[KeySeq] = Seq("{")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
   }
   val visibleBeginning: Command = new NodeMotionCommand {
+    override def description: String = "move to top of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("gg")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
   }
   val visibleEnd: Command = new NodeMotionCommand {
+    override def description: String = "move to bottom of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("G")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
   }

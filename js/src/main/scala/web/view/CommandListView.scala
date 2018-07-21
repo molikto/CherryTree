@@ -1,31 +1,22 @@
 package web.view
 
 import client.Client
-import command.Key.KeySeq
-import command.{CommandStatus, Key}
-import model.data.{Content, Unicode}
-import model.{cursor, data, mode}
-import monix.execution.{Ack, Scheduler}
-import monix.reactive.observers.Subscriber
-import org.scalajs.dom.window
-import org.scalajs.dom.document
-import org.scalajs.dom
-import org.scalajs.dom.html
-import org.scalajs.dom.html.Div
-import org.scalajs.dom.raw._
 
-import scala.collection.mutable.ArrayBuffer
-import scala.scalajs.js
 import scalatags.JsDom.all._
-import monix.execution.Scheduler.Implicits.global
-
-import scala.concurrent.Future
-import scala.util.Random
+import org.scalajs.dom.raw.HTMLElement
 
 class CommandListView(parent: HTMLElement, val client: Client) extends View {
 
 
-  dom = div(flex := "0 0 auto",height := "100%", minWidth := "150px", background := theme.bottomBarBackground).render
+  dom = div(
+    minWidth := "150px",
+    color := "#dddddd",
+    overflowY := "scroll",
+    `class` := "ct-scroll",
+    padding := "24px",
+    background := theme.bottomBarBackground
+  ).render
+
   parent.appendChild(dom)
 
   observe(client.stateUpdates.doOnNext(_ => {
@@ -34,8 +25,28 @@ class CommandListView(parent: HTMLElement, val client: Client) extends View {
 
   update()
 
+
   def update(): Unit = {
     removeAllChild(dom)
+    val res = div(
+      client.commandsByCategory.map {
+        case (name, cs) =>
+          val commands = cs.filter(a => a.available(client.state, client) && a.description.nonEmpty)
+          if (commands.isEmpty) {
+            div()
+          } else {
+            div(
+              h4(name),
+              commands.map(c => {
+                div(
+                  p(marginLeft := "12px", c.keys.map(a => span(tag("kbd")(renderKeySeq(a)), " ")), c.description, Some(span("; ", em("repeatable"))).filter(_ => c.repeatable))
+                )
+              })
+            )
+          }
+      }.toSeq
+    ).render
+    dom.appendChild(res)
   }
 
 }

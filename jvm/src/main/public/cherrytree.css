@@ -1,6 +1,13 @@
 /** LATER how to apply them as a theme? */
 
 
+kbd {
+    padding: .2rem .4rem;
+    font-size: 87.5%;
+    color: #333333;
+    background-color: #DDDDDD;
+    border-radius: .2rem;
+}
 
 /* apply it on entire editor for now */
 .ct-root {
@@ -10,22 +17,22 @@
   font-size: 18px;
 }
 
-.ct-root::-webkit-scrollbar {
+.ct-scroll::-webkit-scrollbar {
     width: 10px;
 }
 
 /* Track */
-.ct-root::-webkit-scrollbar-track {
+.ct-scroll::-webkit-scrollbar-track {
     background: #282c34;
 }
 
 /* Handle */
-.ct-root::-webkit-scrollbar-thumb {
+.ct-scroll:-webkit-scrollbar-thumb {
     background: #5A637580;
 }
 
 /* Handle on hover */
-.ct-root::-webkit-scrollbar-thumb:hover {
+.ct-scroll::-webkit-scrollbar-thumb:hover {
     background: #747D9180;
 }
 

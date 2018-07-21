@@ -1,18 +1,20 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.{CommandCategory, CommandState}
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Rich
 
-trait RichMotion extends CommandCollector {
+class RichMotion extends CommandCategory("move cursor inside text") {
 
 
   // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
 
   abstract class RichMotionCommand extends MotionCommand {
+
+    override def repeatable: Boolean = true
 
     def move(content: model.data.Rich, a: IntRange): IntRange
 
@@ -24,22 +26,28 @@ trait RichMotion extends CommandCollector {
   }
 
 
-  val left: Command = new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
+  new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
+    override def description: String = "move left"
     override val defaultKeys = Seq("h", Backspace, Left)
     override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
   }
 
-  val right: Command = new RichMotionCommand() {
+  new RichMotionCommand() {
+    override def description: String = "move right"
     override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
     override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
   }
 
-  val beginning: Command = new RichMotionCommand() {
+  new RichMotionCommand() {
+    override def repeatable: Boolean = false
+    override def description: String = "move to beginning"
     override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
     override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
   }
 
-  val end: Command = new RichMotionCommand {
+  new RichMotionCommand {
+    override def repeatable: Boolean = false
+    override def description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
     override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
   }
@@ -57,9 +65,7 @@ trait RichMotion extends CommandCollector {
   // bar   N  |            to column N (default: 1)
 
   // TODO make find not side effecting
-  abstract class FindCommand extends MotionCommand with NeedsCharCommand  {
-
-    def reverse: FindCommand
+  abstract class FindCommand extends MotionCommand with NeedsCharCommand with command.FindCommand {
 
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
     def skip(a: Rich, range: IntRange): IntRange = range
@@ -77,7 +83,7 @@ trait RichMotion extends CommandCollector {
       }
     }
 
-    def findGrapheme(a: DocState, char: Grapheme, count: Int, skipCurrent: Boolean): DocTransaction = {
+    override def findGrapheme(a: DocState, char: Grapheme, count: Int, skipCurrent: Boolean): DocTransaction = {
       val (_, content, mm) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
         r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
@@ -93,20 +99,25 @@ trait RichMotion extends CommandCollector {
     final override def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = {
       findGrapheme(a, char, count, skipCurrent = false)
     }
+
+    override def repeatable: Boolean = true
   }
 
   val findNextChar: FindCommand = new FindCommand {
+    override def description: String = "find char after cursor"
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
 
   }
   val findPreviousChar: FindCommand = new FindCommand {
+    override def description: String = "find char before cursor"
     override def reverse: FindCommand = findNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("F")
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
   }
   val toNextChar: FindCommand = new FindCommand {
+    override def description: String = "find char after cursor, move cursor before it"
     override def reverse: FindCommand = toPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("t")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
@@ -114,6 +125,7 @@ trait RichMotion extends CommandCollector {
       content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
   }
   val toPreviousChar: FindCommand = new FindCommand {
+    override def description: String = "find char after cursor, move cursor after it"
     override def reverse: FindCommand = toNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("T")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
@@ -123,6 +135,31 @@ trait RichMotion extends CommandCollector {
 
 
 
+  // LATER they are currently here...
+  new MotionCommand {
+    override def repeatable: Boolean = true
+    override def description: String = "repeat previous find command"
+    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
+    override val defaultKeys: Seq[KeySeq] = Seq(";")
+    override def action(a: DocState, count: Int, commandState: CommandState): DocTransaction = {
+      val lf = commandState.lastFindCommand.get
+      lf._1.findGrapheme(a, lf._2, count, skipCurrent = true)
+    }
+    override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
+
+  }
+
+  new MotionCommand {
+    override def repeatable: Boolean = true
+    override def description: String = "repeat previous find command's reverse"
+    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
+    override val defaultKeys: Seq[KeySeq] = Seq(",")
+    override def action(a: DocState, count: Int, commandState: CommandState): DocTransaction = {
+      val lf = commandState.lastFindCommand.get
+      lf._1.reverse.findGrapheme(a, lf._2, count, skipCurrent = true)
+    }
+    override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
+  }
 
   /**
     * TODO
@@ -172,6 +209,7 @@ trait RichMotion extends CommandCollector {
   //        ]#    N  ]#           N times forward to unclosed "#else" or "#endif"
   //        [star N  [*           N times back to start of comment "/*"
   //          ]star N  ]*           N times forward to end of comment "*/"
+
 
 
 }

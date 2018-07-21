@@ -32,7 +32,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     width := "100%",
     height := "100%",
     display := "flex",
-    flexDirection := "row",
     overflow := "hidden").render
   dom.appendChild(topPanels)
 

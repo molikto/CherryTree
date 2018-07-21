@@ -59,7 +59,6 @@ package object view {
   def renderKeySeq(k: KeySeq): String = {
     if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
       k.map(_.a.asInstanceOf[Key.Grapheme].a.toString).mkString("")
-
     } else {
       k.mkString(" ")
     }

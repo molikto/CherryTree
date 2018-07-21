@@ -8,15 +8,15 @@ import settings.Settings
 
 import scala.collection.mutable.ArrayBuffer
 
-trait CommandCollector extends Settings {
+class CommandCategory(val name: String) extends Settings {
 
-  protected val commands = new ArrayBuffer[command.Command]()
+  val commands = new ArrayBuffer[command.Command]()
 
-  def registerCommand(c: command.Command): Unit = commands.append(c)
 
 
   abstract class Command extends command.Command {
-    registerCommand(this)
+    commands.append(this)
+    override def category: String = name
   }
 
 
@@ -38,6 +38,7 @@ trait CommandCollector extends Settings {
 
   trait OverrideCommand extends Command {
     def defaultKeys: Seq[KeySeq] = Seq.empty
+    override def shownInCommandList: Boolean = false
   }
 
 }

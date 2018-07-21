@@ -10,21 +10,27 @@ import settings.Settings
 
 import scala.util.{Success, Try}
 
-class KeyboardCommandHandler extends Settings
-  with defaults.Delete
-  with defaults.EnterRichInsert
-  with defaults.Misc
-  with defaults.NodeFold
-  with defaults.NodeMove
-  with defaults.NodeVisual
-  with defaults.NodeMotion
-  with defaults.RichChange
-  with defaults.RichMotion
-  with defaults.RichInsert
-  with defaults.RichVisual
-  with defaults.Scroll
+class KeyboardCommandHandler extends Settings with CommandState
 { self : Client =>
 
+  private val richMotion = new defaults.RichMotion()
+
+  private val misc = new defaults.Misc()
+  val commands = Seq(misc,
+    new defaults.NodeDelete(),
+    new defaults.NodeFold(),
+    richMotion,
+    new defaults.NodeMove(),
+    new defaults.NodeVisual(),
+    new defaults.NodeMotion(),
+    new defaults.RichChange(),
+    new defaults.RichDelete(),
+    new defaults.RichInsert(),
+    new defaults.RichInsertEnter(),
+    new defaults.RichVisual(),
+    new defaults.Scroll()).flatMap(_.commands)
+
+  val commandsByCategory = commands.groupBy(_.category)
 
   private val status =  BehaviorSubject[CommandStatus](CommandStatus.Empty)
   def commandStatus: Observable[CommandStatus] = status
@@ -32,13 +38,15 @@ class KeyboardCommandHandler extends Settings
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[command.Command]
   private var waitingForCharCommand: (command.Command, KeySeq, String) = null
-  private var lastFindCommand: (FindCommand, Grapheme) = null
+  private var lastFindCommand_ : (FindCommand, Grapheme) = null
+
+  override def lastFindCommand: Option[(FindCommand, Grapheme)] = Option(lastFindCommand_)
 
   private var commandCounts: String = ""
 
   def onBeforeUpdateUpdateCommandState(state: DocState): Unit = {
     if (waitingForCharCommand != null) {
-      if (!waitingForCharCommand._1.available(state)) {
+      if (!waitingForCharCommand._1.available(state, this)) {
         clearWaitingForGraphemeCommand()
       }
     }
@@ -53,7 +61,7 @@ class KeyboardCommandHandler extends Settings
     * return false if no command is exec and not waiting
     */
   def tryDoCommandExact(): Boolean = {
-    val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state))
+    val availableCommands = commandsToConfirm.filter(a => a.keys.exists(_.startsWith(commandPartConfirmed)) && a.available(state, this))
     if (availableCommands.isEmpty) {
       val pCounts = commandCounts
       val ptoConfirm = commandPartConfirmed
@@ -87,7 +95,7 @@ class KeyboardCommandHandler extends Settings
             status.onNext(CommandStatus.WaitingForChar(pCounts, ptoConfirm))
           } else {
             act(exact, c)
-            if (exact == exit) {
+            if (exact == misc.exit) {
               commandCounts = ""
               commandsToConfirm = Seq.empty
               commandPartConfirmed = Seq.empty
@@ -132,6 +140,7 @@ class KeyboardCommandHandler extends Settings
         doCommand()
       } else {
         key.a match {
+          case _: Key.Modifier if !commandCounts.isEmpty => return true
           case Key.Grapheme(a) if a.isDigit && (commandCounts.length > 0 || a.asDigit != 0) =>
             commandCounts = commandCounts + a
             status.onNext(CommandStatus.InputtingCount(commandCounts))
@@ -152,7 +161,7 @@ class KeyboardCommandHandler extends Settings
       val ww = waitingForCharCommand
       ww._1 match {
         case command: FindCommand =>
-          lastFindCommand = (command, a)
+          lastFindCommand_ = (command, a)
         case _ =>
       }
       val res = ww._1.actionOnGrapheme(state, a, if (ww._3 == "") 1 else ww._3.toInt)
@@ -169,7 +178,9 @@ class KeyboardCommandHandler extends Settings
   }
 
 
-  val visitUrl: SideEffectingCommand = new SideEffectingCommand {
+  new SideEffectingCommand {
+    override def category: String = misc.name
+    override def description: String = "visit link url"
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {
@@ -191,20 +202,5 @@ class KeyboardCommandHandler extends Settings
     }
   }
 
-  // LATER they are currently here...
-  val repeatFind: Command = new MotionCommand {
-    override def available(a: DocState): Boolean = super.available(a) && lastFindCommand != null
-    override val defaultKeys: Seq[KeySeq] = Seq(";")
-    override def action(a: DocState, count: Int): DocTransaction = {
-      lastFindCommand._1.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
-    }
-  }
-  val repeatFindOppositeDirection: Command = new MotionCommand {
-    override def available(a: DocState): Boolean = super.available(a) && lastFindCommand != null
-    override val defaultKeys: Seq[KeySeq] = Seq(",")
-    override def action(a: DocState, count: Int): DocTransaction = {
-      lastFindCommand._1.reverse.findGrapheme(a, lastFindCommand._2, count, skipCurrent = true)
-    }
-  }
 
 }

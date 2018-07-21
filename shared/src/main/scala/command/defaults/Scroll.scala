@@ -1,8 +1,8 @@
 package command.defaults
 
-import command.CommandCollector
+import command.CommandCategory
 
-trait Scroll extends CommandCollector {
+class Scroll extends CommandCategory("scrolling the page") {
 
 
   // LATER only some of should be implemented

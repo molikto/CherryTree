@@ -1,15 +1,16 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.range.IntRange
 
-trait Misc extends CommandCollector {
+class Misc extends CommandCategory("misc") {
 
 
   val exit: Command = new Command {
+    override def description: String = "exit current mode"
     override val defaultKeys: Seq[KeySeq] = Seq(Escape, Ctrl + "c", Ctrl + "[")
     override def available(a: DocState): Boolean = true
 
@@ -45,6 +46,7 @@ trait Misc extends CommandCollector {
         case None => DocTransaction.empty
       }
     }
+
   }
 
   // these are currently NOT implemented becuase we want a different mark system

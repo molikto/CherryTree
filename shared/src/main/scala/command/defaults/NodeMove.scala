@@ -1,12 +1,12 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{cursor, operation, range}
 
-trait NodeMove extends CommandCollector {
+class NodeMove extends CommandCategory("move nodes around") {
 
 
   // LATER
@@ -35,24 +35,29 @@ trait NodeMove extends CommandCollector {
       DocTransaction(res.toSeq, None, unfoldBefore = res.toSeq.map(_.to))
     }
   }
-  val unindent: Command = new IndentCommand {
+  new IndentCommand {
+    override def description: String = "unindent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.parent(node.start).flatMap(p => {
         mover.parent(p).map(pp => pp :+ (p.last + 1))
       })
+
   }
-  val indent: Command = new IndentCommand {
+  new IndentCommand {
+    override def description: String = "indent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.previous(node.start).map(a => a :+ mover.size(a))
   }
-  val swapDown: Command = new MoveCommand {
+  new MoveCommand {
+    override def description: String = "swap with next sibling"
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "j")
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.next(node).map(k => mover.nextOver(k))
   }
-  val swapUp: Command = new MoveCommand {
+  new MoveCommand {
+    override def description: String = "swap with previous sibling"
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k")
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.previous(node)

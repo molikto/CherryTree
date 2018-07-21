@@ -1,12 +1,12 @@
 package command.defaults
 
 import client.Client
-import command.CommandCollector
+import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.mode
 
-trait NodeVisual extends CommandCollector {
+class NodeVisual extends CommandCategory("node visual") {
 
   // DIFFERENCE going from node visual to content visual is NOT possible
   // CTRL-V   CTRL-V       start highlighting blockwise   }  highlighted text
@@ -14,6 +14,7 @@ trait NodeVisual extends CommandCollector {
   // gv       gv           start highlighting on previous visual area
 
   new Command {
+    override def description: String = "enter/exit node visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("V") // DIFFERENCE merged two command
     override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
@@ -33,10 +34,12 @@ trait NodeVisual extends CommandCollector {
       }
       case None => throw new IllegalArgumentException("Wrong branch")
     }
+
   }
 
 
   new Command {
+    override def description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNodeVisual
     override def action(a: DocState, count: Int): DocTransaction = DocTransaction.mode(a.asNodeVisual.swap)

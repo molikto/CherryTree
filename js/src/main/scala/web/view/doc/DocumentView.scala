@@ -19,7 +19,7 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     height := "100%",
     padding := "48px",
     color := theme.contentText,
-    `class` := "ct-root",
+    `class` := "ct-root ct-scroll",
     overflowY := "scroll"
   ).render
   parent.appendChild(dom)

@@ -1,8 +1,8 @@
 package command.defaults
 
-import command.CommandCollector
+import command.CommandCategory
 
-trait NodeFold extends CommandCollector {
+class NodeFold extends CommandCategory("node folding") {
 
 
   // TODO fold-toggle	z

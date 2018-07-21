@@ -27,27 +27,27 @@ object SpecialChar {
   def apply(id: Int): SpecialChar = createSpecialChar(id)
 
   val Emphasis =
-    Delimitation(EmphasisStart, EmphasisEnd)
+    Delimitation("emphasis", EmphasisStart, EmphasisEnd)
   val Strong =
-    Delimitation(StrongStart, StrongEnd)
+    Delimitation("strong", StrongStart, StrongEnd)
   val StrikeThrough =
-    Delimitation(StrikeThroughStart, StrikeThroughEnd)
+    Delimitation("strike through", StrikeThroughStart, StrikeThroughEnd)
 
 
   val attributes = Seq(UrlAttribute, TitleAttribute)
 
   val Link =
-    Delimitation(LinkStart, LinkEnd, attributes)
+    Delimitation("link", LinkStart, LinkEnd, attributes)
 
   val Image =
-    Delimitation(ImageStart, ImageEnd, attributes, isAtomic = true)
+    Delimitation("image", ImageStart, ImageEnd, attributes, isAtomic = true)
 
 
   val Code =
-    Delimitation(CodeStart, CodeEnd)
+    Delimitation("code", CodeStart, CodeEnd)
 
   val LaTeX =
-    Delimitation(LaTeXStart, LaTeXEnd, isAtomic = true)
+    Delimitation("LaTeX", LaTeXStart, LaTeXEnd, isAtomic = true)
 
   /**
     * things with content, split-able
@@ -98,7 +98,7 @@ object SpecialChar {
 
   val startsEnds: Seq[SpecialChar] = starts ++ ends
 
-  case class Delimitation(start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty, isAtomic: Boolean = false) {
+  case class Delimitation(name: String, start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty, isAtomic: Boolean = false) {
 
     def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start).join(a).join(Unicode(attributes :+ end))
 
