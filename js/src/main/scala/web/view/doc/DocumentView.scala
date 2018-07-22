@@ -34,7 +34,28 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     */
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   private var currentEditable: HTMLElement = noEditable
+  private var isFocusedOut: Boolean = false
+  private var duringStateUpdate: Boolean = false
 
+  event("focusout", (a: FocusEvent) => {
+    a.relatedTarget match {
+      case h: HTMLElement if dom.contains(h) =>
+      case _ =>
+        if (!duringStateUpdate) {
+          isFocusedOut = true
+          window.console.log(a)
+          updateMode(None, viewUpdated = false)
+        }
+    }
+  })
+
+  event("focusin", (a: FocusEvent) => {
+    if (!duringStateUpdate && isFocusedOut) {
+      isFocusedOut = false
+      window.console.log(a)
+      updateMode(client.state.mode, viewUpdated = false)
+    }
+  })
 
   def markEditable(dom: HTMLElement): Unit = {
     if (currentEditable == dom) return
@@ -169,7 +190,9 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     }
   }
 
-  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+  private def updateMode(mm: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+    duringStateUpdate = true
+    val m = if (isFocusedOut) None else mm
     m match {
       case None =>
         removeFocusContent()
@@ -194,6 +217,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
           updateNodeVisual(v)
       }
     }
+    duringStateUpdate = false
   }
 
 
@@ -205,6 +229,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     updateMode(selection, viewUpdated = false)
 
     observe(client.stateUpdates.doOnNext(update => {
+      duringStateUpdate = true
       for (t <- update.transaction) {
         t match {
           case model.operation.Node.Content(at, c) =>
@@ -232,6 +257,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
             updateMode(None, viewUpdated = false)
         }
       }
+      duringStateUpdate = false
       updateMode(update.mode, update.viewUpdated)
     }))
 
@@ -293,30 +319,25 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     */
 
 
-  event("focusout", (a: FocusEvent) => {
-    // a hack!
-    updateMode(None, viewUpdated = false)
-  })
-
-  event("focusin", (a: FocusEvent) => {
-    updateMode(client.state.mode, viewUpdated = false)
-  })
-
   event("mousedown", (a: MouseEvent) => {
-    cancel(a)
+    if (!isFocusedOut) cancel(a)
+    else window.console.log(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    cancel(a)
+    if (!isFocusedOut) cancel(a)
+    else window.console.log(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    cancel(a)
+    if (!isFocusedOut) cancel(a)
+    else window.console.log(a)
   })
 
   event("dblclick", (a: MouseEvent) => {
-    cancel(a)
+    if (!isFocusedOut) cancel(a)
+    else window.console.log(a)
   })
 
   event("contextmenu", (a: MouseEvent) => {
