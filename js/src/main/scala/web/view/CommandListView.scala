@@ -10,6 +10,7 @@ class CommandListView(parent: HTMLElement, val client: Client) extends View {
 
   dom = div(
     minWidth := "150px",
+    width := "500px",
     color := "#dddddd",
     overflowY := "scroll",
     `class` := "ct-scroll unselectable",
