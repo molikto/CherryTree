@@ -12,7 +12,7 @@ class CommandListView(parent: HTMLElement, val client: Client) extends View {
     minWidth := "150px",
     color := "#dddddd",
     overflowY := "scroll",
-    `class` := "ct-scroll",
+    `class` := "ct-scroll unselectable",
     padding := "24px",
     background := theme.bottomBarBackground
   ).render

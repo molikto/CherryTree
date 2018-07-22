@@ -14,7 +14,8 @@
 
 *the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
-* available commands panel
+* fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView
+* fix focus
 * easy motion
 * multi char find/change
 * closing node
@@ -121,3 +122,4 @@
 * ~~temp save content~~
 * ~~visit links~~
 * ~~node move~~
+* ~~available commands panel~~

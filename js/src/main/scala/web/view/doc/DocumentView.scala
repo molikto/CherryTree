@@ -5,6 +5,7 @@ import doc.{DocInterface, DocState}
 import model.data.Content
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
+import org.scalajs.dom.{html, window, document}
 import scalatags.JsDom.all._
 import view.EditorInterface
 import web.view.content.{CodeView, ContentView, RichView}
@@ -295,22 +296,48 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     *
     */
 
-  event("mousedown", (a: MouseEvent) => {
-    a.preventDefault()
+
+  event("focusout", (a: FocusEvent) => {
+    window.console.log(a, document.activeElement, currentEditable)
+    // a hack!
+    val ce = currentEditable
+    updateMode(None, viewUpdated = false)
+    currentEditable = ce
+    window.console.log(a, document.activeElement, currentEditable)
   })
 
+  event("focusin", (a: FocusEvent) => {
+    window.console.log(a, document.activeElement, currentEditable)
+    updateMode(client.state.mode, viewUpdated = false)
+    window.console.log(a, document.activeElement, currentEditable)
+  })
+
+  // TODO clear the mode visual and other mode elements when focus lose
+  event("mousedown", (a: MouseEvent) => {
+    window.console.log(a, document.activeElement, currentEditable)
+    a.preventDefault()
+  })
 
   event("mouseup", (a: MouseEvent) => {
-    // window.setTimeout(() => window.console.log(window.getSelection()), 1)
+    window.console.log(a)
     a.preventDefault()
   })
 
-  class MouseDown {
-  }
+
+  event("click", (a: MouseEvent) => {
+    window.console.log(a)
+    a.preventDefault()
+  })
+
+  event("dblclick", (a: MouseEvent) => {
+    window.console.log(a)
+    a.preventDefault()
+  })
 
   event("contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
+    a.preventDefault()
   })
 
 
