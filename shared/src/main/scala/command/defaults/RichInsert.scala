@@ -35,24 +35,6 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
 
-  new OverrideCommand {
-    override def description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
-    // TODO what to do on enter???
-    override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
-    override def available(a: DocState): Boolean = a.isRichInserting
-    override def action(a: DocState, count: Int): DocTransaction = {
-      val (node, rich, insert) =  a.asRichInsert
-      if (insert.pos == rich.size) {
-        val n = a.mover().nextOver(node)
-        DocTransaction(
-          Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
-          , Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(0))))
-      } else {
-        DocTransaction.empty
-      }
-    }
-  }
-
   new EditCommand with OverrideCommand {
     override def description: String = "delete text after cursor"
     // TODO these keys should be seperate delete words, etc...
@@ -62,6 +44,26 @@ class RichInsert extends CommandCategory("when in insert mode") {
         Some(operation.Rich.deleteOrUnwrapAt(content, a))
       } else {
         None
+      }
+    }
+  }
+
+
+  new OverrideCommand {
+    override def description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
+    // TODO what to do on enter???
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
+    override def available(a: DocState): Boolean = a.isRichInserting
+    override def action(a: DocState, count: Int): DocTransaction = {
+      val (node, rich, insert) =  a.asRichInsert
+      if (insert.pos == rich.size) {
+        val mover = a.mover()
+        val n = mover.firstChild(node).getOrElse(mover.nextOver(node))
+        DocTransaction(
+          Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
+          , Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(0))))
+      } else {
+        DocTransaction.empty
       }
     }
   }

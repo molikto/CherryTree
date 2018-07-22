@@ -295,9 +295,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
 
   event("focusout", (a: FocusEvent) => {
     // a hack!
-    val ce = currentEditable
     updateMode(None, viewUpdated = false)
-    currentEditable = ce
   })
 
   event("focusin", (a: FocusEvent) => {

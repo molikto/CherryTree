@@ -55,9 +55,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     }
   }
 
-  {
-    initDom()
-  }
+  initDom()
 
   private def clearDom(): Unit = {
     initMode(if (isEmpty) -2 else -1)
@@ -79,8 +77,8 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   private def initEmptyNormalMode(): Unit = {
     initEmptyContent()
     val range = document.createRange()
-    range.setStart(dom.childNodes(0), 0)
-    range.setEnd(dom.childNodes(0), 1)
+    range.setStart(dom, 0)
+    range.setEnd(dom, 1)
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)
@@ -509,7 +507,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
-      if (debugView) println(s"mode cleared t $i")
+      if (debugView) println(s"mode change from  $previousMode to $i")
       if (previousMode == 0) {
         clearInsertionMode()
       } else if (previousMode == 1) {
