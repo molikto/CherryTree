@@ -13,7 +13,7 @@ import web.view.{KeyMap, View, theme}
 
 import scala.collection.mutable.ArrayBuffer
 
-class DocumentView(parent: HTMLElement, private val client: DocInterface, private val editor: EditorInterface) extends View {
+class DocumentView(private val client: DocInterface, private val editor: EditorInterface) extends View {
 
   dom = div(
     width := "100%",
@@ -23,7 +23,6 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     `class` := "ct-root ct-scroll",
     overflowY := "scroll"
   ).render
-  parent.appendChild(dom)
 
   /**
     *
@@ -154,7 +153,7 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val box = div().render
     parent.insertBefore(box, parent.firstChild)
-    box.appendChild(createContent(root.content).dom)
+    createContent(root.content).attachToNode(box)
     val list = div().render
     box.appendChild(list)
     insertNodes(list, 0, root.childs)
@@ -198,15 +197,13 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
   }
 
 
-  {
+  // we use onAttach because we access window.setSelection
+  override def onAttach(): Unit = {
     val DocState(node, selection) = client.state
     insertNodesRec(node, dom)
     dom.appendChild(noEditable) // dom contains this random thing, this is ok now, but... damn
     updateMode(selection, viewUpdated = false)
-  }
 
-
-  {
     observe(client.stateUpdates.doOnNext(update => {
       for (t <- update.transaction) {
         t match {
@@ -215,8 +212,7 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
           case model.operation.Node.Replace(at, c) =>
             val previousContent = contentAt(at)
             val p = previousContent.dom.parentNode
-            val cc = createContent(c)
-            p.insertBefore(cc.dom, previousContent.dom)
+            createContent(c).attachToNode(p, previousContent.dom)
             previousContent.destroy()
           case model.operation.Node.Delete(r) =>
             // look out for this!!!

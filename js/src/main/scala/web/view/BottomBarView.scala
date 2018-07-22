@@ -22,7 +22,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class BottomBarView(parent: HTMLElement, val client: Client) extends View {
+class BottomBarView(val client: Client) extends View {
 
 
   val size = "24px"
@@ -55,24 +55,21 @@ class BottomBarView(parent: HTMLElement, val client: Client) extends View {
     divider(),
     debugErrorInfo
   ).render
-  parent.appendChild(dom)
 
-  {
-    observe(client.commandStatus.doOnNext(c => {
-      val (text, color) = c match {
-        case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
-        case CommandStatus.InputtingCount(a: String) => (a, null)
-        case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-        case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-        case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
-          (Seq(count, renderKeySeq(k), char.map(_.toString).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
-        case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
-          (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
-      }
-      commandStatus.textContent = text
-      commandStatus.style.color = color
-    }))
-  }
+  observe(client.commandStatus.doOnNext(c => {
+    val (text, color) = c match {
+      case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
+      case CommandStatus.InputtingCount(a: String) => (a, null)
+      case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
+      case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
+      case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
+        (Seq(count, renderKeySeq(k), char.map(_.toString).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
+      case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
+        (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
+    }
+    commandStatus.textContent = text
+    commandStatus.style.color = color
+  }))
 
   private def updateModeIndicator(): Unit = {
     val text = client.state.mode match {
@@ -105,17 +102,14 @@ class BottomBarView(parent: HTMLElement, val client: Client) extends View {
     }
   }
 
+  updateModeIndicator()
 
-  {
+  observe(client.stateUpdates.doOnNext(update => {
     updateModeIndicator()
+  }))
 
-    observe(client.stateUpdates.doOnNext(update => {
-      updateModeIndicator()
-    }))
-
-    observe(client.errors.doOnNext {
-      case Some(e) => debugErrorInfo.textContent = e.getMessage
-      case _ =>
-    })
-  }
+  observe(client.errors.doOnNext {
+    case Some(e) => debugErrorInfo.textContent = e.getMessage
+    case _ =>
+  })
 }

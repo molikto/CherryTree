@@ -5,11 +5,13 @@ import client.Client
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
-class CommandListView(parent: HTMLElement, val client: Client) extends View {
+class CommandListView(val client: Client) extends View {
 
 
   dom = div(
     minWidth := "150px",
+    width := "500px",
+    height := "100%",
     color := "#dddddd",
     overflowY := "scroll",
     `class` := "ct-scroll unselectable",
@@ -17,21 +19,18 @@ class CommandListView(parent: HTMLElement, val client: Client) extends View {
     background := theme.bottomBarBackground
   ).render
 
-  parent.appendChild(dom)
 
   observe(client.stateUpdates.doOnNext(_ => {
     update()
   }))
-
   update()
-
 
   def update(): Unit = {
     removeAllChild(dom)
     val res = div(
       client.commandsByCategory.map {
         case (name, cs) =>
-          val commands = cs.filter(a => a.available(client.state, client) && a.description.nonEmpty)
+          val commands = cs.filter(a => a.available(client.state, client) && a.description.nonEmpty && a.keys.nonEmpty)
           if (commands.isEmpty) {
             div()
           } else {

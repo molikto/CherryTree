@@ -34,6 +34,23 @@ abstract class View {
     }
   }
 
+
+  def attachToNode(a: Node, before: HTMLElement = null) : View = {
+    a.insertBefore(dom, before)
+    onAttach()
+    this
+  }
+  def attachTo(a: View, before: HTMLElement = null): View = {
+    a.dom.insertBefore(dom, before)
+    onAttach()
+    this
+  }
+
+  def onAttach(): Unit = {
+
+  }
+
+
   private var des = ArrayBuffer[Unit => Unit]()
 
 
@@ -83,7 +100,7 @@ abstract class View {
     if (a.cancelable) {
       a.preventDefault()
     } else {
-      notCancelable
+      notCancelable()
     }
   }
 }
