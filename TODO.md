@@ -13,12 +13,14 @@
 ## now
 
 
-* fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView
 * rebase move
 
 ## major basic features
 
 * insert mode input event/command overrides
+    * spell checker
+    * voice input
+    * system default bold/italic keys
 * copy paste
 * outliner
     * node folding
@@ -127,3 +129,4 @@
 * ~~fix focus~~
 * ~~single edit commands~~
 * ~~keyboard editor for rich~~
+* ~~fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView~~
