@@ -26,6 +26,7 @@ object ClientInitializerView {
   */
 @JSExportTopLevel("ClientInitializerView")
 class ClientInitializerView(where: String) {
+  ClientInitializerView.initializeGlobal()
 
   private val rootView = el[dom.html.Element](where)
   private val token = Authentication.Token(System.currentTimeMillis().toString)

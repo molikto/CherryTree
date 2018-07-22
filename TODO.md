@@ -12,31 +12,32 @@
 
 ## now
 
-*the vim commands currently is limited to what is implemented in Vimflowy, a seperate future project will look into implement more*
 
 * fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView
-* fix focus
-* easy motion
-* multi char find/change
-* closing node
-* modal editor for link like
-* modal editor for LaTeX
 * rebase move
-* node type
-* replace mode
-* insert image?
-* single edit commands
+
+## major basic features
+
+* insert mode input event/command overrides
 * copy paste
-* code mirror!!!
-* insert mode command overrides
-* make so that the state exposed to view is the partial one
-* sync external operation to content
-* keyboard editor for rich
+* outliner
+    * node folding
+    * viewport
+* rich modal editor
+    * link like
+    * image
+    * LaTeX
+    * code node: CodeMirror
+* easy motion
+* more commands
+    * replace mode
+    * dw
+    * wrapped line (not node) motions? they are actually pretty useful?
+* node type
 * mouse support
 * clicking
 * drag drop
 * search and replace
-* line motions? they are actually pretty useful?
 * clean up interaction of info and command too nasty
 
 ## server
@@ -123,3 +124,6 @@
 * ~~visit links~~
 * ~~node move~~
 * ~~available commands panel~~
+* ~~fix focus~~
+* ~~single edit commands~~
+* ~~keyboard editor for rich~~

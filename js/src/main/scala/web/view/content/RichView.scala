@@ -324,31 +324,34 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   event("compositionstart", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = true
-    else a.preventDefault()
+    else cancel(a)
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
-    if (!isInserting) a.preventDefault()
+    if (!isInserting) cancel(a)
   })
 
   event("compositionend", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = false
-    else a.preventDefault()
+    else cancel(a)
   })
 
   event("input", (a: Event) => {
     // TODO only accept single node text changes, or subparagraph changes??
+    // formatBold
+    // Contenteditable	"insertText", "insertCompositionText", "insertFromComposition", "formatSetBlockTextDirection", "formatSetInlineTextDirection", "formatBackColor", "formatFontColor", "formatFontName", "insertLink"	Yes	null	Non-empty Array
+    //Contenteditable	"insertFromPaste", "insertFromDrop", "insertReplacementText", "insertFromYank"	null
     if (isInserting) {
       val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
       if (inputType == "insertText" || inputType == "insertCompositionText") {
         // should be pick up by our keyboard handling
-        //window.console.log(a)
         controller.flush()
       } else {
         window.console.log(a)
       }
     } else {
-      a.preventDefault()
+      window.console.log(a)
+      cancel(a)
     }
   })
 

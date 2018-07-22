@@ -78,4 +78,12 @@ abstract class View {
     node.addEventListener(ty, listener)
     defer(_ => node.removeEventListener(ty, listener))
   }
+
+  def cancel(a: Event,notCancelable: () => Unit = () => console.log("Not cancelable event not handled")): Unit  = {
+    if (a.cancelable) {
+      a.preventDefault()
+    } else {
+      notCancelable
+    }
+  }
 }

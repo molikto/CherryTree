@@ -53,6 +53,19 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
 
+  new EditCommand with OverrideCommand {
+    override def description: String = "delete text after cursor"
+    // TODO these keys should be seperate delete words, etc...
+    override val hardcodeKeys: Seq[KeySeq] = (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
+    override def edit(content: Rich, a: Int): Option[operation.Rich] = {
+      if (a < content.size) {
+        Some(operation.Rich.deleteOrUnwrapAt(content, a))
+      } else {
+        None
+      }
+    }
+  }
+
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
     override def description: String = s"insert a new ${deli.name}"
     override def available(a: DocState): Boolean = a.isRichInserting && {
@@ -99,9 +112,10 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
   }
 
+  // disabled keys!!!!
   new InsertMovementCommand with OverrideCommand {
     override def description: String = ""
-    override def defaultKeys: Seq[KeySeq] = Seq(Down, Up)
+    override def hardcodeKeys: Seq[KeySeq] = Seq[KeySeq](Down: KeySeq, Up)
     override def move(rich: Rich, i: Int): Int = i
   }
 

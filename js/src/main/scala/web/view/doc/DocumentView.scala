@@ -250,7 +250,7 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     if (key == null) key = Key.Unknown(event.key)
     val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
     if (!kk.meta) { // for meta keys, we ignore it, it is mostly browser keys
-      if (editor.onKeyDown(kk)) event.preventDefault()
+      if (editor.onKeyDown(kk)) cancel(event)
     }
   })
 
@@ -275,17 +275,17 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
 
   event( "copy", (a: ClipboardEvent) => {
     window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
   event( "cut", (a: ClipboardEvent) => {
     window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
   event( "paste", (a: ClipboardEvent) => {
     window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
 
@@ -298,46 +298,37 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
 
 
   event("focusout", (a: FocusEvent) => {
-    window.console.log(a, document.activeElement, currentEditable)
     // a hack!
     val ce = currentEditable
     updateMode(None, viewUpdated = false)
     currentEditable = ce
-    window.console.log(a, document.activeElement, currentEditable)
   })
 
   event("focusin", (a: FocusEvent) => {
-    window.console.log(a, document.activeElement, currentEditable)
     updateMode(client.state.mode, viewUpdated = false)
-    window.console.log(a, document.activeElement, currentEditable)
   })
 
-  // TODO clear the mode visual and other mode elements when focus lose
   event("mousedown", (a: MouseEvent) => {
-    window.console.log(a, document.activeElement, currentEditable)
-    a.preventDefault()
+    cancel(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
   event("dblclick", (a: MouseEvent) => {
-    window.console.log(a)
-    a.preventDefault()
+    cancel(a)
   })
 
   event("contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
-    a.preventDefault()
+    cancel(a)
   })
 
 
@@ -351,23 +342,23 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     */
 
   event("dragstart", (a: DragEvent) => {
-    a.preventDefault()
+    cancel(a)
   })
 
   event("dragend", (a: DragEvent) => {
-    a.preventDefault()
+    cancel(a)
   })
 
   event("dragover", (a: DragEvent) => {
-    a.preventDefault()
+    cancel(a)
   })
 
   event("dragenter", (a: DragEvent) => {
-    a.preventDefault()
+    cancel(a)
   })
 
   event("drop", (a: DragEvent) => {
-    a.preventDefault()
+    cancel(a)
   })
 
 }
