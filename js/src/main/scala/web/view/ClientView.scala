@@ -26,8 +26,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     overflow := "hidden").render
   parent.appendChild(dom)
 
-  new BottomBarView(dom, client)
-
   private val topPanels = div(
     width := "100%",
     height := "100%",
@@ -41,7 +39,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   topPanels.appendChild(topPanelSplitter)
 
 
-  new DocumentView(topPanels, client, client)
+  new DocumentView(topPanels, client, client, client)
 
 
   jQ(leftPanel.dom).resizable(jsObject(a => {

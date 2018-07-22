@@ -10,20 +10,23 @@ import scalatags.JsDom.all._
 import view.EditorInterface
 import web.view.content.{CodeView, ContentView, RichView}
 import web.view.{KeyMap, View, theme}
+import web.view.BottomBarView
+import client.Client
 
 import scala.collection.mutable.ArrayBuffer
 
-class DocumentView(parent: HTMLElement, private val client: DocInterface, private val editor: EditorInterface) extends View {
+class DocumentView(parent: HTMLElement, private val client: DocInterface, private val editor: EditorInterface, val originalClient: Client) extends View {
 
   dom = div(
     width := "100%",
     height := "100%",
-    padding := "48px",
     color := theme.contentText,
     `class` := "ct-root ct-scroll",
     overflowY := "scroll"
   ).render
   parent.appendChild(dom)
+
+  new BottomBarView(dom, originalClient)
 
   /**
     *
@@ -147,19 +150,22 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
     contents.foreach(a => {
       val item = div(paddingLeft := "24px").render
       list.insertBefore(item, before)
-      insertNodesRec(a, item)
+      insertNodesRec(a, item, false)
     })
   }
 
-  private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
-    val box = div().render
+  private def insertNodesRec(root: model.data.Node, parent: html.Element, isRootBox: Boolean): Unit = {
+    val box = if (isRootBox) {
+      div(margin := "48px").render
+    } else {
+      div().render
+    }
     parent.insertBefore(box, parent.firstChild)
     box.appendChild(createContent(root.content).dom)
     val list = div().render
     box.appendChild(list)
     insertNodes(list, 0, root.childs)
   }
-
 
   private def createContent(c: Content): ContentView.General = {
     c match {
@@ -200,7 +206,7 @@ class DocumentView(parent: HTMLElement, private val client: DocInterface, privat
 
   {
     val DocState(node, selection) = client.state
-    insertNodesRec(node, dom)
+    insertNodesRec(node, dom, true)
     dom.appendChild(noEditable) // dom contains this random thing, this is ok now, but... damn
     updateMode(selection, viewUpdated = false)
   }

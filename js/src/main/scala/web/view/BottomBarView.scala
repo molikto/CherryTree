@@ -39,6 +39,8 @@ class BottomBarView(parent: HTMLElement, val client: Client) extends View {
 
 
   dom = div(
+    position := "fixed",
+    bottom := 0,
     width := "100%",
     paddingTop := "1px",
     paddingLeft := "8px",
