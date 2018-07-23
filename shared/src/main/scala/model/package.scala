@@ -11,5 +11,7 @@ package object model extends Picklers {
   var debugView = true
   var debugModel = false
 
+  var debugRenderEmptyInsertionPointAsBox = false
+
   var isMac: Boolean = false
 }

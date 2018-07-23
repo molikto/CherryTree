@@ -1,5 +1,7 @@
 ## TODO
 
+* bug: left/right in insert mode is not working
+* server status
 * why scrollbar not shown??
 * clean up interaction of info and command too nasty
 

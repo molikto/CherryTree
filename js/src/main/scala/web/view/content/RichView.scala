@@ -137,9 +137,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       if (insertEmptyTextNode == null || insertEmptyTextNode.parentNode != childArray) {
         c = childArray.childNodes(a.head)
       } else {
+        c = childArray.firstChild
+        if (c == insertEmptyTextNode) c = c.nextSibling
         var i = 0
-        while (i <= a.head) {
-          c = childArray.childNodes(i)
+        while (i < a.head) {
+          c = c.nextSibling
           if (c != insertEmptyTextNode) {
             i += 1
           }
@@ -346,6 +348,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         controller.flush()
       } else {
         window.console.log(a)
+        cancel(a)
       }
     } else {
       window.console.log(a)
@@ -475,6 +478,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       range.setStart(start._1, start._2)
       range.setEnd(start._1, start._2)
     }
+    window.console.log(range)
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)

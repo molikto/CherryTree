@@ -135,7 +135,7 @@ class Client(
   private def updateInner(res: DocUpdate): Unit = {
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debugView) {
-      println("client update inner root: " + res.root)
+      //println("client update inner root: " + res.root)
       println("client update inner transactions: " + res.transaction)
       println("client update inner mode: " + res.mode)
     }
