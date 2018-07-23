@@ -13,6 +13,9 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.actor.ActorSystem
+import jvm.twirl.Implicits._
+
+
 import api.Api
 
 class HttpRouter(val service: Api) extends Directives {
@@ -23,7 +26,9 @@ class HttpRouter(val service: Api) extends Directives {
 
     pathSingleSlash {
       get {
-        getFromResource("public/main.html")
+        complete {
+          twirl.html.main.render()
+        }
       }
     } ~
     (pathPrefix("assets" / Remaining) & respondWithHeader(`Cache-Control`(`no-cache`))) { file =>

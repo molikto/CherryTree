@@ -6,6 +6,7 @@ compile/run with `sbt ~reStart` (for now)
 
 test with `sbt sharedJVM/test`, `sbt sharedJVM/testOnly xxx` etc.
 
+release build with `sbt assembly` for the jar. more info here: https://github.com/vmunier/akka-http-scalajs.g8
 
 ## coding guideline
 

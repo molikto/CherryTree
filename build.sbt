@@ -1,3 +1,6 @@
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+
+
 lazy val server = (project in file("jvm")).settings(
   sharedSettings,
   scalaVersion := Version.scala,
@@ -8,7 +11,7 @@ lazy val server = (project in file("jvm")).settings(
   libraryDependencies ++= Deps.server.value,
   WebKeys.packagePrefix in Assets := "public/",
   managedClasspath in Runtime += (packageBin in Assets).value
-).enablePlugins(SbtWeb, JavaAppPackaging, WebScalaJSBundlerPlugin).
+).enablePlugins(SbtWeb, JavaAppPackaging, SbtTwirl, WebScalaJSBundlerPlugin).
   dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(
@@ -20,7 +23,7 @@ lazy val client = (project in file("js")).settings(
 ).enablePlugins(ScalaJSPlugin, ScalaJSWeb, ScalaJSBundlerPlugin).
   dependsOn(sharedJs)
 
-lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared")).
+lazy val shared = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared")).
   settings(
     sharedSettings,
     scalaVersion := Version.scala,
