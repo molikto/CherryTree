@@ -1,7 +1,6 @@
-## TODO
+## bugs and improvements
 
-* change to a better networking for chagne, server pushed content, or websocket
-* server status
+* change to a better networking for change, server pushed content, or websocket
 * why scrollbar not shown??
 * clean up interaction of info and command too nasty
 
@@ -44,3 +43,4 @@
 * ~~keyboard editor for rich~~
 * ~~fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView~~
 * ~~rebase move~~
+* ~~online user counter~~
