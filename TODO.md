@@ -2,43 +2,11 @@
 
 ## current constraint
 
-* closed system - no over generalization, plugins
-    * server part stays monolith, no generalization - there is not too much good of this yet
-* no fancy UI performance tweaks for now. UI is the part that is easier to change
-* complete information - offline does't work if you don't have all the information (no need to look at query tools like GraphQL)
 *  we only support natural editing, i.e. the speed of content/information creation is proportional to the size of the document
     * so edits like copying a big trunk of data, then paste exactly the same, is not supported (can use pointers)
-    
 
-## now
+## TODO
 
-
-
-## major basic features
-
-* insert mode input event/command overrides
-    * spell checker
-    * voice input
-    * system default bold/italic keys
-* copy paste
-* outliner
-    * node folding
-    * viewport
-* rich modal editor
-    * link like
-    * image
-    * LaTeX
-    * code node: CodeMirror
-* easy motion
-* more commands
-    * replace mode
-    * dw
-    * wrapped line (not node) motions? they are actually pretty useful?
-* node type
-* mouse support
-* clicking
-* drag drop
-* search and replace
 * clean up interaction of info and command too nasty
 
 ## server
