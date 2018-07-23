@@ -52,12 +52,13 @@ class BottomBarView(val client: Client) extends View {
     backgroundColor := theme.bottomBarBackground,
     flexDirection := "row",
     color := theme.bottomBarText,
+    connection,
+    divider(),
     mode,
     divider(),
     commandStatus,
     divider(),
-    debugErrorInfo,
-    connection
+    debugErrorInfo
   ).render
 
   observe(client.commandStatus.doOnNext(c => {
@@ -118,7 +119,11 @@ class BottomBarView(val client: Client) extends View {
   })
 
   observe(client.connection.doOnNext {
-    case Some(e) => connection.textContent = s"${e.online} user${if (e.online == 1) "" else "s"} online"
-    case _ =>  connection.textContent = "offline"
+    case Some(e) =>
+      connection.textContent = s"${e.online} user${if (e.online == 1) "" else "s"} online"
+      connection.style.color = theme.disalbedInfo
+    case _ =>
+      connection.textContent = "offline"
+      connection.style.color = theme.littleError
   })
 }
