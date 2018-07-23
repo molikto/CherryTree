@@ -15,6 +15,7 @@ import scala.scalajs.js
 
 class RichView(documentView: DocumentView, val controller: EditorInterface,  var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
+  private val evilChar = "\u200B"
   /**
     *
     * state
@@ -38,7 +39,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   dom.style = "outline: 0px solid transparent;"
 
 
-  private var insertEmptyTextNode: Element= null
+  private var insertEmptyTextNode: raw.Text = null
   private var insertNonEmptyTextNode: (raw.Text, Int, Int) = null
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
@@ -114,9 +115,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
           case a: Throwable => a.printStackTrace()
         }
         span(contenteditable := "false", `class` := "ct-latex",
-          span("\u200B"), // don't fuck with my cursor!!!
+          span(evilChar), // don't fuck with my cursor!!!
           a,
-          span("\u200b")
+          span(evilChar)
         )
       case Text.Code(c) =>
         span(
@@ -166,19 +167,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
   private def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
-    insertEmptyTextNode = if (debugRenderEmptyInsertionPointAsBox) {
-      tag("kbd")(
-        span("_", contenteditable := false), // don't fuck with my cursor!!!
-        "",
-        span("_", contenteditable := false)
-      ).render
-    } else {
-      span(
-        span("\u200B", contenteditable := false), // don't fuck with my cursor!!!
-        "",
-        span("\u200b", contenteditable := false)
-      ).render
-    }
+    insertEmptyTextNode = document.createTextNode(s"$evilChar$evilChar")
     val before = if (i == node.childNodes.length) null else node.childNodes(i)
     node.insertBefore(insertEmptyTextNode, before)
   }
@@ -194,7 +183,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     } else {
       createTempEmptyInsertTextNode(node, i)
     }
-    (insertEmptyTextNode.childNodes(1), 0)
+    (insertEmptyTextNode, 1)
   }
 
   private def updateExistingTextNodeIn(node: Node, i: Int): (Node, Int) = {
@@ -288,9 +277,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       SpecialChar.startsEnds.contains(ss.specialChar) &&
       !ss.text.isAtomicViewed) {
       val isStart = SpecialChar.starts.contains(ss.specialChar)
-      val a = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
-      val range = if (isStart) (0, 1) else (2, 3)
-      (createRange(a, range._1, a, range._2), a)
+      val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
+      val a = span.childNodes(if (isStart) 0 else 2).childNodes(0)
+      (createRange(a, 0, a, 1), span)
     } else {
       val start = if (ss.ty == InfoType.Plain) {
         val text = domAt(ss.nodeCursor)
@@ -398,23 +387,16 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   private def flushInsertionMode(): Unit = {
     if (insertEmptyTextNode != null) {
-      val str = mergeTextsFix(insertEmptyTextNode.childNodes(1).asInstanceOf[raw.Text])
+      val tc = insertEmptyTextNode.textContent
+      assert(tc.startsWith(evilChar))
+      assert(tc.endsWith(evilChar))
+      val str = tc.substring(1, tc.length - 1)
       if (str.length > 0) {
-        insertNonEmptyTextNode = (document.createTextNode(str), str.length, str.length)
-        insertEmptyTextNode.parentNode.replaceChild(insertNonEmptyTextNode._1, insertEmptyTextNode)
+        insertNonEmptyTextNode = (insertEmptyTextNode, str.length, str.length)
+        insertNonEmptyTextNode._1.textContent = str
         insertEmptyTextNode = null
         controller.onInsertRichTextAndViewUpdated(Unicode(str))
       }
-//      val str = mergeTextsFix(insertEmptyTextNode)
-//      // this is really ugly, but somehow Chrome create a new TextNode??
-//      if (str.length > 0) {
-//        insertEmptyTextNode.textContent = str
-//        insertNonEmptyTextNode = insertEmptyTextNode
-//        insertNonEmptyTextLength = str.length
-//        insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
-//        insertEmptyTextNode = null
-//        controller.onInsertRichTextAndViewUpdated(Unicode(str))
-//      }
     } else if (insertNonEmptyTextNode != null) {
       val newContent = mergeTextsFix(insertNonEmptyTextNode._1)
       val insertion = newContent.substring(insertNonEmptyTextNode._2, insertNonEmptyTextNode._2 + newContent.length - insertNonEmptyTextNode._3)

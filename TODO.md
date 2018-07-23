@@ -1,6 +1,5 @@
 ## TODO
 
-* insert inside two ```` not shown
 * change to a better networking for chagne, server pushed content, or websocket
 * server status
 * why scrollbar not shown??
