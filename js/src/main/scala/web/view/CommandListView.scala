@@ -5,6 +5,7 @@ import client.Client
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
+// TODO resizing the panel is buggy
 class CommandListView(val client: Client) extends View {
 
 
@@ -20,17 +21,16 @@ class CommandListView(val client: Client) extends View {
   ).render
 
 
-  observe(client.stateUpdates.doOnNext(_ => {
-    update()
-  }))
-  update()
-
-  def update(): Unit = {
+  observe(client.stateUpdates.map(_ => 0).startWith(Seq(0)).map(_ => {
+    client.commandsByCategory.map {
+      case (name, cs) =>
+        (name, cs.filter(a => a.available(client.state, client) && a.description.nonEmpty && a.keys.nonEmpty))
+    }
+  }).distinctUntilChanged.doOnNext(pair => {
     removeAllChild(dom)
     val res = div(
-      client.commandsByCategory.map {
-        case (name, cs) =>
-          val commands = cs.filter(a => a.available(client.state, client) && a.description.nonEmpty && a.keys.nonEmpty)
+      pair.map {
+        case (name, commands) =>
           if (commands.isEmpty) {
             div()
           } else {
@@ -46,6 +46,6 @@ class CommandListView(val client: Client) extends View {
       }.toSeq
     ).render
     dom.appendChild(res)
-  }
-
+    dom.scrollIntoView(true)
+  }))
 }

@@ -3,8 +3,9 @@ package model.ot
 import utest._
 
 import scala.util.{Failure, Random, Success, Try}
-
 import model._
+
+import scala.collection.mutable.ArrayBuffer
 
 
 object RebaseTests extends TestSuite {
@@ -212,28 +213,28 @@ object RebaseTests extends TestSuite {
     'rich - {
       val random = new Random()
       var n = data.Rich.random(random)
-      for (_ <- 0 until 3000) {
+      for (_ <- 0 until 300) {
         val a = operation.Rich.randomTransaction(1, n, random)
         val b = operation.Rich.randomTransaction(1, n, random)
-        val debug = false
-        if (debug) println(n.size)
-        if (debug) println(s"Change a: $a")
-        if (debug) println(s"Change b: $b")
+        val debug = new ArrayBuffer[String]()
+        debug.append(n.size.toString)
+        debug.append(s"Change a: $a")
+        debug.append(s"Change b: $b")
         ot.Rich.rebase(a, b) match {
           case Rebased(_, (ap, bp)) =>
             try {
-              if (debug) println(s"Change a': $ap")
-              if (debug) println(s"Change b': $bp")
+              debug.append(s"Change a': $ap")
+              debug.append(s"Change b': $bp")
               val aaa = operation.Rich.apply(bp, operation.Rich.apply(a, n))
               val bbb = operation.Rich.apply(ap, operation.Rich.apply(b, n))
               if (aaa == bbb) {
-                if (debug) println(s"App: $aaa")
                 n = aaa
               } else {
                 var a = 1
                 a =  2
-                if (debug) println(s"App 0: $aaa")
-                if (debug) println(s"App 1: $bbb")
+                debug.append(s"App 0: $aaa")
+                debug.append(s"App 1: $bbb")
+                debug.foreach(println)
               }
               assert(aaa == bbb)
             } catch {
@@ -245,34 +246,67 @@ object RebaseTests extends TestSuite {
       }
     }
 
+   'squareRandomNotApplying - {
+      val n = node
+      val random = new Random()
+      for (_ <- 0 until 30000) {
+        val a = operation.Node.randomTransaction(1, n, random)
+        val b = operation.Node.randomTransaction(1, n, random)
 
-    'squareRandom - {
+        if (!a.head.isInstanceOf[operation.Node.Move] || !b.head.isInstanceOf[operation.Node.Move])  {
+        } else {
+          val debug = new ArrayBuffer[String]()
+          debug.append(s"Change a: $a")
+          debug.append(s"Change b: $b")
+          ot.Node.rebase(a, b) match {
+            case Rebased(_, (ap, bp)) =>
+              debug.append(s"Change a': $ap")
+              debug.append(s"Change b': $bp")
+              val aaa = operation.Node.apply(bp, operation.Node.apply(a, n))
+              val bbb = operation.Node.apply(ap, operation.Node.apply(b, n))
+              if (aaa == bbb) {
+              } else {
+                var a = 1
+                a = 2
+                debug.append(s"App 0: $aaa")
+                debug.append(s"App 1: $bbb")
+                debug.foreach(println)
+              }
+              assert(aaa == bbb)
+          }
+        }
+      }
+    }
+
+    'squareRandomApplying - {
       var n = node
       val random = new Random()
-      for (_ <- 0 until 300) {
-        val a = operation.Node.randomTransaction(20, n, random)
-        val b = operation.Node.randomTransaction(19, n, random)
-        val debug = false
-        if (debug) println(s"Change a: $a")
-        if (debug) println(s"Change b: $b")
+      for (_ <- 0 until 3000) {
+        val a = operation.Node.randomTransaction(1, n, random)
+        val b = operation.Node.randomTransaction(1, n, random)
+        val debug = new ArrayBuffer[String]()
+        debug.append(s"Change a: $a")
+        debug.append(s"Change b: $b")
         ot.Node.rebase(a, b) match {
           case Rebased(_, (ap, bp)) =>
-            if (debug) println(s"Change a': $ap")
-            if (debug) println(s"Change b': $bp")
+            debug.append(s"Change a': $ap")
+            debug.append(s"Change b': $bp")
             val aaa = operation.Node.apply(bp, operation.Node.apply(a, n))
             val bbb = operation.Node.apply(ap, operation.Node.apply(b, n))
             if (aaa == bbb) {
-              if (debug) println(s"App: $aaa")
               n = aaa
             } else {
               var a = 1
               a =  2
-              if (debug) println(s"App 0: $aaa")
-              if (debug) println(s"App 1: $bbb")
+              debug.append(s"App 0: $aaa")
+              debug.append(s"App 1: $bbb")
+              debug.foreach(println)
             }
             assert(aaa == bbb)
         }
       }
     }
+
+
   }
 }

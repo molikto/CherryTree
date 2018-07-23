@@ -85,7 +85,21 @@ object RangeTests extends TestSuite {
       assert(a.transformNodeAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 14)) == Seq(1, 2, 3, 14))
       assert(a.transformNodeAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 5)) == Seq(1, 2, 3, 9))
       assert(a.transformNodeAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 11)) == Seq(1, 2, 3, 6))
+      assert(a.transformNodeAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3)) == Seq(1, 2, 3))
       assert(a.transformNodeAfterMoved(Seq(3, 3), Seq(1, 2, 3, 10, 11)) == Seq(1, 2, 3, 5, 11))
+      assert(a.transformNodeAfterMoved(Seq(0), Seq(1, 2, 3, 10, 11)) == Seq(6, 2, 3, 5, 11))
+      assert(a.transformNodeAfterMoved(Seq(1, 2, 3, 1), Seq(1, 2, 3, 5)) == Seq(1, 2, 3, 1))
+
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 1), Seq(1, 2, 3, 9, 11)) == Seq(1, 2, 3, 5, 11))
+      assert(a.transformInsertionPointAfterMoved(Seq(3, 3), Seq(1, 2, 3, 9, 11)) == Seq(3, 7, 11))
+      assert(a.transformInsertionPointAfterMoved(Seq(3, 3), Seq(1, 2, 3)) == Seq(1, 2, 3))
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 19)) == Seq(1, 2, 3, 19))
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 14)) == Seq(1, 2, 3, 14))
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 5)) == Seq(1, 2, 3, 5))
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 14), Seq(1, 2, 3, 11)) == Seq(1, 2, 3, 6))
+      assert(a.transformInsertionPointAfterMoved(Seq(3, 3), Seq(1, 2, 3, 10, 11)) == Seq(1, 2, 3, 5, 11))
+      assert(a.transformInsertionPointAfterMoved(Seq(1, 2, 3, 1), Seq(1, 2, 3, 5)) == Seq(1, 2, 3, 10))
+      assert(a.transformInsertionPointAfterMoved(Seq(0), Seq(1, 2, 3, 10, 11)) == Seq(6, 2, 3, 5, 11))
     }
   }
 }

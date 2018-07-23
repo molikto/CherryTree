@@ -172,12 +172,12 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     * ge    N  ge           backward to the end of the Nth word
     * gE    N  gE           backward to the end of the Nth blank-separated WORD
     */
-  //        val wordBeginning: Command = ???
-  //        val wordEnd: Command = ???
-  //        val wordNext: Command = ???
-  //        val WordBeginning: Command = ???
-  //        val WordEnd: Command = ???
-  //        val WordNext: Command = ???
+  //        val wordBeginning: Command =
+  //        val wordEnd: Command =
+  //        val wordNext: Command =
+  //        val WordBeginning: Command =
+  //        val WordEnd: Command =
+  //        val WordNext: Command =
 
 
 

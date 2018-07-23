@@ -51,7 +51,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
   new OverrideCommand {
     override def description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
-    // TODO what to do on enter???
+    // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
     override def available(a: DocState): Boolean = a.isRichInserting
     override def action(a: DocState, count: Int): DocTransaction = {

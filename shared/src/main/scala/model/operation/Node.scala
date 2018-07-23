@@ -18,6 +18,15 @@ abstract sealed class Node extends Operation[data.Node] {
 }
 
 object Node extends OperationObject[data.Node, Node] {
+  def deleteRanges(aa: Seq[range.Node]): Seq[Node] = {
+    val ddd = aa.foldLeft[(range.Node => Option[range.Node], Seq[range.Node])]((a => Some(a), Seq.empty)) { (pair, a) =>
+      val r2 = pair._1(a)
+      val func = if (r2.isEmpty) pair._1 else (j: range.Node) => { pair._1(j).flatMap(kk => r2.get.transformDeletingRangeAfterDeleted(kk)) }
+      (func, pair._2 ++ r2)
+    }._2
+    ddd.map(a => operation.Node.Delete(a))
+  }
+
   def transform(ns: Seq[Node], a: mode.Node): Option[mode.Node] = {
     ns.foldLeft(Some(a) : Option[mode.Node]) { (a, n) => n.transform(a) }
   }
@@ -39,6 +48,8 @@ object Node extends OperationObject[data.Node, Node] {
       d.map(at, a => a.copy(content = content))
     }
 
+    override def toString: String = s"Replace($at)"
+
     override def transform(a: mode.Node): Option[mode.Node] = a match {
       case c: mode.Node.Content if c.node == at => None
       case _ => Some(a)
@@ -47,6 +58,9 @@ object Node extends OperationObject[data.Node, Node] {
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
     override def apply(d: data.Node): data.Node = d.insert(at, childs)
+
+
+    override def toString: String = s"Insert($at, ${childs.size})"
 
     override def transform(a: mode.Node): Option[mode.Node] = a match {
       case c: mode.Node.Content =>
@@ -74,7 +88,7 @@ object Node extends OperationObject[data.Node, Node] {
     }
   }
   case class Move(r: range.Node, to: cursor.Node) extends Node {
-    assert(!r.contains(to))
+    assert(!r.contains(to) && r.until != to)
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
@@ -145,7 +159,7 @@ object Node extends OperationObject[data.Node, Node] {
       val p = r.nextInt(n.childs.size + 1)
       Insert(c :+ p, (0 until r.nextInt(3)).map(_ => data.Node.random(r)))
     }
-    r.nextInt(4) match {
+    r.nextInt(5) match {
       case 0 =>
         val (c, n) = randomCursorAndNode(d, r)
         Content(c, operation.Content.random(n.content, r))
@@ -156,12 +170,34 @@ object Node extends OperationObject[data.Node, Node] {
         val (c, _) = randomCursorAndNode(d, r)
         if (c != cursor.Node.root) {
           var ran = range.Node(c)
-          if (r.nextBoolean() && ran.childs.start > 1) {
+          if (r.nextBoolean() && ran.childs.start > 2) {
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 3))
+          } else if (r.nextBoolean() && ran.childs.start > 1) {
             ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 2))
           } else if (r.nextBoolean() && ran.childs.start > 0) {
             ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 1))
           }
           Delete(ran)
+        } else {
+          doInsert()
+        }
+      case 4 =>
+        val (c, _) = randomCursorAndNode(d, r)
+        val (c2, _) = randomCursorAndNode(d, r)
+        if (c != cursor.Node.root && c2 != cursor.Node.root) {
+          var ran = range.Node(c)
+          if (r.nextBoolean() && ran.childs.start > 2) {
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 3))
+          } else if (r.nextBoolean() && ran.childs.start > 1) {
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 2))
+          } else if (r.nextBoolean() && ran.childs.start > 0) {
+            ran = range.Node(ran.parent, ran.childs.modify(_.start).using(_ - 1))
+          }
+          if (!ran.contains(c2) && ran.until != c2) {
+            Move(ran, c2)
+          } else {
+            doInsert()
+          }
         } else {
           doInsert()
         }

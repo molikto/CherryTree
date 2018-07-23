@@ -1,5 +1,6 @@
 package model
 
+import model.operation.Node
 import model.ot.Node.RebaseResult
 
 package object range {
@@ -8,7 +9,7 @@ package object range {
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
 
 
-    override def toString(): String = s"($start, $until)"
+    override def toString(): String = s"[$start, $until)"
 
     def merge(move: IntRange): IntRange = IntRange(start min move.start, until max move.until)
 
@@ -125,12 +126,38 @@ package object range {
     childs: IntRange) extends Iterable[cursor.Node] {
 
 
+    override def size: Int = childs.size
+
+    override def toString(): String = "-" + parent.mkString(",") + childs
+
+    def split(w: Node): Seq[Node] = {
+      if (w.parent == parent) {
+        if (childs.overlap(w.childs)) {
+          if (w.childs.contains(childs)) {
+            Seq(Node(parent, IntRange(w.childs.start, childs.start)), this, Node(parent, IntRange(childs.until, w.childs.until)))
+          } else if (childs.contains(w.childs)) {
+              Seq(w)
+          } else if (w.childs.start < childs.start) {
+            Seq(Node(parent, IntRange(w.childs.start, childs.start)), Node(parent, IntRange(childs.start, w.childs.until)))
+          } else {
+            Seq(Node(parent, IntRange(w.childs.start, childs.until)), Node(parent, IntRange(childs.until, w.childs.until)))
+          }
+        } else {
+          Seq(w)
+        }
+      } else {
+        Seq(w)
+      }
+
+    }
+
+
     def transformNodeAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
       if (contains(a)) {
         if (to.dropRight(1) == parent && to.last >= childs.until) {
-          (to.dropRight(1) :+ (to.last + a(parent.size) - childs.until)) ++ a.drop(parent.size + 1)
+          (transformAfterDeleted(to.dropRight(1)).get :+ (to.last + a(parent.size) - childs.until)) ++ a.drop(parent.size + 1)
         } else {
-          (to.dropRight(1) :+ (to.last + a(parent.size) - childs.start)) ++ a.drop(parent.size + 1)
+          (transformAfterDeleted(to.dropRight(1)).get :+ (to.last + a(parent.size) - childs.start)) ++ a.drop(parent.size + 1)
         }
       } else {
         cursor.Node.transformAfterInserted(transformAfterDeleted(to).get, childs.size, transformAfterDeleted(a).get)
@@ -139,8 +166,29 @@ package object range {
 
     // move don't affect insert cursors before it, it is also inserted BEFORE the target insertion cursor
     def transformInsertionPointAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
-      ???
+      if (a == start) {
+        val last = if (to.dropRight(1) == a.dropRight(1) && to.last < a.last) a.last + childs.size else a.last
+        transformNodeAfterMoved(to, a.dropRight(1)) :+ last
+      } else {
+        transformNodeAfterMoved(to, a)
+      }
     }
+
+    // move don't affect insert cursors before it, it is also inserted BEFORE the target insertion cursor
+    def transformTouchPointAfterMoved(to: cursor.Node, a: cursor.Node): cursor.Node = {
+      if (this.isEmpty) {
+        a
+      } else {
+        if (a == until) {
+          val aa = parent :+ (a.last - 1) // not empty
+          val bb = transformNodeAfterMoved(to, aa)
+          bb.dropRight(1) :+ (bb.last + 1)
+        } else {
+          transformNodeAfterMoved(to, a)
+        }
+      }
+    }
+
 
 
     def start: cursor.Node = parent :+ childs.start
@@ -174,6 +222,13 @@ package object range {
       */
     def sameParent(at: cursor.Node) = at.size == parent.size + 1 && at.startsWith(parent)
 
+    def contains(at: range.Node): Boolean = contains(at.parent) || ((at.parent == parent) && childs.contains(at.childs))
+
+    def containsInsertionPoint(at: cursor.Node): Boolean = contains(at.dropRight(1)) || ((at.dropRight(1) == parent) && childs.contains(at.last) && at.last != childs.start)
+
+    def touchsInsertionPoint(at: cursor.Node): Boolean = contains(at.dropRight(1)) || ((at.dropRight(1) == parent) && (childs.contains(at.last) || at.last == childs.until))
+
+    def overlap(at: range.Node): Boolean = at.contains(parent) || contains(at.parent) || ((at.parent == parent) && childs.overlap(at.childs))
 
     def contains(at: cursor.Node): Boolean = at.size > parent.size && at.startsWith(parent) && childs.contains(at(parent.size))
 
@@ -188,7 +243,7 @@ package object range {
 
     def apply(t: cursor.Node, p: cursor.Node): Node = {
       assert(t.dropRight(1) == p.dropRight(1))
-      Node(t.dropRight(1), IntRange(t.last, p.last + 1))
+      Node(t.dropRight(1), IntRange(t.last, p.last))
     }
     def apply(t: cursor.Node, p: IntRange): Node = {
       new Node(t, p)
