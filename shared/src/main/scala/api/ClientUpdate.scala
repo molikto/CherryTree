@@ -6,5 +6,6 @@ import model._
 final case class ClientUpdate(
   winners: Seq[transaction.Node],
   acceptedLosersCount: Int,
-  finalVersion: Int
+  finalVersion: Int,
+  serverStatus: ServerStatus
 )

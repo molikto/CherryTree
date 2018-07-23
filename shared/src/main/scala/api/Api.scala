@@ -5,6 +5,7 @@ import model._
 trait Api {
 
 
+
   /**
     * initialize current client state
     * each session has a unique token, we currently don't have a user concept, a user can have multi-session

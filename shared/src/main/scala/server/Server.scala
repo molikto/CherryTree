@@ -14,20 +14,28 @@ trait Server extends Api {
 
   // states, now in single thread fashion
 
+  case class ClientInfo(version: Int, lastSeen: Long)
 
   private var document = load()
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
-  private val clients: mutable.Map[Authentication.Token, Int] = mutable.Map.empty
+  private val clients: mutable.Map[Authentication.Token, ClientInfo] = mutable.Map.empty
   private var debugHistoryDocuments = Seq(document)
 
   def debugDocument = document
   def debugChanges = changes
 
+  private def onlineCount = clients.values.count(_.lastSeen > System.currentTimeMillis() - ApiConstants.ClientDeathTime)
+
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     // LATER sync mode back to client?
-    val state = ClientInit(document, model.data.Node.defaultNormalMode(document, cursor.Node.root), version)
-    clients.update(token, version)
+    val state = ClientInit(
+      document,
+      model.data.Node.defaultNormalMode(document, cursor.Node.root),
+      version,
+      ServerStatus(onlineCount + 1)
+    )
+    clients.update(token, ClientInfo(version, System.currentTimeMillis()))
     Right(state)
   }
 
@@ -54,7 +62,7 @@ trait Server extends Api {
       case None =>
         Left(ApiError.InvalidToken)
       case Some(cached) =>
-        val diff = version - cached
+        val diff = version - cached.version
          if (diff < 0) {
            Left(ApiError.ClientVersionIsOlderThanServerCache)
         } else if (diff > 0) {
@@ -83,9 +91,9 @@ trait Server extends Api {
           }
           assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
         }
-        clients.update(authentication, version)
+        clients.update(authentication, ClientInfo(version, System.currentTimeMillis()))
         // LATER don't accept conflicting items
-        ClientUpdate(ws, ts.size, version)
+        ClientUpdate(ws, ts.size, version, ServerStatus(onlineCount))
       } catch {
         case e: Throwable => throw e
       }

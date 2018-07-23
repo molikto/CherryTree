@@ -56,9 +56,16 @@ class Client(
   /**
     * connection state
     */
-  val connected = ObservableProperty(true)
+  private val connection_ = ObservableProperty[Option[ServerStatus]](Some(initial.serverStatus))
 
-  val errors: ObservableProperty[Option[Throwable]] = ObservableProperty(None)
+  def connection: Observable[Option[ServerStatus]] = connection_
+
+  val errors_ : ObservableProperty[Option[Throwable]] = ObservableProperty(None)
+
+  /**
+    * last error
+    */
+  def errors: Observable[Option[Throwable]] = errors_
 
   protected val viewMessages_ : PublishSubject[Client.ViewMessage] = PublishSubject()
 
@@ -175,7 +182,7 @@ class Client(
 
   private def putBackAndMarkNotConnected(head: Int): Unit = {
     requests = head +: requests
-    connected.update(false)
+    connection_.update(None)
   }
 
   private def request[T](head: Int, a: Future[ErrorT[T]], onSuccess: T => Unit): Unit = {
@@ -186,12 +193,11 @@ class Client(
           requesting = false
           onSuccess(r)
           tryTopRequest()
-          errors.update(None)
         }
       case Failure(t) =>
         self.synchronized {
           requesting = false
-          errors.update(Some(t))
+          connection_.update(None)
           t match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
               // LATER properly handle this!
@@ -209,7 +215,6 @@ class Client(
 
   private def tryTopRequest(): Unit = {
     if (!requesting) {
-      connected.update(true)
       requests match {
         case head :: tail =>
           requests = tail
@@ -258,6 +263,7 @@ class Client(
       assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc
+      connection_.update(Some(success.serverStatus))
       if (wp0.nonEmpty) updateState(
         DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, viewUpdated = false)
     } catch {

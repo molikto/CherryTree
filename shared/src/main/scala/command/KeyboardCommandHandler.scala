@@ -79,7 +79,7 @@ class KeyboardCommandHandler extends Settings with CommandState
         // defferent settings of key might override depending on how the key is set
         val sorted = exacts.map(a => (a ,a.keyLevel(commandPartConfirmed))).sortBy(-_._2)
         if (sorted(1)._2 == sorted.head._2) {
-          errors.update(Some(new Exception("Multiple commands with same key")))
+          errors_.update(Some(new Exception("Multiple commands with same key")))
         }
         exacts = Seq(sorted.head._1)
       }

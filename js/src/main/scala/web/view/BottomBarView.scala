@@ -35,6 +35,8 @@ class BottomBarView(val client: Client) extends View {
 
   private val debugErrorInfo = span(color := "red", marginLeft := "12px", "").render
 
+  private val connection = span(alignSelf.flexEnd).render
+
   private def divider() = span(" | ", color := theme.disalbedInfo)
 
 
@@ -42,6 +44,7 @@ class BottomBarView(val client: Client) extends View {
     width := "100%",
     paddingTop := "1px",
     paddingLeft := "8px",
+    paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
     `class` := "unselectable",
@@ -53,7 +56,8 @@ class BottomBarView(val client: Client) extends View {
     divider(),
     commandStatus,
     divider(),
-    debugErrorInfo
+    debugErrorInfo,
+    connection
   ).render
 
   observe(client.commandStatus.doOnNext(c => {
@@ -111,5 +115,10 @@ class BottomBarView(val client: Client) extends View {
   observe(client.errors.doOnNext {
     case Some(e) => debugErrorInfo.textContent = e.getMessage
     case _ =>
+  })
+
+  observe(client.connection.doOnNext {
+    case Some(e) => connection.textContent = s"${e.online} user${if (e.online == 1) "" else "s"} online"
+    case _ =>  connection.textContent = "offline"
   })
 }
