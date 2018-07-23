@@ -64,7 +64,6 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   // not implemented...?? because it is hard to make columns in a rich text editor
   // bar   N  |            to column N (default: 1)
 
-  // TODO make find not side effecting
   abstract class FindCommand extends MotionCommand with NeedsCharCommand with command.FindCommand {
 
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]

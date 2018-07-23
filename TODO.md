@@ -1,5 +1,6 @@
 ## TODO
 
+* why scrollbar not shown??
 * clean up interaction of info and command too nasty
 
 ## done
