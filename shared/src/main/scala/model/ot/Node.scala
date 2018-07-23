@@ -255,8 +255,9 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               if (wr.parent == lr.parent && wr.childs.overlap(lr.childs)) {
                 // if same level, and overlap, merge and move
                 val r = wr.childs.merge(lr.childs)
-                val ll = if (r == wr.childs) Seq.empty else Seq(reverseMove(w), l)
-                val ww = if (r == lr.childs) Seq.empty else Seq(reverseMove(l), w)
+                val mm = operation.Node.Move(range.Node(wr.parent, r), wa)
+                val ll = if (r == wr.childs) Seq.empty else Seq(reverseMove(w), mm)
+                val ww = if (r == lr.childs) Seq.empty else Seq(reverseMove(l), mm)
                 free(ww, ll)
               } else {
                 // winner moves first
