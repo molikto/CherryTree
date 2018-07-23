@@ -90,6 +90,9 @@ object Key {
   case class Grapheme(a: Unicode) extends V {
     override def toString: String = a.toString
   }
+  object Grapheme {
+    def apply(a: String): Grapheme = Grapheme(Unicode(a))
+  }
 
   def isUnicodeKey(s: String): Boolean = s.length == 1 ||
     GraphemeSplitter.nextBreak(s) == s.length
@@ -101,7 +104,10 @@ object Key {
 
   implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).codePoints.map(assciiKeyWithModifier)
 
-  implicit def singleToKey(s: V): KeySeq = Seq(Key(s))
+  implicit def singleToKey(s: V): KeySeq = s match {
+    case Grapheme(u) if u.codePoints.size == 1 => Seq(Key(s, shift = shifted.contains(u.codePoints.head)))
+    case _ => Seq(Key(s))
+  }
 
 
 }

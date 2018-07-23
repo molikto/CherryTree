@@ -95,7 +95,10 @@ class KeyboardCommandHandler extends Settings with CommandState
             waitingForCharCommand = (exact, ptoConfirm, pCounts)
             status.onNext(CommandStatus.WaitingForChar(pCounts, ptoConfirm))
           } else {
-            act(exact, c)
+            flush()
+            val res = exact.action(state, c, this, Some(ptoConfirm))
+            change(res)
+            val returnFalse = res == DocTransaction.empty && exact.emptyAsFalse
             if (exact == misc.exit) {
               commandCounts = ""
               commandsToConfirm = Seq.empty
@@ -105,6 +108,7 @@ class KeyboardCommandHandler extends Settings with CommandState
             } else {
               status.onNext(CommandStatus.LastPerformed(pCounts, ptoConfirm, None))
             }
+            if (returnFalse) return false
           }
         case None =>
           commandsToConfirm = availableCommands

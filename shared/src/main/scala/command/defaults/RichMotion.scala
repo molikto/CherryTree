@@ -140,7 +140,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override def description: String = "repeat previous find command"
     override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(";")
-    override def action(a: DocState, count: Int, commandState: CommandState): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
       lf._1.findGrapheme(a, lf._2, count, skipCurrent = true)
     }
@@ -153,7 +153,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override def description: String = "repeat previous find command's reverse"
     override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(",")
-    override def action(a: DocState, count: Int, commandState: CommandState): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
       lf._1.reverse.findGrapheme(a, lf._2, count, skipCurrent = true)
     }

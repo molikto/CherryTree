@@ -24,10 +24,10 @@ class CommandCategory(val name: String) extends Settings {
   }
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
-    override def defaultKeys: Seq[KeySeq] = delimitationCodePoints.get(deli.start) match {
-      case Some(a) => Seq(a.toChar.toString)
-      case None => Seq.empty
-    }
+    // currently these cannot be changed, you can change delimiters though
+    override def defaultKeys: Seq[KeySeq] = Seq.empty
+    override def hardcodeKeys: Seq[KeySeq] =
+      Seq(deli.start, deli.end).flatMap(delimitationCodePoints.get).distinct.map(a => a : KeySeq)
   }
 
   trait MotionCommand extends Command {

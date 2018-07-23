@@ -33,8 +33,7 @@ class RichChange extends CommandCategory("change text") {
         val point = v.range.start
         val in = rich.info(point)
         if (in.isStartOrEnd) {
-          val codepoint = char.a.codePoints.head
-          delimitationSettings.find(_._2 == codepoint) match {
+          delimitationSettings.find(d => (d._2 == char && in.isStart) || (d._3 == char & in.isEnd)) match {
             case Some(deli) =>
               if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
                 return DocTransaction.empty

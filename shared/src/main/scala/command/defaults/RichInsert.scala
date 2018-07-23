@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandState}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation}
@@ -69,22 +69,32 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-    override def description: String = s"insert a new ${deli.name}"
+    override def description: String = if (deli.isAtomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
+
+    override def emptyAsFalse: Boolean = true
+
     override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert
-      !rich.insertionInsideCoded(insert.pos)
+      SpecialChar.coded.contains(deli) ||  !rich.insertionInsideCoded(insert.pos)
     }
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
-      val res = if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end)) {
-        Seq.empty
+      def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
+      if (key.isDefined && key.get.size == 1) {
+        if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end) &&  delimitationCodePoints.get(deli.end).contains(key.get.head.a)) {
+          DocTransaction(Seq.empty, moveOneInsertMode())
+        } else if (delimitationCodePoints.get(deli.start).contains(key.get.head.a)) {
+          val k = operation.Rich.insert(insert.pos, deli.wrap())
+          DocTransaction(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k))), moveOneInsertMode())
+        } else {
+          DocTransaction.empty
+        }
       } else {
-        val k = operation.Rich.insert(insert.pos, deli.wrap())
-        Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+        DocTransaction.empty
       }
-      DocTransaction(res, Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1))))
     }
 
+    override protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
   }).toMap
 
   abstract class InsertMovementCommand extends Command {

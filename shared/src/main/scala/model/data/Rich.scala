@@ -1,8 +1,9 @@
 package model.data
 
 import boopickle._
+import command.Key.Grapheme
 import model.range.IntRange
-import model.{cursor}
+import model.cursor
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -24,9 +25,9 @@ case class Info(
   specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
   char: Int = 0 // only valid not Special
 ) {
-  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Int]): Boolean = {
+  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Grapheme]): Boolean = {
     if (ty == InfoType.Special && grapheme.size == 1) {
-      delimitationCodePoints.get(specialChar).contains(grapheme.codePoints.head)
+      delimitationCodePoints.get(specialChar).contains(Grapheme(grapheme))
     } else {
       extendedGrapheme == grapheme
     }
@@ -88,9 +89,10 @@ case class Rich(text: Seq[Text]) {
 
 
   def insertionInsideCoded(pos: Int): Boolean = {
-    if (pos == size) false
+    if (pos == 0 || pos == size) false
     else {
-      info(pos).text.isCoded
+      val i = info(pos)
+      i.text.isCoded && i.nodeStart != pos
     }
   }
 
@@ -100,7 +102,7 @@ case class Rich(text: Seq[Text]) {
   def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes((aaa - 1) max 0).atomicRange
   def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes((bbb + 1) min (size - 1)).atomicRange
 
-  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Int]): Option[IntRange] = {
+  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Grapheme]): Option[IntRange] = {
     var range = start
     while (range.until < size) {
       val info = infoSkipRightAttributes(range.until)
@@ -114,7 +116,7 @@ case class Rich(text: Seq[Text]) {
     None
   }
 
-  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Int]): Option[IntRange] = {
+  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Grapheme]): Option[IntRange] = {
     var range = start
     while (range.start > 0) {
       val info = infoSkipLeftAttributes(range.start - 1)

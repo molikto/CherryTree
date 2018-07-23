@@ -43,7 +43,6 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
       case _ =>
         if (!duringStateUpdate) {
           isFocusedOut = true
-          window.console.log(a)
           updateMode(None, viewUpdated = false)
         }
     }
@@ -52,7 +51,6 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
   event("focusin", (a: FocusEvent) => {
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
-      window.console.log(a)
       updateMode(client.state.mode, viewUpdated = false)
     }
   })

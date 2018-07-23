@@ -12,6 +12,7 @@ abstract class Command {
   def description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
+  def emptyAsFalse: Boolean = false
 
   def needsChar: Boolean = false
 
@@ -27,7 +28,7 @@ abstract class Command {
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandState): Boolean = available(a)
-  def action(a: DocState, count: Int, commandState: CommandState): DocTransaction = action(a, count)
+  def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = action(a, count)
   protected def available(a: DocState): Boolean
   protected def action(a: DocState, count: Int): DocTransaction
   def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = throw new NotImplementedError()

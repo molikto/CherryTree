@@ -110,7 +110,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         img(verticalAlign := "bottom", src := b.toString)
       case Text.LaTeX(c) =>
         val a = span().render
-        window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
+        try {
+          window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
+        } catch {
+          case a: Throwable => a.printStackTrace()
+        }
         span(contenteditable := "false", `class` := "ct-latex",
           span("\u200B"), // don't fuck with my cursor!!!
           a,
@@ -164,9 +168,15 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
   private def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
-    insertEmptyTextNode = document.createTextNode("")
-    val before = if (i == node.childNodes.length) null else node.childNodes(i)
-    node.insertBefore(insertEmptyTextNode, before)
+    if (debugRenderEmptyInsertionPointAsBox) {
+      insertEmptyTextNode = document.createTextNode("DEBUG INSERTION POINT")
+      val before = if (i == node.childNodes.length) null else node.childNodes(i)
+      node.insertBefore(insertEmptyTextNode, before)
+    } else {
+      insertEmptyTextNode = document.createTextNode("")
+      val before = if (i == node.childNodes.length) null else node.childNodes(i)
+      node.insertBefore(insertEmptyTextNode, before)
+    }
   }
 
   private def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
@@ -478,7 +488,6 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       range.setStart(start._1, start._2)
       range.setEnd(start._1, start._2)
     }
-    window.console.log(range)
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)

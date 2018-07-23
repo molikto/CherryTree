@@ -267,12 +267,6 @@ class Client(
   }
 
 
-  protected def act(c: command.Command, count: Int): Unit = {
-    flush()
-    change(c.action(state, count, this))
-  }
-
-
   /**
     * view calls this method to insert text at current insertion point,
     */

@@ -1,6 +1,7 @@
 ## TODO
 
-* bug: left/right in insert mode is not working
+* insert inside two ```` not shown
+* change to a better networking for chagne, server pushed content, or websocket
 * server status
 * why scrollbar not shown??
 * clean up interaction of info and command too nasty
