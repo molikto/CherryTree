@@ -22,7 +22,7 @@ class HttpRouter(val service: Api) extends Directives {
 
   val apiRouter = new AutowireServer(service)
 
-  def apply()(implicit s: ActorSystem, m: Materializer, e: ExecutionContext): Route = {
+  val route = {
 
     pathSingleSlash {
       get {

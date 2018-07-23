@@ -42,8 +42,7 @@ class WebServer() {
     val interface = config.getString("http.interface")
     val port = config.getInt("http.port")
 
-    import system.dispatcher
-    Http().bindAndHandle(router.apply(), interface, port)
+    Http().bindAndHandle(router.route, interface, port)
     println("Server current dir: " + new File(".").getAbsolutePath)
     println(s"Server online at http://$interface:$port")
   }
