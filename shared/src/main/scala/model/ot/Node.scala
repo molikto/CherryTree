@@ -202,34 +202,29 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             reverse(deleteMove(d, w, conflict.Node.LoserDeletesWinner()))
           case l@operation.Node.Move(lr, la) =>
 
+            // winner contains loser range, but not touchs loser insrtion point, also insertion point is different
             def freeReverseLFirst(w: operation.Node.Move, l: operation.Node.Move): RebaseResult = {
               (w, l) match {
                 case (operation.Node.Move(wr, wa), operation.Node.Move(lr, la)) =>
                   if (wr.size == 0 || lr.size == 0) {
                     free(w, l)
                   } else {
+                    val wstart = if (wr.start.last == 0) {
+                      lr.transformNodeAfterMoved(la, wr.start.dropRight(1)) :+ 0
+                    } else {
+                      moveBy(lr.transformNodeAfterMoved(la, moveBy(wr.start, -1)), 1)
+                    }
+                    val wuntil = lr.transformNodeAfterMoved(la, wr.until)
                     val s2 = ignoreNullMoves(
                       range.Node(wr.transformNodeAfterMoved(wa, lr.start), moveBy(wr.transformNodeAfterMoved(wa, moveBy(lr.until, -1)), 1)),
                       wr.transformInsertionPointAfterMoved(wa, la))
                     free(
-                      Seq(reverseMove(l), w) ++ s2,
+                      ignoreNullMoves(
+                        range.Node(wstart, wuntil),
+                        lr.transformInsertionPointAfterMoved(la, wa)),
                       s2
                     )
                   }
-              }
-            }
-            def free0(): RebaseResult = {
-              if (wr.size == 0 || lr.size == 0) {
-                free(w, l)
-              } else {
-                free(
-                  ignoreNullMoves(
-                    range.Node(lr.transformNodeAfterMoved(la, wr.start), moveBy(lr.transformNodeAfterMoved(la, moveBy(wr.until, -1)), 1)),
-                    lr.transformInsertionPointAfterMoved(la, wa)),
-                  ignoreNullMoves(
-                    range.Node(wr.transformNodeAfterMoved(wa, lr.start), moveBy(wr.transformNodeAfterMoved(wa, moveBy(lr.until, -1)), 1)),
-                    wr.transformInsertionPointAfterMoved(wa, la))
-                )
               }
             }
             def oneContains(w: operation.Node.Move, l: operation.Node.Move): RebaseResult = {
@@ -251,13 +246,49 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
                   )
               }
             }
+            def free0(): RebaseResult = {
+              if (wr.size == 0 || lr.size == 0) {
+                free(w, l)
+              } else {
+                free(
+                  ignoreNullMoves(
+                    range.Node(lr.transformNodeAfterMoved(la, wr.start), moveBy(lr.transformNodeAfterMoved(la, moveBy(wr.until, -1)), 1)),
+                    lr.transformInsertionPointAfterMoved(la, wa)),
+                  ignoreNullMoves(
+                    range.Node(wr.transformNodeAfterMoved(wa, lr.start), moveBy(wr.transformNodeAfterMoved(wa, moveBy(lr.until, -1)), 1)),
+                    wr.transformInsertionPointAfterMoved(wa, la))
+                )
+              }
+            }
             if (wa == la) { // no range contains any insertion point
               if (wr.parent == lr.parent && wr.childs.overlap(lr.childs)) {
                 // if same level, and overlap, merge and move
                 val r = wr.childs.merge(lr.childs)
+                val rr = range.Node(wr.parent, r)
                 val mm = operation.Node.Move(range.Node(wr.parent, r), wa)
-                val ll = if (r == wr.childs) Seq.empty else Seq(reverseMove(w), mm)
-                val ww = if (r == lr.childs) Seq.empty else Seq(reverseMove(l), mm)
+                def restMove(wr: range.Node): Seq[operation.Node.Move] = {
+                  val wam = wr.transformNodeAfterMoved(wa, wa)
+                  if (wr.childs == r) {
+                    Seq.empty
+                  } else if (r.start == wr.childs.start) {
+                    ignoreNullMoves(range.Node(wr.transformNodeAfterMoved(wa, wr.until), r.until - wr.childs.until), wam)
+                  } else if (r.until == wr.childs.until) {
+                    ignoreNullMoves(range.Node(wr.transformNodeAfterMoved(wa, rr.start), r.size - wr.size), moveBy(wam, -wr.size))
+                  } else {
+                    val m1Size = r.until - wr.childs.until
+                    val m1i = ignoreNullMoves(range.Node(wr.transformNodeAfterMoved(wa, wr.until), m1Size), wam)
+                    def transformByM1(a: cursor.Node): cursor.Node = if (m1i.isEmpty) a else {
+                      val m1 = m1i.head
+                      m1.r.transformNodeAfterMoved(m1.to, a)
+                    }
+                    val start0 = wr.transformNodeAfterMoved(wa, rr.start)
+                    val start1 = transformByM1(start0)
+                    m1i ++
+                      ignoreNullMoves(range.Node(start1, r.size - wr.size - m1Size), moveBy(transformByM1(wam), -wr.size - m1Size))
+                  }
+                }
+                val ll = restMove(wr)
+                val ww = restMove(lr)
                 free(ww, ll)
               } else {
                 // winner moves first
@@ -286,7 +317,6 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
                 }
               } else if ((lr.containsInsertionPoint(wa) && wr.containsInsertionPoint(la)) ||  // ill case, only winner performed
                 lr.overlap(wr)) { // don't want to deal with this anymore
-                println(s"overlap case $w $l")
                 Rebased(Set(conflict.Node.Asymmetry()), (Seq(reverseMove(l), w), Seq.empty[operation.Node]))
               } else {
                 free0() // try our luck

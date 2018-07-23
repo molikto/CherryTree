@@ -13,7 +13,6 @@
 ## now
 
 
-* rebase move
 
 ## major basic features
 
@@ -130,3 +129,4 @@
 * ~~single edit commands~~
 * ~~keyboard editor for rich~~
 * ~~fix layout - left resizeable panel, right top: DocumentView, right bottom: BottomBarView~~
+* ~~rebase move~~

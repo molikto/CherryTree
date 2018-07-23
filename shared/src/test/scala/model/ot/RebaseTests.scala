@@ -250,14 +250,15 @@ object RebaseTests extends TestSuite {
       val n = node
       val random = new Random()
       for (_ <- 0 until 30000) {
-        val a = operation.Node.randomTransaction(1, n, random)
-        val b = operation.Node.randomTransaction(1, n, random)
-
-        if (!a.head.isInstanceOf[operation.Node.Move] || !b.head.isInstanceOf[operation.Node.Move])  {
-        } else {
-          val debug = new ArrayBuffer[String]()
-          debug.append(s"Change a: $a")
-          debug.append(s"Change b: $b")
+        val a = operation.Node.randomTransaction(12, n, random)
+        val b = operation.Node.randomTransaction(11, n, random)
+//        if (!a.head.isInstanceOf[operation.Node.Move] || !b.head.isInstanceOf[operation.Node.Move])  {
+//        } else {
+//        }
+        val debug = new ArrayBuffer[String]()
+        debug.append(s"Change a: $a")
+        debug.append(s"Change b: $b")
+        try {
           ot.Node.rebase(a, b) match {
             case Rebased(_, (ap, bp)) =>
               debug.append(s"Change a': $ap")
@@ -274,6 +275,10 @@ object RebaseTests extends TestSuite {
               }
               assert(aaa == bbb)
           }
+        } catch {
+          case t: Throwable =>
+            debug.foreach(println)
+            throw t
         }
       }
     }
@@ -282,27 +287,33 @@ object RebaseTests extends TestSuite {
       var n = node
       val random = new Random()
       for (_ <- 0 until 3000) {
-        val a = operation.Node.randomTransaction(1, n, random)
-        val b = operation.Node.randomTransaction(1, n, random)
+        val a = operation.Node.randomTransaction(4, n, random)
+        val b = operation.Node.randomTransaction(5, n, random)
         val debug = new ArrayBuffer[String]()
         debug.append(s"Change a: $a")
         debug.append(s"Change b: $b")
-        ot.Node.rebase(a, b) match {
-          case Rebased(_, (ap, bp)) =>
-            debug.append(s"Change a': $ap")
-            debug.append(s"Change b': $bp")
-            val aaa = operation.Node.apply(bp, operation.Node.apply(a, n))
-            val bbb = operation.Node.apply(ap, operation.Node.apply(b, n))
-            if (aaa == bbb) {
-              n = aaa
-            } else {
-              var a = 1
-              a =  2
-              debug.append(s"App 0: $aaa")
-              debug.append(s"App 1: $bbb")
-              debug.foreach(println)
-            }
-            assert(aaa == bbb)
+        try {
+          ot.Node.rebase(a, b) match {
+            case Rebased(_, (ap, bp)) =>
+              debug.append(s"Change a': $ap")
+              debug.append(s"Change b': $bp")
+              val aaa = operation.Node.apply(bp, operation.Node.apply(a, n))
+              val bbb = operation.Node.apply(ap, operation.Node.apply(b, n))
+              if (aaa == bbb) {
+                n = aaa
+              } else {
+                var a = 1
+                a =  2
+                debug.append(s"App 0: $aaa")
+                debug.append(s"App 1: $bbb")
+                debug.foreach(println)
+              }
+              assert(aaa == bbb)
+          }
+        } catch {
+          case t: Throwable =>
+            debug.foreach(println)
+            throw t
         }
       }
     }
