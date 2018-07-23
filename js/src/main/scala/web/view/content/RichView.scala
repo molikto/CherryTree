@@ -4,7 +4,7 @@ import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
-import org.scalajs.dom.raw.{CompositionEvent, Event, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import view.EditorInterface
@@ -38,10 +38,8 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   dom.style = "outline: 0px solid transparent;"
 
 
-  private var insertEmptyTextNode: raw.Text = null
-  private var insertNonEmptyTextNode: raw.Text = null
-  private var insertNonEmptyTextNodeStartIndex: Int = 0
-  private var insertNonEmptyTextLength: Int = 0
+  private var insertEmptyTextNode: Element= null
+  private var insertNonEmptyTextNode: (raw.Text, Int, Int) = null
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
   private var previousMode = if (isEmpty) -2 else -1
@@ -168,15 +166,21 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
   private def createTempEmptyInsertTextNode(node: Node, i: Int): Unit = {
-    if (debugRenderEmptyInsertionPointAsBox) {
-      insertEmptyTextNode = document.createTextNode("DEBUG INSERTION POINT")
-      val before = if (i == node.childNodes.length) null else node.childNodes(i)
-      node.insertBefore(insertEmptyTextNode, before)
+    insertEmptyTextNode = if (debugRenderEmptyInsertionPointAsBox) {
+      tag("kbd")(
+        span("_", contenteditable := false), // don't fuck with my cursor!!!
+        "",
+        span("_", contenteditable := false)
+      ).render
     } else {
-      insertEmptyTextNode = document.createTextNode("")
-      val before = if (i == node.childNodes.length) null else node.childNodes(i)
-      node.insertBefore(insertEmptyTextNode, before)
+      span(
+        span("\u200B", contenteditable := false), // don't fuck with my cursor!!!
+        "",
+        span("\u200b", contenteditable := false)
+      ).render
     }
+    val before = if (i == node.childNodes.length) null else node.childNodes(i)
+    node.insertBefore(insertEmptyTextNode, before)
   }
 
   private def updateTempEmptyTextNodeIn(node: Node, i: Int): (Node, Int) = {
@@ -190,14 +194,13 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     } else {
       createTempEmptyInsertTextNode(node, i)
     }
-    (insertEmptyTextNode, 0)
+    (insertEmptyTextNode.childNodes(1), 0)
   }
 
   private def updateExistingTextNodeIn(node: Node, i: Int): (Node, Int) = {
     removeInsertEmptyTextNode()
-    insertNonEmptyTextNode = node.asInstanceOf[raw.Text]
-    insertNonEmptyTextNodeStartIndex = i
-    insertNonEmptyTextLength = insertNonEmptyTextNode.textContent.length
+    val n = node.asInstanceOf[raw.Text]
+    insertNonEmptyTextNode = (n, i, n.textContent.length)
     (node, i)
   }
 
@@ -377,7 +380,6 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         previous = center.previousSibling
       }
       while (next != null && next.isInstanceOf[raw.Text]) {
-
         next.parentNode.removeChild(next)
         next = center.nextSibling
       }
@@ -396,23 +398,28 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   private def flushInsertionMode(): Unit = {
     if (insertEmptyTextNode != null) {
-      val str = mergeTextsFix(insertEmptyTextNode)
-      // this is really ugly, but somehow Chrome create a new TextNode??
+      val str = mergeTextsFix(insertEmptyTextNode.childNodes(1).asInstanceOf[raw.Text])
       if (str.length > 0) {
-        insertEmptyTextNode.textContent = str
-        insertNonEmptyTextNode = insertEmptyTextNode
-        insertNonEmptyTextLength = str.length
-        insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
+        insertNonEmptyTextNode = (document.createTextNode(str), str.length, str.length)
+        insertEmptyTextNode.parentNode.replaceChild(insertNonEmptyTextNode._1, insertEmptyTextNode)
         insertEmptyTextNode = null
         controller.onInsertRichTextAndViewUpdated(Unicode(str))
       }
+//      val str = mergeTextsFix(insertEmptyTextNode)
+//      // this is really ugly, but somehow Chrome create a new TextNode??
+//      if (str.length > 0) {
+//        insertEmptyTextNode.textContent = str
+//        insertNonEmptyTextNode = insertEmptyTextNode
+//        insertNonEmptyTextLength = str.length
+//        insertNonEmptyTextNodeStartIndex = insertNonEmptyTextLength
+//        insertEmptyTextNode = null
+//        controller.onInsertRichTextAndViewUpdated(Unicode(str))
+//      }
     } else if (insertNonEmptyTextNode != null) {
-      val newContent = mergeTextsFix(insertNonEmptyTextNode)
-      val insertion = newContent.substring(
-        insertNonEmptyTextNodeStartIndex, insertNonEmptyTextNodeStartIndex + newContent.length - insertNonEmptyTextLength)
+      val newContent = mergeTextsFix(insertNonEmptyTextNode._1)
+      val insertion = newContent.substring(insertNonEmptyTextNode._2, insertNonEmptyTextNode._2 + newContent.length - insertNonEmptyTextNode._3)
       if (insertion.length > 0) {
-        insertNonEmptyTextLength = newContent.length
-        insertNonEmptyTextNodeStartIndex += insertion.length
+        insertNonEmptyTextNode = (insertNonEmptyTextNode._1, insertNonEmptyTextNode._2 + insertion.length, newContent.length)
         controller.onInsertRichTextAndViewUpdated(Unicode(insertion))
       }
     }
@@ -474,23 +481,17 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       }))
     }
     val range = document.createRange()
-    if (isEmpty) {
-      if (insertEmptyTextNode != null) {
-        assert(dom.childNodes.length == 1)
-      } else {
-        insertEmptyTextNode = document.createTextNode("")
-        dom.appendChild(insertEmptyTextNode)
-        range.setStart(insertEmptyTextNode, 0)
-        range.setEnd(insertEmptyTextNode, 0)
-      }
+    val start = if (isEmpty) {
+      updateTempEmptyTextNodeIn(dom, 0)
     }  else {
-      val start = updateNonEmptyInsertCursorAt(pos)
-      range.setStart(start._1, start._2)
-      range.setEnd(start._1, start._2)
+      updateNonEmptyInsertCursorAt(pos)
     }
+    range.setStart(start._1, start._2)
+    range.setEnd(start._1, start._2)
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)
+    mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
 

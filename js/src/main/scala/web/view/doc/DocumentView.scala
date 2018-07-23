@@ -41,17 +41,21 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     a.relatedTarget match {
       case h: HTMLElement if dom.contains(h) =>
       case _ =>
-        if (!duringStateUpdate) {
-          isFocusedOut = true
-          updateMode(None, viewUpdated = false)
+        if (!model.debugDisableFocusHandling) {
+          if (!duringStateUpdate) {
+            isFocusedOut = true
+            updateMode(None, viewUpdated = false)
+          }
         }
     }
   })
 
   event("focusin", (a: FocusEvent) => {
-    if (!duringStateUpdate && isFocusedOut) {
-      isFocusedOut = false
-      updateMode(client.state.mode, viewUpdated = false)
+    if (!model.debugDisableFocusHandling) {
+      if (!duringStateUpdate && isFocusedOut) {
+        isFocusedOut = false
+        updateMode(client.state.mode, viewUpdated = false)
+      }
     }
   })
 
