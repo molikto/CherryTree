@@ -23,7 +23,7 @@ kbd {
 
 /* Track */
 .ct-scroll::-webkit-scrollbar-track {
-    background: #282c34;
+    background: #00000000;
 }
 
 /* Handle */
@@ -43,6 +43,7 @@ kbd {
 }
 
 .ct-content {
+    margin-bottom: 0.5rem;
 }
 
 ::selection {
