@@ -23,7 +23,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
   new EditCommand with OverrideCommand {
-    override def description: String = "delete text before cursor"
+    override val description: String = "delete text before cursor"
     // TODO these keys should be seperate delete words, etc...
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Option[operation.Rich] = {
@@ -36,7 +36,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
   new EditCommand with OverrideCommand {
-    override def description: String = "delete text after cursor"
+    override val description: String = "delete text after cursor"
     // TODO these keys should be seperate delete words, etc...
     override val hardcodeKeys: Seq[KeySeq] = (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Option[operation.Rich] = {
@@ -50,7 +50,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
 
   new OverrideCommand {
-    override def description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
+    override val description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
     override def available(a: DocState): Boolean = a.isRichInserting
@@ -69,7 +69,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-    override def description: String = if (deli.isAtomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
+    override val description: String = if (deli.isAtomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
 
     override def emptyAsFalse: Boolean = true
 
@@ -113,20 +113,20 @@ class RichInsert extends CommandCategory("when in insert mode") {
   //i_<End>       <End>             cursor after last character in the line
   //i_<Home>      <Home>            cursor to first character in the line
   new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
-    override def description: String = "move cursor right"
+    override val description: String = "move cursor right"
     override def defaultKeys: Seq[KeySeq] = Seq(Right)
     override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
   }
 
   new InsertMovementCommand {
-    override def description: String = "move cursor left"
+    override val description: String = "move cursor left"
     override def defaultKeys: Seq[KeySeq] = Seq(Left)
     override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
   }
 
   // disabled keys!!!!
   new InsertMovementCommand with OverrideCommand {
-    override def description: String = ""
+    override val description: String = ""
     override def hardcodeKeys: Seq[KeySeq] = Seq[KeySeq](Down: KeySeq, Up)
     override def move(rich: Rich, i: Int): Int = i
   }

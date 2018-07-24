@@ -13,7 +13,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
 
   // DIFFERENCE: currently not repeatable
   new Command {
-    override def description: String = "open a line bellow"
+    override val description: String = "open a line bellow"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -32,7 +32,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
   }
 
   new Command {
-    override def description: String = "open a line above"
+    override val description: String = "open a line above"
     override val defaultKeys: Seq[KeySeq] = Seq("O")
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -68,22 +68,22 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     }
   }
   new EnterInsertCommand {
-    override def description: String = "append text"
+    override val description: String = "append text"
     override val defaultKeys: Seq[KeySeq] = Seq("a")
     override def move(content: Rich, a: IntRange): Int = a.until
   }
   new EnterInsertCommand {
-    override def description: String = "append at text end"
+    override val description: String = "append at text end"
     override val defaultKeys: Seq[KeySeq] = Seq("A")
     override def move(content: Rich,a: IntRange): Int = content.size
   }
   new EnterInsertCommand {
-    override def description: String = "insert text before cursor"
+    override val description: String = "insert text before cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("i")
     override def move(content: Rich,a: IntRange): Int = a.start
   }
   new EnterInsertCommand {
-    override def description: String = "insert text at content beginning"
+    override val description: String = "insert text at content beginning"
     override val defaultKeys: Seq[KeySeq] = Seq("I", "gI") // command merged
     override def move(content: Rich,a: IntRange): Int = 0
   }

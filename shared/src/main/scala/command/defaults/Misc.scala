@@ -10,7 +10,7 @@ class Misc extends CommandCategory("misc") {
 
 
   val exit: Command = new Command {
-    override def description: String = "exit current mode"
+    override val description: String = "exit current mode"
     override val defaultKeys: Seq[KeySeq] = Seq(Escape, Ctrl + "c", Ctrl + "[")
     override def available(a: DocState): Boolean = true
 

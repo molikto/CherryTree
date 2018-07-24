@@ -45,7 +45,7 @@ class NodeMotion extends CommandCategory("move among notes") {
     }
   }
   val up: Command = new NodeMotionCommand {
-    override def description: String = "move up"
+    override val description: String = "move up"
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-", Up)
@@ -53,32 +53,32 @@ class NodeMotion extends CommandCategory("move among notes") {
 
   }
   val down: Command = new NodeMotionCommand {
-    override def description: String = "move down"
+    override val description: String = "move down"
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
   }
   val parent: Command = new NodeMotionCommand {
-    override def description: String = "move to parent"
+    override val description: String = "move to parent"
     override val defaultKeys: Seq[KeySeq] = Seq("gp")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().parent(a)
   }
   val nextSibling: Command = new NodeMotionCommand {
-    override def description: String = "move to next sibling"
+    override val description: String = "move to next sibling"
     override val defaultKeys: Seq[KeySeq] = Seq("}")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().next(a)
   }
   val previousSibling: Command = new NodeMotionCommand {
-    override def description: String = "move to previous sibling"
+    override val description: String = "move to previous sibling"
     override val defaultKeys: Seq[KeySeq] = Seq("{")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().previous(a)
   }
   val visibleBeginning: Command = new NodeMotionCommand {
-    override def description: String = "move to top of viewport"
+    override val description: String = "move to top of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("gg")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
   }
   val visibleEnd: Command = new NodeMotionCommand {
-    override def description: String = "move to bottom of viewport"
+    override val description: String = "move to bottom of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("G")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
   }

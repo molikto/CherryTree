@@ -53,7 +53,7 @@ class RichDelete extends CommandCategory("delete text") {
 
 
   new Command {
-    override def description: String = "delete selected text"
+    override val description: String = "delete selected text"
     override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
     override def available(a: DocState): Boolean = a.isRichVisual
     override def action(a: DocState, count: Int): DocTransaction = a.mode match {
@@ -65,7 +65,7 @@ class RichDelete extends CommandCategory("delete text") {
 
   new Command {
     override def repeatable: Boolean = true
-    override def description: String = "delete under cursor, and more after if has N"
+    override val description: String = "delete under cursor, and more after if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -79,7 +79,7 @@ class RichDelete extends CommandCategory("delete text") {
 
   new Command {
     override def repeatable: Boolean = true
-    override def description: String = "delete before cursor, and more if has N"
+    override val description: String = "delete before cursor, and more if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("X")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -102,7 +102,7 @@ class RichDelete extends CommandCategory("delete text") {
   //      }
 
   new Command {
-    override def description: String = "delete text cursor until text end"
+    override val description: String = "delete text cursor until text end"
     override def defaultKeys: Seq[KeySeq] = Seq("D")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {

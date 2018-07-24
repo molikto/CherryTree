@@ -185,7 +185,7 @@ class KeyboardCommandHandler extends Settings with CommandState
 
   new SideEffectingCommand {
     override def category: String = misc.name
-    override def description: String = "visit link url"
+    override val description: String = "visit link url"
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {

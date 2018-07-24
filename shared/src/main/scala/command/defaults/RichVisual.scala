@@ -12,7 +12,7 @@ class RichVisual extends CommandCategory("text visual mode") {
 
 
   new Command {
-    override def description: String = "enter text visual mode"
+    override val description: String = "enter text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -32,7 +32,7 @@ class RichVisual extends CommandCategory("text visual mode") {
   }
 
   new Command {
-    override def description: String = "swap movable and fixed cursor"
+    override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isRichVisual
     override def action(a: DocState, count: Int): DocTransaction = DocTransaction.mode(a.copyContentMode(a.asRichVisual._3.swap))
@@ -43,7 +43,7 @@ class RichVisual extends CommandCategory("text visual mode") {
   }
 
   SpecialChar.formatLike.map(deli => deli -> new WrapCommand(deli) {
-    override def description: String = s"wrap selection in ${deli.name}"
+    override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
@@ -66,7 +66,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     * also we currently only wraps plain text
     */
   SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
-    override def description: String = s"wrap selection as ${deli.name}"
+    override val description: String = s"wrap selection as ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
@@ -93,7 +93,7 @@ class RichVisual extends CommandCategory("text visual mode") {
   }).toMap
 
   SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
-    override def description: String = s"wrap selection in ${deli.name}"
+    override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged

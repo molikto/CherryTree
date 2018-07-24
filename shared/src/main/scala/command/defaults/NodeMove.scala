@@ -36,7 +36,7 @@ class NodeMove extends CommandCategory("move nodes around") {
     }
   }
   new IndentCommand {
-    override def description: String = "unindent the node"
+    override val description: String = "unindent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.parent(node.start).flatMap(p => {
@@ -45,19 +45,19 @@ class NodeMove extends CommandCategory("move nodes around") {
 
   }
   new IndentCommand {
-    override def description: String = "indent the node"
+    override val description: String = "indent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.previous(node.start).map(a => a :+ mover.size(a))
   }
   new MoveCommand {
-    override def description: String = "swap with next sibling"
+    override val description: String = "swap with next sibling"
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "j")
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.next(node).map(k => mover.nextOver(k))
   }
   new MoveCommand {
-    override def description: String = "swap with previous sibling"
+    override val description: String = "swap with previous sibling"
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k")
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.previous(node)

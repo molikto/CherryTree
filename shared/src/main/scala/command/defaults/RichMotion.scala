@@ -10,8 +10,6 @@ import model.data.Rich
 class RichMotion extends CommandCategory("move cursor inside text") {
 
 
-  // DIFFERENCE content motion is only available on paragraphs, editing of code is handled by third party editor!!!
-
   abstract class RichMotionCommand extends MotionCommand {
 
     override def repeatable: Boolean = true
@@ -27,32 +25,33 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
 
   new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
-    override def description: String = "move left"
+    override val description: String = "move left"
     override val defaultKeys = Seq("h", Backspace, Left)
     override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
   }
 
   new RichMotionCommand() {
-    override def description: String = "move right"
+    override val description: String = "move right"
     override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
     override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
   }
 
   new RichMotionCommand() {
     override def repeatable: Boolean = false
-    override def description: String = "move to beginning"
+    override val description: String = "move to beginning"
     override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
     override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
   }
 
   new RichMotionCommand {
     override def repeatable: Boolean = false
-    override def description: String = "move to end"
+    override val description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
     override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
   }
 
   // screen related is not implemented
+  // LATER
   //g0       g0           to first character in screen line (differs from "0"
   //                           when lines wrap)
   //g^       g^           to first non-blank character in screen line (differs
@@ -103,20 +102,20 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   }
 
   val findNextChar: FindCommand = new FindCommand {
-    override def description: String = "find char after cursor"
+    override val description: String = "find char after cursor"
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
 
   }
   val findPreviousChar: FindCommand = new FindCommand {
-    override def description: String = "find char before cursor"
+    override val description: String = "find char before cursor"
     override def reverse: FindCommand = findNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("F")
     def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
   }
   val toNextChar: FindCommand = new FindCommand {
-    override def description: String = "find char after cursor, move cursor before it"
+    override val description: String = "find char after cursor, move cursor before it"
     override def reverse: FindCommand = toPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("t")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
@@ -124,7 +123,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
   }
   val toPreviousChar: FindCommand = new FindCommand {
-    override def description: String = "find char after cursor, move cursor after it"
+    override val description: String = "find char after cursor, move cursor after it"
     override def reverse: FindCommand = toNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("T")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
@@ -134,10 +133,9 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
 
 
-  // LATER they are currently here...
   new MotionCommand {
     override def repeatable: Boolean = true
-    override def description: String = "repeat previous find command"
+    override val description: String = "repeat previous find command"
     override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(";")
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
@@ -150,7 +148,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
   new MotionCommand {
     override def repeatable: Boolean = true
-    override def description: String = "repeat previous find command's reverse"
+    override val description: String = "repeat previous find command's reverse"
     override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(",")
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
@@ -160,25 +158,51 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
   }
 
-  /**
-    * TODO
-    * w     N  w            N words forward
-    * W     N  W            N blank-separated WORDs forward
-    * e     N  e            forward to the end of the Nth word
-    * E     N  E            forward to the end of the Nth blank-separated WORD
-    * b     N  b            N words backward
-    * B     N  B            N blank-separated WORDs backward
-    * ge    N  ge           backward to the end of the Nth word
-    * gE    N  gE           backward to the end of the Nth blank-separated WORD
-    */
-  //        val wordBeginning: Command =
-  //        val wordEnd: Command =
-  //        val wordNext: Command =
-  //        val WordBeginning: Command =
-  //        val WordEnd: Command =
-  //        val WordNext: Command =
+  new RichMotionCommand {
+    override val description: String = "forward by word"
+    override val defaultKeys: Seq[KeySeq] = Seq("w")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWord(a)
+  }
+  new RichMotionCommand {
+    override val description: String = "forward by WORD"
+    override val defaultKeys: Seq[KeySeq] = Seq("W")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWORD(a)
+  }
+  new RichMotionCommand {
+    override val description: String = "backward by word"
+    override val defaultKeys: Seq[KeySeq] = Seq("b")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWord(a)
+  }
 
+  new RichMotionCommand {
+    override val description: String = "backward by WORD"
+    override val defaultKeys: Seq[KeySeq] = Seq("B")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWORD(a)
+  }
 
+  new RichMotionCommand {
+    override val description: String = "forward to the end of next word"
+    override val defaultKeys: Seq[KeySeq] = Seq("e")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWordEnd(a)
+  }
+
+  new RichMotionCommand {
+    override val description: String = "forward to the end of next WORD"
+    override val defaultKeys: Seq[KeySeq] = Seq("E")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWORDEnd(a)
+  }
+
+  new RichMotionCommand {
+    override val description: String = "backward to the end of next word"
+    override val defaultKeys: Seq[KeySeq] = Seq("ge")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWordEnd(a)
+  }
+
+  new RichMotionCommand {
+    override val description: String = "backward to the end of next WORD"
+    override val defaultKeys: Seq[KeySeq] = Seq("gE")
+    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWORDEnd(a)
+  }
 
   // LATER
   //        )     N  )            N sentences forward

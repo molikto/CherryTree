@@ -28,7 +28,7 @@ class NodeDelete extends CommandCategory("deleting nodes") {
 
   new Command {
     override def repeatable: Boolean = true
-    override def description: String = "delete current node, and more sibling nodes under if has N"
+    override val description: String = "delete current node, and more sibling nodes under if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, count: Int): DocTransaction = {
@@ -39,7 +39,7 @@ class NodeDelete extends CommandCategory("deleting nodes") {
   }
 
   new Command {
-    override def description: String = "delete selected nodes"
+    override val description: String = "delete selected nodes"
     override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
     override def available(a: DocState): Boolean = a.isNodeVisual
     override def action(a: DocState, count: Int): DocTransaction = a.mode match {

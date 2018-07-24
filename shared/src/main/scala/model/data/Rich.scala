@@ -84,6 +84,38 @@ case class Info(
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+  def moveRightWord(a: IntRange): IntRange = {
+
+  }
+
+  def moveRightWORD(a: IntRange): IntRange = {
+
+  }
+
+  def moveRightWordEnd(a: IntRange): IntRange = {
+
+  }
+
+  def moveRightWORDEnd(a: IntRange): IntRange = {
+
+  }
+
+  def moveLeftWord(a: IntRange): IntRange = {
+
+  }
+
+  def moveLeftWORD(a: IntRange): IntRange = {
+
+  }
+
+  def moveLeftWordEnd(a: IntRange): IntRange = {
+
+  }
+
+  def moveLeftWORDEnd(a: IntRange): IntRange = {
+
+  }
+
 
   def subPlain(p: IntRange): Unicode = serialize().slice(p)
 

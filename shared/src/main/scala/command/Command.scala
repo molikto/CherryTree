@@ -9,7 +9,7 @@ abstract class Command {
   def shownInCommandList: Boolean = true
   def repeatable: Boolean = false
   def category: String
-  def description: String
+  val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
   def emptyAsFalse: Boolean = false
