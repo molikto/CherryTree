@@ -84,36 +84,47 @@ case class Info(
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+  /**
+    * a word is a:
+    * continuous sequence of letter, digits or underscore
+    * a continuous sequence of displayable control characters
+    * a continuous sequence of other non-blank characters
+    * a atomic LaTeX or image or
+    *
+    * a WORD is:
+    * a continuous sequence of word
+    */
   def moveRightWord(a: IntRange): IntRange = {
-
+    // determine where we are now: inside a latter word, control word, or other word, or atomic, or space
+    ???
   }
 
   def moveRightWORD(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveRightWordEnd(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveRightWORDEnd(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveLeftWord(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveLeftWORD(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveLeftWordEnd(a: IntRange): IntRange = {
-
+    ???
   }
 
   def moveLeftWORDEnd(a: IntRange): IntRange = {
-
+    ???
   }
 
 

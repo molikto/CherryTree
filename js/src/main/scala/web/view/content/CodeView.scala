@@ -7,13 +7,13 @@ import web.view.doc.DocumentView
 
 class CodeView(documentView: DocumentView, controller: EditorInterface, var code: Unicode, var lang: String) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
-  dom = pre(code.toString).render
+  dom = pre(code.str).render
 
 
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
     code = c.unicode
     lang = c.lang
-    dom = pre(code.toString).render
+    dom = pre(code.str).render
   }
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean): Unit = {

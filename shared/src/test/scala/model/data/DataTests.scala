@@ -1,6 +1,6 @@
 package model.data
 
-import api.{ApiError, ClientInit, ErrorT}
+import api.{ApiError, ClientInit, ErrorT, ServerStatus}
 import model._
 import model.range.IntRange
 import utest._
@@ -61,6 +61,33 @@ object DataTests extends TestSuite {
     }
 
     'unicode  - {
+
+
+      def callSize(a: Unicode): Unicode= {
+        val b = a.size
+        a
+      }
+      'sliceSize - {
+        assert(Unicode("123456").slice(IntRange(1)).size == Unicode("2").size)
+      }
+      'replaceSize - {
+        assert(Unicode("123456").replace(IntRange(1), Unicode("a")).size == Unicode("1a3456").size)
+      }
+      'surroundSize - {
+        assert(Unicode("123456").surround(IntRange(1), Unicode("a"), Unicode("b")).size == Unicode("1a2b3456").size)
+      }
+
+
+      'sliceSize1 - {
+        assert(callSize(Unicode("123456")).slice(IntRange(1)).size == callSize(Unicode("2")).size)
+      }
+      'replaceSize1 - {
+        assert(callSize(Unicode("123456")).replace(IntRange(1), callSize(Unicode("a"))).size == callSize(Unicode("1a3456")).size)
+      }
+      'surroundSize1 - {
+        assert(callSize(Unicode("123456")).surround(IntRange(1), callSize(Unicode("a")), callSize(Unicode("b"))).size == Unicode("1a2b3456").size)
+      }
+
       'slice - {
         assert(Unicode("123456").slice(IntRange(1)) == Unicode("2"))
       }
@@ -74,7 +101,7 @@ object DataTests extends TestSuite {
 
     'implicitlyGenerated - {
       for (i <- 0 until 10) {
-        val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(r), model.mode.Node.Visual(Seq.empty, Seq.empty), i))
+        val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(r), model.mode.Node.Visual(Seq.empty, Seq.empty), i, ServerStatus(1)))
         val bytes = Pickle.intoBytes(a)
         val b = Unpickle[Either[ApiError, ClientInit]](implicitly).fromBytes(bytes)
         assert(a == b)

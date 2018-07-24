@@ -68,7 +68,7 @@ class BottomBarView(val client: Client) extends View {
       case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
       case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
       case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
-        (Seq(count, renderKeySeq(k), char.map(_.toString).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
+        (Seq(count, renderKeySeq(k), char.map(_.str).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
       case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
         (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
     }

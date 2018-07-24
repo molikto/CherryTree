@@ -197,7 +197,7 @@ class KeyboardCommandHandler extends Settings with CommandState
     override def action(a: DocState, count: Int): DocTransaction = {
       val (_, rich, nv) = a.asRichNormalOrVisual
       val t = rich.info(nv.focus.start).text
-      val url = t.asDelimited.attribute(model.data.UrlAttribute).toString
+      val url = t.asDelimited.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {Url.parse(url)} match {
         case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))

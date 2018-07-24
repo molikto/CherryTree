@@ -1,8 +1,24 @@
-## bugs and improvements
+## bugs
+
+* why scrollbar not shown??
+
+## must implementation changes
 
 * change to a better networking for change, server pushed content, or websocket
-* why scrollbar not shown??
+
+## improvements
+
 * clean up interaction of info and command too nasty
+* currently a lot of methods is linear, scan for grapheme boundary, or scan for atomic words, also get info at index
+    * `Rich.scala`
+    * `Unicode.Scala`
+* deal away with the hacky unicode transformation of `operation.Rich implementations`
+    * abstract `cursor.Rich`
+    * abstract `range.Rich`
+    * make operations works with these
+    * rigid `Rich` type
+        * no empty plain
+        * no two plain nearby in a `Text` list
 
 ## done
 

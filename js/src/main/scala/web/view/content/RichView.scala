@@ -102,15 +102,15 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       )
       case Text.Link(t, b, c) => span(
         span(`class` := "ct-cg",contenteditable := "false", "["),
-        span(`class` := "ct-link", rec(t), href := b.toString),
+        span(`class` := "ct-link", rec(t), href := b.str),
         span(`class` := "ct-cg",contenteditable := "false", "]")
       )
       case Text.Image(b, c) =>
-        img(verticalAlign := "bottom", src := b.toString)
+        img(verticalAlign := "bottom", src := b.str)
       case Text.LaTeX(c) =>
         val a = span().render
         try {
-          window.asInstanceOf[js.Dynamic].katex.render(c.toString, a)
+          window.asInstanceOf[js.Dynamic].katex.render(c.str, a)
         } catch {
           case a: Throwable => a.printStackTrace()
         }
@@ -122,10 +122,10 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       case Text.Code(c) =>
         span(
           span(`class` := "ct-cg", contenteditable := "false", "`"),
-          code(`class` := "ct-code", c.toString),
+          code(`class` := "ct-code", c.str),
           span(`class` := "ct-cg", contenteditable := "false", "`")
         )
-      case Text.Plain(c) => stringFrag(c.toString)
+      case Text.Plain(c) => stringFrag(c.str)
     }
   }
 

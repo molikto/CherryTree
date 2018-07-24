@@ -8,7 +8,7 @@ package object model extends Picklers {
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
 
-  var debugView = true
+  var debugView = false
   var debugModel = false
 
   var debugRenderEmptyInsertionPointAsBox = false

@@ -28,7 +28,7 @@ object Content extends DataObject[Content] {
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
   }
   case class Rich(content: data.Rich) extends Content {
-    val size: Int = content.size
+    def size: Int = content.size
     override def beginningAtomicRange(): IntRange = content.beginningAtomicRange()
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(beginningAtomicRange())

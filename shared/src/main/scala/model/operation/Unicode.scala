@@ -170,14 +170,14 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         case Insert(at, childs, leftGlued) =>
           writeInt(if (leftGlued) 1 else 0)
           writeInt(at)
-          writeString(childs.toString)
+          writeString(childs.str)
         case Delete(range) =>
           writeInt(2)
           IntRange.pickler.pickle(range)
         case ReplaceAtomic(range, unicode) =>
           writeInt(3)
           IntRange.pickler.pickle(range)
-          writeString(unicode.toString)
+          writeString(unicode.str)
         case Move(r, at) =>
           writeInt(4)
           IntRange.pickler.pickle(r)
@@ -185,8 +185,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         case Surround(r, start, end, id) =>
           writeInt(if (id) 5 else 6)
           IntRange.pickler.pickle(r)
-          writeString(start.toString)
-          writeString(end.toString)
+          writeString(start.str)
+          writeString(end.str)
       }
     }
     override def unpickle(implicit state: UnpickleState): Unicode = {

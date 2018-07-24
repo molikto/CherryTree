@@ -21,21 +21,25 @@ private[model] class UnicodeWriter {
 
   private val sb = new StringBuilder()
 
+  private var size = 0
+
   def put(a: SpecialChar): Unit = {
     sb.append(Unicode(a))
+    size += 1
   }
 
   def put(url: Unicode): Unit = {
-    sb.append(url.toString)
+    sb.append(url.str)
+    size += url.size
   }
 
   def toUnicode: Unicode = {
-    Unicode(sb.toString())
+    Unicode(sb.toString(), size)
   }
 }
 
 private[model] class UnicodeReader(a: Unicode) {
-  private val str = a.toString
+  private val str = a.str
   private var start = 0
 
   def isEmpty: Boolean = start >= str.length
@@ -69,12 +73,14 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def eatUntilSpecialChar(): Unicode = {
     var index = start
+    var codePointCount = 0
     while (index < str.length && !isSpecialCodePoint(str.codePointAt(index))) {
       index = str.offsetByCodePoints(index, 1)
+      codePointCount += 1
     }
     val ret = str.substring(start, index)
     start = index
-    Unicode(ret)
+    Unicode(ret, codePointCount)
   }
 
   def eatUntilAndDrop(b: SpecialChar): Unicode = {
@@ -85,39 +91,70 @@ private[model] class UnicodeReader(a: Unicode) {
 }
 object Unicode extends DataObject[Unicode] {
   override val pickler: boopickle.Pickler[Unicode] = new boopickle.Pickler[Unicode] {
-    override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.toString)
+    override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.str)
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
   }
 
+  def apply(a: String, size: Int): Unicode = {
+    val u = Unicode(a)
+    u.size0 = size
+    u
+  }
+
   def apply(a: SpecialChar): Unicode = {
-    Unicode(new String(Character.toChars(SpecialCharStart + a.id)))
+    Unicode(new String(Character.toChars(SpecialCharStart + a.id)), 1)
   }
 
   def apply(a: Seq[SpecialChar]): Unicode = {
-    Unicode(a.map(apply).mkString)
+    Unicode(a.map(apply).mkString, a.size)
   }
 
 
   def ofCodePoints(a: Seq[Int]): Unicode = {
-    Unicode(a.map(apply).mkString)
+    Unicode(a.map(apply).mkString, a.size)
   }
 
   def apply(a: Int): Unicode = {
-    Unicode(new String(Character.toChars(a)))
+    Unicode(new String(Character.toChars(a)), 1)
   }
 
   override def random(r: Random): Unicode = Unicode(r.nextLong().toString)
-  val empty = Unicode("")
+  val empty = Unicode("", 0)
 }
 
-case class Unicode(private var str: String) {
+case class Unicode(var str: String) {
 
   def times(size: Int): Unicode = {
-    Unicode(str * size)
+    Unicode(str * size, if (size0 == -1) -1 else size0 * size)
   }
 
+  def size: Int = {
+    if (size0 == -1) {
+      size0 = str.codePointCount(0, str.length)
+    }
+    size0
+  }
 
-  def apply(i: Int): Int = str.codePointAt(i)
+  private var lastCharIndex = -1
+  private var lastCodePointIndex = -1
+  private var size0 = -1
+  def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
+
+  def toStringPosition(i: Int): Int = {
+    if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
+      i
+    } else {
+      println(s"complex requested codepoint $str, $i, with $lastCharIndex, $lastCodePointIndex")
+      val index = if (lastCharIndex == -1 || i * 2 <= lastCodePointIndex) {
+        str.offsetByCodePoints(0, i)
+      } else {
+        str.offsetByCodePoints(lastCharIndex, i - lastCodePointIndex)
+      }
+      lastCharIndex = index
+      lastCodePointIndex = i
+      index
+    }
+  }
 
   def codePoints: Seq[Int] = {
     val a = new ArrayBuffer[Int]()
@@ -129,13 +166,25 @@ case class Unicode(private var str: String) {
     a
   }
 
+  private def noSurrogatePairBeforeAndAtCodePointIndex(pos: Int): Boolean = {
+    if (size0 != -1) {
+      if (size0 == str.length) {
+        return true
+      }
+    }
+    lastCharIndex == lastCodePointIndex && pos < lastCodePointIndex
+  }
+
   private def extendedGraphemeStrRange(pos: Int): (Int, Int) = {
+    // if this part is a very simple char
     val strStartIndex = toStringPosition(pos)
     var start = 0
     var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
+    var count = 1
     while (strStartIndex >= end) {
       start = end
       end = GraphemeSplitter.nextBreak(str, start)
+      count += 1
     }
     (start, end)
   }
@@ -169,46 +218,44 @@ case class Unicode(private var str: String) {
   }
 
 
-  def toStringPosition(charPosition: Int): Int = str.offsetByCodePoints(0, charPosition)
 
-  def join(j: Unicode): Unicode = Unicode(str + j.str)
+  def join(j: Unicode): Unicode = Unicode(str + j.str, if (size0 == -1 || j.size0 == -1) -1 else size0 + j.size0)
 
 
   override def toString: String = str
 
   def isEmpty: Boolean = str.isEmpty
-  lazy val size: Int = str.codePointCount(0, str.size)
   def slice(r: IntRange): Unicode = {
-    val start = str.offsetByCodePoints(0, r.start)
-    val end = str.offsetByCodePoints(start, r.size)
-    Unicode(str.substring(start, end))
+    val start = toStringPosition(r.start)
+    val end = toStringPosition(r.until)
+    Unicode(str.substring(start, end), r.size)
   }
   def insert(at: Int, u: Unicode): Unicode = {
     if (at < 0 || at > size) throw new IllegalArgumentException("Out of bound")
-    val index = str.offsetByCodePoints(0, at)
-    Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}")
+    val index = toStringPosition(at)
+    Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}", if (size0 == -1 || u.size0 == -1) -1 else size0 + u.size0)
   }
   def delete(r: IntRange): Unicode = {
     if (r.size == 0) {
       this
     } else {
-      val start = str.offsetByCodePoints(0, r.start)
-      val end = str.offsetByCodePoints(start, r.size)
-      Unicode(s"${str.substring(0, start)}${str.substring(end)}")
+      val start = toStringPosition(r.start)
+      val end = toStringPosition(r.until)
+      Unicode(s"${str.substring(0, start)}${str.substring(end)}", if (size0 == -1) -1 else size0 - r.size)
     }
   }
 
   def replace(r: IntRange, unicode: Unicode): Unicode = {
-    val start = str.offsetByCodePoints(0, r.start)
-    val end = str.offsetByCodePoints(start, r.size)
-    Unicode(s"${str.substring(0, start)}${unicode.str}${str.substring(end)}")
+    val start = toStringPosition(r.start)
+    val end = toStringPosition(r.until)
+    Unicode(s"${str.substring(0, start)}${unicode.str}${str.substring(end)}", if (size0 == -1 || unicode.size0 == -1) -1 else size0 -r.size + unicode.size0)
   }
 
   def surround(r: IntRange, left: Unicode, right: Unicode): Unicode = {
-    val start = str.offsetByCodePoints(0, r.start)
-    val end = str.offsetByCodePoints(start, r.size)
+    val start = toStringPosition(r.start)
+    val end = toStringPosition(r.until)
     val s = str.substring(start, end)
-    Unicode(s"${str.substring(0, start)}${left.str}$s${right.str}${str.substring(end)}")
+    Unicode(s"${str.substring(0, start)}${left.str}$s${right.str}${str.substring(end)}", if (size0 == -1 || left.size0 == -1 || right.size0 == -1) -1 else size0 + left.size0 + right.size0)
   }
 
   def move(r: IntRange, at: Int): Unicode = {

@@ -88,7 +88,7 @@ object Key {
     * the value is combined with modifiers
     */
   case class Grapheme(a: Unicode) extends V {
-    override def toString: String = a.toString
+    override def toString: String = a.str
   }
   object Grapheme {
     def apply(a: String): Grapheme = Grapheme(Unicode(a))
