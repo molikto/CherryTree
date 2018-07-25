@@ -11,5 +11,6 @@ trait EditorInterface {
   def flushes: Observable[Unit]
   def flush(): Unit
   def onInsertRichTextAndViewUpdated(unicode: Unicode)
+  def onExternalPastePlain(a: Unicode)
   def onKeyDown(k: Key): Boolean
 }

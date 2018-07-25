@@ -5,7 +5,6 @@ import client.Client
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
-// TODO resizing the panel is buggy
 class CommandListView(val client: Client) extends View {
 
 

@@ -279,7 +279,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         val s = ss.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex)
         (text, s)
       } else {
-        assert(ss.delimitationStart)
+        assert(ss.delimitationStart || ss.isInstanceOf[Atom.Marked])
         val node = domChildArray(domAt(ss.nodeCursor.dropRight(1)))
         (node, ss.nodeCursor.last)
       }
@@ -288,7 +288,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         val e = ee.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex + ss.size)
         (text, e)
       } else {
-        assert(ee.delimitationEnd)
+        assert(ss.delimitationEnd || ss.isInstanceOf[Atom.Marked])
         val node = domChildArray(domAt(ee.nodeCursor.dropRight(1)))
         (node, ee.nodeCursor.last + 1)
       }
@@ -319,16 +319,16 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   event("compositionstart", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = true
-    else cancel(a)
+    else preventDefault(a)
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
-    if (!isInserting) cancel(a)
+    if (!isInserting) preventDefault(a)
   })
 
   event("compositionend", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = false
-    else cancel(a)
+    else preventDefault(a)
   })
 
   event("input", (a: Event) => {
@@ -343,11 +343,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         controller.flush()
       } else {
         window.console.log(a)
-        cancel(a)
+        preventDefault(a)
       }
     } else {
       window.console.log(a)
-      cancel(a)
+      preventDefault(a)
     }
   })
 

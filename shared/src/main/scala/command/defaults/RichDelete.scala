@@ -21,35 +21,15 @@ class RichDelete extends CommandCategory("delete text") {
 
   private def deleteRichNormalRange(a: DocState, pos: cursor.Node, r: IntRange): DocTransaction = {
     val rich = a.rich(pos)
-    val singleSpecials = rich.singleSpecials(r)
-    val reverses = singleSpecials.map(_.another.range).sortBy(_.start)
-    val ds = r.minusOrderedInside(singleSpecials.map(_.range))
-    def deleteRanges(i: Seq[IntRange]): DocTransaction = {
-      val remaining = IntRange(0, rich.size).minusOrderedInside(i)
-      val posTo = if (remaining.isEmpty) {
-        IntRange(0, 0) // all deleted
-      } else {
-        // for all remaining bits
-        val tempPos = remaining.find(_.until > r.start).map(_.start max r.start).map(a => rich.after(a)).getOrElse(rich.before(remaining.last.until)).range
-        tempPos.moveByOrZeroZero(-i.filter(_.start < tempPos.start).map(_.size).sum)
-      }
-      DocTransaction(
-        Seq(operation.Node.Content(pos,
-          operation.Content.Rich(operation.Rich.deleteNoneOverlappingOrderedRanges(i))
-        )),
-        Some(mode.Node.Content(pos, mode.Content.RichNormal(posTo)))
-      )
-    }
-    if (ds.isEmpty) {
-      if (singleSpecials.forall(_.delimitationStart)) {
-        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
-      } else if (singleSpecials.forall(_.delimitationEnd)) {
-        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
-      } else {
-        DocTransaction.empty
-      }
-    } else {
-      deleteRanges(ds)
+    operation.Rich.deleteTextualRange(rich, r) match {
+      case Some(a) =>
+        DocTransaction(
+          a._1.map(r => operation.Node.Content(pos,
+            operation.Content.Rich(r)))
+          ,
+          Some(mode.Node.Content(pos, mode.Content.RichNormal(a._2)))
+        )
+      case None => DocTransaction.empty
     }
   }
 

@@ -39,6 +39,36 @@ object Rich extends OperationObject[data.Rich, Rich] {
       ), Type.AddDelete)
   }
 
+  def deleteTextualRange(rich: model.data.Rich, r: IntRange): Option[(Seq[operation.Rich], IntRange)] = {
+    val singleSpecials = rich.singleSpecials(r)
+    val reverses = singleSpecials.map(_.another.range).sortBy(_.start)
+    val ds = r.minusOrderedInside(singleSpecials.map(_.range))
+    def deleteRanges(i: Seq[IntRange]) = {
+      val remaining = IntRange(0, rich.size).minusOrderedInside(i)
+      val posTo = if (remaining.isEmpty) {
+        IntRange(0, 0) // all deleted
+      } else {
+        // for all remaining bits
+        val tempPos = remaining.find(_.until > r.start).map(_.start max r.start).map(a => rich.after(a)).getOrElse(rich.before(remaining.last.until)).range
+        tempPos.moveByOrZeroZero(-i.filter(_.start < tempPos.start).map(_.size).sum)
+      }
+      Some((
+        Seq(operation.Rich.deleteNoneOverlappingOrderedRanges(i)),
+        posTo))
+    }
+    if (ds.isEmpty) {
+      if (singleSpecials.forall(_.delimitationStart)) {
+        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
+      } else if (singleSpecials.forall(_.delimitationEnd)) {
+        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
+      } else {
+        None
+      }
+    } else {
+      deleteRanges(ds)
+    }
+  }
+
 
   def wrap(a: IntRange, d: SpecialChar.Delimitation): operation.Rich = wrapNonOverlappingOrderedRanges(Seq(a), d)
 

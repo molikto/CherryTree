@@ -3,7 +3,7 @@ package command.defaults
 import command.CommandCategory
 
 class Search extends CommandCategory("search & pattern matches") {
-// TODO
+// TODO search commands
   // Q_pa          Pattern searches
   //
   ///     N  /{pattern}[/[offset]]<CR>

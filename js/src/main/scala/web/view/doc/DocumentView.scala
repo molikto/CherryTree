@@ -13,7 +13,7 @@ import web.view.{KeyMap, View, theme}
 
 import scala.collection.mutable.ArrayBuffer
 
-class DocumentView(private val client: DocInterface, private val editor: EditorInterface) extends View {
+class DocumentView(private val client: DocInterface, override protected val editor: EditorInterface) extends EditorView {
 
   dom = div(
     width := "100%",
@@ -59,7 +59,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     }
   })
 
-  def markEditable(dom: HTMLElement): Unit = {
+  override def markEditable(dom: HTMLElement): Unit = {
     if (currentEditable == dom) return
     if (currentEditable != noEditable) {
       throw new IllegalArgumentException("You shouldn't mark editable if other is also editable")
@@ -70,11 +70,11 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     currentEditable.focus()
   }
 
-  def unmarkEditableIfEditable(dom: HTMLElement): Unit = {
+  override def unmarkEditableIfEditable(dom: HTMLElement): Unit = {
     if (dom == currentEditable) unmarkEditable(dom)
   }
 
-  def unmarkEditable(dom: HTMLElement): Unit = {
+  override def unmarkEditable(dom: HTMLElement): Unit = {
     if (currentEditable == noEditable) return
     if (currentEditable != dom) {
       throw new IllegalArgumentException("You shouldn't unmark editable if you are not the one")
@@ -225,6 +225,7 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
 
   // we use onAttach because we access window.setSelection
   override def onAttach(): Unit = {
+    super.onAttach()
     val DocState(node, selection) = client.state
     insertNodesRec(node, dom)
     dom.appendChild(noEditable) // dom contains this random thing, this is ok now, but... damn
@@ -266,51 +267,10 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
   }
 
 
-  event( "keydown", (event: KeyboardEvent) => {
-    var key = KeyMap.get(event.key).orNull
-    if (key == null && Key.isUnicodeKey(event.key)) {
-      key = Key.Grapheme(model.data.Unicode(event.key))
-    }
-    if (key == null) key = Key.Unknown(event.key)
-    val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-    if (!kk.meta) { // for meta keys, we ignore it, it is mostly browser keys
-      if (editor.onKeyDown(kk)) cancel(event)
-    }
-  })
-
-  event( "keyup", (event: KeyboardEvent) => {
-    //window.console.log(event)
-  })
-
-  event( "keypress", (event: KeyboardEvent) => {
-    //window.console.log(event)
-  })
 
 
 
 
-  /***
-    *
-    *
-    * copy paste currently disabled for entire document
-    *
-    * // LATER copy paste in normal mode??
-    */
-
-  event( "copy", (a: ClipboardEvent) => {
-    window.console.log(a)
-    cancel(a)
-  })
-
-  event( "cut", (a: ClipboardEvent) => {
-    window.console.log(a)
-    cancel(a)
-  })
-
-  event( "paste", (a: ClipboardEvent) => {
-    window.console.log(a)
-    cancel(a)
-  })
 
 
   /**
@@ -322,30 +282,30 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
 
 
   event("mousedown", (a: MouseEvent) => {
-    if (!isFocusedOut) cancel(a)
+    if (!isFocusedOut) preventDefault(a)
     else window.console.log(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    if (!isFocusedOut) cancel(a)
+    if (!isFocusedOut) preventDefault(a)
     else window.console.log(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    if (!isFocusedOut) cancel(a)
+    if (!isFocusedOut) preventDefault(a)
     else window.console.log(a)
   })
 
   event("dblclick", (a: MouseEvent) => {
-    if (!isFocusedOut) cancel(a)
+    if (!isFocusedOut) preventDefault(a)
     else window.console.log(a)
   })
 
   event("contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
-    cancel(a)
+    preventDefault(a)
   })
 
 
@@ -359,23 +319,23 @@ class DocumentView(private val client: DocInterface, private val editor: EditorI
     */
 
   event("dragstart", (a: DragEvent) => {
-    cancel(a)
+    preventDefault(a)
   })
 
   event("dragend", (a: DragEvent) => {
-    cancel(a)
+    preventDefault(a)
   })
 
   event("dragover", (a: DragEvent) => {
-    cancel(a)
+    preventDefault(a)
   })
 
   event("dragenter", (a: DragEvent) => {
-    cancel(a)
+    preventDefault(a)
   })
 
   event("drop", (a: DragEvent) => {
-    cancel(a)
+    preventDefault(a)
   })
 
 }

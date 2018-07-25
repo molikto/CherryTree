@@ -11,7 +11,6 @@ import settings.Settings
 
 import scala.util.{Success, Try}
 
-// TODO 
 class KeyboardCommandHandler extends Settings with CommandState
 { self : Client =>
 

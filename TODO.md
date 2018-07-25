@@ -1,12 +1,8 @@
 ## bugs
 
 * why scrollbar not shown??
+* resizing the panel is buggy
 
-
-## in roadmap
-
-clean up rich
-make rich returns a iteratable atomic
 
 ## must implementation changes
 
@@ -69,30 +65,6 @@ make rich returns a iteratable atomic
 * ~~online user counter~~
 
 
-
-
-
-
-
-difference with VIM
-
-commands assuming a monospace font is generally not implemented, for example go to column N
-
-commands related to ignoring spaces etc. is merged with the version not ignoring spaces. this is because the structure of the document now is not expressed by spaces, but by node parent-child structure
-
-commands working with paragraphs, sections is not implemented, reason the same with above
-
-commands working with source code (back to beginning of method etc.) is not implemented in rich text editor, the code editor is a embedded CodeMirror instance. code notes handles it's own VIM commands
-
-we don't take special care for empty lines, for example a empty line is not considered a word when moving by word
-
-commands which can edit multiple lines the same time (e.g. `5i`, `5o`, `5c`) cannot do this here, these are commonly used when editing code, not rich text
-
-commands dealing with lines and blocks is merged (`V` and `Ctrl+V`)
-
-`$` is not repeatable
-
-`TODO` as you implement more commands, consult Vimflowy inconsistency page
 
 
 
