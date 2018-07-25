@@ -4,17 +4,14 @@
 * resizing the panel is buggy
 
 
-## must implementation changes
+## improvements
 
 * change to a better networking for change, server pushed content, or websocket
 * change command panel to a [n] k char etc.
 
-## improvements
+## code improvements
 
-* clean up interaction of info and command too nasty
-* currently a lot of methods is linear, scan for grapheme boundary, or scan for atomic words, also get info at index
-    * `Rich.scala`
-    * `Unicode.Scala`
+* scan for grapheme boundary is linear
 * deal away with the hacky unicode transformation of `operation.Rich implementations`
     * abstract `cursor.Rich`
     * abstract `range.Rich`
