@@ -208,45 +208,42 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
           updateTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
       }
     } else {
-      val ss = rich.infoSkipLeftAttributes(pos - 1)
-      val ee = rich.infoSkipRightAttributes(pos)
-      if (ss.ty == InfoType.Plain) {
-        if (ee.ty == InfoType.Special || ee.ty == InfoType.Plain) {
-          updateExistingTextNodeIn(domAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(ss.positionInUnicode + 1))
-        } else {
-          throw new IllegalStateException("Not possible")
-        }
-      } else if (ss.ty == InfoType.Special) {
-        if (ee.ty == InfoType.Special) {
-          if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
-            updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
-          } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-            if (ee.text.isCode) {
-              updateExistingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
-            } else {
-              updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
-            }
-          } else { // different sibling node
-            updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+      val ss = rich.before(pos)
+      val ee = rich.after(pos)
+      ss match {
+        case p: Atom.PlainGrapheme =>
+          updateExistingTextNodeIn(domAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeIndex + 1))
+        case s: Atom.SpecialOrMarked =>
+          ee match {
+            case es: Atom.SpecialOrMarked =>
+              if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
+                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+              } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
+                if (ee.text.isCode) {
+                  updateExistingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
+                } else {
+                  updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+                }
+              } else { // different sibling node
+                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+              }
+            case ep: Atom.PlainGrapheme =>
+              updateExistingTextNodeIn(domAt(ee.nodeCursor), 0)
+            case ec: Atom.CodedGrapheme =>
+              updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
+            case _ =>
+              throw new IllegalStateException("Not possible")
           }
-        } else if (ee.ty == InfoType.Plain) {
-          updateExistingTextNodeIn(domAt(ee.nodeCursor), 0)
-        } else if (ee.ty == InfoType.Coded) {
-          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0)
-        } else {
-          throw new IllegalStateException("Not possible")
-        }
-      } else if (ss.ty == InfoType.Coded) {
-        val unicode = ss.text.asCoded.content
-        if (ee.ty == InfoType.Special) {
-          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
-        } else if (ee.ty == InfoType.Coded) {
-          updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ee.positionInUnicode))
-        } else {
-          throw new IllegalStateException("Not possible")
-        }
-      } else {
-        throw new IllegalStateException("Not possible")
+        case c: Atom.CodedGrapheme =>
+          val unicode = ss.text.asCoded.content
+          ee match {
+            case es: Atom.SpecialOrMarked =>
+              updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size))
+            case ec: Atom.CodedGrapheme =>
+              updateExistingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ec.unicodeIndex))
+            case _ =>
+              throw new IllegalStateException("Not possible")
+          }
       }
     }
   }
@@ -259,43 +256,39 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       rr.setEnd(c, d)
       rr
     }
-    // there are three cases of a selection
-    // a subparagraph, a sub-code, a delimiter of format/code node
-    val ss = rich.info(range.start)
-    val ee = rich.info(range.until - 1)
-    if (ss.ty == InfoType.Coded &&
-      ee.ty == InfoType.Coded &&
+    val ss = rich.after(range.start)
+    val ee = rich.before(range.until)
+    if (ss.isInstanceOf[Atom.CodedGrapheme] &&
+      ee.isInstanceOf[Atom.CodedGrapheme] &&
       ss.nodeCursor == ee.nodeCursor &&
       ss.text.isCode) {
       val codeText = domCodeText(domAt(ss.nodeCursor))
       val ast = ss.text.asCoded
-      val sss = ast.content.toStringPosition(ss.positionInUnicode)
-      val eee = ast.content.toStringPosition(ee.positionInUnicode + 1)
+      val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)
+      val eee = ast.content.toStringPosition(ee.asInstanceOf[Atom.CodedGrapheme].unicodeIndex + ee.asInstanceOf[Atom.CodedGrapheme].size)
       (createRange(codeText, sss, codeText, eee), null)
     } else if (range.size == 1 &&
-      ss.ty  == InfoType.Special &&
-      SpecialChar.startsEnds.contains(ss.specialChar) &&
-      !ss.text.isAtomic) {
-      val isStart = SpecialChar.starts.contains(ss.specialChar)
+      ss.special) {
+      val isStart = ss.delimitationStart
       val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
       val a = span.childNodes(if (isStart) 0 else 2).childNodes(0)
       (createRange(a, 0, a, 1), span)
     } else {
-      val start = if (ss.ty == InfoType.Plain) {
+      val start = if (ss.isInstanceOf[Atom.PlainGrapheme]) {
         val text = domAt(ss.nodeCursor)
-        val s = ss.text.asPlain.unicode.toStringPosition(ss.positionInUnicode)
+        val s = ss.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex)
         (text, s)
       } else {
-        assert(ss.isStart)
+        assert(ss.delimitationStart)
         val node = domChildArray(domAt(ss.nodeCursor.dropRight(1)))
         (node, ss.nodeCursor.last)
       }
-      val end = if (ee.ty == InfoType.Plain) {
+      val end = if (ee.isInstanceOf[Atom.PlainGrapheme]) {
         val text = domAt(ee.nodeCursor)
-        val e = ee.text.asPlain.unicode.toStringPosition(ss.positionInUnicode + 1)
+        val e = ee.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex + ss.size)
         (text, e)
       } else {
-        assert(ee.isEnd)
+        assert(ee.delimitationEnd)
         val node = domChildArray(domAt(ee.nodeCursor.dropRight(1)))
         (node, ee.nodeCursor.last + 1)
       }

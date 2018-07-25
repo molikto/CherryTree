@@ -3,7 +3,7 @@ package command
 import client.Client
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.Unicode
+import model.data.{SpecialChar, Unicode}
 import model.range.IntRange
 import monix.reactive.Observable
 import monix.reactive.subjects._
@@ -192,14 +192,14 @@ class KeyboardCommandHandler extends Settings with CommandState
 
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {
       val (_, rich, nv) = a.asRichNormalOrVisual
-      val t = rich.info(nv.focus.start).text
-      t.isDelimited && t.asDelimited.delimitation.attributes.contains(model.data.UrlAttribute)
+      val t = rich.after(nv.focus.start)
+      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
     }
 
     override def action(a: DocState, count: Int): DocTransaction = {
       val (_, rich, nv) = a.asRichNormalOrVisual
-      val t = rich.info(nv.focus.start).text
-      val url = t.asDelimited.attribute(model.data.UrlAttribute).str
+      val t = rich.after(nv.focus.start)
+      val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {Url.parse(url)} match {
         case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))

@@ -4,6 +4,7 @@ import client.Client
 import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.data.Atom
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
@@ -20,16 +21,16 @@ class RichDelete extends CommandCategory("delete text") {
 
   private def deleteRichNormalRange(a: DocState, pos: cursor.Node, r: IntRange): DocTransaction = {
     val rich = a.rich(pos)
-    val (ifs, soc, roc) = rich.infoAndSingleSpecials(r)
-    val ds = r.minusOrderedInside(soc)
+    val singleSpecials = rich.singleSpecials(r)
+    val reverses = singleSpecials.map(_.another.range).sortBy(_.start)
+    val ds = r.minusOrderedInside(singleSpecials.map(_.range))
     def deleteRanges(i: Seq[IntRange]): DocTransaction = {
       val remaining = IntRange(0, rich.size).minusOrderedInside(i)
       val posTo = if (remaining.isEmpty) {
         IntRange(0, 0) // all deleted
       } else {
         // for all remaining bits
-        val p = remaining.find(_.until > r.start).map(_.start max r.start).map(a => a).getOrElse(remaining.last.until - 1)
-        val tempPos = rich.info(p).atomicRange
+        val tempPos = remaining.find(_.until > r.start).map(_.start max r.start).map(a => rich.after(a)).getOrElse(rich.before(remaining.last.until)).range
         tempPos.moveByOrZeroZero(-i.filter(_.start < tempPos.start).map(_.size).sum)
       }
       DocTransaction(
@@ -40,10 +41,10 @@ class RichDelete extends CommandCategory("delete text") {
       )
     }
     if (ds.isEmpty) {
-      if (ifs.forall(_.isStart)) {
-        deleteRanges((roc ++ Seq(r)).sortBy(_.start))
-      } else if (ifs.forall(_.isEndOrAttributeTagOrContent)) {
-        deleteRanges((roc ++ Seq(r)).sortBy(_.start))
+      if (singleSpecials.forall(_.delimitationStart)) {
+        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
+      } else if (singleSpecials.forall(_.delimitationEnd)) {
+        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
       } else {
         DocTransaction.empty
       }
@@ -72,7 +73,7 @@ class RichDelete extends CommandCategory("delete text") {
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
-      val fr = (1 until count).foldLeft(r) {(r, _) => rich.moveRightAtomic(r) }
+      val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.after(r).range }
       deleteRichNormalRange(a, pos, r.merge(fr))
     }
 
@@ -86,8 +87,8 @@ class RichDelete extends CommandCategory("delete text") {
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
-      val rr = rich.moveLeftAtomic(r)
-      val fr = (1 until count).foldLeft(rr) {(r, _) => rich.moveLeftAtomic(r) }
+      val rr = rich.before(r).range
+      val fr = (1 until count).foldLeft(rr) {(r, _) => if (r.start == 0) r else rich.before(r).range }
       deleteRichNormalRange(a, pos, rr.merge(fr))
     }
   }

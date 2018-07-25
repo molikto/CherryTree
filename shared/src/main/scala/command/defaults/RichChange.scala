@@ -19,29 +19,31 @@ class RichChange extends CommandCategory("change text") {
     override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
       val (cursor, rich, v) = a.asRichNormal
 
-      def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
+      def makeMode(in: Atom, riches: Seq[operation.Rich]): Option[mode.Node] = {
         val rafter = operation.Rich.apply(riches, rich)
-        val range = if (in.isStart) {
-          rafter.info(in.nodeStart).atomicRange
+        val range = if (in.delimitationStart) {
+          rafter.after(in.textTotalIndex).range
         } else {
-          rafter.info(in.nodeStart + rafter.info(in.nodeStart).text.size - 1).atomicRange
+          rafter.before(in.textTotalIndex + rafter.after(in.textTotalIndex).text.size).range
         }
         Some(a.copyContentMode(mode.Content.RichNormal(range)))
       }
 
       if (v.range.size == 1 && char.size == 1) {
         val point = v.range.start
-        val in = rich.info(point)
-        if (in.isStartOrEnd) {
-          delimitationSettings.find(d => (d._2 == char && in.isStart) || (d._3 == char & in.isEnd)) match {
+        val in = rich.after(point)
+        if (in.special) {
+          val sp = in.asInstanceOf[Atom.Special[Any]]
+          val isStart = sp.a == sp.text.delimitation.start
+          delimitationSettings.find(d => (d._2 == char && isStart) || (d._3 == char & !isStart)) match {
             case Some(deli) =>
-              if (in.specialChar == deli._1.start || in.specialChar == deli._1.end) {
+              if (sp.a == deli._1.start || sp.a == deli._1.end) {
                 return DocTransaction.empty
               }
 
               def wrapUnwrap(): DocTransaction = {
-                val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
-                val op2 = operation.Rich.wrap(IntRange(in.nodeStart, in.nodeStart + in.text.asDelimited.contentSize), deli._1)
+                val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
+                val op2 = operation.Rich.wrap(IntRange(in.textTotalIndex, in.textTotalIndex + in.text.asDelimited.contentSize), deli._1)
                 DocTransaction(
                   Seq(
                     operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
@@ -50,12 +52,12 @@ class RichChange extends CommandCategory("change text") {
                 )
               }
 
-              if (SpecialChar.coded.contains(deli._1)) {
+              if (SpecialChar.codedNonEmpty.contains(deli._1)) {
                 in.text match {
                   case formatted: Text.Formatted if formatted.content.size == 1 && formatted.content.head.isPlain =>
                     val unicode = formatted.content.head.asPlain.unicode
-                    val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asDelimited)
-                    val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)
+                    val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
+                    val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.textTotalIndex, in.textTotalIndex + unicode.size), deli._1)
                     return DocTransaction(
                       Seq(
                         operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
@@ -66,14 +68,14 @@ class RichChange extends CommandCategory("change text") {
                     return wrapUnwrap()
                   }
                 }
-              } else if (SpecialChar.formatLike.contains(deli._1) || SpecialChar.linkLike.contains(deli._1)) {
+              } else if (SpecialChar.nonCodedSplittable.contains(deli._1) || SpecialChar.nonCodedNonSplittable.contains(deli._1)) {
                 return wrapUnwrap()
               }
             case None =>
           }
         }
       }
-      if (rich.info(v.range.start).ty != InfoType.Special) {
+      if (!rich.after(v.range.start).special) {
         val ops = operation.Rich.merge(
           operation.Rich.delete(v.range),
           operation.Rich.insert(v.range.start, char

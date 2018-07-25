@@ -112,7 +112,7 @@ object GraphemeSplitter {
 
       // GB10. (E_Base | EBG) Extend* ?	E_Modifier
       var previousNonExtendIndex = if (all.indexOf(Extend) != -1) all.lastIndexOf(Extend) - 1 else all.length - 2;
-      if(Seq(E_Base, E_Base_GAZ).indexOf(all(previousNonExtendIndex)) != -1 &&
+      if(previousNonExtendIndex >= 0 && previousNonExtendIndex < all.size && Seq(E_Base, E_Base_GAZ).indexOf(all(previousNonExtendIndex)) != -1 &&
         all.slice(previousNonExtendIndex + 1, -1).forall(_ == Extend) &&
         next == E_Modifier){
         return NotBreak;

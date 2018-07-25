@@ -18,7 +18,11 @@ trait Server extends Api {
 
   case class ClientInfo(version: Int, lastSeen: Long)
 
-  private var document =  Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(debugLoad("saved")))
+  private var document = {
+    val bs = debugLoad("saved")
+    if (bs.isEmpty) Node.empty
+    else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))
+  }
   private var changes = {
     val bs = debugLoad("changes")
     if (bs.isEmpty) Seq.empty

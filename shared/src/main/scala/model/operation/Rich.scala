@@ -1,5 +1,6 @@
 package model.operation
 
+import model.data.Atom.CodedSpecial
 import model.data._
 import model.{data, _}
 import model.operation.Type.Type
@@ -48,11 +49,11 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
   def deleteOrUnwrapAt(content: data.Rich, i: Int): Rich = {
-    val info = content.infoSkipLeftAttributes(i)
-    if (info.ty == InfoType.Special && !info.text.isAtomic) {
-      operation.Rich.unwrap(info.nodeStart, info.text.asDelimited)
+    val info = content.after(i)
+    if (info.special) {
+      operation.Rich.unwrap(info.textTotalIndex, info.text.asDelimited)
     } else {
-      operation.Rich.delete(info.atomicRange)
+      operation.Rich.delete(info.range)
     }
   }
 
@@ -99,10 +100,10 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val rc = r.nextInt(9)
     rc match {
       case 0 =>
-        val randomFormat = SpecialChar.formatLike(r.nextInt(SpecialChar.formatLike.size))
+        val randomFormat = SpecialChar.nonCodedSplittable(r.nextInt(SpecialChar.nonCodedSplittable.size))
         val range = randomSubrich(d, r)
         Rich(Seq(
-          operation.Unicode.Surround(range, randomFormat.startUnicode, randomFormat.endUnicode)), Type.Add)
+          operation.Unicode.Surround(range, data.Unicode(randomFormat.start), data.Unicode(randomFormat.end))), Type.Add)
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Rich(Seq(
@@ -134,7 +135,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
           case None => fallback()
         }
       case 4 =>
-        // change title/image url/title
+        // change title/image url
         randomUrlAttributed(d, r) match {
           case Some((_, t)) => Rich(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextInt().toString))), Type.AddDelete)
           case None => fallback()
@@ -176,52 +177,33 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
   private def randomUrlAttributed(d: data.Rich, r: Random): Option[(IntRange, IntRange)] = {
-    val info = d.infos.zipWithIndex
-    val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.urlAttributed.exists(j => a._1.isSpecialChar(j.start))
-      case _ => false
-    })
+    val info = d.afters(0)
+    val starts = info.filter(a => SpecialChar.urlAttributed.exists(j => a.special(j.start))).toSeq
     if (starts.isEmpty) {
       None
     } else {
-      val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asDelimited
-      val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
-      val urlStart = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes.head)).get._2 + 1
-      val urlEnd = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.attributes(1))).get._2
-      Some((IntRange(t._2, end), IntRange(urlStart, urlEnd)))
+      val t = starts(r.nextInt(starts.size)).asInstanceOf[Atom.Special[Any]]
+      Some((t.textRange, t.text.rangeAttribute(UrlAttribute).moveBy(t.textTotalIndex)))
     }
   }
 
   private def randomFormatted(d: data.Rich, r: Random): Option[IntRange] = {
-    val info = d.infos.zipWithIndex
-    val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.formatLike.exists(j => a._1.isSpecialChar(j.start))
-      case _ => false
-    })
+    val info = d.afters(0)
+    val starts = info.filter(a => SpecialChar.nonCodedSplittable.exists(j => a.special(j.start))).toSeq
     if (starts.isEmpty) {
       None
     } else {
-      val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asDelimited
-      val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor  && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
-      Some(IntRange(t._2, end))
+      Some(starts(r.nextInt(starts.size)).textRange)
     }
   }
 
   private def randomCoded(d: data.Rich, r: Random): Option[IntRange] = {
-    val info = d.infos.zipWithIndex
-    val starts = info.filter(a => a._1.ty match {
-      case InfoType.Special => SpecialChar.coded.exists(j => a._1.isSpecialChar(j.start))
-      case _ => false
-    })
+    val info = d.afters(0)
+    val starts = info.filter(a => Seq(SpecialChar.Code, SpecialChar.LaTeX).exists(j => a.special(j.start))).toSeq
     if (starts.isEmpty) {
       None
     } else {
-      val t = starts(r.nextInt(starts.size))
-      val text = t._1.text.asCoded
-      val end = info.find(a => a._1.nodeCursor == t._1.nodeCursor && a._1.isSpecialChar(text.delimitation.end)).get._2 + 1
-      Some(IntRange(t._2, end))
+      Some(starts(r.nextInt(starts.size)).textRange)
     }
   }
 
@@ -237,8 +219,9 @@ object Rich extends OperationObject[data.Rich, Rich] {
       val a = r.nextInt(d.size)
       val b = r.nextInt(d.size - a) + a
       val range = IntRange(a, b + 1)
-      if (d.isSubRich(range))  {
-        return range
+      val g = d.isSubRich(range)
+      if (g.isDefined)  {
+        return g.get
       }
     }
     throw new IllegalStateException("Should return before " + d)

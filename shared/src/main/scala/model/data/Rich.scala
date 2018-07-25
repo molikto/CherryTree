@@ -6,117 +6,46 @@ import model.cursor
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
-
-sealed class InfoType {
-}
-object InfoType {
-  case object Special extends InfoType
-  case object Plain extends InfoType
-  case object AttributeUnicode extends InfoType
-  case object Coded extends InfoType
-}
-case class Info(
-  nodeCursor: cursor.Node,
-  nodeStart: Int,
-  text: Text,
-  ty: InfoType,
-  positionInParagraph: Int,
-  specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
-  char: Int = 0 // only valid not Special
-) {
-
-  def sameWordVertic: Info => Boolean = {
-    ???
-  }
-
-  def anotherWordVertic: Info => Boolean = {
-    if (isWhitespace) {
-      a => !a.isWhitespace
-    } else if (isAtomic) {
-      i => i.isSpecial || i.isChar
-    } else if (isLetterChar) {
-      i => !i.isLetterChar && !i.isWhitespace
-    } else if (isSpecial) {
-      i => !i.isSpecial && !i.isWhitespace
-    } else if (isOtherChar) {
-      i => !i.isOtherChar && !i.isWhitespace
-    } else {
-      throw new IllegalStateException("Not possilbe??")
-    }
-  }
-
-
-  def isChar: Boolean = ty == InfoType.Coded || ty == InfoType.Plain
-  def isWhitespace: Boolean = isChar && Character.isWhitespace(char)
-
-  def isLetterChar: Boolean = isChar && (Character.isAlphabetic(char) || Character.isDigit(char) || char == '_'.toInt || Character.isIdeographic(char))
-
-  def isOtherChar: Boolean = isChar && !isLetterChar
-
-  def isAtomic: Boolean = text.isAtomic
-
-  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Unicode]): Boolean = {
-    if (ty == InfoType.Special && grapheme.size == 1) {
-      delimitationCodePoints.get(specialChar).contains(grapheme)
-    } else {
-      extendedGrapheme == grapheme
-    }
-  }
-
-  def isSpecial: Boolean = ty == InfoType.Special
-  def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
-  def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
-  def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
-  def isStartOrEnd: Boolean = ty == InfoType.Special && SpecialChar.startsEnds.contains(specialChar)
-  def isEndOrAttributeTagOrContent: Boolean = isEnd || isAttributeTag || ty == InfoType.AttributeUnicode
-  def isAttributeTag: Boolean = SpecialChar.attributes.contains(specialChar)
-  def positionInUnicode: Int = {
-    val p = text match {
-      case p : Text.Plain if ty == InfoType.Plain => positionInParagraph - nodeStart
-      case c : Text.Coded if ty == InfoType.Coded => positionInParagraph - nodeStart - 1
-      case _ => throw new NotImplementedError("Not implemented yet!!")
-    }
-    assert(p >= 0)
-    p
-  }
-
-  def extendedGrapheme: Unicode = {
-    if (ty == InfoType.Plain) {
-      text.asPlain.unicode.extendedGrapheme(positionInUnicode)
-    } else if (ty == InfoType.Coded) {
-      text.asCoded.content.extendedGrapheme(positionInUnicode)
-    } else {
-      throw new IllegalStateException("Invalid xml structure")
-    }
-  }
-
-  def extendedGraphemeRange: IntRange = {
-    if (ty == InfoType.Plain) {
-      text.asPlain.unicode.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart)
-    } else if (ty == InfoType.Coded) {
-      text.asCoded.content.extendedGraphemeRange(positionInUnicode).moveBy(nodeStart + 1)
-    } else {
-      throw new IllegalStateException("Invalid xml structure")
-    }
-  }
-
-  def atomicRange: IntRange = {
-    if (text.isAtomic) {
-      val atomicStart = nodeStart
-      IntRange(atomicStart, atomicStart + text.size)
-    } else if (ty == InfoType.Special) {
-      IntRange(positionInParagraph)
-    } else {
-      extendedGraphemeRange
-    }
-  }
-
-
-}
 /**
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+
+
+  lazy val size: Int = Text.size(text)
+
+  def befores(a: Int): Iterator[Atom] = Text.before(Seq.empty, 0, a, text)
+  def afters(a: Int): Iterator[Atom] = Text.after(Seq.empty, 0, a, text)
+
+  def beginning: Atom = after(0)
+
+  def end: Atom = before(size)
+
+  def before(a: IntRange): Atom = before(a.start)
+  def after(a: IntRange): Atom = after(a.until)
+  // atomic consists: single unicode grapheme, single control point, atomic views
+  def before(aaa: Int): Atom = { val i = befores(aaa); if (i.hasNext) i.next() else beginning }
+  def after(bbb: Int): Atom =  { val i = afters(bbb); if (i.hasNext) i.next() else end }
+
+  def rangeBefore(a: IntRange): IntRange = if (a.start == 0) a else before(a.start).range
+  def rangeAfter(a: IntRange): IntRange = if(a.until == size) a else after(a.until).range
+  // atomic consists: single unicode grapheme, single control point, atomic views
+  def rangeBefore(aaa: Int): IntRange = if (aaa == 0) rangeBeginning else before(aaa).range
+  def rangeAfter(bbb: Int): IntRange = if (bbb == size) rangeEnd else after(bbb).range
+
+  def rangeBeginning: IntRange = if (size == 0) IntRange(0, 0) else beginning.range
+  def rangeEnd: IntRange = if (size == 0) IntRange(0, 0) else end.range
+
+
+  def between(a: Int, b: Int): Iterator[Atom] = between(IntRange(a, b))
+  def between(r: IntRange): Iterator[Atom] = afters(r.start).takeWhile(_.range.until <= r.until)
+
+  def singleSpecials(r: IntRange): Seq[Atom.Special[Any]] = {
+    between(r).filter(a => {
+      val singleSpecial = a.special && !r.contains(a.asInstanceOf[Atom.Special[Any]].another.range)
+      singleSpecial
+    }).map(_.asInstanceOf[Atom.Special[Any]]).toSeq
+  }
   /**
     * a word is a:
     * continuous sequence of letter, digits or underscore
@@ -127,12 +56,9 @@ case class Rich(text: Seq[Text]) {
     * a WORD is:
     * a continuous sequence of word
     */
-  def moveRightWord(a: IntRange): IntRange = {
-    findRightAtomic(a, info(a.start).anotherWordVertic).getOrElse(endAtomicRange())
-  }
+  def moveRightWord(a: IntRange): IntRange = ???
 
-  def moveRightWORD(a: IntRange): IntRange =
-    findRightAtomicInclusive(a, _.isWhitespace).flatMap(b => findRightAtomic(b, !_.isWhitespace)).getOrElse(endAtomicRange())
+  def moveRightWORD(a: IntRange): IntRange = ???
 
  def moveRightWordEnd(a: IntRange): IntRange = {
    ???
@@ -160,90 +86,34 @@ case class Rich(text: Seq[Text]) {
   }
 
 
+  // LATER better implementation
   def subPlain(p: IntRange): Unicode = serialize().slice(p)
 
-
-  def insertionInsideCoded(pos: Int): Boolean = {
+  def insideCoded(pos: Int): Boolean = {
     if (pos == 0 || pos == size) false
     else {
-      val i = info(pos)
-      i.text.isCoded && i.nodeStart != pos
-    }
-  }
-
-  def moveLeftAtomic(a: IntRange): IntRange = if (a.start == 0) a else moveLeftAtomic(a.start)
-  def moveRightAtomic(a: IntRange): IntRange = if (a.until == size) a else moveRightAtomic(a.until - 1)
-  // atomic consists: single unicode grapheme, single control point, atomic views
-  def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes((aaa - 1) max 0).atomicRange
-  def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes((bbb + 1) min (size - 1)).atomicRange
-
-
-  def findRightAtomicInclusive(start: IntRange, is: Info => Boolean): Option[IntRange] = {
-    if (is(info(start.start))) Some(start)
-    else findRightAtomic(start, is)
-  }
-
-  def findLeftAtomicInclusive(start: IntRange, is: Info => Boolean): Option[IntRange] = {
-    if (is(info(start.start))) Some(start)
-    else findLeftAtomic(start, is)
-  }
-
-  def findRightAtomic(start: IntRange, is: Info => Boolean): Option[IntRange] = {
-    var range = start
-    while (range.until < size) {
-      val info = infoSkipRightAttributes(range.until)
-      val oldRange = range
-      range = info.atomicRange
-      assert(oldRange.until < range.until)
-      if (is(info)) {
-        return Some(range)
+      (before(pos), after(pos)) match {
+        case (_: Atom.CodedGrapheme, _: Atom.CodedGrapheme) => true
+        case _ => false
       }
     }
-    None
   }
 
-  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[IntRange] = {
-    findRightAtomic(start, info => info.matchesChar(grapheme, delimitationCodePoints))
+
+  def findCharAfter(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[Atom] = {
+    afters(start.until).find(_.matches(grapheme, delimitationCodePoints))
   }
 
-  def findLeftAtomic(start: IntRange, is: Info => Boolean): Option[IntRange] = {
-    var range = start
-    while (range.start > 0) {
-      val info = infoSkipLeftAttributes(range.start - 1)
-      val oldRange = range
-      range = info.atomicRange
-      assert(range.start < oldRange.start)
-      if (is(info)) {
-        return Some(range)
-      }
-    }
-    None
-  }
-
-  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[IntRange] = {
-    findLeftAtomic(start, info => info.matchesChar(grapheme, delimitationCodePoints))
+  def findCharBefore(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[Atom] = {
+    befores(start.start).find(_.matches(grapheme, delimitationCodePoints))
   }
 
 
 
 
-  def infoSkipLeftAttributes(pos: Int): Info = {
-    val f = info(pos)
-    if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
-      info(f.nodeStart + f.text.asDelimited.contentSize)
-    } else {
-      f
-    }
-  }
 
-  def infoSkipRightAttributes(pos: Int): Info = {
-    val f = info(pos)
-    if (f.ty == InfoType.AttributeUnicode || f.isAttributeTag) {
-      info(f.nodeStart + f.text.size - 1)
-    } else {
-      f
-    }
-  }
+
+
 
 
   def isEmpty: Boolean = text.isEmpty
@@ -255,81 +125,29 @@ case class Rich(text: Seq[Text]) {
     buffer.toUnicode
   }
 
-  lazy val size: Int = Text.size(text)
-
-  private [model] lazy val infos: Seq[Info] = {
-    val buffer = new ArrayBuffer[Info]()
-    Text.info(Seq.empty, 0, text, buffer)
-    buffer.toVector
-  }
-
-  def info(a: IntRange): Seq[Info] = infos.slice(a.start, a.start + a.size)
-
-  def infoAndSingleSpecials(a: IntRange): (Seq[Info], Seq[IntRange], Seq[IntRange]) = {
-    val ifs = info(a)
-    val soc = new ArrayBuffer[IntRange]()
-    val roc = new ArrayBuffer[IntRange]()
-    for (i <- ifs) {
-      if (i.isStart) {
-        val contentSize = i.text.asDelimited.contentSize
-        val end = i.nodeStart + i.text.size - 1
-        if (!a.contains(end)) {
-          soc.append(IntRange(i.nodeStart))
-          roc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
-        }
-      } else if (i.isEnd) {
-        val start = i.nodeStart
-        if (!a.contains(start)) {
-          val contentSize = i.text.asDelimited.contentSize
-          soc.append(IntRange(i.nodeStart + contentSize + 1, i.nodeStart + i.text.size))
-          roc.append(IntRange(i.nodeStart))
-        }
-      }
-    }
-    (ifs, soc, roc)
-  }
-
-  def info(a: Int): Info = Text.info(Seq.empty[Int], 0, text, a)
-
-  def beginningAtomicRange(): IntRange = text.headOption match {
-    case Some(a: Text.AtomicMark) => IntRange(0, a.size)
-    case Some(a: Text.Formatted) => IntRange(0, 1)
-    case Some(a: Text.Coded) => IntRange(0, 1)
-    case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(0) // because plain cannot be empty
-    case None => IntRange(0, 0)
-  }
-
-  def endAtomicRange(): IntRange = text.lastOption match {
-    case Some(a: Text.AtomicMark) => IntRange(size - a.size, size)
-    case Some(a: Text.Formatted) => IntRange(size - 1, size)
-    case Some(a: Text.Coded) => IntRange(size - 1, size)
-    case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(a.unicode.size - 1).moveBy(size - a.size) // because plain cannot be empty
-    case None => IntRange(0, 0)
-  }
-
-  def isSubRich(range: IntRange): Boolean = {
-    if (range.size == 0) return true
-    def isValidStart(_1: Info): Boolean = _1.ty match {
-      case InfoType.Plain => true
-      case InfoType.Special => SpecialChar.starts.contains(_1.specialChar)
-      case _ => false
+  def isSubRich(range: IntRange): Option[IntRange] = {
+    if (range.size == 0) return None
+    def isValidStart(_1: Atom): Boolean = _1 match {
+      case p: Atom.PlainGrapheme => true
+      case s: Atom.Marked => true
+      case s => s.delimitationStart
     }
 
-    def isValidEnd(_1: Info): Boolean = _1.ty match {
-      case InfoType.Plain => true
-      case InfoType.Special => SpecialChar.ends.contains(_1.specialChar)
-      case _ => false
+    def isValidEnd(_1: Atom): Boolean = _1 match {
+      case p: Atom.PlainGrapheme => true
+      case s: Atom.Marked => true
+      case s => s.delimitationEnd
     }
-    val a = info(range.start)
-    val b = info(range.until - 1)
+    val a = after(range.start)
+    val b = before(range.until)
     if (isValidStart(a) && isValidEnd(b)) {
       if (a.nodeCursor == b.nodeCursor) {
-        return true
+        return Some(IntRange(a.range.start, b.range.until))
       } else if (a.nodeCursor.dropRight(1) == b.nodeCursor.dropRight(1)) {
-        return true
+        return Some(IntRange(a.range.start, b.range.until))
       }
     }
-    false
+    None
   }
 }
 

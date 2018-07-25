@@ -45,10 +45,12 @@ object DataTests extends TestSuite {
       }.isFailure)
     }
 
-    'richInfoConsistent - {
+    'richAtom - {
       for (i <- 0 until 1000) {
-        val p = Rich.random(r)
-        (0 until p.size).map(i => p.info(i)) == p.infos
+        val a = Rich.random(r)
+        val aa = Text.before(Seq.empty, 0, a.size, a.text).toVector.reverse
+        val bb = Text.after(Seq.empty, 0, 0, a.text).toVector
+        assert({ a; aa == bb})
       }
     }
 

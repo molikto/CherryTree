@@ -4,7 +4,7 @@ import client.Client
 import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.{InfoType, SpecialChar}
+import model.data.{Atom, SpecialChar}
 import model.{mode, operation}
 import model.range.IntRange
 
@@ -42,12 +42,12 @@ class RichVisual extends CommandCategory("text visual mode") {
     override def available(a: DocState): Boolean = a.isRichVisual
   }
 
-  SpecialChar.formatLike.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.nonCodedSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
-        val (_, soc, _) = rich.infoAndSingleSpecials(r)
+        val soc = rich.singleSpecials(r).map(_.range)
         val remaining = r.minusOrderedInside(soc)
         val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
         val fakePoints = if (visual.fix.start <= visual.move.start) {
@@ -65,13 +65,13 @@ class RichVisual extends CommandCategory("text visual mode") {
     * code wrap CANNOT use surround!!! because this breaks cursor placement and might insert special char inside code
     * also we currently only wraps plain text
     */
-  SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.codedNonEmpty.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection as ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
         val fakeMode =
-          if (deli.isAtomic) {
+          if (deli.atomic) {
             val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
             mode.Content.RichVisual(p, p)
           } else if (visual.fix.start <= visual.move.start) {
@@ -79,8 +79,8 @@ class RichVisual extends CommandCategory("text visual mode") {
           } else {
             mode.Content.RichVisual(IntRange(r.until + deli.wrapSizeOffset - 1), IntRange(r.start))
           }
-        val ifs = rich.info(r)
-        if (ifs.forall(_.ty == InfoType.Plain)) {
+        val ifs = rich.between(r)
+        if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
           DocTransaction(Seq(
             operation.Node.Content(cursor,
               operation.Content.Rich(operation.Rich.wrapAsCoded(rich.subPlain(r), r, deli)))),
@@ -92,12 +92,14 @@ class RichVisual extends CommandCategory("text visual mode") {
 
   }).toMap
 
-  SpecialChar.linkLike.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.nonCodedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
-        val r = visual.merged
-        if (rich.isSubRich(r)) {
+        var r = visual.merged
+        val g = rich.isSubRich(r)
+        if (g.isDefined) r = g.get
+        if (g.isDefined) {
           val fakeMode =
             if (visual.fix.start <= visual.move.start) {
               mode.Content.RichVisual(IntRange(r.start), IntRange(r.until - 1 + deli.wrapSizeOffset))

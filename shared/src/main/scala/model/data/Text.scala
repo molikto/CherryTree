@@ -2,12 +2,13 @@ package model.data
 
 import model.cursor
 import model.data.SpecialChar.Delimitation
+import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
-  def isAtomic: Boolean = this.isInstanceOf[Text.AtomicMark]
+  def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
   def isCode: Boolean = this.isInstanceOf[Text.Code]
@@ -17,9 +18,11 @@ abstract sealed class Text {
   def asPlain: Text.Plain = this.asInstanceOf[Text.Plain]
 
   private[data] def serialize(buffer: UnicodeWriter)
-  private[data] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int)
-  private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int): Info
   def size: Int
+
+  def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
+  def atoms(myCursor: cursor.Node, myIndex: Int): Iterator[Atom] = after(myCursor, myIndex, 0)
+  def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
 }
 
 /**
@@ -28,36 +31,85 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
-  private [data] def info(parentPos: cursor.Node, seqStart: Int, text: Seq[Text], buffer: ArrayBuffer[Info]): Unit = {
-    var pos = seqStart
-    var index = 0
-    for (t <- text) {
-      t.info(buffer, parentPos :+ index, pos)
-      pos += t.size
-      index += 1
+
+  private[data] def before(myCursor: cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) =
+    if (a.isEmpty) Iterator.empty
+    else {
+      new Iterator[Atom] {
+        private var i = 0 // candidate
+        private var it: Iterator[Atom] = null
+        var j = 0
+
+        {
+          var size = a.head.size
+          while (i < a.size && j + size <= b) {
+            j += size
+            i += 1
+            if (i < a.size) size = a(i).size
+          }
+          if (i == a.size) {
+            i -= 1
+            j -= a.last.size
+          }
+          it = a(i).before(myCursor :+ i, j + myIndex, b - j)
+        }
+
+        override def hasNext: Boolean = i > 0 || it.hasNext
+
+        override def next(): Atom = {
+          if (!it.hasNext) {
+            i -= 1
+            j -= a(i).size
+            it = a(i).before(myCursor :+ i, j + myIndex, a(i).size)
+          }
+          it.next() // we always know this is not empty
+        }
+      }
+    }
+
+  private[data] def after(myCursor: cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) = if (a.isEmpty) Iterator.empty
+  else {
+    new Iterator[Atom] {
+      private var i = 0 // candidate
+      private var it: Iterator[Atom] = null
+
+      var j = 0
+
+      {
+        while (i < a.size && j + a(i).size <= b) {
+          j += a(i).size
+          i += 1
+        }
+        if (i < a.size) {
+          it = a(i).after(myCursor :+ i, j + myIndex, b - j)
+          assert(it != null)
+        }
+      }
+
+      override def hasNext: Boolean = i != a.size && (i < a.size - 1 || it.hasNext)
+
+      override def next(): Atom = {
+        if (!it.hasNext) {
+          j += a(i).size
+          i += 1
+          it = a(i).atoms(myCursor :+ i, j + myIndex)
+        }
+        it.next() // we always know this is not empty
+      }
     }
   }
 
-  // returns null if not inside
-  private [data] def info(parentPos: cursor.Node,
-    seqStart: Int,
-    text: Seq[Text],
-    a: Int): Info = {
-    var ss = seqStart
-    var totalSize = 0
-    var index = 0
-    while (text(index).size + totalSize <= a) {
-      val sss = text(index).size
-      totalSize += sss
-      ss += sss
-      index += 1
+  sealed trait Atomic extends Text {
+    final override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
+      if (i < size) Iterator.single(Atom.Marked(myCursor, myIndex, this))
+      else Iterator.empty
     }
-    text(index).info(a - totalSize, parentPos :+ index, ss)
-  }
 
-
-  sealed trait AtomicMark extends Text {
-
+    final override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
+      if (i == size)
+        Iterator.single(Atom.Marked(myCursor, myIndex, this))
+      else Iterator.empty
+    }
   }
 
   def size(content: Seq[Text]): Int = content.map(_.size).sum
@@ -110,8 +162,6 @@ object Text {
     def content: T
     def contentSize: Int
     private[model] def serializeContent(buffer: UnicodeWriter): Unit
-    private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit
-    private [model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info
 
     final private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(delimitation.start)
@@ -123,47 +173,19 @@ object Text {
       buffer.put(delimitation.end)
     }
 
+
     def delimitation: SpecialChar.Delimitation
 
     def attributes: Seq[SpecialChar] = delimitation.attributes
-    def attribute(i: _root_.model.data.SpecialChar): Unicode = throw new NotImplementedError()
-
-    final override lazy val size: Int = 2 + contentSize + attributes.map(a => attribute(a).size + 1).sum
-
-    final override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
-      var position = selfStart
-      buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = delimitation.start)
-      position += 1
-      contentInfo(buffer, selfPosition, selfStart, position)
-      position += contentSize
-      attributes.foreach(a => {
-        buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = a)
-        position += 1
-        attribute(a).foreach(c => {
-          buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, position, char = c, specialChar = a)
-          position += 1
-        })
-      })
-      buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = delimitation.end)
+    def attribute(i: SpecialChar): Unicode = throw new NotImplementedError()
+    def rangeAttribute(i: SpecialChar): IntRange = {
+      val skip = 1 + contentSize + attributes.takeWhile(_ != i).map(a => attribute(a).size + 1).sum + 1
+      IntRange(skip, skip + attribute(i).size)
     }
 
-    final override def info(start: Int, selfPosition: cursor.Node, selfStart: Int): Info = {
-      val infoPosition = selfStart + start
-      var i = start
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = delimitation.start)
-      i -= 1
-      if (i < contentSize) return contentInfo(selfPosition, selfStart, i, selfStart + 1)
-      i -= contentSize
-      for (a <- attributes) {
-        if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = a)
-        i -= 1
-        val attr = attribute(a)
-        if (i < attr.size) return Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, infoPosition, char = attr(i))
-        i -= attribute(a).size
-      }
-      if (i == 0) return Info(selfPosition, selfStart, this, InfoType.Special, infoPosition, specialChar = delimitation.end)
-      throw new IllegalArgumentException("Out of bound")
-    }
+    def skipSize: Int = attributes.map(a => attribute(a).size + 1).sum
+
+    final override lazy val size: Int = 2 + contentSize + skipSize
   }
 
   sealed trait Formatted extends Delimited[Seq[Text]] {
@@ -175,12 +197,49 @@ object Text {
       content.foreach(_.serialize(buffer))
     }
 
-    override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
-      Text.info(selfPosition, contentStart, content, buffer)
+    override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+      var i = if (b == 0) 0 else if (b != Formatted.this.size) 1 else 2
+      var it: Iterator[Atom] = null
+      override def hasNext: Boolean = i < 2
+
+      override def next(): Atom = if (i == 0) {
+        i += 1
+        Atom.FormattedSpecial(myCursor, myIndex, delimitation.start, Formatted.this)
+      } else if (i == 1) {
+        if (it == null) it = Text.after(myCursor, myIndex + 1, (b - 1) max 0, content)
+        if (it.hasNext) {
+          it.next()
+        } else {
+          i = 2
+          Atom.FormattedSpecial(myCursor, myIndex + Formatted.this.size - 1, delimitation.end, Formatted.this)
+        }
+      } else {
+        throw new IllegalArgumentException("No more")
+      }
     }
 
-    override private[model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info = {
-      Text.info(selfPosition, contentStart, content, a)
+    override def before(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+      var i = if (b == Formatted.this.size) 2 else if (b > 1) 1 else if (b > 0) 0 else -1
+      var it: Iterator[Atom] = null
+      override def hasNext: Boolean = i >= 0
+
+      override def next(): Atom = if (i == 2) {
+        i -= 1
+        Atom.FormattedSpecial(myCursor, myIndex + Formatted.this.size - 1, delimitation.end, Formatted.this)
+      } else if (i == 1) {
+        if (it == null) it = Text.before(myCursor, myIndex + 1, ((b - 1) max 0) min contentSize, content)
+        if (it.hasNext) {
+          it.next()
+        } else {
+          i = -1
+          Atom.FormattedSpecial(myCursor, myIndex, delimitation.start, Formatted.this)
+        }
+      } else if (i == 0) {
+        i = -1
+        Atom.FormattedSpecial(myCursor, myIndex, delimitation.start, Formatted.this)
+      } else {
+        throw new IllegalArgumentException("No more")
+      }
     }
   }
 
@@ -198,11 +257,6 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with AtomicMark {
-    override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
-    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
-    override def content: Unicode = Unicode.empty
-  }
 
   sealed trait Coded extends Delimited[Unicode] {
     def content: Unicode
@@ -213,23 +267,64 @@ object Text {
       buffer.put(content)
     }
 
-    override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
-      var position = contentStart
-      content.foreach(c => {
-        buffer += Info(selfPosition, selfStart, this, InfoType.Coded, position, char = c)
-        position += 1
-      })
+    override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+      var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
+      var it: Iterator[Atom] = null
+      override def hasNext: Boolean = i < 2
+
+      override def next(): Atom = if (i == 0) {
+        i += 1
+        Atom.CodedSpecial(myCursor, myIndex, delimitation.start, Coded.this)
+      } else if (i == 1) {
+        if (it == null) it = content.after((b - 1) max 0).map(a => Atom.CodedGrapheme(myCursor, myIndex + 1 + a._1, a._1, a._2, Coded.this))
+        if (it.hasNext) {
+          it.next()
+        } else {
+          i = 2
+          Atom.CodedSpecial(myCursor, myIndex + Coded.this.size - 1, delimitation.end, Coded.this)
+        }
+      } else {
+        throw new IllegalArgumentException("No more")
+      }
     }
 
-    override private [model] def contentInfo(selfPosition: cursor.Node, selfStart: Int, a: Int, contentStart: Int): Info = {
-      Info(selfPosition, selfStart, this, InfoType.Coded, contentStart + a, char = content(a))
+
+    override def before(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+      var i = if (b == Coded.this.size) 2 else if (b > 1) 1 else if (b > 0) 0 else -1
+      var it: Iterator[Atom] = null
+      override def hasNext: Boolean = i >= 0
+
+      override def next(): Atom = if (i == 2) {
+        i -= 1
+        Atom.CodedSpecial(myCursor, myIndex + Coded.this.size - 1, delimitation.end, Coded.this)
+      } else if (i == 1) {
+        if (it == null) it = content.before(((b - 1) max 0) min contentSize).map(a => Atom.CodedGrapheme(myCursor, a._1 + myIndex + 1, a._1, a._2, Coded.this))
+        if (it.hasNext) {
+          it.next()
+        } else {
+          i = -1
+          Atom.CodedSpecial(myCursor, myIndex, delimitation.start, Coded.this)
+        }
+      } else if (i == 0) {
+        i = -1
+        Atom.CodedSpecial(myCursor, myIndex, delimitation.start, Coded.this)
+      } else {
+        throw new IllegalArgumentException("No more")
+      }
     }
+
+
   }
   case class Code(content: Unicode) extends Coded {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
   }
-  case class LaTeX(content: Unicode) extends Coded with AtomicMark {
+  case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
+  }
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with Atomic {
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
+    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
+    override def content: Unicode = Unicode.empty
   }
 
   /**
@@ -243,16 +338,7 @@ object Text {
       buffer.put(unicode)
     }
 
-    override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
-      var position = selfStart
-      unicode.foreach(c => {
-        buffer += Info(selfPosition, selfStart, this, InfoType.Plain, position, char = c)
-        position += 1
-      })
-    }
-
-    override private[data] def info(a: Int, selfPosition: cursor.Node, selfStart: Int) = {
-      Info(selfPosition, selfStart, this, InfoType.Plain, a + selfStart, char = unicode(a))
-    }
+    override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
+    override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
   }
 }

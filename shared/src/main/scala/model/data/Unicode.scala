@@ -85,7 +85,9 @@ private[model] class UnicodeReader(a: Unicode) {
 
   def eatUntilAndDrop(b: SpecialChar): Unicode = {
     val a = eatUntilSpecialChar()
-    if (!eatOrFalse(b)) throw new UnicodeParseException(s"Expecting $b")
+    if (!eatOrFalse(b)) {
+      throw new UnicodeParseException(s"Expecting $b")
+    }
     a
   }
 }
@@ -119,6 +121,7 @@ object Unicode extends DataObject[Unicode] {
 
 case class Unicode(var str: String) extends Iterable[Int] {
 
+
   override def size: Int = {
     if (size0 == -1) {
       size0 = str.codePointCount(0, str.length)
@@ -135,8 +138,7 @@ case class Unicode(var str: String) extends Iterable[Int] {
     if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
       i
     } else {
-      println(s"complex requested codepoint $str, $i, with $lastCharIndex, $lastCodePointIndex")
-      val index = if (lastCharIndex == -1 || i * 2 <= lastCodePointIndex) {
+      val index = if (lastCodePointIndex == -1 || i * 2 <= lastCodePointIndex) {
         str.offsetByCodePoints(0, i)
       } else {
         str.offsetByCodePoints(lastCharIndex, i - lastCodePointIndex)
@@ -167,6 +169,46 @@ case class Unicode(var str: String) extends Iterable[Int] {
     }
     lastCharIndex == lastCodePointIndex && pos < lastCodePointIndex
   }
+
+  def before(b: Int): Iterator[(Int, Unicode)] = new Iterator[(Int, Unicode)] {
+    if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
+
+    private val g = graphemes
+
+    private val k = new ArrayBuffer[(Int, Unicode)]()
+
+    {
+      var i = 0
+      while (i < b) {
+        val gg = g.next()
+        k.append(gg)
+        i += gg._2.size
+      }
+    }
+
+    private var j = k.size - 1
+
+    override def hasNext: Boolean = j >= 0
+
+    override def next(): (Int, Unicode) = {
+      val r = k(j)
+      j -= 1
+      r
+    }
+  }
+
+  def after(b: Int): Iterator[(Int, Unicode)] = new Iterator[(Int, Unicode)] {
+    private var i = toStringPosition(b)
+    override def hasNext: Boolean = i < str.length
+
+    override def next(): (Int, Unicode) = {
+      val p = i
+      i = GraphemeSplitter.nextBreak(str, p)
+      (p, Unicode(str.substring(p, i)))
+    }
+  }
+
+  def graphemes: Iterator[(Int, Unicode)] = after(0)
 
   private def extendedGraphemeStrRange(pos: Int): (Int, Int) = {
     // if this part is a very simple char

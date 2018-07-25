@@ -27,27 +27,27 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
     override val description: String = "move left"
     override val defaultKeys = Seq("h", Backspace, Left)
-    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftAtomic(a)
+    override def move(content: Rich, a: IntRange): IntRange = content.rangeBefore(a)
   }
 
   new RichMotionCommand() {
     override val description: String = "move right"
     override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
-    override def move(content: Rich, a: IntRange): IntRange = content.moveRightAtomic(a)
+    override def move(content: Rich, a: IntRange): IntRange = content.rangeAfter(a)
   }
 
   new RichMotionCommand() {
     override def repeatable: Boolean = false
     override val description: String = "move to beginning"
     override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
-    override def move(content: Rich, a: IntRange): IntRange = content.beginningAtomicRange()
+    override def move(content: Rich, a: IntRange): IntRange = content.rangeBeginning
   }
 
   new RichMotionCommand {
     override def repeatable: Boolean = false
     override val description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
-    override def move(content: Rich, a: IntRange): IntRange = content.endAtomicRange()
+    override def move(content: Rich, a: IntRange): IntRange = content.rangeEnd
   }
 
   // screen related is not implemented
@@ -105,30 +105,30 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override val description: String = "find char after cursor"
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
-    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findRightCharAtomic(range, char, delimitationGraphemes)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharAfter(range, char, delimitationGraphemes).map(_.range)
 
   }
   val findPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char before cursor"
     override def reverse: FindCommand = findNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("F")
-    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findLeftCharAtomic(range, char, delimitationGraphemes)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharBefore(range, char, delimitationGraphemes).map(_.range)
   }
   val toNextChar: FindCommand = new FindCommand {
     override val description: String = "find char after cursor, move cursor before it"
     override def reverse: FindCommand = toPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("t")
-    override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
+    override def skip(content: Rich, range: IntRange): IntRange = content.rangeAfter(range)
     override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
-      content.findRightCharAtomic(range, char, delimitationGraphemes).map(r => content.moveLeftAtomic(r))
+      content.findCharAfter(range, char, delimitationGraphemes).map(r => content.rangeBefore(r.range))
   }
   val toPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char after cursor, move cursor after it"
     override def reverse: FindCommand = toNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("T")
-    override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
+    override def skip(content: Rich, range: IntRange): IntRange = content.rangeBefore(range)
     override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
-      content.findLeftCharAtomic(range, char, delimitationGraphemes).map(r => content.moveRightAtomic(r))
+      content.findCharBefore(range, char, delimitationGraphemes).map(r => content.rangeAfter(r.range))
   }
 
 

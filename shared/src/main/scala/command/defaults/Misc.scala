@@ -31,9 +31,7 @@ class Misc extends CommandCategory("misc") {
                 case model.data.Content.Rich(rich) =>
                   c match {
                     case model.mode.Content.RichInsert(pos) =>
-                      val range = if (pos != 0) rich.moveLeftAtomic(pos)
-                      else if (rich.isEmpty) IntRange(0, 0)
-                      else rich.beginningAtomicRange()
+                      val range = rich.rangeBefore(pos)
                       DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(range)))
                     case model.mode.Content.RichVisual(_, move) =>
                       DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))

@@ -28,7 +28,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Option[operation.Rich] = {
       if (a > 0) {
-        Some(operation.Rich.deleteOrUnwrapAt(content, a - 1)) // we don't explicitly set mode, as insert mode transformation is always correct
+        Some(operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(a).start)) // we don't explicitly set mode, as insert mode transformation is always correct
       } else {
         None
       }
@@ -69,19 +69,19 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-    override val description: String = if (deli.isAtomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
+    override val description: String = if (deli.atomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
 
     override def emptyAsFalse: Boolean = true
 
     override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert
-      SpecialChar.coded.contains(deli) ||  !rich.insertionInsideCoded(insert.pos)
+      deli.codedNonEmpty ||  !rich.insideCoded(insert.pos)
     }
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
       if (key.isDefined && key.get.size == 1) {
-        if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a)) {
+        if (insert.pos < content.size && content.after(insert.pos).special(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a)) {
           DocTransaction(Seq.empty, moveOneInsertMode())
         } else if (delimitationGraphemes.get(deli.start).contains(key.get.head.a)) {
           val k = operation.Rich.insert(insert.pos, deli.wrap())
@@ -115,13 +115,13 @@ class RichInsert extends CommandCategory("when in insert mode") {
   new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
     override val description: String = "move cursor right"
     override def defaultKeys: Seq[KeySeq] = Seq(Right)
-    override def move(rich: Rich, i: Int): Int = rich.moveRightAtomic(i - 1).until
+    override def move(rich: Rich, i: Int): Int = rich.rangeAfter(i).until
   }
 
   new InsertMovementCommand {
     override val description: String = "move cursor left"
     override def defaultKeys: Seq[KeySeq] = Seq(Left)
-    override def move(rich: Rich, i: Int): Int = rich.moveLeftAtomic(i).start
+    override def move(rich: Rich, i: Int): Int = rich.rangeBefore(i).start
   }
 
   // disabled keys!!!!
