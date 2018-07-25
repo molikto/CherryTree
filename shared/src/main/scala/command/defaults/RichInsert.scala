@@ -38,7 +38,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   new EditCommand with OverrideCommand {
     override val description: String = "delete text after cursor"
     // TODO these keys should be seperate delete words, etc...
-    override val hardcodeKeys: Seq[KeySeq] = (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
+    override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace : KeySeq) +: (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Option[operation.Rich] = {
       if (a < content.size) {
         Some(operation.Rich.deleteOrUnwrapAt(content, a))
