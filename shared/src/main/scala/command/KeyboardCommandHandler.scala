@@ -192,8 +192,11 @@ class KeyboardCommandHandler extends Settings with CommandState
 
     override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {
       val (_, rich, nv) = a.asRichNormalOrVisual
-      val t = rich.after(nv.focus.start)
-      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+      if (rich.isEmpty) false
+      else {
+        val t = rich.after(nv.focus.start)
+        t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+      }
     }
 
     override def action(a: DocState, count: Int): DocTransaction = {

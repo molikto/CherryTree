@@ -81,9 +81,9 @@ class RichInsert extends CommandCategory("when in insert mode") {
       val (n, content, insert) = a.asRichInsert
       def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
       if (key.isDefined && key.get.size == 1) {
-        if (insert.pos < content.size && content.after(insert.pos).special(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a)) {
+        if (insert.pos < content.size && content.after(insert.pos).special(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
           DocTransaction(Seq.empty, moveOneInsertMode())
-        } else if (delimitationGraphemes.get(deli.start).contains(key.get.head.a)) {
+        } else if (delimitationGraphemes.get(deli.start).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
           val k = operation.Rich.insert(insert.pos, deli.wrap())
           DocTransaction(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k))), moveOneInsertMode())
         } else {

@@ -42,6 +42,11 @@ case class DocState(node: model.data.Node, mode: Option[model.mode.Node]) {
     case _ => false
   }
 
+  def isNonEmptyRichNormal: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(r))) => !r.isEmpty
+    case _ => false
+  }
+
   def isRichVisual: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
     case _ => false

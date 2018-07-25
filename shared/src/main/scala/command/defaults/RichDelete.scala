@@ -69,11 +69,11 @@ class RichDelete extends CommandCategory("delete text") {
     override def repeatable: Boolean = true
     override val description: String = "delete under cursor, and more after if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
-    override def available(a: DocState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
-      val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.after(r).range }
+      val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.rangeAfter(r) }
       deleteRichNormalRange(a, pos, r.merge(fr))
     }
 
@@ -83,12 +83,12 @@ class RichDelete extends CommandCategory("delete text") {
     override def repeatable: Boolean = true
     override val description: String = "delete before cursor, and more if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("X")
-    override def available(a: DocState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
-      val rr = rich.before(r).range
-      val fr = (1 until count).foldLeft(rr) {(r, _) => if (r.start == 0) r else rich.before(r).range }
+      val rr = rich.rangeBefore(r)
+      val fr = (1 until count).foldLeft(rr) {(r, _) => rich.rangeBefore(r) }
       deleteRichNormalRange(a, pos, rr.merge(fr))
     }
   }

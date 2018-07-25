@@ -14,7 +14,7 @@ class RichChange extends CommandCategory("change text") {
   new NeedsCharCommand {
     override val description: String = "change content under the cursor"
     override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
-    override def available(a: DocState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
 
     override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
       val (cursor, rich, v) = a.asRichNormal
