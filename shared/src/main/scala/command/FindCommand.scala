@@ -1,12 +1,12 @@
 package command
 
-import command.Key.Grapheme
 import doc.{DocState, DocTransaction}
+import model.data.Unicode
 
 trait FindCommand extends Command {
 
 
   def reverse: FindCommand
 
-  def findGrapheme(a: DocState, char: Grapheme, count: Int, skipCurrent: Boolean): DocTransaction
+  def findGrapheme(a: DocState, char: Unicode, count: Int, skipCurrent: Boolean): DocTransaction
 }

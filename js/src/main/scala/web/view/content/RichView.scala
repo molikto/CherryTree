@@ -275,7 +275,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     } else if (range.size == 1 &&
       ss.ty  == InfoType.Special &&
       SpecialChar.startsEnds.contains(ss.specialChar) &&
-      !ss.text.isAtomicViewed) {
+      !ss.text.isAtomic) {
       val isStart = SpecialChar.starts.contains(ss.specialChar)
       val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
       val a = span.childNodes(if (isStart) 0 else 2).childNodes(0)

@@ -1,7 +1,6 @@
 package model.data
 
 import boopickle._
-import command.Key.Grapheme
 import model.range.IntRange
 import model.cursor
 
@@ -25,14 +24,46 @@ case class Info(
   specialChar: SpecialChar = null, // only valid if type == Special, the special char, or type == Attribute, the attribute name
   char: Int = 0 // only valid not Special
 ) {
-  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Grapheme]): Boolean = {
+
+  def sameWordVertic: Info => Boolean = {
+    ???
+  }
+
+  def anotherWordVertic: Info => Boolean = {
+    if (isWhitespace) {
+      a => !a.isWhitespace
+    } else if (isAtomic) {
+      i => i.isSpecial || i.isChar
+    } else if (isLetterChar) {
+      i => !i.isLetterChar && !i.isWhitespace
+    } else if (isSpecial) {
+      i => !i.isSpecial && !i.isWhitespace
+    } else if (isOtherChar) {
+      i => !i.isOtherChar && !i.isWhitespace
+    } else {
+      throw new IllegalStateException("Not possilbe??")
+    }
+  }
+
+
+  def isChar: Boolean = ty == InfoType.Coded || ty == InfoType.Plain
+  def isWhitespace: Boolean = isChar && Character.isWhitespace(char)
+
+  def isLetterChar: Boolean = isChar && (Character.isAlphabetic(char) || Character.isDigit(char) || char == '_'.toInt || Character.isIdeographic(char))
+
+  def isOtherChar: Boolean = isChar && !isLetterChar
+
+  def isAtomic: Boolean = text.isAtomic
+
+  def matchesChar(grapheme: Unicode, delimitationCodePoints:  Map[SpecialChar, Unicode]): Boolean = {
     if (ty == InfoType.Special && grapheme.size == 1) {
-      delimitationCodePoints.get(specialChar).contains(Grapheme(grapheme))
+      delimitationCodePoints.get(specialChar).contains(grapheme)
     } else {
       extendedGrapheme == grapheme
     }
   }
 
+  def isSpecial: Boolean = ty == InfoType.Special
   def isSpecialChar(a: SpecialChar): Boolean = ty == InfoType.Special && specialChar == a
   def isStart: Boolean = ty == InfoType.Special && SpecialChar.starts.contains(specialChar)
   def isEnd: Boolean = ty == InfoType.Special && SpecialChar.ends.contains(specialChar)
@@ -70,7 +101,7 @@ case class Info(
   }
 
   def atomicRange: IntRange = {
-    if (text.isAtomicViewed) {
+    if (text.isAtomic) {
       val atomicStart = nodeStart
       IntRange(atomicStart, atomicStart + text.size)
     } else if (ty == InfoType.Special) {
@@ -79,6 +110,8 @@ case class Info(
       extendedGraphemeRange
     }
   }
+
+
 }
 /**
   * we currently expect all our rich object is normalized??
@@ -95,21 +128,20 @@ case class Rich(text: Seq[Text]) {
     * a continuous sequence of word
     */
   def moveRightWord(a: IntRange): IntRange = {
-    // determine where we are now: inside a latter word, control word, or other word, or atomic, or space
-    ???
+    findRightAtomic(a, info(a.start).anotherWordVertic).getOrElse(endAtomicRange())
   }
 
-  def moveRightWORD(a: IntRange): IntRange = {
-    ???
-  }
+  def moveRightWORD(a: IntRange): IntRange =
+    findRightAtomicInclusive(a, _.isWhitespace).flatMap(b => findRightAtomic(b, !_.isWhitespace)).getOrElse(endAtomicRange())
 
-  def moveRightWordEnd(a: IntRange): IntRange = {
-    ???
-  }
+ def moveRightWordEnd(a: IntRange): IntRange = {
+   ???
+ }
 
   def moveRightWORDEnd(a: IntRange): IntRange = {
     ???
   }
+
 
   def moveLeftWord(a: IntRange): IntRange = {
     ???
@@ -145,32 +177,51 @@ case class Rich(text: Seq[Text]) {
   def moveLeftAtomic(aaa: Int): IntRange = infoSkipLeftAttributes((aaa - 1) max 0).atomicRange
   def moveRightAtomic(bbb: Int): IntRange = infoSkipRightAttributes((bbb + 1) min (size - 1)).atomicRange
 
-  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Grapheme]): Option[IntRange] = {
+
+  def findRightAtomicInclusive(start: IntRange, is: Info => Boolean): Option[IntRange] = {
+    if (is(info(start.start))) Some(start)
+    else findRightAtomic(start, is)
+  }
+
+  def findLeftAtomicInclusive(start: IntRange, is: Info => Boolean): Option[IntRange] = {
+    if (is(info(start.start))) Some(start)
+    else findLeftAtomic(start, is)
+  }
+
+  def findRightAtomic(start: IntRange, is: Info => Boolean): Option[IntRange] = {
     var range = start
     while (range.until < size) {
       val info = infoSkipRightAttributes(range.until)
       val oldRange = range
       range = info.atomicRange
       assert(oldRange.until < range.until)
-      if (info.matchesChar(grapheme, delimitationCodePoints)) {
+      if (is(info)) {
         return Some(range)
       }
     }
     None
   }
 
-  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Grapheme]): Option[IntRange] = {
+  def findRightCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[IntRange] = {
+    findRightAtomic(start, info => info.matchesChar(grapheme, delimitationCodePoints))
+  }
+
+  def findLeftAtomic(start: IntRange, is: Info => Boolean): Option[IntRange] = {
     var range = start
     while (range.start > 0) {
       val info = infoSkipLeftAttributes(range.start - 1)
       val oldRange = range
       range = info.atomicRange
       assert(range.start < oldRange.start)
-      if (info.matchesChar(grapheme, delimitationCodePoints)) {
+      if (is(info)) {
         return Some(range)
       }
     }
     None
+  }
+
+  def findLeftCharAtomic(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[IntRange] = {
+    findLeftAtomic(start, info => info.matchesChar(grapheme, delimitationCodePoints))
   }
 
 
@@ -241,7 +292,7 @@ case class Rich(text: Seq[Text]) {
   def info(a: Int): Info = Text.info(Seq.empty[Int], 0, text, a)
 
   def beginningAtomicRange(): IntRange = text.headOption match {
-    case Some(a: Text.AtomicSelected) => IntRange(0, a.size)
+    case Some(a: Text.AtomicMark) => IntRange(0, a.size)
     case Some(a: Text.Formatted) => IntRange(0, 1)
     case Some(a: Text.Coded) => IntRange(0, 1)
     case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(0) // because plain cannot be empty
@@ -249,7 +300,7 @@ case class Rich(text: Seq[Text]) {
   }
 
   def endAtomicRange(): IntRange = text.lastOption match {
-    case Some(a: Text.AtomicSelected) => IntRange(size - a.size, size)
+    case Some(a: Text.AtomicMark) => IntRange(size - a.size, size)
     case Some(a: Text.Formatted) => IntRange(size - 1, size)
     case Some(a: Text.Coded) => IntRange(size - 1, size)
     case Some(a: Text.Plain) => a.unicode.extendedGraphemeRange(a.unicode.size - 1).moveBy(size - a.size) // because plain cannot be empty
@@ -313,7 +364,7 @@ object Rich extends DataObject[Rich] {
     nonNormalized.foldRight(Seq.empty[Text]) { (m, seq) =>
       (m, seq.headOption) match {
         case (Text.Plain(c), Some(Text.Plain(j))) =>
-          Text.Plain(c.join(j)) +: seq.tail
+          Text.Plain(c + j) +: seq.tail
         case _ => m +: seq
       }
     }

@@ -49,7 +49,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def deleteOrUnwrapAt(content: data.Rich, i: Int): Rich = {
     val info = content.infoSkipLeftAttributes(i)
-    if (info.ty == InfoType.Special && !info.text.isAtomicViewed) {
+    if (info.ty == InfoType.Special && !info.text.isAtomic) {
       operation.Rich.unwrap(info.nodeStart, info.text.asDelimited)
     } else {
       operation.Rich.delete(info.atomicRange)
@@ -117,10 +117,10 @@ object Rich extends OperationObject[data.Rich, Rich] {
           (randomSubrich(d, r), LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
         Rich(Seq(
           operation.Unicode.Surround(randomFormat._1, data.Unicode(randomFormat._2),
-            data.Unicode(randomFormat._3)
-              .join(data.Unicode("http://www.baidu.com"))
-              .join(data.Unicode(randomFormat._4))
-              .join(data.Unicode(randomFormat._5))
+            data.Unicode(randomFormat._3) +
+              data.Unicode("http://www.baidu.com") +
+              data.Unicode(randomFormat._4) +
+              data.Unicode(randomFormat._5)
           )
         ), Type.Add)
       case 3 =>

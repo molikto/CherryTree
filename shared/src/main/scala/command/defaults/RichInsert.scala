@@ -81,9 +81,9 @@ class RichInsert extends CommandCategory("when in insert mode") {
       val (n, content, insert) = a.asRichInsert
       def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
       if (key.isDefined && key.get.size == 1) {
-        if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end) &&  delimitationCodePoints.get(deli.end).contains(key.get.head.a)) {
+        if (insert.pos < content.size && content.info(insert.pos).isSpecialChar(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a)) {
           DocTransaction(Seq.empty, moveOneInsertMode())
-        } else if (delimitationCodePoints.get(deli.start).contains(key.get.head.a)) {
+        } else if (delimitationGraphemes.get(deli.start).contains(key.get.head.a)) {
           val k = operation.Rich.insert(insert.pos, deli.wrap())
           DocTransaction(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k))), moveOneInsertMode())
         } else {
@@ -173,4 +173,10 @@ class RichInsert extends CommandCategory("when in insert mode") {
   //i_0_CTRL-D    0 CTRL-D          delete all indent in the current line
   //i_^_CTRL-D    ^ CTRL-D          delete all indent in the current line,
   //                                     restore indent in next line
+
+  // Q_si          Special inserts
+  //
+  //:r       :r [file]       insert the contents of [file] below the cursor
+  //:r!      :r! {command}   insert the standard output of {command} below the
+  //                              cursor
 }

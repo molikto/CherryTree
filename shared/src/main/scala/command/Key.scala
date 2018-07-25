@@ -98,14 +98,14 @@ object Key {
     GraphemeSplitter.nextBreak(s) == s.length
 
   // LATER is all keyboard layout like this??
-  private val shifted = Unicode("~!@#$%^&*()_+{}:\"|><?QWERTYUIOPASDFGHJKLZXCVBNM").codePoints
+  private val shifted = Unicode("~!@#$%^&*()_+{}:\"|><?QWERTYUIOPASDFGHJKLZXCVBNM").toSeq
 
   private def assciiKeyWithModifier(a: Int): Key = Key(Grapheme(Unicode(a)), shift = shifted.contains(a))
 
-  implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).codePoints.map(assciiKeyWithModifier)
+  implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).toSeq.map(assciiKeyWithModifier)
 
   implicit def singleToKey(s: V): KeySeq = s match {
-    case Grapheme(u) if u.codePoints.size == 1 => Seq(Key(s, shift = shifted.contains(u.codePoints.head)))
+    case Grapheme(u) if u.size == 1 => Seq(Key(s, shift = shifted.contains(u(0))))
     case _ => Seq(Key(s))
   }
 

@@ -5,7 +5,7 @@ import command.{CommandCategory, CommandState}
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.Rich
+import model.data.{Rich, Unicode}
 
 class RichMotion extends CommandCategory("move cursor inside text") {
 
@@ -65,9 +65,9 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
   abstract class FindCommand extends MotionCommand with NeedsCharCommand with command.FindCommand {
 
-    def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange]
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange]
     def skip(a: Rich, range: IntRange): IntRange = range
-    def moveSkip(a: Rich, range: IntRange, char: Grapheme, skipCurrent: Boolean): Option[IntRange] = {
+    def moveSkip(a: Rich, range: IntRange, char: Unicode, skipCurrent: Boolean): Option[IntRange] = {
       if (skipCurrent) {
         move(a, range, char).flatMap(m => {
           if (m == range) {
@@ -81,7 +81,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       }
     }
 
-    override def findGrapheme(a: DocState, char: Grapheme, count: Int, skipCurrent: Boolean): DocTransaction = {
+    override def findGrapheme(a: DocState, char: Unicode, count: Int, skipCurrent: Boolean): DocTransaction = {
       val (_, content, mm) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
         r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
@@ -94,7 +94,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       }
     }
 
-    final override def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = {
+    final override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
       findGrapheme(a, char, count, skipCurrent = false)
     }
 
@@ -105,30 +105,30 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override val description: String = "find char after cursor"
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
-    def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findRightCharAtomic(range, char.a, delimitationCodePoints)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findRightCharAtomic(range, char, delimitationGraphemes)
 
   }
   val findPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char before cursor"
     override def reverse: FindCommand = findNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("F")
-    def move(a: Rich, range: IntRange, char: Grapheme): Option[IntRange] = a.findLeftCharAtomic(range, char.a, delimitationCodePoints)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findLeftCharAtomic(range, char, delimitationGraphemes)
   }
   val toNextChar: FindCommand = new FindCommand {
     override val description: String = "find char after cursor, move cursor before it"
     override def reverse: FindCommand = toPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("t")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveRightAtomic(range)
-    override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
-      content.findRightCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveLeftAtomic(r))
+    override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
+      content.findRightCharAtomic(range, char, delimitationGraphemes).map(r => content.moveLeftAtomic(r))
   }
   val toPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char after cursor, move cursor after it"
     override def reverse: FindCommand = toNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("T")
     override def skip(content: Rich, range: IntRange): IntRange = content.moveLeftAtomic(range)
-    override def move(content: Rich, range: IntRange, char: Grapheme): Option[IntRange] =
-      content.findLeftCharAtomic(range, char.a, delimitationCodePoints).map(r => content.moveRightAtomic(r))
+    override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
+      content.findLeftCharAtomic(range, char, delimitationGraphemes).map(r => content.moveRightAtomic(r))
   }
 
 

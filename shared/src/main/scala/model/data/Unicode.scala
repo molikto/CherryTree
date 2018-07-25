@@ -109,11 +109,6 @@ object Unicode extends DataObject[Unicode] {
     Unicode(a.map(apply).mkString, a.size)
   }
 
-
-  def ofCodePoints(a: Seq[Int]): Unicode = {
-    Unicode(a.map(apply).mkString, a.size)
-  }
-
   def apply(a: Int): Unicode = {
     Unicode(new String(Character.toChars(a)), 1)
   }
@@ -122,13 +117,9 @@ object Unicode extends DataObject[Unicode] {
   val empty = Unicode("", 0)
 }
 
-case class Unicode(var str: String) {
+case class Unicode(var str: String) extends Iterable[Int] {
 
-  def times(size: Int): Unicode = {
-    Unicode(str * size, if (size0 == -1) -1 else size0 * size)
-  }
-
-  def size: Int = {
+  override def size: Int = {
     if (size0 == -1) {
       size0 = str.codePointCount(0, str.length)
     }
@@ -156,14 +147,16 @@ case class Unicode(var str: String) {
     }
   }
 
-  def codePoints: Seq[Int] = {
-    val a = new ArrayBuffer[Int]()
+
+  override def iterator: Iterator[Int] = new Iterator[Int] {
     var i = 0
-    while (i < str.length) {
-      a.append(str.codePointAt(i))
+    override def hasNext: Boolean = i != str.length
+
+    override def next(): Int = {
+      val r = str.codePointAt(i)
       i = str.offsetByCodePoints(i, 1)
+      r
     }
-    a
   }
 
   private def noSurrogatePairBeforeAndAtCodePointIndex(pos: Int): Boolean = {
@@ -189,21 +182,6 @@ case class Unicode(var str: String) {
     (start, end)
   }
 
-  def graphemesCount: Int = {
-    if (isEmpty) {
-      0
-    } else {
-      var start = 0
-      var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
-      var size = 1
-      while (end < str.length) {
-        start = end
-        end = GraphemeSplitter.nextBreak(str, start)
-        size += 1
-      }
-      size
-    }
-  }
 
   def extendedGrapheme(pos: Int): Unicode = {
     val (start, end) = extendedGraphemeStrRange(pos)
@@ -219,12 +197,13 @@ case class Unicode(var str: String) {
 
 
 
-  def join(j: Unicode): Unicode = Unicode(str + j.str, if (size0 == -1 || j.size0 == -1) -1 else size0 + j.size0)
+  def +(j: Unicode): Unicode = Unicode(str + j.str, if (size0 == -1 || j.size0 == -1) -1 else size0 + j.size0)
 
 
   override def toString: String = str
 
-  def isEmpty: Boolean = str.isEmpty
+
+  override def isEmpty: Boolean = str.isEmpty
   def slice(r: IntRange): Unicode = {
     val start = toStringPosition(r.start)
     val end = toStringPosition(r.until)
@@ -263,7 +242,8 @@ case class Unicode(var str: String) {
     delete(r).insert(r.transformAfterDeleted(at).get, s)
   }
 
-  val isDigit: Boolean = str.length == 1 && Character.isDigit(str.charAt(0))
+  def isDigit: Boolean = str.length == 1 && Character.isDigit(str.charAt(0))
 
   def asDigit: Int = str.toInt
+
 }

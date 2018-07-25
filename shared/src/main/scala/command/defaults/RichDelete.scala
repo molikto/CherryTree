@@ -7,6 +7,7 @@ import doc.{DocState, DocTransaction}
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
+// TODO save to buffer
 class RichDelete extends CommandCategory("delete text") {
 
 

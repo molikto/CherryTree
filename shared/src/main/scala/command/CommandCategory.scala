@@ -1,7 +1,7 @@
 package command
 
 import client.Client
-import command.Key.KeySeq
+import command.Key.{Grapheme, KeySeq}
 import doc.{DocState, DocTransaction}
 import model.data.SpecialChar
 import settings.Settings
@@ -27,7 +27,7 @@ class CommandCategory(val name: String) extends Settings {
     // currently these cannot be changed, you can change delimiters though
     override def defaultKeys: Seq[KeySeq] = Seq.empty
     override def hardcodeKeys: Seq[KeySeq] =
-      Seq(deli.start, deli.end).flatMap(delimitationCodePoints.get).distinct.map(a => a : KeySeq)
+      Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => Grapheme(a) : KeySeq)
   }
 
   trait MotionCommand extends Command {

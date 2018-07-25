@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
-  def isAtomicViewed: Boolean = this.isInstanceOf[Text.AtomicSelected]
+  def isAtomic: Boolean = this.isInstanceOf[Text.AtomicMark]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
   def isCode: Boolean = this.isInstanceOf[Text.Code]
@@ -56,7 +56,7 @@ object Text {
   }
 
 
-  sealed trait AtomicSelected extends Text {
+  sealed trait AtomicMark extends Text {
 
   }
 
@@ -104,6 +104,8 @@ object Text {
     buffer.toVector
   }
 
+  type DelimitedAny = Delimited[Any]
+
   sealed trait Delimited[T] extends Text {
     def content: T
     def contentSize: Int
@@ -137,7 +139,7 @@ object Text {
       attributes.foreach(a => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Special, position, specialChar = a)
         position += 1
-        attribute(a).codePoints.foreach(c => {
+        attribute(a).foreach(c => {
           buffer += Info(selfPosition, selfStart, this, InfoType.AttributeUnicode, position, char = c, specialChar = a)
           position += 1
         })
@@ -196,7 +198,7 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with AtomicSelected {
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with AtomicMark {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
     override def content: Unicode = Unicode.empty
@@ -213,7 +215,7 @@ object Text {
 
     override private[model] def contentInfo(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int, contentStart: Int): Unit = {
       var position = contentStart
-      content.codePoints.foreach(c => {
+      content.foreach(c => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Coded, position, char = c)
         position += 1
       })
@@ -226,7 +228,7 @@ object Text {
   case class Code(content: Unicode) extends Coded {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
   }
-  case class LaTeX(content: Unicode) extends Coded with AtomicSelected {
+  case class LaTeX(content: Unicode) extends Coded with AtomicMark {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
   }
 
@@ -243,7 +245,7 @@ object Text {
 
     override private[model] def info(buffer: ArrayBuffer[Info], selfPosition: cursor.Node, selfStart: Int): Unit = {
       var position = selfStart
-      unicode.codePoints.foreach(c => {
+      unicode.foreach(c => {
         buffer += Info(selfPosition, selfStart, this, InfoType.Plain, position, char = c)
         position += 1
       })

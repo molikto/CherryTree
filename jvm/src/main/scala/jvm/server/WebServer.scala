@@ -14,22 +14,20 @@ import model.data.Node
 class WebServer() {
 
 
-  val file = new File("saved")
 
   val api = new server.Server() {
-    import model._
-    override def save(a: Node): Unit = {
-      val bs = Pickle.intoBytes(a)(implicitly, Node.pickler)
-      Files.write(file.toPath, bs.array())
+
+    override def debugSave(a: String, bs: Array[Byte]): Unit = {
+      val file = new File(a)
+      Files.write(file.toPath, bs)
     }
 
-    override def load(): Node = {
+    override def debugLoad(a: String): Array[Byte] = {
+      val file = new File(a)
       if (!file.exists()) {
-        Node.empty
+        Array()
       } else {
-        val rs = Files.readAllBytes(file.toPath)
-        val b = Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(rs))
-        b
+        Files.readAllBytes(file.toPath)
       }
     }
   }

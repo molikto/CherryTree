@@ -87,7 +87,7 @@ class NodeMotion extends CommandCategory("move among notes") {
   // * N%    N  %            goto line N percentage down in the file; N must be
   // * given, otherwise it is the % command
 
-  // screen related not implemented
+  // LATER screen related not implemented
   //        gk    N  gk           up N screen lines (differs from "k" when line wraps)
   //        gj    N  gj           down N screen lines (differs from "j" when line wraps)
 

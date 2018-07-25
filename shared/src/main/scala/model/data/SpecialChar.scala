@@ -100,7 +100,7 @@ object SpecialChar {
 
   case class Delimitation(name: String, start: SpecialChar, end: SpecialChar, attributes: Seq[SpecialChar] = Seq.empty, isAtomic: Boolean = false) {
 
-    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start).join(a).join(Unicode(attributes :+ end))
+    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode(attributes :+ end)
 
 
     private[model] def startUnicode = Unicode(start)

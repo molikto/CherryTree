@@ -1,23 +1,29 @@
 package server
 
+import java.nio.ByteBuffer
+
 import model._
 import api._
-import model.data.{Text, Unicode}
+import model.data.{Node, Text, Unicode}
 import model.ot.Rebased
 
 import scala.collection.mutable
 import scala.util.Random
 
 trait Server extends Api {
-  def save(a: data.Node)
-  def load(): data.Node
+  def debugSave(a: String, bs: Array[Byte])
+  def debugLoad(a: String): Array[Byte]
 
   // states, now in single thread fashion
 
   case class ClientInfo(version: Int, lastSeen: Long)
 
-  private var document = load()
-  private var changes = Seq.empty[transaction.Node]
+  private var document =  Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(debugLoad("saved")))
+  private var changes = {
+    val bs = debugLoad("changes")
+    if (bs.isEmpty) Seq.empty
+    else Unpickle[Seq[transaction.Node]](implicitly).fromBytes(ByteBuffer.wrap(bs))
+  }
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, ClientInfo] = mutable.Map.empty
   private var debugHistoryDocuments = Seq(document)
@@ -83,7 +89,8 @@ trait Server extends Api {
         var debugTopDocument = document
         document = operation.Node.applyT(transformed, document)
         changes = changes ++ transformed
-        save(document)
+        debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+        debugSave("changes", Pickle.intoBytes(changes)(implicitly, implicitly).array())
         if (debugModel) {
           for (t <- transformed) {
             debugTopDocument = operation.Node.apply(t, debugTopDocument)

@@ -6,6 +6,7 @@ import doc.{DocState, DocTransaction}
 import model.{cursor, operation}
 import model.range.IntRange
 
+// TODO save to buffer
 class NodeDelete extends CommandCategory("deleting nodes") {
 
 

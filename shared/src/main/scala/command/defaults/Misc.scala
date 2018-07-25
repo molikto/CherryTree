@@ -9,6 +9,12 @@ import model.range.IntRange
 class Misc extends CommandCategory("misc") {
 
 
+  // what/s these?
+  //
+  // i_<Esc>       <Esc>             end Insert mode, back to Normal mode
+  // i_CTRL-C      CTRL-C            like <Esc>, but do not use an abbreviation
+  // i_CTRL-O      CTRL-O {command}  execute {command} and return to Insert mode
+
   val exit: Command = new Command {
     override val description: String = "exit current mode"
     override val defaultKeys: Seq[KeySeq] = Seq(Escape, Ctrl + "c", Ctrl + "[")
@@ -72,6 +78,9 @@ class Misc extends CommandCategory("misc") {
   //          CTRL-I  N  CTRL-I     go to Nth newer position in jump list
   //            :ju     :ju[mps]      print the jump list
 
+
+
+  // Q_vm          Various motions
   //        %        %            find the next brace, bracket, comment, or "#if"/
   //        "#else"/"#endif" in this line and go to its match
   //        H     N  H            go to the Nth line in the window, on the first

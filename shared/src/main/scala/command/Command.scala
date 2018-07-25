@@ -1,8 +1,9 @@
 package command
 
 import client.Client
-import command.Key.{Grapheme, KeySeq}
+import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
+import model.data.Unicode
 
 abstract class Command {
 
@@ -31,6 +32,6 @@ abstract class Command {
   def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = action(a, count)
   protected def available(a: DocState): Boolean
   protected def action(a: DocState, count: Int): DocTransaction
-  def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = throw new NotImplementedError()
+  def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = throw new NotImplementedError()
 }
 

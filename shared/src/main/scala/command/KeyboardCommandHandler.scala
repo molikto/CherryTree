@@ -3,6 +3,7 @@ package command
 import client.Client
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.data.Unicode
 import model.range.IntRange
 import monix.reactive.Observable
 import monix.reactive.subjects._
@@ -10,6 +11,7 @@ import settings.Settings
 
 import scala.util.{Success, Try}
 
+// TODO 
 class KeyboardCommandHandler extends Settings with CommandState
 { self : Client =>
 
@@ -39,9 +41,9 @@ class KeyboardCommandHandler extends Settings with CommandState
   private var commandPartConfirmed: KeySeq = Seq.empty
   private var commandsToConfirm = Seq.empty[command.Command]
   private var waitingForCharCommand: (command.Command, KeySeq, String) = null
-  private var lastFindCommand_ : (FindCommand, Grapheme) = null
+  private var lastFindCommand_ : (FindCommand, Unicode) = null
 
-  override def lastFindCommand: Option[(FindCommand, Grapheme)] = Option(lastFindCommand_)
+  override def lastFindCommand: Option[(FindCommand, Unicode)] = Option(lastFindCommand_)
 
   private var commandCounts: String = ""
 
@@ -121,7 +123,7 @@ class KeyboardCommandHandler extends Settings with CommandState
   def keyDown(key: Key): Boolean = {
     if (waitingForCharCommand != null) {
       key.a match {
-        case g@Key.Grapheme(a) => change(consumeByWaitingForGraphemeCommand(state, g))
+        case g@Key.Grapheme(a) => change(consumeByWaitingForGraphemeCommand(state, a))
         case _: Key.Modifier => // ignore modifier only keys
         case _ => clearWaitingForGraphemeCommand()
       }
@@ -161,7 +163,7 @@ class KeyboardCommandHandler extends Settings with CommandState
     waitingForCharCommand = null
   }
 
-  private def consumeByWaitingForGraphemeCommand(state: DocState, a: Grapheme): DocTransaction = {
+  private def consumeByWaitingForGraphemeCommand(state: DocState, a: Unicode): DocTransaction = {
     if (waitingForCharCommand != null) {
       val ww = waitingForCharCommand
       ww._1 match {
@@ -171,7 +173,7 @@ class KeyboardCommandHandler extends Settings with CommandState
       }
       val res = ww._1.actionOnGrapheme(state, a, if (ww._3 == "") 1 else ww._3.toInt)
       waitingForCharCommand = null
-      status.onNext(CommandStatus.LastPerformed(ww._3, ww._2, Some(a.a)))
+      status.onNext(CommandStatus.LastPerformed(ww._3, ww._2, Some(a)))
       res
     } else {
       DocTransaction.empty

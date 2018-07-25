@@ -18,8 +18,10 @@ object ClientTests extends TestSuite  {
 
   val tests = Tests {
     val s = new server.Server() {
-      override def save(a: Node): Unit = {}
-      override def load(): Node = Node.random()
+      override def debugSave(a: String, bs: Array[Byte]): Unit = {
+      }
+
+      override def debugLoad(a: String): Array[Byte] = Array()
     }
     val api = {
       val k = new TestAutowireClient(s)

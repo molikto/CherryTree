@@ -49,12 +49,6 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
   }
 
   // DIFFERENCE insert mode doesn't take n currently (Sublime doesn't do this currently, wired)
-  //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
-  //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
-  //
-  //in Visual block mode:
-  //v_b_I    I    insert the same text in front of all the selected lines
-  //v_b_A    A    append the same text after all the selected lines
 
   abstract class EnterInsertCommand extends Command {
     def move(content: Rich,a: IntRange): Int
@@ -87,4 +81,13 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     override val defaultKeys: Seq[KeySeq] = Seq("I", "gI") // command merged
     override def move(content: Rich,a: IntRange): Int = 0
   }
+
+
+  // not implemented, we don't do n
+  //:startinsert  :star[tinsert][!]  start Insert mode, append when [!] used
+  //:startreplace :startr[eplace][!]  start Replace mode, at EOL when [!] used
+  //
+  //in Visual block mode:
+  //v_b_I    I    insert the same text in front of all the selected lines
+  //v_b_A    A    append the same text after all the selected lines
 }

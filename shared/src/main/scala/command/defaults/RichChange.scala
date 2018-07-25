@@ -4,7 +4,7 @@ import client.Client
 import command.CommandCategory
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.{Info, InfoType, SpecialChar, Text}
+import model.data.{apply => _, _}
 import model.range.IntRange
 import model.{mode, operation}
 
@@ -16,7 +16,7 @@ class RichChange extends CommandCategory("change text") {
     override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
     override def available(a: DocState): Boolean = a.isRichNormal
 
-    override def actionOnGrapheme(a: DocState, char: Grapheme, count: Int): DocTransaction = {
+    override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
       val (cursor, rich, v) = a.asRichNormal
 
       def makeMode(in: Info, riches: Seq[operation.Rich]): Option[mode.Node] = {
@@ -29,7 +29,7 @@ class RichChange extends CommandCategory("change text") {
         Some(a.copyContentMode(mode.Content.RichNormal(range)))
       }
 
-      if (v.range.size == 1 && char.a.size == 1) {
+      if (v.range.size == 1 && char.size == 1) {
         val point = v.range.start
         val in = rich.info(point)
         if (in.isStartOrEnd) {
@@ -76,9 +76,9 @@ class RichChange extends CommandCategory("change text") {
       if (rich.info(v.range.start).ty != InfoType.Special) {
         val ops = operation.Rich.merge(
           operation.Rich.delete(v.range),
-          operation.Rich.insert(v.range.start, char.a
+          operation.Rich.insert(v.range.start, char
           ), operation.Type.AddDelete)
-        val focus = IntRange(v.range.start, v.range.start + char.a.size)
+        val focus = IntRange(v.range.start, v.range.start + char.size)
         DocTransaction(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
           Some(a.copyContentMode(mode.Content.RichNormal(focus))))
       } else {

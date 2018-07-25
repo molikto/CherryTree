@@ -11,11 +11,14 @@ class NodeVisual extends CommandCategory("node visual") {
   // DIFFERENCE going from node visual to content visual is NOT possible
   // CTRL-V   CTRL-V       start highlighting blockwise   }  highlighted text
   // v_CTRL-V CTRL-V       highlight blockwise or stop highlighting
+
+
+  // LATER
   // gv       gv           start highlighting on previous visual area
 
   new Command {
     override val description: String = "enter/exit node visual mode"
-    override val defaultKeys: Seq[KeySeq] = Seq("V") // DIFFERENCE merged two command
+    override val defaultKeys: Seq[KeySeq] = Seq("V", Ctrl + "V") // DIFFERENCE merged two command
     override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
         case model.mode.Node.Content(_, mm) => mm.isNormalOrVisual
