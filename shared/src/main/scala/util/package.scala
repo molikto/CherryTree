@@ -8,6 +8,15 @@ package object util extends ObservablePropertyImplicits  {
   private val debugOn = false
 
 
+  def head[T](a: Iterator[T]): Option[T] = if (a.hasNext) Some(a.next()) else None
+  def last[T](a: Iterator[T]): Option[T] = {
+    var n: Option[T] = None
+    while (a.hasNext) {
+      n = Some(a.next())
+    }
+    n
+  }
+
 
   def debugged[T](a : => T)(implicit debug: Boolean = debugOn): T = {
     if (debug) {

@@ -14,7 +14,7 @@ class RichVisual extends CommandCategory("text visual mode") {
   new Command {
     override val description: String = "enter text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
-    override def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual
     override def action(a: DocState, count: Int): DocTransaction = {
       val (_, rich, m) = a.asRichNormalOrVisual
       m match {

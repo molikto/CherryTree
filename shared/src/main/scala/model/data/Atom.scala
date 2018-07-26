@@ -16,6 +16,7 @@ sealed trait Atom {
 
   def whitespace: Boolean = false
   def letterLike: Boolean = false
+  def charNonLetterLike: Boolean = false
 
   def nodeCursor: cursor.Node = Seq.empty
 
@@ -45,6 +46,8 @@ object Atom {
     override def size: Int = text.size
 
     override def toString: String = text.toString
+
+    override def letterLike: Boolean = true
   }
   sealed trait Special[T] extends SpecialOrMarked {
     def a: SpecialChar
@@ -56,6 +59,7 @@ object Atom {
     override def subIndex: Int = if (a == text.asDelimited.delimitation.start) 0 else text.size - 1
     def delimitation: SpecialChar.Delimitation = text.delimitation
     def another: Atom
+    override def whitespace: Boolean = true
   }
   case class FormattedSpecial(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val a: SpecialChar, override val text: Text.Formatted) extends Special[Seq[Text]] {
     def another: Atom =
@@ -73,6 +77,13 @@ object Atom {
     override def size: Int = a.size
     override def toString: String = a.toString
     def unicodeIndex: Int
+    override def letterLike: Boolean = {
+      val h = a.head
+      Character.isAlphabetic(h) || Character.isDigit(h) || Character.isIdeographic(h) || h == '_'.toInt
+    }
+    override def whitespace: Boolean = Character.isWhitespace(a.head)
+
+    override def charNonLetterLike: Boolean = !letterLike && !whitespace
   }
   case class PlainGrapheme(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val unicodeIndex: Int, override val a: Unicode, override val text: Text.Plain) extends Grapheme {
     override def subIndex: Int = unicodeIndex

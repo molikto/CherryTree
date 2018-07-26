@@ -4,18 +4,20 @@ import client.Client
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.data.Unicode
+import model.range.IntRange
 
 abstract class Command {
 
   def shownInCommandList: Boolean = true
-  def repeatable: Boolean = false
   def category: String
   val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
   def emptyAsFalse: Boolean = false
 
+  def repeatable: Boolean = false
   def needsChar: Boolean = false
+  def needsMotion: Boolean = false
 
   // TODO user keymap
   def keyLevel(c: KeySeq): Int = {
@@ -29,9 +31,10 @@ abstract class Command {
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandState): Boolean = available(a)
+  protected def available(a: DocState): Boolean = throw new NotImplementedError()
   def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = action(a, count)
-  protected def available(a: DocState): Boolean
-  protected def action(a: DocState, count: Int): DocTransaction
+  protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError()
   def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = throw new NotImplementedError()
+  def actionOnMotion(a: DocState, count: Int, to: IntRange): DocTransaction = throw new NotImplementedError()
 }
 

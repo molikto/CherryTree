@@ -30,10 +30,6 @@ class CommandCategory(val name: String) extends Settings {
       Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => Grapheme(a) : KeySeq)
   }
 
-  trait MotionCommand extends Command {
-    override def available(a: DocState): Boolean = a.isRichNormalOrVisual
-  }
-
   trait OverrideCommand extends Command {
     def defaultKeys: Seq[KeySeq] = Seq.empty
     override def shownInCommandList: Boolean = false

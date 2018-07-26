@@ -189,7 +189,7 @@ class KeyboardCommandHandler extends Settings with CommandState
     override val description: String = "visit link url"
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
-    override def available(a: DocState): Boolean = a.isRichNormalOrVisual && {
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual && {
       val (_, rich, nv) = a.asRichNormalOrVisual
       if (rich.isEmpty) false
       else {

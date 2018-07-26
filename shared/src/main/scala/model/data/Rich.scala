@@ -49,40 +49,137 @@ case class Rich(text: Seq[Text]) {
   /**
     * a word is a:
     * continuous sequence of letter, digits or underscore
-    * a continuous sequence of displayable control characters
     * a continuous sequence of other non-blank characters
     * a atomic LaTeX or image or
+    *
+    * control characters is considered as space
     *
     * a WORD is:
     * a continuous sequence of word
     */
-  def moveRightWord(a: IntRange): IntRange = ???
+  /**
+    * next word start
+    */
+  def moveRightWord(a: IntRange): IntRange = {
+    val atom = before(a.until)
+    util.head((if (atom.letterLike)
+      afters(a.until).dropWhile(_.letterLike)
+    else if (atom.charNonLetterLike)
+      afters(a.until).dropWhile(_.charNonLetterLike)
+    else
+      afters(a.until)
+      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeEnd)
+  }
 
-  def moveRightWORD(a: IntRange): IntRange = ???
+  /**
+    * next WORD start
+    */
+  def moveRightWORD(a: IntRange): IntRange = {
+    val atom = before(a.until)
+    util.head((if (!atom.whitespace)
+      afters(a.until).dropWhile(!_.whitespace)
+    else
+      afters(a.until)
+      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeEnd)
+  }
 
+  /**
+    * next word end
+    */
  def moveRightWordEnd(a: IntRange): IntRange = {
-   ???
+   if (a.until == size) rangeEnd
+   else {
+     def rec(a: IntRange): IntRange = {
+       val atom = after(a.until)
+       (if (atom.letterLike)
+         util.last(afters(a.until).takeWhile(_.letterLike)).map(_.range)
+       else if (atom.charNonLetterLike)
+         util.last(afters(a.until).takeWhile(_.charNonLetterLike)).map(_.range)
+       else
+         util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeEnd)
+     }
+     rec(a)
+   }
  }
 
+  /**
+    * next WORD end
+    */
   def moveRightWORDEnd(a: IntRange): IntRange = {
-    ???
+    if (a.until == size) rangeEnd
+    else {
+      def rec(a: IntRange): IntRange = {
+        val atom = after(a.until)
+        (if (!atom.whitespace)
+          util.last(afters(a.until).takeWhile(!_.whitespace)).map(_.range)
+        else
+          util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeEnd)
+      }
+      rec(a)
+    }
   }
 
 
+  /**
+    * previous word start
+    */
   def moveLeftWord(a: IntRange): IntRange = {
-    ???
+    if (a.start == 0) rangeBeginning
+    else {
+      def rec(a: IntRange): IntRange = {
+        val atom = before(a.start)
+        (if (atom.letterLike)
+          util.last(befores(a.start).takeWhile(_.letterLike)).map(_.range)
+        else if (atom.charNonLetterLike)
+          util.last(befores(a.start).takeWhile(_.charNonLetterLike)).map(_.range)
+        else
+          util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeBeginning)
+      }
+      rec(a)
+    }
   }
 
+  /**
+    * previous WORD start
+    */
   def moveLeftWORD(a: IntRange): IntRange = {
-    ???
+    if (a.start == 0) rangeBeginning
+    else {
+      def rec(a: IntRange): IntRange = {
+        val atom = before(a.start)
+        (if (!atom.whitespace)
+          util.last(befores(a.start).takeWhile(!_.whitespace)).map(_.range)
+        else
+          util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeBeginning)
+      }
+      rec(a)
+    }
   }
 
+  /**
+    * previous word end
+    */
   def moveLeftWordEnd(a: IntRange): IntRange = {
-    ???
+    val atom = after(a.start)
+    util.head((if (atom.letterLike)
+      befores(a.start).dropWhile(_.letterLike)
+    else if (atom.charNonLetterLike)
+      befores(a.start).dropWhile(_.charNonLetterLike)
+    else
+      befores(a.start)
+      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeBeginning)
   }
 
+  /**
+    * previous WORD end
+    */
   def moveLeftWORDEnd(a: IntRange): IntRange = {
-    ???
+    val atom = before(a.start)
+    util.head((if (!atom.whitespace)
+      befores(a.start).dropWhile(!_.whitespace)
+    else
+      befores(a.start)
+      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeBeginning)
   }
 
 

@@ -119,8 +119,11 @@ object Unicode extends DataObject[Unicode] {
   val empty = Unicode("", 0)
 }
 
-case class Unicode(var str: String) extends Iterable[Int] {
+case class Unicode(var str: String) extends Seq[Int] {
 
+
+
+  override def length: Int = size
 
   override def size: Int = {
     if (size0 == -1) {
@@ -132,7 +135,10 @@ case class Unicode(var str: String) extends Iterable[Int] {
   private var lastCharIndex = -1
   private var lastCodePointIndex = -1
   private var size0 = -1
-  def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
+
+  override def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
+
+  override def head: Int = apply(0)
 
   def toStringPosition(i: Int): Int = {
     if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {

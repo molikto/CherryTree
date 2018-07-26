@@ -73,15 +73,14 @@ class RichDelete extends CommandCategory("delete text") {
     }
   }
 
-  //      // TODO dw etc
-  //      val deleteMotion: Command = new Command {
-  //        override val defaultKeys: Seq[KeySeq] = Seq("d")
-  //        override def available(a: ClientState): Boolean = a.isNormal
-  //
-  //        override def action(a: ClientState, count: Int): DocTransaction = {
-  //          DocTransaction.empty
-  //        }
-  //      }
+  new Command {
+    override val description: String = "delete range selected by motion"
+    override def needsMotion: Boolean = true
+    override val defaultKeys: Seq[KeySeq] = Seq("d")
+    override protected def available(a: DocState): Boolean = a.isNonEmptyRichNormal
+    override def actionOnMotion(a: DocState, count: Int, to: IntRange): DocTransaction = {
+    }
+  }
 
   new Command {
     override val description: String = "delete text cursor until text end"
@@ -93,7 +92,6 @@ class RichDelete extends CommandCategory("delete text") {
         Seq.empty
       } else {
         val p = c.dropRight(1)
-        val parent = a.node(p)
         Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
       }
       val deleteFirstLine = deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size))
