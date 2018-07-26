@@ -79,6 +79,7 @@ class RichDelete extends CommandCategory("delete text") {
     override val defaultKeys: Seq[KeySeq] = Seq("d")
     override protected def available(a: DocState): Boolean = a.isNonEmptyRichNormal
     override def actionOnMotion(a: DocState, count: Int, to: IntRange): DocTransaction = {
+      ???
     }
   }
 
