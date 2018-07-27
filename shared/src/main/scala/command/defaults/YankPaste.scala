@@ -15,12 +15,24 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
   new Command {
     override val description: String = "yank current node (without childs)"
-    override val defaultKeys: Seq[KeySeq] = Seq("yy", "Y") // siblings not lines
+    override val defaultKeys: Seq[KeySeq] = Seq("yy")
     override def available(a: DocState): Boolean = a.isNormal
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
-      commandState.yank(Registerable.Node(Seq(Node(a.node(c).content, Seq.empty))), isDelete = false)
+      commandState.yank(Registerable.Node(Seq(data.Node(a.node(c).content, Seq.empty))), isDelete = false)
+      DocTransaction.empty
+    }
+  }
+
+  new Command {
+    override val description: String = "yank current node"
+    override val defaultKeys: Seq[KeySeq] = Seq("yr") // siblings not lines
+    override def available(a: DocState): Boolean = a.isNormal
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val c = a.asNormal._1
+      commandState.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -42,6 +54,18 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
           DocTransaction.mode(model.mode.Node.Content(fix, a.node(fix).content.defaultNormalMode()))
         case _ => throw new IllegalArgumentException("Invalid command")
       }
+    }
+  }
+
+  new Command {
+    override val description: String = "yank to line end"
+    override val defaultKeys: Seq[KeySeq] = Seq("Y")
+    override def available(a: DocState): Boolean = a.isRichNormal
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val (c, rich, normal) = a.asRichNormal
+      commandState.yank(Registerable.Text(rich.copyTextualRange(IntRange(normal.range.start, rich.size))), isDelete = false)
+      DocTransaction.empty
     }
   }
 
@@ -112,17 +136,33 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   }
 
   new PutCommand {
-    override val description: String = "put stuff after cursor"
+    override val description: String = "put after"
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
-      val insertionPoint = insertPoint(a, at)
+      val insertionPoint = insertPointAfter(a, at)
       (Seq(operation.Node.Insert(insertionPoint, node)), mode.Node.Content(insertionPoint, node.head.content.defaultNormalMode()))
     }
 
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
       val op = operation.Rich.insert(selection.until, frag)
       val rg = Rich(frag).rangeEnd.moveBy(selection.until)
+      (Seq(op), mode.Content.RichNormal(rg))
+    }
+  }
+
+  new PutCommand {
+    override val description: String = "put before"
+    override def defaultKeys: Seq[KeySeq] = Seq("P")
+
+    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
+      val pt = if (at == cursor.Node.root) Seq(0) else at
+      (Seq(operation.Node.Insert(pt, node)), mode.Node.Content(pt, node.head.content.defaultNormalMode()))
+    }
+
+    override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
+      val op = operation.Rich.insert(selection.start, frag)
+      val rg = Rich(frag).rangeEnd.moveBy(selection.start)
       (Seq(op), mode.Content.RichNormal(rg))
     }
   }

@@ -80,7 +80,7 @@ class RichDelete extends CommandCategory("delete text") {
   }
 
   new Command {
-    override val description: String = "delete text cursor until text end"
+    override val description: String = "delete text cursor to text end"
     override def defaultKeys: Seq[KeySeq] = Seq("D")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

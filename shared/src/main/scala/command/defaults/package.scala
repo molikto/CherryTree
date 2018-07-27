@@ -30,7 +30,7 @@ package object defaults {
   }
 
 
-  private[defaults] def insertPoint(a: DocState, pos: cursor.Node): cursor.Node = {
+  private[defaults] def insertPointAfter(a: DocState, pos: cursor.Node): cursor.Node = {
     val mover = a.mover()
     if (pos == cursor.Node.root) {
       Seq(0)

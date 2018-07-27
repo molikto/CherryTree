@@ -32,15 +32,14 @@ class NodeDelete extends CommandCategory("deleting nodes") {
 
 
   new Command {
-    override val description: String = "delete current node, and more sibling nodes under if has N"
+    override val description: String = "delete current node"
     override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
     override def available(a: DocState): Boolean = a.isNormal
-
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val r = a.asNormal._1
       if (r == cursor.Node.root) DocTransaction.empty
-      else deleteNodeRange(a, commandState, model.range.Node(a.asNormal._1, count))
+      else deleteNodeRange(a, commandState, model.range.Node(a.asNormal._1)) // we don't allow multiple deletes for now!
     }
   }
 

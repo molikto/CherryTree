@@ -18,7 +18,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asNormal._1
-      val insertionPoint = insertPoint(a, pos)
+      val insertionPoint = insertPointAfter(a, pos)
       DocTransaction(
         Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))

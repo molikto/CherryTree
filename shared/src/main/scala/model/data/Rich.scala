@@ -196,6 +196,27 @@ case class Rich(text: Seq[Text]) {
 
   def insideCoded(pos: Int): Boolean = {
     val bs = befores(pos)
+    if (!bs.hasNext) false
+    else {
+      bs.next().text.isCoded
+    }
+  }
+
+  def insideCoded(pos: Int, deli: SpecialChar.Delimitation): Boolean = {
+    val bs = befores(pos)
+    if (!bs.hasNext) false
+    else {
+      val a = bs.next()
+      if (a.text.isCoded) {
+        a.text.asCoded.delimitation == deli
+      } else {
+        false
+      }
+    }
+  }
+
+  def wrappedByCodedContent(pos: Int): Boolean = {
+    val bs = befores(pos)
     val as = afters(pos)
     if (!bs.hasNext || !as.hasNext) false
     else {
