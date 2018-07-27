@@ -17,9 +17,9 @@ case class Rich(text: Seq[Text]) {
   def befores(a: Int): Iterator[Atom] = Text.before(Seq.empty, 0, a, text)
   def afters(a: Int): Iterator[Atom] = Text.after(Seq.empty, 0, a, text)
 
-  def beginning: Atom = after(0)
+  def beginning: Atom = if (isEmpty) throw new IllegalArgumentException("Empty") else after(0)
 
-  def end: Atom = before(size)
+  def end: Atom = if (isEmpty) throw new IllegalArgumentException("Empty") else before(size)
 
   def before(a: IntRange): Atom = before(a.start)
   def after(a: IntRange): Atom = after(a.until)
@@ -195,9 +195,11 @@ case class Rich(text: Seq[Text]) {
   def subPlain(p: IntRange): Unicode = serialize().slice(p)
 
   def insideCoded(pos: Int): Boolean = {
-    if (pos == 0 || pos == size) false
+    val bs = befores(pos)
+    val as = afters(pos)
+    if (!bs.hasNext || !as.hasNext) false
     else {
-      (before(pos), after(pos)) match {
+      (bs.next(), as.next()) match {
         case (_: Atom.CodedGrapheme, _: Atom.CodedGrapheme) => true
         case _ => false
       }

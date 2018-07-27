@@ -7,7 +7,7 @@ package object range {
 
 
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
-
+    assert(start >= 0 && until >= start)
 
     override def toString(): String = s"[$start, $until)"
 

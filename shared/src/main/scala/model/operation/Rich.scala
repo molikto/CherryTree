@@ -39,7 +39,16 @@ object Rich extends OperationObject[data.Rich, Rich] {
       ), Type.AddDelete)
   }
 
-  def deleteTextualRange(rich: model.data.Rich, r: IntRange): Option[(Seq[operation.Rich], IntRange, Int)] = {
+  def deleteTextualRange(rich: model.data.Rich, r0: IntRange): Option[(Seq[operation.Rich], IntRange, Int)] = {
+    val ssss = util.last(rich.befores(r0.start).takeWhile {
+      case s: Atom.Special[Any] => r0.contains(s.another.range)
+      case _ => false
+    }).map(_.range.start).getOrElse(r0.start)
+    val uuuu = util.last(rich.afters(r0.until).takeWhile {
+      case s: Atom.Special[Any] => r0.contains(s.another.range)
+      case _ => false
+    }).map(_.range.until).getOrElse(r0.until)
+    val r = IntRange(ssss, uuuu)
     val singleSpecials = rich.singleSpecials(r)
     val reverses = singleSpecials.map(_.another.range).sortBy(_.start)
     val ds = r.minusOrderedInside(singleSpecials.map(_.range))

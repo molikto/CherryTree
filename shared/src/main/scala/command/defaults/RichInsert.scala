@@ -33,16 +33,15 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
 
-  new EditCommand with OverrideCommand {
+  new Command with OverrideCommand {
     override val description: String = "delete word before cursor"
     override val hardcodeKeys: Seq[KeySeq] = Seq(Alt + Backspace: KeySeq, Ctrl + "w")
-    override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
-      if (a > 0) {
-        val r = content.moveLeftWord(a).map(_.start).getOrElse(0)
-        operation.Rich.deleteTextualRange(content, IntRange(r, a)).map(_._1).getOrElse(Seq.empty) // we don't explicitly set mode, as insert mode transformation is always correct
-      } else {
-        Seq.empty
-      }
+
+    override def available(a: DocState): Boolean = a.isRichInserting
+    override protected def action(a: DocState, count: Int): DocTransaction = {
+      val (cursor, content, insert) = a.asRichInsert
+      val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
+      deleteRichNormalRange(a, cursor, IntRange(r, insert.pos), insert =true)
     }
   }
 
@@ -85,7 +84,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert
-      deli.codedNonEmpty ||  !rich.insideCoded(insert.pos)
+      deli.codedNonEmpty && !rich.insideCoded(insert.pos)
     }
 
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
