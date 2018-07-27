@@ -12,7 +12,7 @@ class CommandListView(val client: Client) extends View {
     minWidth := "150px",
     width := "500px",
     height := "100%",
-    color := "#dddddd",
+    color := "#cccccc",
     overflowY := "scroll",
     `class` := "ct-scroll unselectable",
     padding := "24px",
@@ -37,7 +37,12 @@ class CommandListView(val client: Client) extends View {
               h4(name),
               commands.map(c => {
                 div(
-                  p(marginLeft := "12px", c.keys.map(a => span(tag("kbd")(renderKeySeq(a)), " ")), c.description, Some(span("; ", em("repeatable"))).filter(_ => c.repeatable))
+                  p(marginLeft := "12px",
+                    Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
+                    c.keys.map(a => span(tag("kbd")(renderKeySeq(a)), " ")),
+                    Some(span(tag("kbd")(`class` := "ct-kbd2", "char"), " ")).filter(_ => c.needsChar),
+                    Some(span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ")).filter(_ => c.needsMotion),
+                    c.description)
                 )
               })
             )

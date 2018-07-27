@@ -79,10 +79,15 @@ class BottomBarView(val client: Client) extends View {
         isError = true
         ""
     }
-    commandStatus.textContent =
-      ts.filter(!_.isEmpty).mkString(" ")
-    commandStatus.style.color =
-      if (isCompleted) theme.disalbedInfo else if (isError) theme.littleError else null
+
+    val cs = ts.filter(!_.isEmpty).mkString(" ")
+    if (cs.isEmpty) {
+      commandStatus.textContent = EmptyStr
+      commandStatus.style.color = theme.disalbedInfo
+    } else {
+      commandStatus.textContent = cs
+      commandStatus.style.color = if (isCompleted) theme.disalbedInfo else if (isError) theme.littleError else null
+    }
   }))
 
   private def updateModeIndicator(): Unit = {

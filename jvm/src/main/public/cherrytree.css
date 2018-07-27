@@ -9,6 +9,11 @@ kbd {
     border-radius: .2rem;
 }
 
+.ct-kbd2 {
+    color: #CCCCCC;
+    background-color: #444444;
+}
+
 /* apply it on entire editor for now */
 .ct-root {
   word-wrap: break-word;

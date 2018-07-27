@@ -1,9 +1,4 @@
 
-## roadmap
-
-backspace by words etc.
-we don't want to delete nodes!!!
-paste only works in normal mode now
 
 ## bugs
 
@@ -14,7 +9,6 @@ paste only works in normal mode now
 ## improvements
 
 * change to a better networking for change, server pushed content, or websocket
-* change command panel to a [n] k char etc.
 
 ## code improvements
 
