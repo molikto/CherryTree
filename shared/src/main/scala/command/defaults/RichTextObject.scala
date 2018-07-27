@@ -1,6 +1,6 @@
 package command.defaults
 
-import command.{CommandCategory, CommandState, Motion}
+import command.{CommandCategory, CommandInterface, Motion}
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
@@ -19,9 +19,9 @@ class RichTextObject extends CommandCategory("text object motion") {
   //v_i`     N  i`        Select "inner backward quoted string"
 
   abstract class RichTextObjectCommand extends Command with command.TextObject {
-    override def available(a: DocState, commandState: CommandState): Boolean = commandState.needsMotion && a.isNonEmptyRichNormalOrVisual
+    override def available(a: DocState, commandState: CommandInterface): Boolean = commandState.needsMotion && a.isNonEmptyRichNormalOrVisual
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (node, rich, visual) = a.asRichVisual
       move(rich, visual.move, None) match {
         case Some(r) => DocTransaction.mode(a.copyContentMode(model.mode.Content.RichVisual(visual.fix, ???)))

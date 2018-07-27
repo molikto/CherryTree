@@ -31,16 +31,16 @@ abstract class Command {
     }
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
-  def available(a: DocState, commandState: CommandState): Boolean = available(a) && !commandState.needsMotion
+  def available(a: DocState, commandState: CommandInterface): Boolean = available(a) && !commandState.needsMotion
   protected def available(a: DocState): Boolean = throw new NotImplementedError(description)
   def action(a: DocState,
     count: Int,
-    commandState: CommandState,
+    commandState: CommandInterface,
     key: Option[KeySeq],
     grapheme: Option[Unicode],
     motion: Option[Motion]
-  ): DocTransaction = action(a, count)
-  protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError(description)
+  ): DocTransaction = action(a, commandState, count)
+  protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError(description)
 }
 
 

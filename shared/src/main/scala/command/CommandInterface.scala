@@ -1,15 +1,18 @@
 package command
 
 import command.Key.Grapheme
+import doc.DocTransaction
 import model.data.Unicode
+import register.{RegisterInterface, Registerable}
 
-trait CommandState {
+trait CommandInterface extends RegisterInterface {
 
   def lastFindCommand: Option[(FindCommand, Unicode)]
-  def commandBuffer: Seq[Part]
+  protected def commandBuffer: Seq[Part]
 
   def needsMotion: Boolean = commandBuffer.exists {
     case Part.IdentifiedCommand(_, c, _) => c.needsMotion
     case _ => false
   }
+
 }

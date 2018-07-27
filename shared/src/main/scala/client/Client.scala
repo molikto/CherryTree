@@ -21,6 +21,7 @@ import model.data.{SpecialChar, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import monix.reactive.subjects.PublishSubject
+import register.RegisterHandler
 import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
@@ -44,14 +45,13 @@ class Client(
   private val server: Client.Proxy,
   private val initial: ClientInit,
   private val authentication: Authentication.Token
-) extends KeyboardCommandHandler
+) extends CommandHandler
+  with RegisterHandler
   with EditorInterface
   with DocInterface { self =>
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
-
-
 
   /**
     * connection state

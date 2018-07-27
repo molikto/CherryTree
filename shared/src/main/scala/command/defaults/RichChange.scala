@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState, Motion}
+import command.{CommandCategory, CommandInterface, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
@@ -14,7 +14,7 @@ class RichChange extends CommandCategory("change text") {
     override val description: String = "delete all and go to insert"
     override def defaultKeys: Seq[KeySeq] = Seq("cc", "S")
     override protected def available(a: DocState): Boolean = a.isRichNormal
-    override protected def action(a: DocState, count: Int): DocTransaction = {
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cursor, _, _) = a.asRichNormal
       DocTransaction(Seq(operation.Node.Replace(cursor, model.data.Content.Rich(model.data.Rich.empty))),
         Some(a.copyContentMode(mode.Content.RichInsert(0))))
@@ -25,9 +25,9 @@ class RichChange extends CommandCategory("change text") {
     override val description: String = "change selected text"
     override val defaultKeys: Seq[KeySeq] = Seq("c")
     override def available(a: DocState): Boolean = a.isRichVisual
-    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.mode match {
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
-        deleteRichNormalRange(a, pos, v.merged, insert = true)
+        deleteRichNormalRange(a, commandState,pos, v.merged, insert = true)
       case _ => throw new IllegalArgumentException("Invalid command")
     }
   }
@@ -39,11 +39,11 @@ class RichChange extends CommandCategory("change text") {
     override val defaultKeys: Seq[KeySeq] = Seq("c")
     override protected def available(a: DocState): Boolean = a.isRichNormal
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (cur, rich, normal) = a.asRichNormal
       motion.flatMap(m => {
         m.act(commandState, rich, count, normal.range, grapheme).map(r => {
-          deleteRichNormalRange(a, cur, r, insert = true)
+          deleteRichNormalRange(a, commandState,cur, r, insert = true)
         })
       }).getOrElse(DocTransaction.empty)
     }
@@ -55,7 +55,7 @@ class RichChange extends CommandCategory("change text") {
     override def available(a: DocState): Boolean = a.isRichNormal
 
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (grapheme.isEmpty) return DocTransaction.empty
       val char = grapheme.get
       val (cursor, rich, v) = a.asRichNormal
@@ -136,9 +136,9 @@ class RichChange extends CommandCategory("change text") {
     override val description: String = "change text cursor until text end"
     override def defaultKeys: Seq[KeySeq] = Seq("C")
     override def available(a: DocState): Boolean = a.isRichNormal
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (c, rich, normal) = a.asRichNormal
-      deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size), insert = true)
+      deleteRichNormalRange(a, commandState,c, IntRange(normal.range.start, rich.size), insert = true)
     }
   }
 
@@ -147,11 +147,11 @@ class RichChange extends CommandCategory("change text") {
     override val description: String = "change under cursor, and more after if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("s")
     override def available(a: DocState): Boolean = a.isRichNormal
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
       val r = normal.range
       val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.rangeAfter(r) }
-      deleteRichNormalRange(a, pos, r.merge(fr), insert = true)
+      deleteRichNormalRange(a, commandState,pos, r.merge(fr), insert = true)
     }
 
   }

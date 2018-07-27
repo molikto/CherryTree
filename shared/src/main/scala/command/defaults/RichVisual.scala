@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Atom, SpecialChar}
@@ -15,7 +15,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     override val description: String = "enter text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
     override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, m) = a.asRichNormalOrVisual
       m match {
         case model.mode.Content.RichNormal(r) =>
@@ -35,7 +35,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isRichVisual
-    override def action(a: DocState, count: Int): DocTransaction = DocTransaction.mode(a.copyContentMode(a.asRichVisual._3.swap))
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction.mode(a.copyContentMode(a.asRichVisual._3.swap))
   }
 
   abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
@@ -44,7 +44,7 @@ class RichVisual extends CommandCategory("text visual mode") {
 
   SpecialChar.nonCodedSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
-    override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
         val soc = rich.singleSpecials(r).map(_.range)
@@ -67,7 +67,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     */
   SpecialChar.codedNonEmpty.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection as ${deli.name}"
-    override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
         val fakeMode =
@@ -94,7 +94,7 @@ class RichVisual extends CommandCategory("text visual mode") {
 
   SpecialChar.nonCodedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
-    override def action(a: DocState, count: Int): DocTransaction = a.asRichVisual match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         var r = visual.merged
         val g = rich.isSubRich(r)

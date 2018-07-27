@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.mode
@@ -27,7 +27,7 @@ class NodeVisual extends CommandCategory("node visual") {
       }
       case None => false
     }
-    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.mode match {
       case Some(m) => m match {
         case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
           DocTransaction.mode(mode.Node.Visual(at, at))
@@ -45,7 +45,7 @@ class NodeVisual extends CommandCategory("node visual") {
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNodeVisual
-    override def action(a: DocState, count: Int): DocTransaction = DocTransaction.mode(a.asNodeVisual.swap)
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction.mode(a.asNodeVisual.swap)
   }
 
 }

@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState, Motion}
+import command.{CommandCategory, CommandInterface, Motion}
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -13,14 +13,14 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
   trait RichMotionCommand extends Command with command.RichMotion {
 
-    override def available(a: DocState, commandState: CommandState): Boolean = a.isNonEmptyRichNormalOrVisual || commandState.needsMotion
+    override def available(a: DocState, commandState: CommandInterface): Boolean = a.isNonEmptyRichNormalOrVisual || commandState.needsMotion
   }
 
   abstract class SimpleRichMotionCommand extends RichMotionCommand {
 
     override def repeatable: Boolean = true
 
-    final override def action(a: DocState, count: Int): DocTransaction = {
+    final override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, content, m) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr)._1 }
       DocTransaction.mode(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
@@ -91,7 +91,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       }
     }
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (grapheme.isEmpty) return DocTransaction.empty
       val char = grapheme.get
       action(a, char, count, skipCurrent = false)
@@ -134,35 +134,35 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command"
-    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandInterface): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(";")
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
       lf._1.action(a, lf._2, count, skipCurrent = true)
     }
 
-    override def move(commandState: CommandState, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
+    override def move(commandState: CommandInterface, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
       val lf = commandState.lastFindCommand.get
       char.flatMap(c => lf._1.findGrapheme(content, r, c, count, skipCurrent = true)).map(a => (a, 1))
     }
 
-    override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
 
   }
 
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command's reverse"
-    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandInterface): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(",")
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
       lf._1.reverse.action(a, lf._2, count, skipCurrent = true)
     }
-    override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
 
-    override def move(commandState: CommandState, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
+    override def move(commandState: CommandInterface, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
       val lf = commandState.lastFindCommand.get
       char.flatMap(c => lf._1.reverse.findGrapheme(content, r, c, count, skipCurrent = true)).map(a => (a, 1))
     }

@@ -217,7 +217,11 @@ case class Rich(text: Seq[Text]) {
 
 
 
-
+  def copyTextualRange(r: IntRange): Seq[Text] = {
+    val ss = singleSpecials(r)
+    val reverses = ss.map(_.another)
+    Text.assemble((between(r).toSeq ++ reverses).sortBy(_.totalIndex))
+  }
 
 
 
@@ -227,9 +231,7 @@ case class Rich(text: Seq[Text]) {
 
 
   private[model] def serialize(): Unicode = {
-    val buffer = new UnicodeWriter()
-    text.foreach(_.serialize(buffer))
-    buffer.toUnicode
+    Text.serialize(text)
   }
 
   def isSubRich(range: IntRange): Option[IntRange] = {
@@ -259,6 +261,7 @@ case class Rich(text: Seq[Text]) {
 }
 
 object Rich extends DataObject[Rich] {
+
 
   val empty: Rich = Rich(Seq.empty)
 

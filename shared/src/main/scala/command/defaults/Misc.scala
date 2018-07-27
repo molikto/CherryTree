@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState}
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.range.IntRange
@@ -19,9 +19,10 @@ class Misc extends CommandCategory("misc") {
     override val description: String = "exit current mode"
     override val defaultKeys: Seq[KeySeq] = Seq(Escape)
 
-    override def available(a: DocState, commandState: CommandState): Boolean = true
+    override def available(a: DocState, commandState: CommandInterface): Boolean = true
 
-    override def action(a: DocState, ignore: Int): DocTransaction = {
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.mode match {
         case Some(m) =>
           m match {

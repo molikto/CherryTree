@@ -2,6 +2,8 @@
 ## roadmap
 
 backspace by words etc.
+we don't want to delete nodes!!!
+paste only works in normal mode now
 
 ## bugs
 

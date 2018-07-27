@@ -65,7 +65,7 @@ class BottomBarView(val client: Client) extends View {
     var isCompleted = false
     var isError = false
     val ts = c.map {
-      case command.Part.IdentifiedCommand(key, _) => renderKeySeq(key)
+      case command.Part.IdentifiedCommand(key, _, _) => renderKeySeq(key)
       case command.Part.UnidentifiedCommand(key, _) => renderKeySeq(key)
       case command.Part.UnknownCommand(key) =>
         isError = true

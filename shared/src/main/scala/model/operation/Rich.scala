@@ -115,6 +115,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
 
+  def insert(p: Int, unicode: Seq[data.Text]): Rich = Rich(Seq(Unicode.Insert(p, Text.serialize(unicode))), Type.Add)
+
 
   override val pickler: Pickler[Rich] = new Pickler[Rich] {
     override def pickle(obj: Rich)(implicit state: PickleState): Unit = {

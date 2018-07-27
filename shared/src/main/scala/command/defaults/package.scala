@@ -3,11 +3,15 @@ package command
 import doc.{DocState, DocTransaction}
 import model.{cursor, mode, operation}
 import model.range.IntRange
+import register.Registerable
 
 package object defaults {
 
-  private[defaults] def deleteRichNormalRange(a: DocState, pos: cursor.Node, r: IntRange, insert: Boolean): DocTransaction = {
+  private[defaults] def deleteRichNormalRange(a: DocState, commandState: CommandInterface, pos: cursor.Node, r: IntRange, insert: Boolean, noHistory: Boolean = false): DocTransaction = {
     val rich = a.rich(pos)
+    if (!noHistory) {
+      commandState.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = true)
+    }
     operation.Rich.deleteTextualRange(rich, r) match {
       case Some((a, b, c)) =>
         DocTransaction(
@@ -22,6 +26,16 @@ package object defaults {
           ))
         )
       case None => DocTransaction.empty
+    }
+  }
+
+
+  private[defaults] def insertPoint(a: DocState, pos: cursor.Node): cursor.Node = {
+    val mover = a.mover()
+    if (pos == cursor.Node.root) {
+      Seq(0)
+    } else {
+      mover.firstChild(pos).getOrElse(mover.nextOver(pos))
     }
   }
 

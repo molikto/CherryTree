@@ -35,6 +35,8 @@ sealed trait Atom {
 
   def special: Boolean = this.isInstanceOf[Atom.Special[Any]]
   def special(a: SpecialChar): Boolean = this.isInstanceOf[Atom.Special[Any]] && this.asInstanceOf[Atom.Special[Any]].a == a
+
+  private[data] def serialize(buffer: UnicodeWriter)
 }
 
 object Atom {
@@ -48,6 +50,8 @@ object Atom {
     override def toString: String = text.toString
 
     override def letterLike: Boolean = true
+
+    override private[data] def serialize(buffer: UnicodeWriter): Unit = text.serialize(buffer)
   }
   sealed trait Special[T] extends SpecialOrMarked {
     def a: SpecialChar
@@ -60,6 +64,15 @@ object Atom {
     def delimitation: SpecialChar.Delimitation = text.delimitation
     def another: Atom
     override def whitespace: Boolean = true
+
+    override private[data] def serialize(buffer: UnicodeWriter): Unit = {
+      if (delimitationStart) {
+        buffer.put(a)
+      } else {
+        text.serializeAttributes(buffer)
+        buffer.put(a)
+      }
+    }
   }
   case class FormattedSpecial(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val a: SpecialChar, override val text: Text.Formatted) extends Special[Seq[Text]] {
     def another: Atom =
@@ -84,6 +97,8 @@ object Atom {
     override def whitespace: Boolean = Character.isWhitespace(a.head)
 
     override def charNonLetterLike: Boolean = !letterLike && !whitespace
+
+    override private[data] def serialize(buffer: UnicodeWriter): Unit = buffer.put(a)
   }
   case class PlainGrapheme(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val unicodeIndex: Int, override val a: Unicode, override val text: Text.Plain) extends Grapheme {
     override def subIndex: Int = unicodeIndex

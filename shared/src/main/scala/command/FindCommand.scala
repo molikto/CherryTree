@@ -9,7 +9,7 @@ trait FindCommand extends Command with RichMotion {
 
   def reverse: FindCommand
 
-  override def move(commandState: CommandState, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
+  override def move(commandState: CommandInterface, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
     char.flatMap(c => findGrapheme(content, r, c, count, skipCurrent = false)).map(a => (a, 1))
   }
 

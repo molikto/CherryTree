@@ -31,6 +31,18 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+  private[model] def serialize(text: Seq[Text]): Unicode = {
+    val buffer = new UnicodeWriter()
+    text.foreach(_.serialize(buffer))
+    buffer.toUnicode
+  }
+
+
+  def assemble(atoms: Seq[Atom]): Seq[Text] = {
+    val buffer = new UnicodeWriter()
+    atoms.foreach(_.serialize(buffer))
+    Text.parseAll(new UnicodeReader(buffer.toUnicode))
+  }
 
   private[data] def before(myCursor: cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) =
     if (a.isEmpty) Iterator.empty
@@ -162,14 +174,17 @@ object Text {
     def content: T
     def contentSize: Int
     private[model] def serializeContent(buffer: UnicodeWriter): Unit
-
-    final private[model] override def serialize(buffer: UnicodeWriter): Unit = {
-      buffer.put(delimitation.start)
-      serializeContent(buffer)
+    private[model] def serializeAttributes(buffer: UnicodeWriter): Unit  = {
       attributes.foreach(a => {
         buffer.put(a)
         buffer.put(attribute(a))
       })
+    }
+
+    final private[model] override def serialize(buffer: UnicodeWriter): Unit = {
+      buffer.put(delimitation.start)
+      serializeContent(buffer)
+      serializeAttributes(buffer)
       buffer.put(delimitation.end)
     }
 

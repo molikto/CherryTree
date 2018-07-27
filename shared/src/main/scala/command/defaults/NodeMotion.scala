@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.cursor
@@ -29,7 +29,7 @@ class NodeMotion extends CommandCategory("move among notes") {
       case None => false
     }
 
-    final override def action(a: DocState, count: Int): DocTransaction = {
+    final override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
       DocTransaction(Seq.empty, Some(a.mode match {
         case Some(m) => m match {

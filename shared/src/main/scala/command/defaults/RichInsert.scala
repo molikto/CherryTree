@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState, Motion}
+import command.{CommandCategory, CommandInterface, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation}
@@ -14,7 +14,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   trait EditCommand extends Command  {
     def edit(content: Rich,a: Int): Seq[model.operation.Rich]
     override def available(a: DocState): Boolean = a.isRichInserting
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       val res = model.operation.Node.rich(n, edit(content, insert.pos))
       DocTransaction(res, None)
@@ -38,10 +38,10 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override val hardcodeKeys: Seq[KeySeq] = Seq(Alt + Backspace: KeySeq, Ctrl + "w")
 
     override def available(a: DocState): Boolean = a.isRichInserting
-    override protected def action(a: DocState, count: Int): DocTransaction = {
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cursor, content, insert) = a.asRichInsert
       val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
-      deleteRichNormalRange(a, cursor, IntRange(r, insert.pos), insert =true)
+      deleteRichNormalRange(a, commandState,cursor, IntRange(r, insert.pos), insert =true, noHistory = true)
     }
   }
 
@@ -63,7 +63,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
     override def available(a: DocState): Boolean = a.isRichInserting
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
       if (insert.pos == rich.size) {
         val mover = a.mover()
@@ -87,7 +87,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
       deli.codedNonEmpty && !rich.insideCoded(insert.pos)
     }
 
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
       if (key.isDefined && key.get.size == 1) {
@@ -104,13 +104,13 @@ class RichInsert extends CommandCategory("when in insert mode") {
       }
     }
 
-    override protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
   }).toMap
 
   abstract class InsertMovementCommand extends Command {
     override def available(a: DocState): Boolean = a.isRichInserting
     def move(rich: Rich, i: Int): Int
-    override def action(a: DocState, count: Int): DocTransaction = a.asRichInsert match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichInsert match {
       case (node, rich, insert) =>
         val m = move(rich, insert.pos)
         if (m != insert.pos) DocTransaction.mode(a.copyContentMode(mode.Content.RichInsert(m))) else DocTransaction.empty

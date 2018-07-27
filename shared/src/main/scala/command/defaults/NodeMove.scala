@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{cursor, operation, range}
@@ -16,7 +16,7 @@ class NodeMove extends CommandCategory("move nodes around") {
   abstract class MoveCommand extends  Command {
     override def available(a: DocState): Boolean = a.isNormal
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val mm = a.asNormal._1
       DocTransaction(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
     }
@@ -25,7 +25,7 @@ class NodeMove extends CommandCategory("move nodes around") {
     override def available(a: DocState): Boolean = a.mode.nonEmpty
     def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
 
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       def act(r: range.Node) = targetTo(a.mover(), r).map(k => operation.Node.Move(r, k))
       val res = a.mode.get match {
         case v: model.mode.Node.Visual =>

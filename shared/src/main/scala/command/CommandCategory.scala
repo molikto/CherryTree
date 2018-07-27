@@ -20,7 +20,7 @@ class CommandCategory(val name: String) extends Settings {
 
   trait NeedsCharCommand extends Command {
     override def needsChar: Boolean = true
-    override def action(a: DocState, count: Int): DocTransaction = throw new IllegalArgumentException("Not need this method")
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalArgumentException("Not need this method")
   }
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {

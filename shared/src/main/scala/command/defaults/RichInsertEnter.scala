@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Rich
@@ -16,14 +16,9 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     override val description: String = "open a line bellow"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNormal
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asNormal._1
-      val mover = a.mover()
-      val insertionPoint = if (pos == cursor.Node.root) {
-        Seq(0)
-      } else {
-        mover.firstChild(pos).getOrElse(mover.nextOver(pos))
-      }
+      val insertionPoint = insertPoint(a, pos)
       DocTransaction(
         Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
@@ -35,7 +30,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     override val description: String = "open a line above"
     override val defaultKeys: Seq[KeySeq] = Seq("O")
     override def available(a: DocState): Boolean = a.isNormal
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asNormal._1
       if (pos == cursor.Node.root) {
         // LATER wrap?
@@ -55,7 +50,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
 
     override def available(a: DocState): Boolean = a.isRichNormal
 
-    override def action(a: DocState, count: Int): DocTransaction =  {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =  {
       val (cursor, content, normal) = a.asRichNormal
       DocTransaction.mode(a.copyContentMode(model.mode.Content.RichInsert(move(
         content, normal.range))))

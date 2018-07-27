@@ -8,20 +8,20 @@ import model.data.{SpecialChar, Unicode}
 import model.range.IntRange
 import monix.reactive.Observable
 import monix.reactive.subjects._
+import register.{RegisterHandler, Registerable}
 import settings.Settings
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
 
-class KeyboardCommandHandler extends Settings with CommandState {
+abstract class CommandHandler extends Settings with CommandInterface {
   self: Client =>
 
-  private val richMotion = new defaults.RichMotion()
 
-  private val misc = new defaults.Misc()
+  private val miscCommands = new defaults.Misc()
   val commands: Seq[Command] = Seq(
-    misc,
-    richMotion,
+    miscCommands,
+    new defaults.RichMotion(),
     new defaults.RichTextObject(),
     new defaults.RichInsertEnter(),
     new defaults.RichInsert(),
@@ -32,6 +32,7 @@ class KeyboardCommandHandler extends Settings with CommandState {
     new defaults.NodeVisual(),
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
+    new defaults.YankPaste(),
     new defaults.NodeFold(),
     new defaults.Scroll()).flatMap(_.commands)
 
@@ -57,10 +58,12 @@ class KeyboardCommandHandler extends Settings with CommandState {
     for (i <- buffer.indices) {
       buffer(i) match {
         case IdentifiedCommand(_, c, _) =>
-          if (!c.available(state, new CommandState {
-            override def lastFindCommand: Option[(FindCommand, Unicode)] = KeyboardCommandHandler.this.lastFindCommand
-
+          if (!c.available(state, new CommandInterface {
+            override def lastFindCommand: Option[(FindCommand, Unicode)] = CommandHandler.this.lastFindCommand
             override def commandBuffer: Seq[Part] = buffer.take(i - 1)
+            override def yank(registerable: Registerable, isDelete: Boolean): Unit = throw new IllegalAccessException("should not access this")
+            override def setRegister(a: Int): Unit = throw new IllegalAccessException("should not access this")
+            override def retrieveSetRegisterAndSetToDefault(): Option[Registerable] =  throw new IllegalAccessException("should not access this")
           })) {
             av = false
           }
@@ -228,8 +231,8 @@ class KeyboardCommandHandler extends Settings with CommandState {
         key.a match {
           case Key.Grapheme(g) => buffer.append(Part.Char(g))
           case _ =>
-            if (misc.exit.keys.contains(Seq(key))) {
-              buffer.append(Part.IdentifiedCommand(Seq(key), misc.exit, Seq.empty))
+            if (miscCommands.exit.keys.contains(Seq(key))) {
+              buffer.append(Part.IdentifiedCommand(Seq(key), miscCommands.exit, Seq.empty))
             } else {
               buffer.append(Part.UnknownCommand(Seq(key)))
             }
@@ -260,11 +263,11 @@ class KeyboardCommandHandler extends Settings with CommandState {
     }
 
     if (buffer.exists {
-      case IdentifiedCommand(k, c, _) if c == misc.exit => true
+      case IdentifiedCommand(k, c, _) if c == miscCommands.exit => true
       case _ => false
     }) {
       flush()
-      change(misc.exit.action(state, 1, this, None, None, None))
+      change(miscCommands.exit.action(state, 1, this, None, None, None))
       buffer.clear()
       commandBufferUpdates_.onNext(buffer)
       true
@@ -277,7 +280,7 @@ class KeyboardCommandHandler extends Settings with CommandState {
 
 
   new SideEffectingCommand {
-    override def category: String = misc.name
+    override def category: String = miscCommands.name
 
     override val description: String = "visit link url"
 
@@ -292,7 +295,7 @@ class KeyboardCommandHandler extends Settings with CommandState {
       }
     }
 
-    override def action(a: DocState, count: Int): DocTransaction = {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, nv) = a.asRichNormalOrVisual
       val t = rich.after(nv.focus.start)
       val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
