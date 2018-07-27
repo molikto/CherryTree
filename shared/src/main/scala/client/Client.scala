@@ -303,7 +303,7 @@ class Client(
               val op = operation.Rich.insert(rg.start, unicode)
               val applied = op(rich)
               operation.Rich.deleteTextualRange(applied, rg.moveBy(unicode.size)) match {
-                case Some((a, b)) =>
+                case Some((a, b, _)) =>
                   DocTransaction(operation.Node.rich(n, op) +: a.map(o => operation.Node.rich(n, o)),
                     Some(state.copyContentMode(model.mode.Content.RichNormal(b))))
                 case None =>

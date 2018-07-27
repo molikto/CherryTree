@@ -28,6 +28,7 @@ object Node extends OperationObject[data.Node, Node] {
   }
 
   def rich(c: cursor.Node, a: operation.Rich): Node = operation.Node.Content(c, operation.Content.Rich(a))
+  def rich(c: cursor.Node, a: Seq[operation.Rich]): Seq[Node] = a.map(a => rich(c, a))
 
   def transform(ns: Seq[Node], a: mode.Node): Option[mode.Node] = {
     ns.foldLeft(Some(a) : Option[mode.Node]) { (a, n) => n.transform(a) }

@@ -13,7 +13,7 @@ class NodeVisual extends CommandCategory("node visual") {
   // v_CTRL-V CTRL-V       highlight blockwise or stop highlighting
 
 
-  // LATER
+  // TODO gv
   // gv       gv           start highlighting on previous visual area
 
   new Command {

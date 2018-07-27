@@ -19,42 +19,18 @@ class RichDelete extends CommandCategory("delete text") {
   //v_gJ     {visual}gJ   like "{visual}J", but without inserting spaces
   //:d    :[range]d [x]   delete [range] lines [into register x]
 
-  private def deleteRichNormalRange(a: DocState, pos: cursor.Node, r: IntRange): DocTransaction = {
-    val rich = a.rich(pos)
-    operation.Rich.deleteTextualRange(rich, r) match {
-      case Some(a) =>
-        DocTransaction(
-          a._1.map(r => operation.Node.Content(pos,
-            operation.Content.Rich(r)))
-          ,
-          Some(mode.Node.Content(pos, mode.Content.RichNormal(a._2)))
-        )
-      case None => DocTransaction.empty
-    }
-  }
-
-
-  new Command {
-    override val description: String = "delete selected text"
-    override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
-    override def available(a: DocState): Boolean = a.isRichVisual
-    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
-      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
-        deleteRichNormalRange(a, pos, v.merged)
-      case _ => throw new IllegalArgumentException("Invalid command")
-    }
-  }
 
   new Command {
     override def repeatable: Boolean = true
     override val description: String = "delete under cursor, and more after if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
+    override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
+      if (rich.isEmpty) return DocTransaction.empty
       val r = normal.range
       val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.rangeAfter(r) }
-      deleteRichNormalRange(a, pos, r.merge(fr))
+      deleteRichNormalRange(a, pos, r.merge(fr), insert = false)
     }
 
   }
@@ -63,27 +39,41 @@ class RichDelete extends CommandCategory("delete text") {
     override def repeatable: Boolean = true
     override val description: String = "delete before cursor, and more if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("X")
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
+    override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
+      if (rich.isEmpty) return DocTransaction.empty
       val r = normal.range
       val rr = rich.rangeBefore(r)
       val fr = (1 until count).foldLeft(rr) {(r, _) => rich.rangeBefore(r) }
-      deleteRichNormalRange(a, pos, rr.merge(fr))
+      deleteRichNormalRange(a, pos, rr.merge(fr), insert = false)
     }
   }
+
+  new Command {
+    override val description: String = "delete selected text"
+    override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
+    override def available(a: DocState): Boolean = a.isRichVisual
+    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
+      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
+        deleteRichNormalRange(a, pos, v.merged, insert = false)
+      case _ => throw new IllegalArgumentException("Invalid command")
+    }
+  }
+
 
   new Command {
     override val description: String = "delete range selected by motion"
     override def needsMotion: Boolean = true
     override val defaultKeys: Seq[KeySeq] = Seq("d")
-    override protected def available(a: DocState): Boolean = a.isNonEmptyRichNormal
+    override protected def available(a: DocState): Boolean = a.isRichNormal
 
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (cur, rich, normal) = a.asRichNormal
+      if (rich.isEmpty) return DocTransaction.empty
       motion.flatMap(m => {
         m.act(commandState, rich, count, normal.range, grapheme).map(r => {
-          deleteRichNormalRange(a, cur, r)
+          deleteRichNormalRange(a, cur, r, insert = false)
         })
       }).getOrElse(DocTransaction.empty)
     }
@@ -95,14 +85,15 @@ class RichDelete extends CommandCategory("delete text") {
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, count: Int): DocTransaction = {
       val (c, rich, normal) = a.asRichNormal
-      val deleteLines = if (c == cursor.Node.root || count <= 1) {
-        Seq.empty
-      } else {
-        val p = c.dropRight(1)
-        Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
-      }
-      val deleteFirstLine = deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size))
-      deleteFirstLine.copy(transaction = deleteFirstLine.transaction ++ deleteLines)
+//      val deleteLines = if (c == cursor.Node.root || count <= 1) {
+//        Seq.empty
+//      } else {
+//        val p = c.dropRight(1)
+//        Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
+//      }
+      val deleteFirstLine = deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size), insert = false)
+      deleteFirstLine
+      //deleteFirstLine.copy(transaction = deleteFirstLine.transaction ++ deleteLines)
     }
   }
 }

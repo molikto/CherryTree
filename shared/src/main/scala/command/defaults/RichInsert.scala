@@ -12,38 +12,48 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
 
   trait EditCommand extends Command  {
-    def edit(content: Rich,a: Int): Option[model.operation.Rich]
+    def edit(content: Rich,a: Int): Seq[model.operation.Rich]
     override def available(a: DocState): Boolean = a.isRichInserting
     override def action(a: DocState, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
-      val res = edit(content, insert.pos).map(k => {
-        Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
-      }).getOrElse(Seq.empty)
+      val res = model.operation.Node.rich(n, edit(content, insert.pos))
       DocTransaction(res, None)
     }
   }
+
   new EditCommand with OverrideCommand {
     override val description: String = "delete text before cursor"
-    // TODO these keys should be seperate delete words, etc...
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
-    override def edit(content: Rich, a: Int): Option[operation.Rich] = {
+    override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
       if (a > 0) {
-        Some(operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(a).start)) // we don't explicitly set mode, as insert mode transformation is always correct
+        Seq(operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(a).start)) // we don't explicitly set mode, as insert mode transformation is always correct
       } else {
-        None
+        Seq.empty
+      }
+    }
+  }
+
+  new EditCommand with OverrideCommand {
+    override val description: String = "delete word before cursor"
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Alt + Backspace: KeySeq, Ctrl + "w")
+    override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
+      if (a > 0) {
+        val r = content.moveLeftWord(a).map(_.start).getOrElse(0)
+        operation.Rich.deleteTextualRange(content, IntRange(r, a)).map(_._1).getOrElse(Seq.empty) // we don't explicitly set mode, as insert mode transformation is always correct
+      } else {
+        Seq.empty
       }
     }
   }
 
   new EditCommand with OverrideCommand {
     override val description: String = "delete text after cursor"
-    // TODO these keys should be seperate delete words, etc...
     override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace : KeySeq) +: (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
-    override def edit(content: Rich, a: Int): Option[operation.Rich] = {
+    override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
       if (a < content.size) {
-        Some(operation.Rich.deleteOrUnwrapAt(content, a))
+        Seq(operation.Rich.deleteOrUnwrapAt(content, a))
       } else {
-        None
+        Seq.empty
       }
     }
   }
@@ -162,9 +172,6 @@ class RichInsert extends CommandCategory("when in insert mode") {
   //i_CTRL-X      CTRL-X ...        complete the word before the cursor in
   //                                     various ways
   //
-  //i_<BS>        <BS> or CTRL-H    delete the character before the cursor
-  //i_<Del>       <Del>             delete the character under the cursor
-  //i_CTRL-W      CTRL-W            delete word before the cursor
   //i_CTRL-U      CTRL-U            delete all entered characters in the current
   //                                     line
   //i_CTRL-T      CTRL-T            insert one shiftwidth of indent in front of

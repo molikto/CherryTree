@@ -6,13 +6,13 @@ import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
 import model.range.IntRange
-import model.{mode, operation}
+import model.{cursor, mode, operation}
 
 class RichChange extends CommandCategory("change text") {
 
   new Command {
     override val description: String = "delete all and go to insert"
-    override def defaultKeys: Seq[KeySeq] = Seq("cc")
+    override def defaultKeys: Seq[KeySeq] = Seq("cc", "S")
     override protected def available(a: DocState): Boolean = a.isRichNormal
     override protected def action(a: DocState, count: Int): DocTransaction = {
       val (cursor, _, _) = a.asRichNormal
@@ -21,16 +21,45 @@ class RichChange extends CommandCategory("change text") {
     }
   }
 
+  new Command {
+    override val description: String = "change selected text"
+    override val defaultKeys: Seq[KeySeq] = Seq("c")
+    override def available(a: DocState): Boolean = a.isRichVisual
+    override def action(a: DocState, count: Int): DocTransaction = a.mode match {
+      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
+        deleteRichNormalRange(a, pos, v.merged, insert = true)
+      case _ => throw new IllegalArgumentException("Invalid command")
+    }
+  }
+
+
+  new Command {
+    override val description: String = "change range selected by motion"
+    override def needsMotion: Boolean = true
+    override val defaultKeys: Seq[KeySeq] = Seq("c")
+    override protected def available(a: DocState): Boolean = a.isRichNormal
+
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      val (cur, rich, normal) = a.asRichNormal
+      motion.flatMap(m => {
+        m.act(commandState, rich, count, normal.range, grapheme).map(r => {
+          deleteRichNormalRange(a, cur, r, insert = true)
+        })
+      }).getOrElse(DocTransaction.empty)
+    }
+  }
+
   new NeedsCharCommand {
     override val description: String = "change content under the cursor"
     override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
+    override def available(a: DocState): Boolean = a.isRichNormal
 
 
     override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (grapheme.isEmpty) return DocTransaction.empty
       val char = grapheme.get
       val (cursor, rich, v) = a.asRichNormal
+      if (rich.isEmpty) return DocTransaction.mode(a.copyContentMode(mode.Content.RichInsert(0)))
 
       def makeMode(in: Atom, riches: Seq[operation.Rich]): Option[mode.Node] = {
         val rafter = operation.Rich.apply(riches, rich)
@@ -99,6 +128,30 @@ class RichChange extends CommandCategory("change text") {
       } else {
         DocTransaction.empty
       }
+    }
+
+  }
+
+  new Command {
+    override val description: String = "change text cursor until text end"
+    override def defaultKeys: Seq[KeySeq] = Seq("C")
+    override def available(a: DocState): Boolean = a.isRichNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
+      val (c, rich, normal) = a.asRichNormal
+      deleteRichNormalRange(a, c, IntRange(normal.range.start, rich.size), insert = true)
+    }
+  }
+
+  new Command {
+    override def repeatable: Boolean = true
+    override val description: String = "change under cursor, and more after if has N"
+    override val defaultKeys: Seq[KeySeq] = Seq("s")
+    override def available(a: DocState): Boolean = a.isRichNormal
+    override def action(a: DocState, count: Int): DocTransaction = {
+      val (pos, rich, normal) = a.asRichNormal
+      val r = normal.range
+      val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.rangeAfter(r) }
+      deleteRichNormalRange(a, pos, r.merge(fr), insert = true)
     }
 
   }
@@ -204,7 +257,7 @@ class RichChange extends CommandCategory("change text") {
   //        }
   //      }
 
-  // LATER change/replaces
+  // LATER remaining changes, some might can be implemented
   // R       N  R          enter Replace mode (repeat the entered text N times)
   //gR      N  gR         enter virtual Replace mode: Like Replace mode but
   //                           without affecting layout
@@ -212,13 +265,6 @@ class RichChange extends CommandCategory("change text") {
   //                        in Visual block mode: Replace each char of the
   //                           selected text with {char}
   //
-  //        (change = delete text and enter Insert mode)
-  //c       N  c{motion}  change the text that is moved over with {motion}
-  //v_c        {visual}c  change the highlighted text
-  //cc      N  cc         change N lines
-  //S       N  S          change N lines
-  //C       N  C          change to the end of the line (and N-1 more lines)
-  //s       N  s          change N characters
   //v_b_c      {visual}c  in Visual block mode: Change each of the selected
   //                           lines with the entered text
   //v_b_C      {visual}C  in Visual block mode: Change each of the selected
@@ -255,4 +301,31 @@ class RichChange extends CommandCategory("change text") {
   //                        left-align the lines in [range] (with [indent])
   //:ri     :[range]ri[ght] [width]
   //                        right-align the lines in [range]
+
+  // not implemented
+  // Q_co          Complex changes
+  //
+  //!        N  !{motion}{command}<CR>
+  //                        filter the lines that are moved over through {command}
+  //!!       N  !!{command}<CR>
+  //                        filter N lines through {command}
+  //v_!         {visual}!{command}<CR>
+  //                        filter the highlighted lines through {command}
+  //:range!  :[range]! {command}<CR>
+  //                        filter [range] lines through {command}
+  //=        N  ={motion}
+  //                        filter the lines that are moved over through 'equalprg'
+  //==       N  ==        filter N lines through 'equalprg'
+  //v_=         {visual}=
+  //                        filter the highlighted lines through 'equalprg'
+  //:s       :[range]s[ubstitute]/{pattern}/{string}/[g][c]
+  //                        substitute {pattern} by {string} in [range] lines;
+  //                           with [g], replace all occurrences of {pattern};
+  //                           with [c], confirm each replacement
+  //:s       :[range]s[ubstitute] [g][c]
+  //                        repeat previous ":s" with new range and options
+  //&           &         Repeat previous ":s" on current line without options
+  //:ret     :[range]ret[ab][!] [tabstop]
+  //                        set 'tabstop' to new value and adjust white space
+  //                           accordingly
 }

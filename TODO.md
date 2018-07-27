@@ -1,7 +1,6 @@
 
 ## roadmap
 
-changes
 backspace by words etc.
 
 ## bugs

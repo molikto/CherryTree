@@ -114,20 +114,24 @@ case class Rich(text: Seq[Text]) {
   }
 
 
+
+  def moveLeftWord(a: Int): Option[IntRange] = {
+    def rec(a: Int): Option[IntRange] = {
+      val atom = before(a)
+      if (atom.letterLike)
+        util.last(befores(a).takeWhile(_.letterLike)).map(_.range)
+      else if (atom.charNonLetterLike)
+        util.last(befores(a).takeWhile(_.charNonLetterLike)).map(_.range)
+      else
+        util.last(befores(a).takeWhile(_.whitespace)).map(_.range).flatMap(a => rec(a.start))
+    }
+    rec(a)
+  }
   /**
     * previous word start
     */
   def moveLeftWord(a: IntRange): Option[IntRange] = {
-    def rec(a: IntRange): Option[IntRange] = {
-      val atom = before(a.start)
-      if (atom.letterLike)
-        util.last(befores(a.start).takeWhile(_.letterLike)).map(_.range)
-      else if (atom.charNonLetterLike)
-        util.last(befores(a.start).takeWhile(_.charNonLetterLike)).map(_.range)
-      else
-        util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).flatMap(rec)
-    }
-    rec(a)
+    moveLeftWord(a.start)
   }
 
   /**
