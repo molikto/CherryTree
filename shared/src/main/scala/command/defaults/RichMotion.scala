@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState}
+import command.{CommandCategory, CommandState, Motion}
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -10,33 +10,19 @@ import model.data.{Rich, Unicode}
 class RichMotion extends CommandCategory("move cursor inside text") {
 
 
-  // TODO more text objects
-  // v_aw     N  aw        Select "a word"
-  //v_iw     N  iw        Select "inner word"
-  //v_aW     N  aW        Select "a WORD"
-  //v_iW     N  iW        Select "inner WORD"
-  //v_as     N  as        Select "a sentence"
-  //v_is     N  is        Select "inner sentence"
-  //v_a'     N  a'        Select "a single quoted string"
-  //v_i'     N  i'        Select "inner single quoted string"
-  //v_aquote N  a"        Select "a double quoted string"
-  //v_iquote N  i"        Select "inner double quoted string"
-  //v_a`     N  a`        Select "a backward quoted string"
-  //v_i`     N  i`        Select "inner backward quoted string"
 
-  trait RichMotionCommand extends Command {
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual
+  trait RichMotionCommand extends Command with command.RichMotion {
+
+    override def available(a: DocState, commandState: CommandState): Boolean = a.isNonEmptyRichNormalOrVisual || commandState.needsMotion
   }
 
   abstract class SimpleRichMotionCommand extends RichMotionCommand {
 
     override def repeatable: Boolean = true
 
-    def move(content: model.data.Rich, a: IntRange): IntRange
-
     final override def action(a: DocState, count: Int): DocTransaction = {
       val (_, content, m) = a.asRichNormalOrVisual
-      def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr) }
+      def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr)._1 }
       DocTransaction.mode(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
     }
   }
@@ -45,27 +31,27 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new SimpleRichMotionCommand() { // DIFFERENCE h + Control is also in Vim, but we don't use this,
     override val description: String = "move left"
     override val defaultKeys = Seq("h", Backspace, Left)
-    override def move(content: Rich, a: IntRange): IntRange = content.rangeBefore(a)
+    override def move(content: Rich, a: IntRange): (IntRange, Int) = if (a.start == 0) (a, 0) else (content.before(a.start).range, 0)
   }
 
   new SimpleRichMotionCommand() {
     override val description: String = "move right"
     override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
-    override def move(content: Rich, a: IntRange): IntRange = content.rangeAfter(a)
+    override def move(content: Rich, a: IntRange): (IntRange, Int)  =  if (a.until == content.size) (a, 1) else (content.after(a.until).range, 0)
   }
 
   new SimpleRichMotionCommand() {
     override def repeatable: Boolean = false
     override val description: String = "move to beginning"
     override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
-    override def move(content: Rich, a: IntRange): IntRange = content.rangeBeginning
+    override def move(content: Rich, a: IntRange): (IntRange, Int) = (content.rangeBeginning, 0)
   }
 
   new SimpleRichMotionCommand {
     override def repeatable: Boolean = false
     override val description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
-    override def move(content: Rich, a: IntRange): IntRange = content.rangeEnd
+    override def move(content: Rich, a: IntRange):  (IntRange, Int) = (content.rangeEnd, 1)
   }
 
   // screen related is not implemented
@@ -83,7 +69,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
   abstract class FindCommand extends RichMotionCommand with NeedsCharCommand with command.FindCommand {
 
-    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange]
+    protected def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange]
     def skip(a: Rich, range: IntRange): IntRange = range
     def moveSkip(a: Rich, range: IntRange, char: Unicode, skipCurrent: Boolean): Option[IntRange] = {
       if (skipCurrent) {
@@ -99,21 +85,16 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       }
     }
 
-    override def findGrapheme(a: DocState, char: Unicode, count: Int, skipCurrent: Boolean): DocTransaction = {
-      val (_, content, mm) = a.asRichNormalOrVisual
-      def act(r: IntRange) = (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
-        r.flatMap(rr => moveSkip(content, rr, char, skipCurrent || i > 0))
-      }
-      act(mm.focus) match {
-        case Some(move) =>
-          DocTransaction.mode(a.copyContentMode(mm.copyWithNewFocus(move)))
-        case None =>
-          DocTransaction.empty
+    override def findGrapheme(a: Rich, r: IntRange, char: Unicode, count: Int, skipCurrent: Boolean): Option[IntRange] = {
+      (0 until count).foldLeft(Some(r): Option[IntRange]) {(r, i) =>
+        r.flatMap(rr => moveSkip(a, rr, char, skipCurrent || i > 0))
       }
     }
 
-    final override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
-      findGrapheme(a, char, count, skipCurrent = false)
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      if (grapheme.isEmpty) return DocTransaction.empty
+      val char = grapheme.get
+      action(a, char, count, skipCurrent = false)
     }
 
     override def repeatable: Boolean = true
@@ -124,7 +105,6 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
     def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharAfter(range, char, delimitationGraphemes).map(_.range)
-
   }
   val findPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char before cursor"
@@ -141,7 +121,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
       content.findCharAfter(range, char, delimitationGraphemes).map(r => content.rangeBefore(r.range))
   }
   val toPreviousChar: FindCommand = new FindCommand {
-    override val description: String = "find char after cursor, move cursor after it"
+    override val description: String = "find char before cursor, move cursor after it"
     override def reverse: FindCommand = toNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("T")
     override def skip(content: Rich, range: IntRange): IntRange = content.rangeBefore(range)
@@ -154,12 +134,19 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command"
-    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(";")
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
+
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
-      lf._1.findGrapheme(a, lf._2, count, skipCurrent = true)
+      lf._1.action(a, lf._2, count, skipCurrent = true)
     }
+
+    override def move(commandState: CommandState, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
+      val lf = commandState.lastFindCommand.get
+      char.flatMap(c => lf._1.findGrapheme(content, r, c, count, skipCurrent = true)).map(a => (a, 1))
+    }
+
     override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
 
   }
@@ -167,59 +154,65 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command's reverse"
-    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandState): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(",")
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val lf = commandState.lastFindCommand.get
-      lf._1.reverse.findGrapheme(a, lf._2, count, skipCurrent = true)
+      lf._1.reverse.action(a, lf._2, count, skipCurrent = true)
     }
     override protected def action(a: DocState, count: Int): DocTransaction = throw new IllegalStateException("No one should call this if the other implemented")
+
+    override def move(commandState: CommandState, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
+      val lf = commandState.lastFindCommand.get
+      char.flatMap(c => lf._1.reverse.findGrapheme(content, r, c, count, skipCurrent = true)).map(a => (a, 1))
+    }
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "forward by word"
     override val defaultKeys: Seq[KeySeq] = Seq("w")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWord(a)
+    override def move(content: Rich, a: IntRange): (IntRange, Int) = content.moveRightWord(a).map(a => (a, 0)).getOrElse((content.rangeEnd, 1))
+
   }
   new SimpleRichMotionCommand {
     override val description: String = "forward by WORD"
     override val defaultKeys: Seq[KeySeq] = Seq("W")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWORD(a)
+    override def move(content: Rich, a: IntRange): (IntRange, Int) = content.moveRightWORD(a).map(a => (a, 0)).getOrElse((content.rangeEnd, 1))
   }
   new SimpleRichMotionCommand {
     override val description: String = "backward by word"
     override val defaultKeys: Seq[KeySeq] = Seq("b")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWord(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int)  = content.moveLeftWord(a).map(a => (a, 0)).getOrElse((content.rangeBeginning, 1))
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "backward by WORD"
     override val defaultKeys: Seq[KeySeq] = Seq("B")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWORD(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int)  =content.moveLeftWORD(a).map(a => (a, 0)).getOrElse((content.rangeBeginning, 1))
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "forward to word end"
     override val defaultKeys: Seq[KeySeq] = Seq("e")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWordEnd(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int) = content.moveRightWordEnd(a).map(a => (a, 1)).getOrElse((content.rangeEnd, 1))
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "forward to WORD end"
     override val defaultKeys: Seq[KeySeq] = Seq("E")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveRightWORDEnd(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int) = content.moveRightWORDEnd(a).map(a => (a, 1)).getOrElse((content.rangeEnd, 1))
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "backward to word end"
     override val defaultKeys: Seq[KeySeq] = Seq("ge")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWordEnd(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int)  =content.moveLeftWordEnd(a).map(a => (a, 0)).getOrElse((content.rangeBeginning, 1))
   }
 
   new SimpleRichMotionCommand {
     override val description: String = "backward to WORD end"
     override val defaultKeys: Seq[KeySeq] = Seq("gE")
-    override def move(content: Rich, a: IntRange): IntRange = content.moveLeftWORDEnd(a)
+    override def move(content: Rich, a: IntRange):  (IntRange, Int)  =content.moveLeftWORDEnd(a).map(a => (a, 0)).getOrElse((content.rangeBeginning, 1))
   }
 
   // LATER

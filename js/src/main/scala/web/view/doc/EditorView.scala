@@ -25,7 +25,9 @@ trait EditorView extends View {
       }
       if (key == null) key = Key.Unknown(event.key)
       val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-      if (!kk.meta) { // for meta keys, we ignore it, it is mostly browser keys
+       // for meta keys, we ignore it, it is mostly browser keys
+      // for modifier keys, we also ignore them
+      if (!kk.meta && !key.isInstanceOf[Key.Modifier]) {
         if (editor.onKeyDown(kk)) preventDefault(event)
       }
     })

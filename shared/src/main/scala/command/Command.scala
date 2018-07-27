@@ -18,6 +18,7 @@ abstract class Command {
   def repeatable: Boolean = false
   def needsChar: Boolean = false
   def needsMotion: Boolean = false
+  def needsStuff = needsMotion || needsChar
 
   // TODO user keymap
   def keyLevel(c: KeySeq): Int = {
@@ -30,11 +31,19 @@ abstract class Command {
     }
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
-  def available(a: DocState, commandState: CommandState): Boolean = available(a)
-  protected def available(a: DocState): Boolean = throw new NotImplementedError()
-  def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = action(a, count)
-  protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError()
-  def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = throw new NotImplementedError()
-  def actionOnMotion(a: DocState, count: Int, to: IntRange): DocTransaction = throw new NotImplementedError()
+  def available(a: DocState, commandState: CommandState): Boolean = available(a) && !commandState.needsMotion
+  protected def available(a: DocState): Boolean = throw new NotImplementedError(description)
+  def action(a: DocState,
+    count: Int,
+    commandState: CommandState,
+    key: Option[KeySeq],
+    grapheme: Option[Unicode],
+    motion: Option[Motion]
+  ): DocTransaction = action(a, count)
+  protected def action(a: DocState, count: Int): DocTransaction = throw new NotImplementedError(description)
 }
 
+
+trait SideEffectingCommand extends Command  {
+
+}

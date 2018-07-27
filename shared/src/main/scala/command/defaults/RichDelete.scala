@@ -1,10 +1,10 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandState, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.Atom
+import model.data.{Atom, Unicode}
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
@@ -78,8 +78,14 @@ class RichDelete extends CommandCategory("delete text") {
     override def needsMotion: Boolean = true
     override val defaultKeys: Seq[KeySeq] = Seq("d")
     override protected def available(a: DocState): Boolean = a.isNonEmptyRichNormal
-    override def actionOnMotion(a: DocState, count: Int, to: IntRange): DocTransaction = {
-      ???
+
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      val (cur, rich, normal) = a.asRichNormal
+      motion.flatMap(m => {
+        m.act(commandState, rich, count, normal.range, grapheme).map(r => {
+          deleteRichNormalRange(a, cur, r)
+        })
+      }).getOrElse(DocTransaction.empty)
     }
   }
 

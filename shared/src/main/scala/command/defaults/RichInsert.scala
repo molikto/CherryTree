@@ -1,11 +1,11 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandState}
+import command.{CommandCategory, CommandState, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation}
-import model.data.{Rich, SpecialChar}
+import model.data.{Rich, SpecialChar, Unicode}
 import model.range.IntRange
 
 class RichInsert extends CommandCategory("when in insert mode") {
@@ -77,7 +77,8 @@ class RichInsert extends CommandCategory("when in insert mode") {
       val (node, rich, insert) = a.asRichInsert
       deli.codedNonEmpty ||  !rich.insideCoded(insert.pos)
     }
-    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq]): DocTransaction = {
+
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
       if (key.isDefined && key.get.size == 1) {

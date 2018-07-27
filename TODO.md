@@ -1,3 +1,9 @@
+
+## roadmap
+
+changes
+backspace by words etc.
+
 ## bugs
 
 * why scrollbar not shown??

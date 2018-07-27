@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{CommandStatus, Key}
+import command.{Key}
 import model.data.{Content, Unicode}
 import model.{cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -61,19 +61,28 @@ class BottomBarView(val client: Client) extends View {
     debugErrorInfo
   ).render
 
-  observe(client.commandStatus.doOnNext(c => {
-    val (text, color) = c match {
-      case CommandStatus.Empty => (EmptyStr, theme.disalbedInfo)
-      case CommandStatus.InputtingCount(a: String) => (a, null)
-      case CommandStatus.WaitingForConfirm(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-      case CommandStatus.WaitingForChar(count: String, k: KeySeq) => (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), null)
-      case CommandStatus.LastPerformed(count: String, k: KeySeq, char: Option[Unicode]) =>
-        (Seq(count, renderKeySeq(k), char.map(_.str).getOrElse("")).filter(_.nonEmpty).mkString(" "), theme.disalbedInfo)
-      case CommandStatus.LastNotFound(count: String, k: KeySeq) =>
-        (Seq(count, renderKeySeq(k)).filter(_.nonEmpty).mkString(" "), theme.littleError)
+  observe(client.commandBufferUpdates.doOnNext(c => {
+    var isCompleted = false
+    var isError = false
+    val ts = c.map {
+      case command.Part.IdentifiedCommand(key, _) => renderKeySeq(key)
+      case command.Part.UnidentifiedCommand(key, _) => renderKeySeq(key)
+      case command.Part.UnknownCommand(key) =>
+        isError = true
+        renderKeySeq(key)
+      case command.Part.Count(c) => c.toString
+      case command.Part.Char(c) => c.str
+      case command.Part.CompleteMark =>
+        isCompleted = true
+        ""
+      case command.Part.UnknownPatternMark =>
+        isError = true
+        ""
     }
-    commandStatus.textContent = text
-    commandStatus.style.color = color
+    commandStatus.textContent =
+      ts.filter(!_.isEmpty).mkString(" ")
+    commandStatus.style.color =
+      if (isCompleted) theme.disalbedInfo else if (isError) theme.littleError else null
   }))
 
   private def updateModeIndicator(): Unit = {

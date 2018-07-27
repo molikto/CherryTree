@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.CommandCategory
+import command.{CommandCategory, CommandState, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
@@ -10,13 +10,26 @@ import model.{mode, operation}
 
 class RichChange extends CommandCategory("change text") {
 
+  new Command {
+    override val description: String = "delete all and go to insert"
+    override def defaultKeys: Seq[KeySeq] = Seq("cc")
+    override protected def available(a: DocState): Boolean = a.isRichNormal
+    override protected def action(a: DocState, count: Int): DocTransaction = {
+      val (cursor, _, _) = a.asRichNormal
+      DocTransaction(Seq(operation.Node.Replace(cursor, model.data.Content.Rich(model.data.Rich.empty))),
+        Some(a.copyContentMode(mode.Content.RichInsert(0))))
+    }
+  }
 
   new NeedsCharCommand {
     override val description: String = "change content under the cursor"
     override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
     override def available(a: DocState): Boolean = a.isNonEmptyRichNormal
 
-    override def actionOnGrapheme(a: DocState, char: Unicode, count: Int): DocTransaction = {
+
+    override def action(a: DocState, count: Int, commandState: CommandState, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      if (grapheme.isEmpty) return DocTransaction.empty
+      val char = grapheme.get
       val (cursor, rich, v) = a.asRichNormal
 
       def makeMode(in: Atom, riches: Seq[operation.Rich]): Option[mode.Node] = {

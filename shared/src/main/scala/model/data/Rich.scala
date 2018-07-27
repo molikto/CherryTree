@@ -60,7 +60,7 @@ case class Rich(text: Seq[Text]) {
   /**
     * next word start
     */
-  def moveRightWord(a: IntRange): IntRange = {
+  def moveRightWord(a: IntRange): Option[IntRange] = {
     val atom = before(a.until)
     util.head((if (atom.letterLike)
       afters(a.until).dropWhile(_.letterLike)
@@ -68,98 +68,86 @@ case class Rich(text: Seq[Text]) {
       afters(a.until).dropWhile(_.charNonLetterLike)
     else
       afters(a.until)
-      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeEnd)
+      ).dropWhile(_.whitespace)).map(_.range)
   }
 
   /**
     * next WORD start
     */
-  def moveRightWORD(a: IntRange): IntRange = {
+  def moveRightWORD(a: IntRange): Option[IntRange] = {
     val atom = before(a.until)
     util.head((if (!atom.whitespace)
       afters(a.until).dropWhile(!_.whitespace)
     else
       afters(a.until)
-      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeEnd)
+      ).dropWhile(_.whitespace)).map(_.range)
   }
 
   /**
     * next word end
     */
- def moveRightWordEnd(a: IntRange): IntRange = {
-   if (a.until == size) rangeEnd
-   else {
-     def rec(a: IntRange): IntRange = {
+ def moveRightWordEnd(a: IntRange): Option[IntRange] = {
+     def rec(a: IntRange): Option[IntRange] = {
        val atom = after(a.until)
-       (if (atom.letterLike)
+       if (atom.letterLike)
          util.last(afters(a.until).takeWhile(_.letterLike)).map(_.range)
        else if (atom.charNonLetterLike)
          util.last(afters(a.until).takeWhile(_.charNonLetterLike)).map(_.range)
        else
-         util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeEnd)
+         util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).flatMap(rec)
      }
      rec(a)
-   }
  }
 
   /**
     * next WORD end
     */
-  def moveRightWORDEnd(a: IntRange): IntRange = {
-    if (a.until == size) rangeEnd
-    else {
-      def rec(a: IntRange): IntRange = {
-        val atom = after(a.until)
-        (if (!atom.whitespace)
-          util.last(afters(a.until).takeWhile(!_.whitespace)).map(_.range)
-        else
-          util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeEnd)
-      }
-      rec(a)
+  def moveRightWORDEnd(a: IntRange): Option[IntRange] = {
+    def rec(a: IntRange): Option[IntRange] = {
+      val atom = after(a.until)
+      if (!atom.whitespace)
+        util.last(afters(a.until).takeWhile(!_.whitespace)).map(_.range)
+      else
+        util.last(afters(a.until).takeWhile(_.whitespace)).map(_.range).flatMap(rec)
     }
+    rec(a)
   }
 
 
   /**
     * previous word start
     */
-  def moveLeftWord(a: IntRange): IntRange = {
-    if (a.start == 0) rangeBeginning
-    else {
-      def rec(a: IntRange): IntRange = {
-        val atom = before(a.start)
-        (if (atom.letterLike)
-          util.last(befores(a.start).takeWhile(_.letterLike)).map(_.range)
-        else if (atom.charNonLetterLike)
-          util.last(befores(a.start).takeWhile(_.charNonLetterLike)).map(_.range)
-        else
-          util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeBeginning)
-      }
-      rec(a)
+  def moveLeftWord(a: IntRange): Option[IntRange] = {
+    def rec(a: IntRange): Option[IntRange] = {
+      val atom = before(a.start)
+      if (atom.letterLike)
+        util.last(befores(a.start).takeWhile(_.letterLike)).map(_.range)
+      else if (atom.charNonLetterLike)
+        util.last(befores(a.start).takeWhile(_.charNonLetterLike)).map(_.range)
+      else
+        util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).flatMap(rec)
     }
+    rec(a)
   }
 
   /**
     * previous WORD start
     */
-  def moveLeftWORD(a: IntRange): IntRange = {
-    if (a.start == 0) rangeBeginning
-    else {
-      def rec(a: IntRange): IntRange = {
+  def moveLeftWORD(a: IntRange): Option[IntRange] = {
+      def rec(a: IntRange): Option[IntRange] = {
         val atom = before(a.start)
-        (if (!atom.whitespace)
+        if (!atom.whitespace)
           util.last(befores(a.start).takeWhile(!_.whitespace)).map(_.range)
         else
-          util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).map(rec)).getOrElse(rangeBeginning)
+          util.last(befores(a.start).takeWhile(_.whitespace)).map(_.range).flatMap(rec)
       }
       rec(a)
-    }
   }
 
   /**
     * previous word end
     */
-  def moveLeftWordEnd(a: IntRange): IntRange = {
+  def moveLeftWordEnd(a: IntRange): Option[IntRange] = {
     val atom = after(a.start)
     util.head((if (atom.letterLike)
       befores(a.start).dropWhile(_.letterLike)
@@ -167,19 +155,35 @@ case class Rich(text: Seq[Text]) {
       befores(a.start).dropWhile(_.charNonLetterLike)
     else
       befores(a.start)
-      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeBeginning)
+      ).dropWhile(_.whitespace)).map(_.range)
   }
 
   /**
     * previous WORD end
     */
-  def moveLeftWORDEnd(a: IntRange): IntRange = {
+  def moveLeftWORDEnd(a: IntRange): Option[IntRange] = {
     val atom = before(a.start)
     util.head((if (!atom.whitespace)
       befores(a.start).dropWhile(!_.whitespace)
     else
       befores(a.start)
-      ).dropWhile(_.whitespace)).map(_.range).getOrElse(rangeBeginning)
+      ).dropWhile(_.whitespace)).map(_.range)
+  }
+
+  def extendToWORDOrWhitespace(a: IntRange): Option[IntRange] = {
+    ???
+  }
+
+  def extendToWORDAndTailingWhitespace(a: IntRange): Option[IntRange] = {
+    ???
+  }
+
+  def extendToWordOrWhitespace(a: IntRange): Option[IntRange] = {
+    ???
+  }
+
+  def extendToWordAndTailingWhitespace(a: IntRange): Option[IntRange] = {
+    ???
   }
 
 

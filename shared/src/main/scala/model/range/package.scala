@@ -11,7 +11,16 @@ package object range {
 
     override def toString(): String = s"[$start, $until)"
 
-    def merge(move: IntRange): IntRange = IntRange(start min move.start, until max move.until)
+
+    def merge(move: IntRange, mergeAt: Int): IntRange = if (mergeAt == 1) {
+      IntRange(start min move.start, until max move.until)
+    } else if (mergeAt == 0) {
+      val (max, min) = util.maxMin(start, move.start)
+      IntRange(min, max)
+    } else {
+      throw new NotImplementedError("Not implemented yet")
+    }
+    def merge(move: IntRange): IntRange = merge(move, 1)
 
     def min(b: IntRange): IntRange = if (start < b.start) this else b
 
