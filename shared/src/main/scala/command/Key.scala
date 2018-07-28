@@ -21,6 +21,8 @@ case class Key(
     case _ => false
   }
 
+  def modKey(a: Boolean): Key = if (model.isMac) this.copy(meta = true) else this.copy(control = true)
+
   override def toString: String = {
     val sb = new ArrayBuffer[String]()
     if (shift) sb.append("Shift")
@@ -63,6 +65,8 @@ object Key {
   case object Alt extends Modifier {
     def +(key: Key): Key = key.copy(alt = true)
   }
+
+  val ModKey: Modifier = if (model.isMac) Meta else Ctrl
 
   sealed trait V {
     def withAllModifiers: Seq[KeySeq] = Key(this).withAllModifiers

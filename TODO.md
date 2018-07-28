@@ -1,4 +1,18 @@
+## roadmap
 
+* undo, redo
+* code editor integration
+    * the most simple will be just open a new dialog
+    * no integration of vim keybindings
+        * maybe these will have a seperate settings page...
+    * no integration of undo/redo history, 
+        * it's ok to let the editor handle themselves
+        * after all change is done, or after sometime
+          create a local edit ourselves by diffing, and consider
+          this remote edit -- cannot undo outside
+    * copy & paste
+* global history
+* conflicts??
 
 ## bugs
 

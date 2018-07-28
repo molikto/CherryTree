@@ -5,6 +5,7 @@ import command.Key.{Grapheme, KeySeq}
 import doc.{DocState, DocTransaction}
 import model.data.SpecialChar
 import settings.Settings
+import Key._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -25,9 +26,17 @@ class CommandCategory(val name: String) extends Settings {
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
     // currently these cannot be changed, you can change delimiters though
+
+    private val systemKeys: Seq[KeySeq] =
+      if (deli == SpecialChar.Emphasis) Seq(ModKey + "i")
+      else if (deli == SpecialChar.Strong) Seq(ModKey + "b")
+      else Seq.empty
+
     override def defaultKeys: Seq[KeySeq] = Seq.empty
     override def hardcodeKeys: Seq[KeySeq] =
-      Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => Grapheme(a) : KeySeq)
+      Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => Grapheme(a) : KeySeq) ++ systemKeys
+
+
   }
 
   trait OverrideCommand extends Command {

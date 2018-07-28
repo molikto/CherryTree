@@ -78,9 +78,11 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+
+
     override val description: String = if (deli.atomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
 
-    override def emptyAsFalse: Boolean = true
+    override def emptyAsFalseInInsertMode: Boolean = true
 
     override def available(a: DocState): Boolean = a.isRichInserting && {
       val (node, rich, insert) = a.asRichInsert

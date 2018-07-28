@@ -22,6 +22,7 @@ import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import monix.reactive.subjects.PublishSubject
 import register.RegisterHandler
+import undoer.Undoer
 import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
@@ -47,6 +48,7 @@ class Client(
   private val authentication: Authentication.Token
 ) extends CommandHandler
   with RegisterHandler
+  with Undoer
   with EditorInterface
   with DocInterface { self =>
 
@@ -149,6 +151,7 @@ class Client(
     updatingState = true
     state_ = DocState(res.root, res.mode)
     onBeforeUpdateUpdateCommandState(state_)
+    trackUndoerChange(res.transaction, res.ty, res.mode)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInserting) {
@@ -163,8 +166,8 @@ class Client(
     }
   }
 
-  private def updateState(a: DocState, from: model.transaction.Node, viewUpdated: Boolean): Unit = {
-    val res = DocUpdate(a.node, from, a.mode, viewUpdated)
+  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean): Unit = {
+    val res = DocUpdate(a.node, from, a.mode, ty, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (disableStateUpdate_) {
       disabledStateUpdates.append(res)
@@ -265,7 +268,10 @@ class Client(
       uncommitted = uc
       connection_.update(Some(success.serverStatus))
       if (wp0.nonEmpty) updateState(
-        DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))), wp0, viewUpdated = false)
+        DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))),
+        wp0,
+        Undoer.Remote,
+        viewUpdated = false)
     } catch {
       case e: Exception =>
         throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -347,7 +353,10 @@ class Client(
         }
     }
     if (changed) {
-      updateState(DocState(d, m), changes, viewUpdated = update.viewUpdated)
+      updateState(DocState(d, m),
+        changes,
+        update.undoType.getOrElse(Undoer.Local),
+        viewUpdated = update.viewUpdated)
       uncommitted = uncommitted :+ changes
       self.sync()
     }

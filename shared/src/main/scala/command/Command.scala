@@ -13,7 +13,7 @@ abstract class Command {
   val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
-  def emptyAsFalse: Boolean = false
+  def emptyAsFalseInInsertMode: Boolean = false
 
   def repeatable: Boolean = false
   def needsChar: Boolean = false
@@ -31,7 +31,7 @@ abstract class Command {
     }
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
-  def available(a: DocState, commandState: CommandInterface): Boolean = available(a) && !commandState.needsMotion
+  def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
   protected def available(a: DocState): Boolean = throw new NotImplementedError(description)
   def action(a: DocState,
     count: Int,

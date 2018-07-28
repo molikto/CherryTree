@@ -33,6 +33,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
     new defaults.YankPaste(),
+    new defaults.UndoRedo(),
     new defaults.NodeFold(),
     new defaults.Scroll()).flatMap(_.commands)
 
@@ -58,12 +59,9 @@ abstract class CommandHandler extends Settings with CommandInterface {
     for (i <- buffer.indices) {
       buffer(i) match {
         case IdentifiedCommand(_, c, _) =>
-          if (!c.available(state, new CommandInterface {
+          if (!c.available(state, new CommandInterfaceAvailable {
             override def lastFindCommand: Option[(FindCommand, Unicode)] = CommandHandler.this.lastFindCommand
             override def commandBuffer: Seq[Part] = buffer.take(i - 1)
-            override def yank(registerable: Registerable, isDelete: Boolean): Unit = throw new IllegalAccessException("should not access this")
-            override def setRegister(a: Int): Unit = throw new IllegalAccessException("should not access this")
-            override def retrieveSetRegisterAndSetToDefault(): Option[Registerable] =  throw new IllegalAccessException("should not access this")
           })) {
             av = false
           }

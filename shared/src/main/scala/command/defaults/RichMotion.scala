@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandInterface, Motion}
+import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Motion}
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -13,7 +13,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
 
   trait RichMotionCommand extends Command with command.RichMotion {
 
-    override def available(a: DocState, commandState: CommandInterface): Boolean = a.isNonEmptyRichNormalOrVisual || commandState.needsMotion
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isNonEmptyRichNormalOrVisual || commandState.needsMotion
   }
 
   abstract class SimpleRichMotionCommand extends RichMotionCommand {
@@ -134,7 +134,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command"
-    override def available(a: DocState, commandState: CommandInterface): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(";")
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
@@ -154,7 +154,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
   new RichMotionCommand {
     override def repeatable: Boolean = true
     override val description: String = "repeat previous find command's reverse"
-    override def available(a: DocState, commandState: CommandInterface): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = super.available(a, commandState) && commandState.lastFindCommand.isDefined
     override val defaultKeys: Seq[KeySeq] = Seq(",")
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val lf = commandState.lastFindCommand.get

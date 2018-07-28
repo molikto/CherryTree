@@ -4,9 +4,9 @@ import command.Key.Grapheme
 import doc.DocTransaction
 import model.data.Unicode
 import register.{RegisterInterface, Registerable}
+import undoer.UndoerInterface
 
-trait CommandInterface extends RegisterInterface {
-
+trait CommandInterfaceAvailable {
   def lastFindCommand: Option[(FindCommand, Unicode)]
   protected def commandBuffer: Seq[Part]
 
@@ -14,5 +14,10 @@ trait CommandInterface extends RegisterInterface {
     case Part.IdentifiedCommand(_, c, _) => c.needsMotion
     case _ => false
   }
+
+}
+
+trait CommandInterface extends CommandInterfaceAvailable with RegisterInterface with UndoerInterface {
+
 
 }
