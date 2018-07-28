@@ -12,16 +12,50 @@ import scala.util.Random
 /**
   */
 // LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
-case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
+case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich, mode.Rich] {
 
-  def transform(a: mode.Content): Option[mode.Content] = u.foldLeft(Some(a) : Option[mode.Content]) {(s, u) => u.transform(s) }
+  def transform(a: mode.Content): Option[mode.Content] = u.foldLeft(Some(a) : Option[mode.Content]) {(s, u) => u.transformContent(s) }
 
   override def apply(d: data.Rich): data.Rich =
     data.Rich.parse(Unicode.apply(u, d.serialize()))
 
+  override type This = Rich
+
+  override def transform(a: mode.Rich): Option[mode.Rich] = Some(a)
+
+  override def reverse(d: data.Rich): Rich = {
+    Rich(u.foldLeft((d.serialize(), Seq.empty[operation.Unicode])) { (s, a) =>
+      a match {
+        case k: Unicode.Surround =>
+          val op = k.reverse2
+          (operation.Unicode.apply(op, s._1), op ++ s._2)
+        case a =>
+          val op = a.reverse(s._1)
+          (a(s._1), op +: s._2)
+      }
+    }._2, Type.reverse(ty))
+  }
+
+  override def merge(before: Rich): Option[Rich] = {
+    (before.u, this) match {
+      case (Seq(Unicode.Insert(a0, u0, _)), Seq(Unicode.Insert(a1, u1, _))) if a1 == a0 + u0.size && !u1.containsSpace =>
+        Some(Rich(Seq(Unicode.Insert(a0, u0 + u1)), ty))
+      case (Seq(Unicode.Delete(r0)), Seq(Unicode.Delete(r1))) =>
+        if (r1.until == r0.start) {
+          Some(Rich(Seq(Unicode.Delete(r1.start, r0.until)), ty))
+        } else if (r0.start == r1.start) {
+          Some(Rich(Seq(Unicode.Delete(r1.start, r1.until + r0.size)), ty))
+        } else {
+          None
+        }
+      case _ =>
+        None
+
+    }
+  }
 }
 
-object Rich extends OperationObject[data.Rich, Rich] {
+object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
   def merge(op1: Rich, op2: Rich, ty: Type): Rich = {
     Rich(op1.u ++ op2.u, ty)
   }

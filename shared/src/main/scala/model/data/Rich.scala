@@ -250,9 +250,11 @@ case class Rich(text: Seq[Text]) {
 
   def isEmpty: Boolean = text.isEmpty
 
+  private var serialized: Unicode = null
 
   private[model] def serialize(): Unicode = {
-    Text.serialize(text)
+    if (serialized == null) serialized = Text.serialize(text)
+    serialized
   }
 
   def isSubRich(range: IntRange): Option[IntRange] = {

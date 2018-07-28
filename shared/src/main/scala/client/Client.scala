@@ -152,9 +152,10 @@ class Client(
     }
     updatingState = true
     val modeBefore = state.mode
+    val docBefore = state.node
     state_ = DocState(a.node, a.mode)
     onBeforeUpdateUpdateCommandState(state_)
-    if (from.nonEmpty) trackUndoerChange(from, ty, modeBefore)
+    if (from.nonEmpty) trackUndoerChange(from, ty, modeBefore, docBefore)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInserting) {

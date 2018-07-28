@@ -3,10 +3,19 @@ package model
 import model.range.IntRange
 
 package object mode {
-  sealed abstract class Content {
+  trait Mode[T] {
+  }
+
+  sealed abstract class Content extends Mode[data.Content] {
     def isNormalOrVisual: Boolean = this.isInstanceOf[Content.NormalOrVisual]
     def isNormal: Boolean = this.isInstanceOf[Content.Normal]
   }
+
+  sealed trait Rich extends Mode[data.Rich]
+  case object RichNothing extends Rich
+
+  sealed trait Unicode extends Mode[data.Unicode]
+  case object UnicodeNothing extends Rich
 
   object Content {
     sealed abstract class Rich extends Content
@@ -50,7 +59,7 @@ package object mode {
     case object CodeInside extends Code // user's mode is currently taken over by code editor
   }
 
-  sealed trait Node
+  sealed trait Node extends Mode[data.Node]
   object Node {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node

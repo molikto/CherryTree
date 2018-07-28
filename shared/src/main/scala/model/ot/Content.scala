@@ -5,7 +5,7 @@ import model._
 
 import scala.util.Random
 
-object Content extends Ot[data.Content, operation.Content, conflict.Content] {
+object Content extends Ot[data.Content, mode.Content, operation.Content, conflict.Content] {
 
   type RebaseResult = Rebased[conflict.Content, (Seq[operation.Content], Seq[operation.Content])]
   override def rebase(winner: operation.Content, loser: operation.Content): RebaseResult = {

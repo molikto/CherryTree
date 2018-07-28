@@ -1,6 +1,8 @@
 package model
 
 
+import model.mode.Mode
+
 import scala.util.Random
 
 package object operation {
@@ -9,16 +11,28 @@ package object operation {
   object Type extends Enumeration {
     type Type = Value
     val Structural, Add, Delete, AddDelete = Value
+
+    def reverse(a: Type): Type = a match {
+      case Add => Delete
+      case Delete => Add
+      case a => a
+    }
   }
   import Type.Type
 
 
-  trait Operation[DATA] {
+  trait Operation[DATA, M <: Mode[DATA]] {
+    type This
     def ty: Type
     def apply(data: DATA): DATA
+
+    def transform(a: M): Option[M]
+    def transform(a: Option[M]): Option[M] = a.flatMap(transform)
+    def reverse(d: DATA): This
+    def merge(before: This): Option[This] = None
   }
 
-  trait OperationObject[DATA, OPERATION <: Operation[DATA]] {
+  trait OperationObject[DATA, M <: Mode[DATA], OPERATION <: Operation[DATA, M]] {
 
     type TRANSACTION = Seq[OPERATION]
 

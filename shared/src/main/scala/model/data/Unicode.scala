@@ -123,6 +123,7 @@ case class Unicode(var str: String) extends Seq[Int] {
 
 
 
+
   override def length: Int = size
 
   override def size: Int = {
@@ -294,4 +295,6 @@ case class Unicode(var str: String) extends Seq[Int] {
 
   def asDigit: Int = str.toInt
 
+
+  def containsSpace: Boolean = str.contains(" ")
 }

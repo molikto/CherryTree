@@ -8,7 +8,7 @@ import model.range.IntRange
 
 import scala.util.Random
 
-object Node extends Ot[data.Node, operation.Node, conflict.Node] {
+object Node extends Ot[data.Node, mode.Node, operation.Node, conflict.Node] {
 
   type RebaseResult = Rebased[conflict.Node, (Seq[operation.Node], Seq[operation.Node])]
 
@@ -17,8 +17,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
   // LATER handle move
   override def rebase(winner: operation.Node, loser: operation.Node): RebaseResult = {
 
-    def moveBy(a: cursor.Node, i: Int): cursor.Node = a.dropRight(1) :+ (a.last + i)
-
+    import cursor.Node.moveBy
     def insertMove(i: operation.Node.Insert, d: operation.Node.Move): RebaseResult = {
       // if insertion point is the same as move start point, insertion point is not moved
       def transformByI(a: cursor.Node) = cursor.Node.transformAfterInserted(i.at, i.childs.size, a)
@@ -41,12 +40,6 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
       }
     }
 
-    def reverseMove(m: operation.Node.Move): operation.Node.Move = {
-      operation.Node.Move(
-        range.Node(moveBy(m.r.transformNodeAfterMoved(m.to, m.to), -m.r.size), m.r.size),
-        m.r.transformNodeAfterMoved(m.to, m.r.until)
-      )
-    }
     def deleteMove(w: operation.Node.Delete, m: operation.Node.Move, deleteConflict : => conflict.Node): RebaseResult = {
       if (w.r.contains(m.to.dropRight(1))) { // move should be entirely deleted
         val deletedAfterMoved = m.r.split(w.r).map(dd => range.Node(m.r.transformNodeAfterMoved(m.to, dd.start), dd.size)) ++
@@ -317,7 +310,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
                 }
               } else if ((lr.containsInsertionPoint(wa) && wr.containsInsertionPoint(la)) ||  // ill case, only winner performed
                 lr.overlap(wr)) { // don't want to deal with this anymore
-                Rebased(Set(conflict.Node.Asymmetry()), (Seq(reverseMove(l), w), Seq.empty[operation.Node]))
+                Rebased(Set(conflict.Node.Asymmetry()), (Seq(l.reverse, w), Seq.empty[operation.Node]))
               } else {
                 free0() // try our luck
               }

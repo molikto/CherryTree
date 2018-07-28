@@ -8,16 +8,11 @@ import model.range.IntRange
 import scala.util.Random
 
 
-abstract sealed class Node extends Operation[data.Node] {
-  /**
-    * the returned cursor, always assumes the the child list is not empty in case of a delete operation
-    * this is harmless now, because it will point to a imaginary node, and this can be recalibrate afterwards
-    */
-  def transform(a: mode.Node): Option[mode.Node]
-  def transform(a: Option[mode.Node]): Option[mode.Node] = a.flatMap(transform)
+abstract sealed class Node extends Operation[data.Node, mode.Node] {
+  override type This = Node
 }
 
-object Node extends OperationObject[data.Node, Node] {
+object Node extends OperationObject[data.Node, mode.Node, Node] {
   def deleteRanges(aa: Seq[range.Node]): Seq[Node] = {
     val ddd = aa.foldLeft[(range.Node => Option[range.Node], Seq[range.Node])]((a => Some(a), Seq.empty)) { (pair, a) =>
       val r2 = pair._1(a)
@@ -44,6 +39,13 @@ object Node extends OperationObject[data.Node, Node] {
       case c: mode.Node.Content if c.node == at => content.transform(c.a).map(k => c.copy(a = k))
       case _ => Some(a)
     }
+
+    override def reverse(d: data.Node): Node = copy(content = content.reverse(d(at).content))
+
+    override def merge(before: Node): Option[Node] = before match {
+      case Content(at0, c0) if at0 == at => content.merge(c0).map(a => Content(at, a))
+      case _ => None
+    }
   }
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
     override def ty: Type = Type.AddDelete
@@ -57,6 +59,8 @@ object Node extends OperationObject[data.Node, Node] {
       case c: mode.Node.Content if c.node == at => None
       case _ => Some(a)
     }
+
+    override def reverse(d: data.Node): Node = Replace(at, d(at).content)
   }
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
@@ -73,6 +77,7 @@ object Node extends OperationObject[data.Node, Node] {
           cursor.Node.transformAfterInserted(at, childs.size, fix),
           cursor.Node.transformAfterInserted(at, childs.size, move)))
     }
+    override def reverse(d: data.Node): Node = Delete(range.Node(at, len = childs.size))
   }
   case class Delete(r: range.Node) extends Node {
     override def ty: Type = Type.AddDelete
@@ -89,6 +94,8 @@ object Node extends OperationObject[data.Node, Node] {
           case _ => None
         }
     }
+
+    override def reverse(d: data.Node): Node = Insert(r.start, d(r.parent).apply(r.childs))
   }
   case class Move(r: range.Node, to: cursor.Node) extends Node {
     assert(!r.contains(to) && r.until != to)
@@ -99,6 +106,13 @@ object Node extends OperationObject[data.Node, Node] {
       case mode.Node.Visual(fix, move) => mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move))
       case mode.Node.Content(node, b) => mode.Node.Content(r.transformNodeAfterMoved(to, node), b)
     })
+
+    def reverse = operation.Node.Move(
+        range.Node(cursor.Node.moveBy(r.transformNodeAfterMoved(to, to), -r.size), r.size),
+        r.transformNodeAfterMoved(to, r.until)
+      )
+
+    override def reverse(d: data.Node): Node = reverse
   }
 
   override val pickler: Pickler[Node] = new Pickler[Node] {

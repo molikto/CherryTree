@@ -7,7 +7,7 @@ import model.range.IntRange
 import operation.Unicode._
 
 // LATER we currently don't generate any move operations, and we haven't handle it in our code
-object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
+object Unicode extends Ot[data.Unicode, mode.Unicode, operation.Unicode, conflict.Unicode] {
 
 
   type RebaseResult = Rebased[conflict.Unicode, (Seq[operation.Unicode], Seq[operation.Unicode])]
@@ -102,12 +102,6 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
       }
     }
 
-    def reverseSurround(a: Surround): Seq[operation.Unicode] = {
-      // ---- **** ----
-      Seq(Delete(a.r.start, a.r.start + a.left.size),
-        Delete(a.r.until, a.r.until + a.right.size))
-    }
-
     def overlapSurround(s: Surround, l: Surround, sWins: Boolean): RebaseResult = {
       // s: [], l: ()
       val order = SpecialChar.breakOthersOrderedUnicode
@@ -122,8 +116,8 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
         // if cannot: [   ]   (  )
         val overall = Seq(Surround(r3, l.left, l.right), Surround(r1, s.left, s.right))
         free(
-          reverseSurround(l) ++ overall,
-          reverseSurround(s) ++ overall
+          l.reverse2 ++ overall,
+          s.reverse2 ++ overall
         )
       } else {
         if (si < li || (si == li && sWins)) { // s splits
@@ -131,12 +125,12 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
           val seq = Seq(Surround(r1, s.left, s.right), Surround(r2.moveBy(s.left.size + s.right.size + l.left.size), s.left, s.right))
           free(
             seq,
-            reverseSurround(s) ++ (l +: seq))
+            s.reverse2 ++ (l +: seq))
         } else { // r splits
           // [   (   ]   ) ===> [     (    )](    )
           val seq = Seq(Surround(r2.moveBy(s.left.size), l.left, l.right), Surround(r3.moveBy(s.left.size + l.left.size + s.right.size + l.right.size), l.left, l.right))
           free(
-            reverseSurround(l) ++ (s +: seq),
+            l.reverse2 ++ (s +: seq),
             seq
           )
         }
@@ -218,11 +212,11 @@ object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
             val nrange = wr.merge(lr)
             val overall = Surround(nrange, ws, we)
             if (nrange == wr) {
-              free(reverseSurround(l) :+ overall, Seq.empty)
+              free(l.reverse2 :+ overall, Seq.empty)
             } else if (nrange == lr) {
-              free(Seq.empty, reverseSurround(w) :+ overall)
+              free(Seq.empty, w.reverse2 :+ overall)
             } else {
-              free(reverseSurround(l) :+ overall, reverseSurround(w) :+ overall)
+              free(l.reverse2 :+ overall, w.reverse2 :+ overall)
             }
           }
         } else {

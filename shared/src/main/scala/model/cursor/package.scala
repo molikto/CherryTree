@@ -20,6 +20,8 @@ package object cursor {
 
   object Node {
 
+    def moveBy(a: cursor.Node, i: Int): cursor.Node = a.dropRight(1) :+ (a.last + i)
+
     class Mover(root: data.Node, isFolded: Node => Boolean) {
 
 

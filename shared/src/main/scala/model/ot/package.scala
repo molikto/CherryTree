@@ -1,6 +1,7 @@
 package model
 
 import model._
+import model.mode.Mode
 import model.operation.OperationObject
 import model.ot.{Rebased, _}
 import util._
@@ -10,7 +11,7 @@ import scala.util.Random
 
 package object ot {
   
-  trait Ot[DATA, OPERATION <: operation.Operation[DATA], CONFLICT] {
+  trait Ot[DATA, M <: Mode[DATA], OPERATION <: operation.Operation[DATA, M], CONFLICT] {
 
     type TRANSACTION = Seq[OPERATION]
 

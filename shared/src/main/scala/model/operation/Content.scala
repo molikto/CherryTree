@@ -7,11 +7,11 @@ import model.range.IntRange
 
 import scala.util.Random
 
-abstract sealed class Content extends Operation[data.Content] {
-  def transform(a: mode.Content): Option[mode.Content]
+abstract sealed class Content extends Operation[data.Content, mode.Content] {
+  override type This = Content
 }
 
-object Content extends OperationObject[data.Content, Content] {
+object Content extends OperationObject[data.Content, mode.Content, Content] {
 
   abstract sealed class Code extends operation.Content
 
@@ -24,7 +24,9 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
+    override def transform(a: mode.Content): Option[mode.Content] = op.transformContent(a)
+
+    override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
   }
   case class CodeLang(lang: String) extends Code {
     override def ty: Type = Type.AddDelete
@@ -36,6 +38,8 @@ object Content extends OperationObject[data.Content, Content] {
     }
 
     override def transform(a: mode.Content): Option[mode.Content] = Some(a)
+
+    override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
   }
   case class Rich(op: operation.Rich) extends operation.Content {
     override def ty: Type = op.ty
@@ -47,6 +51,13 @@ object Content extends OperationObject[data.Content, Content] {
     }
 
     override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
+
+    override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))
+
+    override def merge(before: Content): Option[Content] = before match {
+      case Rich(be) => op.merge(be).map(Rich)
+      case _ => None
+    }
   }
 
 
@@ -82,7 +93,7 @@ object Content extends OperationObject[data.Content, Content] {
   override def random(d: data.Content, r: Random): Content = {
     d match {
       case data.Content.Rich(content) => Rich(operation.Rich.random(content, r))
-      case data.Content.Code(unicode, _) =>
+      case data.Content.Code(unicode, lb) =>
         if (r.nextBoolean()) {
           CodeContent(operation.Unicode.random(unicode, r))
         } else {
