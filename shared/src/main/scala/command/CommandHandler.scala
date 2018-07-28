@@ -214,7 +214,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val res = c.action(state, count, this, Some(key), char, motion)
     buffer.append(Part.CompleteMark)
     change(res)
-    !c.emptyAsFalse || res != DocTransaction.empty
+    !c.emptyAsFalseInInsertMode || res != DocTransaction.empty
   }
 
   def keyDown(key: Key): Boolean = {
