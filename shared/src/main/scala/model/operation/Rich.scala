@@ -37,7 +37,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
   }
 
   override def merge(before: Rich): Option[Rich] = {
-    (before.u, this) match {
+    (before.u, this.u) match {
       case (Seq(Unicode.Insert(a0, u0, _)), Seq(Unicode.Insert(a1, u1, _))) if a1 == a0 + u0.size && !u1.containsSpace =>
         Some(Rich(Seq(Unicode.Insert(a0, u0 + u1)), ty))
       case (Seq(Unicode.Delete(r0)), Seq(Unicode.Delete(r1))) =>

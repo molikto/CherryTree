@@ -2,6 +2,7 @@ package undoer
 
 import doc.DocTransaction
 import model._
+import model.data.Node
 import model.range.IntRange
 
 import scala.collection.immutable.Queue
@@ -52,6 +53,18 @@ trait Undoer extends UndoerInterface {
 
   private def base: Int = discarded
 
+  def convertMode(docBefore: Node, modeBefore: Option[mode.Node]): Option[mode.Node] = {
+    modeBefore.map {
+      case v: model.mode.Node.Visual => v
+      case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
+        case model.mode.Content.RichInsert(pos) =>
+          val node = docBefore(n).rich
+          model.mode.Content.RichNormal(node.rangeAfter(pos))
+        case b => b
+      })
+    }
+  }
+
   // local change consists of local, undo, redo
   def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: Option[model.mode.Node], docBefore: data.Node): Unit = {
     // compress the history, by marking do/undo parts
@@ -71,7 +84,7 @@ trait Undoer extends UndoerInterface {
 
     }
     val reverse = transaction.Node.reverse(docBefore, trans)
-    val newItem = new HistoryItem(trans, reverse, docBefore, ty, modeBefore)
+    val newItem = new HistoryItem(trans, reverse, docBefore, ty, convertMode(docBefore, modeBefore))
     history_ = history_ :+ newItem
   }
 
