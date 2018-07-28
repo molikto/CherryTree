@@ -93,8 +93,10 @@ trait Server extends Api {
         var debugTopDocument = document
         document = operation.Node.applyT(transformed, document)
         changes = changes ++ transformed
-        debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
-        debugSave("changes", Pickle.intoBytes(changes)(implicitly, implicitly).array())
+        if (transformed.nonEmpty) {
+          debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+          debugSave("changes", Pickle.intoBytes(changes)(implicitly, implicitly).array())
+        }
         if (debugModel) {
           for (t <- transformed) {
             debugTopDocument = operation.Node.apply(t, debugTopDocument)
