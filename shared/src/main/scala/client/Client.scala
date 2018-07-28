@@ -125,7 +125,7 @@ class Client(
       flushes_.onNext(Unit)
       flushing = false
       disabledStateUpdates.foreach(a => {
-        updateInner(a)
+        updateFromServer(a)
       })
       disabledStateUpdates.clear()
     }
@@ -133,7 +133,7 @@ class Client(
 
 
 
-  private val disabledStateUpdates = ArrayBuffer[DocUpdate]()
+  private val disabledStateUpdates = ArrayBuffer[ClientUpdate]()
 
   private val stateUpdates_ : PublishSubject[DocUpdate] = PublishSubject[DocUpdate]()
 
@@ -141,17 +141,20 @@ class Client(
 
   private var insertingFlusher: Cancelable = null
 
-  private def updateInner(res: DocUpdate): Unit = {
+  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean): Unit = {
+    val res = DocUpdate(a.node, from, a.mode, viewUpdated)
+    // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debugView) {
       //println("client update inner root: " + res.root)
-      println("client update inner transactions: " + res.transaction)
-      println("client update inner mode: " + res.mode)
+      println("client update inner transactions: " + from)
+      println("client update inner mode: " + a.mode)
     }
     updatingState = true
-    state_ = DocState(res.root, res.mode)
+    val modeBefore = state.mode
+    state_ = DocState(a.node, a.mode)
     onBeforeUpdateUpdateCommandState(state_)
-    if (res.transaction.nonEmpty) trackUndoerChange(res.transaction, res.ty, res.mode)
+    if (from.nonEmpty) trackUndoerChange(from, ty, modeBefore)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInserting) {
@@ -163,16 +166,6 @@ class Client(
         insertingFlusher.cancel()
         insertingFlusher = null
       }
-    }
-  }
-
-  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean): Unit = {
-    val res = DocUpdate(a.node, from, a.mode, ty, viewUpdated)
-    // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
-    if (disableStateUpdate_) {
-      disabledStateUpdates.append(res)
-    } else {
-      updateInner(res)
     }
   }
   def state: DocState = state_
@@ -254,27 +247,31 @@ class Client(
     * update committed, committed version, uncommited, state
     */
   private def updateFromServer(success: ClientUpdate): Unit = {
-    try {
-      val take = success.acceptedLosersCount
-      val winners = success.winners
-      val (loser, remaining) = uncommitted.splitAt(take)
-      // LATER handle conflict, modal handling of winner deletes loser
-      val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(winners.flatten, loser)
-      committed = operation.Node.applyT(lp, operation.Node.applyT(winners, committed))
-      val altVersion = committedVersion + winners.size + lp.size
-      committedVersion = success.finalVersion
-      assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
-      val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
-      uncommitted = uc
-      connection_.update(Some(success.serverStatus))
-      if (wp0.nonEmpty) updateState(
-        DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))),
-        wp0,
-        Undoer.Remote,
-        viewUpdated = false)
-    } catch {
-      case e: Exception =>
-        throw new Exception(s"Apply update from server failed $success #### $committed", e)
+    if (disableStateUpdate) {
+      disabledStateUpdates.append(success)
+    } else {
+      try {
+        val take = success.acceptedLosersCount
+        val winners = success.winners
+        val (loser, remaining) = uncommitted.splitAt(take)
+        // LATER handle conflict, modal handling of winner deletes loser
+        val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(winners.flatten, loser)
+        committed = operation.Node.applyT(lp, operation.Node.applyT(winners, committed))
+        val altVersion = committedVersion + winners.size + lp.size
+        committedVersion = success.finalVersion
+        assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
+        val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
+        uncommitted = uc
+        connection_.update(Some(success.serverStatus))
+        if (wp0.nonEmpty) updateState(
+          DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))),
+          wp0,
+          Undoer.Remote,
+          viewUpdated = false)
+      } catch {
+        case e: Exception =>
+          throw new Exception(s"Apply update from server failed $success #### $committed", e)
+      }
     }
   }
 
@@ -332,6 +329,7 @@ class Client(
   }
 
   def change(update: DocTransaction): Boolean = {
+    if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
     val changes = update.transaction
     val mode = update.mode
     var changed = false
