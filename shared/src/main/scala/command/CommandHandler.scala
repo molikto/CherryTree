@@ -55,6 +55,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
   override def commandBuffer: Seq[Part] = buffer
 
   def onBeforeUpdateUpdateCommandState(state: DocState): Unit = {
+    var finished = false
     var av = true
     for (i <- buffer.indices) {
       buffer(i) match {
@@ -65,10 +66,11 @@ abstract class CommandHandler extends Settings with CommandInterface {
           })) {
             av = false
           }
-        case _ =>
+        case _: Part.Finished =>
+          finished = true
       }
     }
-    if (!av) {
+    if (!finished && !av) {
       buffer.clear()
       commandBufferUpdates_.onNext(buffer)
     }
@@ -219,9 +221,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
   def keyDown(key: Key): Boolean = {
     buffer.lastOption match {
-      case Some(Part.CompleteMark) => buffer.clear()
-      case Some(Part.UnknownPatternMark) => buffer.clear()
-      case Some(Part.UnknownCommand(_)) => buffer.clear()
+      case Some(_: Part.Finished) => buffer.clear()
       case _ =>
     }
     buffer.lastOption match {
