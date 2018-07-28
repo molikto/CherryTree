@@ -27,21 +27,25 @@ trait UndoerInterface {
 
 trait Undoer extends UndoerInterface {
 
-  private var history: Queue[(transaction.Node, Type, Option[mode.Node])] = Queue.empty
+  private var history: List[(transaction.Node, Type, Option[mode.Node])] = List.empty
 
   // local change consists of local, undo, redo
   def trackUndoerChange(trans: transaction.Node, ty: Type, mode: Option[model.mode.Node]): Unit = {
     // compress the history, by marking do/undo parts
-    history = history.enqueue((trans, ty, mode))
+    history = history :+ (trans, ty, mode)
   }
 
   override def undo(): DocTransaction = {
-    println("undo")
     DocTransaction.empty
+
+//    for (a <- history.zipWithIndex.reverse) {
+//      a._1._2 match {
+//        case Local
+//      }
+//    }
   }
 
   override def redo(): DocTransaction = {
-    println("redo")
     DocTransaction.empty
   }
 }

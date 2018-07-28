@@ -68,6 +68,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
           }
         case _: Part.Finished =>
           finished = true
+        case _ =>
       }
     }
     if (!finished && !av) {

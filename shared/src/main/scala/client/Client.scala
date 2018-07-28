@@ -151,7 +151,7 @@ class Client(
     updatingState = true
     state_ = DocState(res.root, res.mode)
     onBeforeUpdateUpdateCommandState(state_)
-    trackUndoerChange(res.transaction, res.ty, res.mode)
+    if (res.transaction.nonEmpty) trackUndoerChange(res.transaction, res.ty, res.mode)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInserting) {
