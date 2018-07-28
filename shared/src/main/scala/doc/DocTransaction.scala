@@ -7,6 +7,7 @@ case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
   // TODO make use of them
+  handyAppliedResult: Option[model.data.Node] = None,
   unfoldBefore: Seq[cursor.Node] = Seq.empty,
   foldBefore: Seq[cursor.Node] = Seq.empty,
   undoType: Option[Undoer.Type] = None,

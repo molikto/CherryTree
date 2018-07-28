@@ -24,7 +24,7 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = op.transformContent(a)
+    override def transform(a: mode.Content): Option[mode.Content] = Some(a)
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
   }
@@ -50,7 +50,10 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = op.transform(a)
+    override def transform(a: mode.Content): Option[mode.Content] = a match {
+      case b: mode.Content.Rich => op.transformRichMode(b)
+      case _ => None
+    }
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))
 

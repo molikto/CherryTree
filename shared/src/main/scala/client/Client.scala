@@ -155,7 +155,7 @@ class Client(
     val docBefore = state.node
     state_ = DocState(a.node, a.mode)
     onBeforeUpdateUpdateCommandState(state_)
-    if (from.nonEmpty) trackUndoerChange(from, ty, modeBefore, docBefore)
+    trackUndoerChange(from, ty, modeBefore, docBefore)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInserting) {
@@ -336,7 +336,11 @@ class Client(
     var changed = false
     val d = if (changes.nonEmpty) {
       changed = true
-      operation.Node.apply(changes, state.node)
+      if (update.handyAppliedResult.isDefined) {
+        update.handyAppliedResult.get
+      } else {
+        operation.Node.apply(changes, state.node)
+      }
     } else {
       state.node
     }
