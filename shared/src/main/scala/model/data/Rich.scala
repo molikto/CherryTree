@@ -27,11 +27,11 @@ case class Rich(text: Seq[Text]) {
   def before(aaa: Int): Atom = { val i = befores(aaa); if (i.hasNext) i.next() else beginning }
   def after(bbb: Int): Atom =  { val i = afters(bbb); if (i.hasNext) i.next() else end }
 
-  def rangeBefore(a: IntRange): IntRange = if (a.start == 0) a else before(a.start).range
-  def rangeAfter(a: IntRange): IntRange = if(a.until == size) a else after(a.until).range
+  def rangeBefore(a: IntRange): IntRange = if (a.start <= 0) a else before(a.start).range
+  def rangeAfter(a: IntRange): IntRange = if(a.until >= size) a else after(a.until).range
   // atomic consists: single unicode grapheme, single control point, atomic views
-  def rangeBefore(aaa: Int): IntRange = if (aaa == 0) rangeBeginning else before(aaa).range
-  def rangeAfter(bbb: Int): IntRange = if (bbb == size) rangeEnd else after(bbb).range
+  def rangeBefore(aaa: Int): IntRange = if (aaa <= 0) rangeBeginning else before(aaa).range
+  def rangeAfter(bbb: Int): IntRange = if (bbb >= size) rangeEnd else after(bbb).range
 
   def rangeBeginning: IntRange = if (size == 0) IntRange(0, 0) else beginning.range
   def rangeEnd: IntRange = if (size == 0) IntRange(0, 0) else end.range

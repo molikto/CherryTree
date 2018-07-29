@@ -114,7 +114,7 @@ trait Undoer extends UndoerInterface {
         // LATER this is also hacky!!!
         case model.mode.Content.RichInsert(pos) =>
           val node = nodeNow(n).rich
-          model.mode.Content.RichNormal(node.rangeAfter(pos))
+          model.mode.Content.RichNormal(if (node.isEmpty) IntRange(0, 0) else node.rangeAfter(pos))
         case a => a
       })
       case _ => throw new IllegalArgumentException("That is impossible")
