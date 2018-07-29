@@ -21,7 +21,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
       val node = a.node(c)
-      commandState.yank(Registerable.Node(Seq(node.copy(a.node(c).content, childs = Seq.empty))), isDelete = false)
+      commandState.yank(Registerable.Node(Seq(node.copy(content = a.node(c).content, childs = Seq.empty)), needsClone = true), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -33,7 +33,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
-      commandState.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
+      commandState.yank(Registerable.Node(Seq(a.node(c)), needsClone = true), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -51,7 +51,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
           } else {
             a.node(v.minimalRange.get)
           }
-          commandState.yank(Registerable.Node(ns), isDelete = false)
+          commandState.yank(Registerable.Node(ns, needsClone = true), isDelete = false)
           DocTransaction.mode(model.mode.Node.Content(fix, a.node(fix).content.defaultNormalMode()))
         case _ => throw new IllegalArgumentException("Invalid command")
       }
@@ -116,7 +116,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       commandState.retrieveSetRegisterAndSetToDefault() match {
-        case Some(Registerable.Node(n)) =>
+        case Some(Registerable.Node(n, _)) =>
           if (n.nonEmpty) {
             val (cursor, normal) = a.asNormal
             val (op, mode) = putNode(a, cursor, n)

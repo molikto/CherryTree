@@ -22,7 +22,7 @@ object NodeOps {
 
 
   def insertNode(at: Seq[Int], content: String): operation.Node = {
-    operation.Node.Insert(at, Seq(data.Node(data.Content.Code(data.Unicode(content), ""), Seq.empty)))
+    operation.Node.Insert(at, Seq(data.Node("", data.Content.Code(data.Unicode(content), ""), Map.empty, Seq.empty)))
   }
 
   def insertContent(at: Seq[Int], p: Int, content: String): operation.Node = {

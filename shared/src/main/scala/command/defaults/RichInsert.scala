@@ -69,7 +69,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
         val mover = a.mover()
         val n = mover.firstChild(node).getOrElse(mover.nextOver(node))
         DocTransaction(
-          Seq(operation.Node.Insert(n, Seq(model.data.Node.empty)))
+          Seq(operation.Node.Insert(n, Seq(model.data.Node.create())))
           , Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(0))))
       } else {
         DocTransaction.empty

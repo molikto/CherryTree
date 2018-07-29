@@ -20,16 +20,12 @@ trait Server extends Api {
 
   private var document = {
     val bs = debugLoad("saved")
-    val res = if (bs.isEmpty) Node.empty
+    val res = if (bs.isEmpty) Node.create()
     else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))
     model.oldDocVersion = false
     res
   }
-  private var changes = {
-    val bs = debugLoad("changes")
-    if (bs.isEmpty) Seq.empty
-    else Unpickle[Seq[transaction.Node]](implicitly).fromBytes(ByteBuffer.wrap(bs))
-  }
+  private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[Authentication.Token, ClientInfo] = mutable.Map.empty
   private var debugHistoryDocuments = Seq(document)
@@ -97,7 +93,6 @@ trait Server extends Api {
         changes = changes ++ transformed
         if (transformed.nonEmpty) {
           debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
-          debugSave("changes", Pickle.intoBytes(changes)(implicitly, implicitly).array())
         }
         if (debugModel) {
           for (t <- transformed) {

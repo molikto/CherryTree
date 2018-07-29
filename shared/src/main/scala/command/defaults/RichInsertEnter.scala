@@ -20,7 +20,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
       val pos = a.asNormal._1
       val insertionPoint = insertPointAfter(a, pos)
       DocTransaction(
-        Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.empty))),
+        Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.create()))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
     }
 
@@ -37,7 +37,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
         DocTransaction.empty
       } else {
         DocTransaction(
-          Seq(operation.Node.Insert(pos, Seq(model.data.Node.empty))),
+          Seq(operation.Node.Insert(pos, Seq(model.data.Node.create()))),
           Some(model.mode.Node.Content(pos, model.mode.Content.RichInsert(0))))
       }
     }

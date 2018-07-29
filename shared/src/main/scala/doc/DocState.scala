@@ -5,10 +5,6 @@ import model.cursor.Node
 import model.data.Rich
 
 
-object DocState {
-  val empty = DocState(model.data.Node.empty, Some(model.mode.Node.Content(Seq.empty, model.mode.Content.RichInsert(0))))
-}
-
 case class DocState(node: model.data.Node, mode: Option[model.mode.Node]) {
 
   def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isFolded)

@@ -1,12 +1,18 @@
 package model.data
 
+import java.util.UUID
+
 import model._
 import model.range.IntRange
 
 import scala.util.Random
 
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
-case class Node(content: Content, attributes: Map[String, String], childs: Seq[Node]) {
+case class Node (
+  uuid: String,
+  content: Content,
+  attributes: Map[String, String],
+  childs: Seq[Node]) {
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
 
@@ -51,11 +57,14 @@ object Node extends DataObject[Node] {
     model.mode.Node.Content(node, root(node).content.defaultNormalMode())
   }
 
+  val debug_empty = Node("", data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
 
-  val empty = Node(data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
+  def create(): Node =  Node(UUID.randomUUID().toString, data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
+
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._
+      writeString(obj.uuid)
       Content.pickler.pickle(obj.content)
       writeInt(obj.attributes.size)
       for (c <- obj.attributes) {
@@ -68,9 +77,11 @@ object Node extends DataObject[Node] {
 
     override def unpickle(implicit state: UnpickleState): Node = {
       import state.dec._
-      Node(Content.pickler.unpickle,
-        if (oldDocVersion) Map.empty
-        else (0 until readInt).map(_ => readString -> readString).toMap,
+      Node(
+        if (oldDocVersion) UUID.randomUUID().toString
+        else readString,
+        Content.pickler.unpickle,
+        (0 until readInt).map(_ => readString -> readString).toMap,
         (0 until readInt).map(_ => Node.pickler.unpickle))
     }
   }
@@ -85,7 +96,7 @@ object Node extends DataObject[Node] {
       case 3 => 2
       case _ => 1
     }
-    data.Node(data.Content.random(r),
+    data.Node(r.nextString(10), data.Content.random(r),
       Map.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }

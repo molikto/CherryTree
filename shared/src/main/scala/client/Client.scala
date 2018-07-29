@@ -216,7 +216,7 @@ class Client(
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debugModel) committed else data.Node.empty).call(), succsss => {
+          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debugModel) committed else data.Node.debug_empty).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>

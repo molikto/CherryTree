@@ -16,7 +16,7 @@ class NodeDelete extends CommandCategory("deleting nodes") {
 
     val parent = a.node(rr.parent)
     val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
-    commandState.yank(Registerable.Node(a.node(rr)), isDelete = true)
+    commandState.yank(Registerable.Node(a.node(rr), needsClone = false), isDelete = true)
     DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
         (r.until, r.start)
