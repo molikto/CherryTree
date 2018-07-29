@@ -12,6 +12,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ClientInitializerView {
 
+  model.oldDocVersion = false
+
   private var globalInitialized = false
   def initializeGlobal(): Unit = {
     if (!globalInitialized) {

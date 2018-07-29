@@ -20,7 +20,8 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
-      commandState.yank(Registerable.Node(Seq(data.Node(a.node(c).content, Seq.empty))), isDelete = false)
+      val node = a.node(c)
+      commandState.yank(Registerable.Node(Seq(node.copy(a.node(c).content, childs = Seq.empty))), isDelete = false)
       DocTransaction.empty
     }
   }

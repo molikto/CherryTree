@@ -8,6 +8,7 @@ package object model extends Picklers {
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
 
+  var oldDocVersion = false
   var debugView = true
   var debugModel = false
 

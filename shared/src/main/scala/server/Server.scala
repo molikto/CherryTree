@@ -20,8 +20,10 @@ trait Server extends Api {
 
   private var document = {
     val bs = debugLoad("saved")
-    if (bs.isEmpty) Node.empty
+    val res = if (bs.isEmpty) Node.empty
     else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))
+    model.oldDocVersion = false
+    res
   }
   private var changes = {
     val bs = debugLoad("changes")
