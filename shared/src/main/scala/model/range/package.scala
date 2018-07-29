@@ -69,6 +69,7 @@ package object range {
           b.contains(start) ||
           (size != 0 && b.contains(until - 1))
 
+
     def transformAfterDeleted(p: Int): Option[Int] = {
       if (p < start) {
         Some(p)
@@ -217,6 +218,13 @@ package object range {
         }
       }
     }
+
+    def transformBeforeDeleted(at: cursor.Node): cursor.Node = {
+      if (at.startsWith(parent) && at.size > parent.size && at(parent.size) >= childs.start)
+        at.patch(parent.size, Seq(at(parent.size) + childs.size), 1)
+      else at
+    }
+
 
     def transformAfterDeleted(at: cursor.Node): Option[cursor.Node] = {
       if (contains(at)) None

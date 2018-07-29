@@ -11,12 +11,15 @@ import register.Registerable
 // TODO save to buffer
 class NodeDelete extends CommandCategory("deleting nodes") {
 
+  private val message = ". if the deleted node is immediately inserted back to the document within 5 seconds," +
+    " this is considered a node movement," +
+    " and causes less conflicts when editing collaboratively"
 
   def deleteNodeRange(a: DocState, commandState: CommandInterface, rr: range.Node): DocTransaction = {
 
     val parent = a.node(rr.parent)
     val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
-    commandState.yank(Registerable.Node(a.node(rr), needsClone = false), isDelete = true)
+    commandState.yank(Registerable.Node(a.node(rr), from = Some(rr), needsClone = false), isDelete = true)
     DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
         (r.until, r.start)
@@ -27,12 +30,12 @@ class NodeDelete extends CommandCategory("deleting nodes") {
         (r.parent, r.parent)
       }
       Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
-    })
+    }, tryMergeDeletes = true)
   }
 
 
   new Command {
-    override val description: String = "delete current node"
+    override val description: String = "delete current node" + message
     override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
     override def available(a: DocState): Boolean = a.isNormal
 
@@ -44,7 +47,7 @@ class NodeDelete extends CommandCategory("deleting nodes") {
   }
 
   new Command {
-    override val description: String = "delete selected nodes"
+    override val description: String = "delete selected nodes" + message
     override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
     override def available(a: DocState): Boolean = a.isNodeVisual
 

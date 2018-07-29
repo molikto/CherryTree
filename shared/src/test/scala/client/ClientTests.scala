@@ -106,7 +106,7 @@ object ClientTests extends TestSuite  {
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
+            clients(j).localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()
@@ -117,7 +117,7 @@ object ClientTests extends TestSuite  {
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           clients(j).synchronized {
-            clients(j).change(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+            clients(j).localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()

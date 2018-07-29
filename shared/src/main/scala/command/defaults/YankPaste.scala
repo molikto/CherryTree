@@ -116,11 +116,11 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       commandState.retrieveSetRegisterAndSetToDefault() match {
-        case Some(Registerable.Node(n, _)) =>
+        case Some(Registerable.Node(n, range, needsClone)) =>
           if (n.nonEmpty) {
             val (cursor, normal) = a.asNormal
-            val (op, mode) = putNode(a, cursor, n)
-            DocTransaction(op, Some(mode))
+            val (op, mode) = putNode(a, cursor, if (needsClone) data.Node.cloneNodes(n) else n)
+            DocTransaction(op, Some(mode), tryMergeInsertOfDeleteRange = range)
           } else {
             DocTransaction.empty
           }

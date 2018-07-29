@@ -8,6 +8,9 @@ import scala.util.Random
 
 
 abstract sealed class Content {
+  def isEmpty: Boolean
+  def nonEmpty: Boolean = !isEmpty
+
   def defaultNormalMode(): mode.Content.Normal
   def isRich: Boolean = isInstanceOf[Content.Rich]
 }
@@ -41,11 +44,15 @@ object Content extends DataObject[Content] {
       else
         ""
     }
+
+    override def isEmpty: Boolean = unicode.isEmpty
   }
   case class Rich(content: data.Rich) extends Content {
     def size: Int = content.size
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(content.rangeBeginning)
+
+    override def isEmpty: Boolean = content.isEmpty
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

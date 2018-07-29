@@ -170,6 +170,12 @@ trait Undoer extends UndoerInterface {
       handyAppliedResult = Some(applied))
   }
 
+  protected def cutOneLocalHistory(assertTrans: transaction.Node): Unit = {
+    assert(history_.last.ty == Local)
+    assert(history_.last.trans == assertTrans)
+    history_ = history_.dropRight(1)
+  }
+
   override def undo(currentDoc: Node): DocTransaction = {
     var i = size - 1
     while (i >= base) {

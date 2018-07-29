@@ -219,7 +219,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     }
     val res = c.action(state, count, this, Some(key), char, motion)
     buffer.append(Part.CompleteMark)
-    change(res)
+    localChange(res)
     !c.emptyAsFalseInInsertMode || res != DocTransaction.empty
   }
 
@@ -269,7 +269,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       case _ => false
     }) {
       flush()
-      change(miscCommands.exit.action(state, 1, this, None, None, None))
+      localChange(miscCommands.exit.action(state, 1, this, None, None, None))
       buffer.clear()
       commandBufferUpdates_.onNext(buffer)
       true

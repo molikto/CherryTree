@@ -106,6 +106,8 @@ class Client(
 
   private var disableStateUpdate_ : Boolean = false
 
+  private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
+
   private var flushing = false
   private var updatingState = false
   def disableStateUpdate: Boolean = disableStateUpdate_
@@ -141,14 +143,14 @@ class Client(
 
   private var insertingFlusher: Cancelable = null
 
-  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean): Unit = {
-    val res = DocUpdate(a.node, from, a.mode, viewUpdated)
+  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean, viewFrom: model.transaction.Node): Unit = {
+    val res = DocUpdate(a.node, viewFrom, a.mode, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debugView) {
       //println("client update inner root: " + res.root)
-      println("client update inner transactions: " + from)
-      println("client update inner mode: " + a.mode)
+      println("client update view transactions: " + viewFrom)
+      println("client update mode: " + a.mode)
     }
     updatingState = true
     val modeBefore = state.mode
@@ -211,6 +213,14 @@ class Client(
 
 
   private def tryTopRequest(): Unit = {
+    if (disableUpdateBecauseLocalNodeDelete != null) {
+      if (System.currentTimeMillis() - disableUpdateBecauseLocalNodeDelete._2 > 5000) {
+        disableUpdateBecauseLocalNodeDelete = null
+      }
+    }
+    if (disableUpdateBecauseLocalNodeDelete != null) {
+      return
+    }
     if (!requesting) {
       requests match {
         case head :: tail =>
@@ -268,7 +278,7 @@ class Client(
           DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))),
           wp0,
           Undoer.Remote,
-          viewUpdated = false)
+          viewUpdated = false, wp0)
       } catch {
         case e: Exception =>
           throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -283,7 +293,7 @@ class Client(
   def onInsertRichTextAndViewUpdated(unicode: Unicode): Unit = {
     import model._
     val (n, _, insert) = state.asRichInsert
-    change(
+    localChange(
       DocTransaction(Seq(operation.Node.rich(n, operation.Rich.insert(insert.pos, unicode))),
       Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
       viewUpdated = true))
@@ -326,11 +336,47 @@ class Client(
       }
       case _ => DocTransaction.empty
     }
-    change(update)
+    localChange(update)
   }
 
-  def change(update: DocTransaction): Boolean = {
+  def localChange(update0: DocTransaction): Boolean = {
+    var update: DocTransaction = update0
     if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
+    // for a delete of a non empty node, we disable sync from server for sometime
+    // during this time, if the next local change is an insert, we try to merge them as a move
+    var viewAdd : transaction.Node = Seq.empty
+    var justDisabled = false
+    if (update.tryMergeDeletes) {
+      update.transaction match {
+        case Seq(d@operation.Node.Delete(r)) =>
+          val nodes = state.node(r)
+          if (nodes.exists(a => a.content.nonEmpty || a.childs.nonEmpty)) {
+            disableUpdateBecauseLocalNodeDelete = (d, System.currentTimeMillis(), nodes, state)
+            justDisabled = true
+          }
+      }
+    }
+    if (!justDisabled) {
+      if (disableUpdateBecauseLocalNodeDelete != null &&
+        uncommitted.lastOption.contains(Seq(disableUpdateBecauseLocalNodeDelete._1))) {
+        val d = disableUpdateBecauseLocalNodeDelete._1
+        if (update.tryMergeInsertOfDeleteRange.contains(d.r)) {
+          update.transaction match {
+            case Seq(i@operation.Node.Insert(at, childs)) if childs == disableUpdateBecauseLocalNodeDelete._3 =>
+              cutOneLocalHistory(Seq(d))
+              state_ = disableUpdateBecauseLocalNodeDelete._4
+              val inverse = d.reverse(state.node)
+              uncommitted = uncommitted.dropRight(1)
+              viewAdd = Seq(inverse)
+              val before = d.r.transformBeforeDeleted(at)
+              update = update.copy(transaction = Seq(operation.Node.Move(d.r, before)))
+          }
+        }
+      }
+      if (update.transaction.nonEmpty) {
+        disableUpdateBecauseLocalNodeDelete = null
+      }
+    }
     val changes = update.transaction
     val mode = update.mode
     var changed = false
@@ -359,8 +405,9 @@ class Client(
       updateState(DocState(d, m),
         changes,
         update.undoType.getOrElse(Undoer.Local),
-        viewUpdated = update.viewUpdated)
-      uncommitted = uncommitted :+ changes
+        viewUpdated = update.viewUpdated,
+        if (viewAdd.isEmpty) changes else viewAdd ++ changes)
+      if (changes.nonEmpty) uncommitted = uncommitted :+ changes
       self.sync()
     }
     changed

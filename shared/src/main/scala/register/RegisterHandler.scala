@@ -29,6 +29,9 @@ trait RegisterHandler extends RegisterInterface {
   }
 
 
+  /**
+    * if in current register there is a fresh deleted node, we will mark this as needs clone
+    */
   override def retrieveSetRegisterAndSetToDefault(): Option[Registerable] = {
     val reg =
       if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
@@ -39,7 +42,15 @@ trait RegisterHandler extends RegisterInterface {
         Option(default)
       }
     set = -1
-    reg
+    reg match {
+      case Some(r@Registerable.Node(a, info, needsClone)) if !needsClone =>
+        val give = r.copy()
+        r.needsClone = true
+        r.from = None
+        Some(give)
+      case a => a
+    }
+
   }
 
   override def yank(registerable: Registerable, isDelete: Boolean): Unit = {

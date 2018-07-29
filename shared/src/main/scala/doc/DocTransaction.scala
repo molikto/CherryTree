@@ -1,6 +1,6 @@
 package doc
 
-import model.cursor
+import model.{cursor, range}
 import undoer.Undoer
 
 case class DocTransaction(
@@ -11,6 +11,8 @@ case class DocTransaction(
   unfoldBefore: Seq[cursor.Node] = Seq.empty,
   foldBefore: Seq[cursor.Node] = Seq.empty,
   undoType: Option[Undoer.Type] = None,
+  tryMergeDeletes: Boolean = false,
+  tryMergeInsertOfDeleteRange: Option[range.Node] = None,
   // TODO zoom options
   viewUpdated: Boolean = false) {
 }

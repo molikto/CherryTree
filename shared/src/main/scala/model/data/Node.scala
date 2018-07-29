@@ -13,6 +13,8 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+  def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
+
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
 
@@ -53,6 +55,10 @@ case class Node (
 }
 
 object Node extends DataObject[Node] {
+  def cloneNodes(n: Seq[Node]): Seq[Node] = {
+    n.map(_.cloneNode())
+  }
+
   def defaultNormalMode(root: Node, node: cursor.Node): mode.Node.Content = {
     model.mode.Node.Content(node, root(node).content.defaultNormalMode())
   }

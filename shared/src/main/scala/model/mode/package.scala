@@ -59,7 +59,10 @@ package object mode {
     case object CodeInside extends Code // user's mode is currently taken over by code editor
   }
 
-  sealed trait Node extends Mode[data.Node]
+  sealed trait Node extends Mode[data.Node] {
+
+  }
+
   object Node {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node
