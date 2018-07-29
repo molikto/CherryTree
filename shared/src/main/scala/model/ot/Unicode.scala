@@ -252,23 +252,23 @@ object Unicode extends Ot[data.Unicode, mode.Unicode, operation.Unicode, conflic
         }
       // LATER move related
       case (Delete(_), Move(_, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Insert(_, _, _), Move(_, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (ReplaceAtomic(_, _), Move(_, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Surround(_, _, _, _), Move(_, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Move(_, _), Delete(_)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Move(_, _), Insert(_, _, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Move(_, _), ReplaceAtomic(_, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Move(_, _), Surround(_, _, _, _)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
       case (Move(wr, wa), Move(lr, la)) =>
-        ???
+        throw new IllegalAccessError("We don't have unicode move yet")
     }
   }
 }

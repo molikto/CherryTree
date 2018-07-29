@@ -33,7 +33,7 @@ object Node extends Ot[data.Node, mode.Node, operation.Node, conflict.Node] {
 
 
     def ignoreNullMoves(a: range.Node, b: cursor.Node): Seq[operation.Node.Move] = {
-      if (a.contains(b) || a.until == b) {
+      if (a.contains(b)) {
         Seq.empty
       } else {
         Seq(operation.Node.Move(a, b))

@@ -1,6 +1,8 @@
 ## roadmap
 
-* undo, redo
+* test if partial strong ot is possible
+* fix undo, redo
+* test in collabrative env
 * code editor integration
     * the most simple will be just open a new dialog
     * no integration of vim keybindings

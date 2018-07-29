@@ -19,7 +19,7 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
       val func = if (r2.isEmpty) pair._1 else (j: range.Node) => { pair._1(j).flatMap(kk => r2.get.transformDeletingRangeAfterDeleted(kk)) }
       (func, pair._2 ++ r2)
     }._2
-    ddd.map(a => operation.Node.Delete(a))
+    merge(ddd.map(a => operation.Node.Delete(a)))
   }
 
   def rich(c: cursor.Node, a: operation.Rich): Node = operation.Node.Content(c, operation.Content.Rich(a))
@@ -42,10 +42,17 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
 
     override def reverse(d: data.Node): Node = copy(content = content.reverse(d(at).content))
 
-    override def merge(before: Node): Option[Node] = before match {
+    override def mergeForUndoer(before: Node): Option[Node] = before match {
+      case Content(at0, c0) if at0 == at => content.mergeForUndoer(c0).map(a => Content(at, a))
+      case _ => None
+    }
+
+    override def merge(before: Any): Option[Node] = before match {
       case Content(at0, c0) if at0 == at => content.merge(c0).map(a => Content(at, a))
       case _ => None
     }
+
+    override def isEmpty: Boolean = content.isEmpty
   }
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
     override def ty: Type = Type.AddDelete
@@ -61,6 +68,14 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
     }
 
     override def reverse(d: data.Node): Node = Replace(at, d(at).content)
+
+    override def merge(before: Any): Option[Node] = before match {
+      case Replace(a, _) if a == at => Some(this)
+      case Content(a, _) if a == at => Some(this)
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = false
   }
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
@@ -78,6 +93,23 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
           cursor.Node.transformAfterInserted(at, childs.size, move)))
     }
     override def reverse(d: data.Node): Node = Delete(range.Node(at, len = childs.size))
+
+    override def merge(before: Any): Option[Node] = before match {
+      case Insert(aa, css) =>
+        val newRange = range.Node(aa, len = css.length)
+        if (newRange.sameParent(at) && (newRange.contains(at) || newRange.until == at)) {
+          if (aa == at) {
+            Some(Insert(aa, childs ++ css))
+          } else {
+            Some(Insert(aa, css.patch(at.last - aa.last, childs, 0)))
+          }
+        } else {
+          None
+        }
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = childs.isEmpty
   }
   case class Delete(r: range.Node) extends Node {
     override def ty: Type = Type.AddDelete
@@ -96,9 +128,27 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
     }
 
     override def reverse(d: data.Node): Node = Insert(r.start, d(r.parent).apply(r.childs))
+
+    override def merge(before: Any): Option[Node] = before match {
+      case Node.Content(at, _) if r.contains(at) => Some(this)
+      case Node.Replace(at, _) if r.contains(at) => Some(this)
+      case Node.Insert(at, childs) if r.contains(at.dropRight(1)) => Some(this)
+      case Node.Delete(rr) =>
+        if (r.contains(rr.parent)) {
+          Some(this)
+        } else if (r.parent == rr.parent && r.childs.containsInsertion(rr.childs.start)) {
+          Some(Delete(range.Node(r.parent, IntRange(r.childs.start, r.childs.until + rr.childs.size))))
+        } else {
+          None
+        }
+      case m@Node.Move(rr, to) if r.contains(rr.transformNodeAfterMoved(to, to).dropRight(1)) => merge(Delete(rr))
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = r.isEmpty
   }
   case class Move(r: range.Node, to: cursor.Node) extends Node {
-    assert(!r.contains(to) && r.until != to)
+    assert(!r.contains(to))
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
@@ -113,6 +163,10 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
       )
 
     override def reverse(d: data.Node): Node = reverse
+
+    override def merge(before: Any): Option[Node] = None
+
+    override def isEmpty: Boolean = r.isEmpty || r.until == to
   }
 
   override val pickler: Pickler[Node] = new Pickler[Node] {

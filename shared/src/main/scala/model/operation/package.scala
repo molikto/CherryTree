@@ -5,6 +5,13 @@ import model.mode.Mode
 
 import scala.util.Random
 
+/**
+  * this is definitely not true:
+  *
+  *
+  * test a.r.r == a
+  */
+
 package object operation {
 
 
@@ -23,13 +30,17 @@ package object operation {
 
   trait Operation[DATA, M <: Mode[DATA]] {
     type This
+    def mergeForUndoer(before: This): Option[This] = None
     def ty: Type
     def apply(data: DATA): DATA
 
     def transform(a: M): Option[M]
     def transform(a: Option[M]): Option[M] = a.flatMap(transform)
     def reverse(d: DATA): This
-    def merge(before: This): Option[This] = None
+
+    def merge(before: Any): Option[This]
+
+    def isEmpty: Boolean
   }
 
   trait OperationObject[DATA, M <: Mode[DATA], OPERATION <: Operation[DATA, M]] {
@@ -53,6 +64,24 @@ package object operation {
         i += 1
       }
       cs
+    }
+
+    def merge(a0: Seq[OPERATION]): Seq[OPERATION] = {
+      def rec(a0: Seq[OPERATION]): Seq[OPERATION] = {
+        val a = a0.filter(!_.isEmpty)
+        val res = if (a.isEmpty) a else a.dropRight(1).foldRight(Seq(a.last)) { (before, seq) =>
+          seq.head.merge(before) match {
+            case Some(h) => h.asInstanceOf[OPERATION] +: seq.tail
+            case None => before +: seq
+          }
+        }
+        if (res.size != a.size) {
+          rec(res)
+        } else {
+          res
+        }
+      }
+      rec(a0)
     }
 
     def apply(c: Option[OPERATION], model: DATA): DATA = c match {

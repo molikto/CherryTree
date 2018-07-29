@@ -59,6 +59,8 @@ package object range {
     def contains(i: Int): Boolean = i >= start && i < until
 
 
+    def containsInsertion(i: Int): Boolean = i >= start && i <= until
+
     def contains(b: IntRange): Boolean = b.start >= start && b.until <= until
 
     def overlap(b: IntRange): Boolean =

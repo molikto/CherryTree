@@ -27,6 +27,13 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
     override def transform(a: mode.Content): Option[mode.Content] = Some(a)
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
+
+    override def merge(before: Any): Option[Content] = before match {
+      case CodeContent(o) => op.merge(o).map(CodeContent)
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = op.isEmpty
   }
   case class CodeLang(lang: String) extends Code {
     override def ty: Type = Type.AddDelete
@@ -40,6 +47,13 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
     override def transform(a: mode.Content): Option[mode.Content] = Some(a)
 
     override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
+
+    override def merge(before: Any): Option[Content] = before match {
+      case CodeLang(b) => Some(this)
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = false
   }
   case class Rich(op: operation.Rich) extends operation.Content {
     override def ty: Type = op.ty
@@ -57,10 +71,17 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))
 
-    override def merge(before: Content): Option[Content] = before match {
-      case Rich(be) => op.merge(be).map(Rich)
+    override def mergeForUndoer(before: Content): Option[Content] = before match {
+      case Rich(be) => op.mergeForUndoer(be).map(Rich)
       case _ => None
     }
+
+    override def merge(before: Any): Option[Content] = before match {
+      case Rich(o) => op.merge(o).map(Rich)
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = op.isEmpty
   }
 
 

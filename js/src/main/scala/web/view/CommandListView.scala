@@ -49,6 +49,9 @@ class CommandListView(val client: Client) extends View {
           }
       }.toSeq
     ).render
+//    dom.appendChild(div(
+//      client.debug_undoHistory.map(a => p(a)).toSeq
+//    ).render)
     dom.appendChild(res)
     dom.scrollIntoView(true)
   }))

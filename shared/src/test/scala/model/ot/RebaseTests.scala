@@ -319,5 +319,79 @@ object RebaseTests extends TestSuite {
     }
 
 
+    /**
+      * Change a: Insert before 4, 2 items
+      * Change b: Delete [1, 5)
+      *
+      * (a', b')  = ot.Node.rebase(a, b)
+      *
+      * Change a': Insert before 1, 2 items
+      * Change b': Delete[6, 7), Delete[1, 4)
+      *
+      * Change c: Move[0, 1), to before 5
+      *
+      * (_, c1) = ot.Node.rebase(a + b', c)
+      * (_, c2) = ot.Node.rebase(b + a', c)
+      *
+      * Change c1: Move[0, 1) to before 3
+      * Change c2: empty
+      */
+
+    /*
+    we don't have this property!
+
+    TP2 is NOT satisfied in any weak form
+
+    'partialStrong - {
+      val n = node
+      val random = new Random()
+      val debug = new ArrayBuffer[String]()
+      var test = 0
+      for (_ <- 0 until 3000) {
+        val a = operation.Node.randomTransaction(1, n, random)
+        val b = operation.Node.randomTransaction(1, n, random)
+        try {
+          ot.Node.rebase(a, b) match {
+            case Rebased(conflicts, (ap, bp)) =>
+              if (conflicts.isEmpty) {
+                debug.append(s"Change a: $a")
+                debug.append(s"Change b: $b")
+                debug.append(s"Change a': $ap")
+                debug.append(s"Change b': $bp")
+                val abp = a ++ bp
+                val bap = b ++ ap
+                val aaa = operation.Node.apply(abp, n)
+                for (_ <- 0 until 20) {
+                  val c = operation.Node.randomTransaction(2, n, random)
+                  val Rebased(c1, (_, r10)) = ot.Node.rebase(abp, c)
+                  val Rebased(c2, (_, r20)) = ot.Node.rebase(bap, c)
+                  val r1 = operation.Node.merge(r10)
+                  val r2 = operation.Node.merge(r20)
+                  if (operation.Node.apply(r1, aaa) == operation.Node.apply(r2, aaa)) {
+                    test += 1
+                  } else {
+                    debug.append(s"Change c: $c")
+                    debug.append(s"Change r1: $r1")
+                    debug.append(s"Change r2: $r2")
+                    debug.foreach(println)
+                    debug.dropRight(3)
+                    assert(false)
+                  }
+                  if (c1.isEmpty && c2.isEmpty) {
+                  }
+                }
+                debug.dropRight(4)
+              }
+          }
+        } catch {
+          case t: Throwable =>
+            debug.foreach(println)
+            debug.clear()
+            throw t
+        }
+      }
+    }
+    */
+
   }
 }

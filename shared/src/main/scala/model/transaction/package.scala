@@ -28,10 +28,10 @@ package object transaction {
       transform(pp.flatten, m)
     }
 
-    def merge(current: Node, before: Node): Option[Node] = {
+    def mergeForUndoer(current: Node, before: Node): Option[Node] = {
       (current, before) match {
         case (Seq(c), Seq(b)) =>
-          c.merge(b) match {
+          c.mergeForUndoer(b) match {
             case Some(a) =>
               Some(Seq(a))
             case _ => None

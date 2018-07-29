@@ -7,6 +7,7 @@ import model.range.IntRange
 
 import scala.collection.immutable.Queue
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object Undoer {
 
@@ -18,7 +19,7 @@ object Undoer {
 
   case object Remote extends Type
 
-  case class Undo(a: Int) extends Type // points to the local or redo
+  case class Undo(a: Int, historyAfter: Seq[transaction.Node]) extends Type // points to the local or redo
   case class Redo(a: Int, historyAfter: Seq[transaction.Node]) extends Type // points to the undo
 }
 
@@ -36,18 +37,37 @@ private[undoer] class HistoryItem(
   var reverse: transaction.Node,
   var docBefore: data.Node,
   val ty: Type,
-  val modeBefore: Option[mode.Node]
+  val modeBefore: Option[mode.Node],
+  var undoer: (Seq[transaction.Node], Int) = null
 ) {
 
 }
 
+/**
+  * our undoer is very very hacky!!!
+  */
 trait Undoer extends UndoerInterface {
 
   private var discarded = 0
   private var history_ : List[HistoryItem] = List.empty
 
   private def history(i: Int) = history_(i - discarded)
-  private def after(i: Int) = history_.drop(i - discarded + 1)
+  private def after(i: Int): Seq[transaction.Node] = {
+    val bf = new ArrayBuffer[transaction.Node]()
+    var s = i - discarded + 1
+    while (s < size) {
+      val item = history(s)
+      if (item.undoer != null) {
+        bf.appendAll(item.undoer._1)
+        s = item.undoer._2 + 1
+      } else {
+        bf.append(item.trans)
+        s += 1
+      }
+    }
+    bf
+  }
+
   private def lastOption = history_.lastOption
 
   def replaceUndoRedoPair(a: Int, items: Seq[transaction.Node]): Unit = {
@@ -105,14 +125,22 @@ trait Undoer extends UndoerInterface {
   def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: Option[model.mode.Node], docBefore: data.Node): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
+    def putIn(): Unit = {
+      val reverse = transaction.Node.reverse(docBefore, trans)
+      val newItem = new HistoryItem(trans, reverse, docBefore, ty, convertMode(docBefore, modeBefore))
+      history_ = history_ :+ newItem
+    }
     ty match {
+      case u@Undo(a, pp) =>
+        history(a).undoer = (pp, size)
+        putIn()
       case Redo(a, items) =>
         replaceUndoRedoPair(a, items)
       case _ =>
         lastOption match {
           case Some(a) if a.ty == Local =>
             if (a.ty == Local) {
-              transaction.Node.merge(trans, a.trans) match {
+              transaction.Node.mergeForUndoer(trans, a.trans) match {
                 case Some(merged) =>
                   a.trans = merged
                   a.reverse = transaction.Node.reverse(a.docBefore, a.trans)
@@ -122,9 +150,7 @@ trait Undoer extends UndoerInterface {
             }
           case _ =>
         }
-        val reverse = transaction.Node.reverse(docBefore, trans)
-        val newItem = new HistoryItem(trans, reverse, docBefore, ty, convertMode(docBefore, modeBefore))
-        history_ = history_ :+ newItem
+        putIn()
     }
   }
 
@@ -133,11 +159,14 @@ trait Undoer extends UndoerInterface {
   private def undo(currentDoc: Node, i: Int, isRedo: Boolean): DocTransaction = {
     val item = history(i)
     // TODO conflicts
-    val (tt, pp) = ot.Node.rebaseT(item.reverse, after(i).map(_.trans)).t
+    val (tt, pp) = ot.Node.rebaseT(item.reverse, after(i)).t
     val applied = operation.Node.apply(tt, currentDoc)
+    if (isRedo) {
+      history(item.ty.asInstanceOf[Undo].a).undoer = null
+    }
     DocTransaction(tt,
       convertBackMode(applied, transaction.Node.transformSeq(pp, item.modeBefore)),
-      undoType = Some(if (isRedo) Redo(i, pp) else Undo(i)),
+      undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)),
       handyAppliedResult = Some(applied))
   }
 
@@ -150,7 +179,7 @@ trait Undoer extends UndoerInterface {
           i -= 1
         case Local =>
           return undo(currentDoc, i, false)
-        case Undo(a) =>
+        case Undo(a, _) =>
           i = a - 1
         case r: Redo =>
           throw new IllegalArgumentException("You should not see redo here")
@@ -170,7 +199,7 @@ trait Undoer extends UndoerInterface {
           i -= 1
         case Local =>
           return DocTransaction.empty
-        case Undo(_) =>
+        case Undo(_, _) =>
           return undo(currentDoc, i, true)
         case r: Redo =>
           throw new IllegalArgumentException("You should not see redo here")

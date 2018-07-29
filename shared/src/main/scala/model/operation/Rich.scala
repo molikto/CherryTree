@@ -36,9 +36,9 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }._2, Type.reverse(ty))
   }
 
-  override def merge(before: Rich): Option[Rich] = {
-    (before.u, this.u) match {
-      case (Seq(Unicode.Insert(a0, u0, _)), Seq(Unicode.Insert(a1, u1, _))) if a1 == a0 + u0.size && !u1.containsSpace =>
+  private def mergeIfSingle(u: Seq[Unicode], before: Seq[Unicode], breakOnWhitespace: Boolean): Option[Rich] = {
+    (before, u) match {
+      case (Seq(Unicode.Insert(a0, u0, _)), Seq(Unicode.Insert(a1, u1, _))) if a1 == a0 + u0.size && (!breakOnWhitespace || !u1.containsSpace) =>
         Some(Rich(Seq(Unicode.Insert(a0, u0 + u1)), ty))
       case (Seq(Unicode.Delete(r0)), Seq(Unicode.Delete(r1))) =>
         if (r1.until == r0.start) {
@@ -53,6 +53,15 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 
     }
   }
+
+  override def mergeForUndoer(before: Rich): Option[Rich] = {
+    mergeIfSingle(u, before.u, breakOnWhitespace = true)
+  }
+
+  override def merge(before: Any): Option[Rich] =
+    mergeIfSingle(Unicode.merge(u), Unicode.merge(before.asInstanceOf[Rich].u), breakOnWhitespace = false)
+
+  override def isEmpty: Boolean = u.forall(_.isEmpty)
 }
 
 object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {

@@ -7,6 +7,7 @@ import model.ot.Rebased
 import model.ot.Unicode.free
 import util._
 import model.range.IntRange
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import scala.util.Random
 
@@ -51,6 +52,18 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     })
 
     override def reverse(d: data.Unicode): Unicode = Delete(at, at + unicode.size)
+
+    override def merge(before: Any): Option[Unicode] = before match {
+      case Insert(a, u2, _) if IntRange(a, a + u2.size).containsInsertion(at) =>
+        if (a == at) {
+          Some(Insert(a, unicode + u2))
+        } else {
+          Some(Insert(a, u2.replace(IntRange(at - a, at - a), unicode)))
+        }
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = unicode.isEmpty
   }
   object Delete {
     def apply(l: Int, r: Int): Delete = Delete(IntRange(l, r))
@@ -81,6 +94,21 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     }
 
     override def reverse(d: data.Unicode): Unicode = Insert(r.start, d.slice(r))
+
+    override def merge(before: Any): Option[Unicode] = before match {
+      case Delete(r2) if r.containsInsertion(r2.start) =>
+        Some(Delete(IntRange(r.start, r.start + r2.size + r.size)))
+//      case Insert(at, u, _) =>
+//        val rr = IntRange(at, at + u.size)
+//        if (rr.contains(r)) {
+//
+//        } else if (r.contains(rr)) {
+//
+//        }
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = r.isEmpty
   }
 
   /**
@@ -125,6 +153,15 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     })
 
     override def reverse(d: data.Unicode): Unicode = ReplaceAtomic(IntRange(r.start, r.start + unicode.size), d.slice(r))
+
+    override def merge(before: Any): Option[Unicode] = before match {
+      case ReplaceAtomic(rr, uu) if r.start == rr.start =>
+        assert(r == IntRange(r.start, r.start +  uu.length))
+        Some(ReplaceAtomic(rr, unicode))
+      case _ => None
+    }
+
+    override def isEmpty: Boolean = false
   }
 
   case class Surround(r: IntRange, left: data.Unicode, right: data.Unicode, idempotent: Boolean = true) extends Unicode {
@@ -170,15 +207,23 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     }
 
     override def reverse(d: data.Unicode): Unicode = throw new NotImplementedError("This is ugly!!!!")
+
+    override def merge(before: Any): Option[Unicode] = None
+
+    override def isEmpty: Boolean = false
   }
 
   case class Move(r: IntRange, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = ???
+    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = throw new IllegalAccessError("We don't have unicode move yet")
 
-    override def reverse(d: data.Unicode): Unicode = ???
+    override def reverse(d: data.Unicode): Unicode =  throw new IllegalAccessError("We don't have unicode move yet")
+
+    override def merge(before: Any): Option[Unicode] =  throw new IllegalAccessError("We don't have unicode move yet")
+
+    override def isEmpty: Boolean =  throw new IllegalAccessError("We don't have unicode move yet")
   }
 
 
