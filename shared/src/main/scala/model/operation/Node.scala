@@ -224,7 +224,6 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
   }
 
   override def random(d: data.Node, r: Random): Node = {
-    // LATER generate MOVE
     def doInsert(): Node = {
       val (c, n) = randomCursorAndNode(d, r)
       val p = r.nextInt(n.childs.size + 1)

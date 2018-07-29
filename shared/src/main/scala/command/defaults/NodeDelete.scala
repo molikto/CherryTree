@@ -8,7 +8,6 @@ import model.{cursor, operation, range}
 import model.range.IntRange
 import register.Registerable
 
-// TODO save to buffer
 class NodeDelete extends CommandCategory("deleting nodes") {
 
   private val message = ". if the deleted node is immediately inserted back to the document within 5 seconds," +

@@ -219,35 +219,6 @@ case class Unicode(var str: String) extends Seq[Int] {
 
   def graphemes: Iterator[(Int, Unicode)] = after(0)
 
-  private def extendedGraphemeStrRange(pos: Int): (Int, Int) = {
-    // if this part is a very simple char
-    val strStartIndex = toStringPosition(pos)
-    var start = 0
-    var end = GraphemeSplitter.nextBreak(str, start) // LATER can this be simplified not iterate entire string?
-    var count = 1
-    while (strStartIndex >= end) {
-      start = end
-      end = GraphemeSplitter.nextBreak(str, start)
-      count += 1
-    }
-    (start, end)
-  }
-
-
-  def extendedGrapheme(pos: Int): Unicode = {
-    val (start, end) = extendedGraphemeStrRange(pos)
-    Unicode(str.substring(start, end))
-  }
-
-  def extendedGraphemeRange(pos: Int): IntRange = {
-    val (start, end) = extendedGraphemeStrRange(pos)
-    val ss = str.codePointCount(0, start)
-    val ee = str.codePointCount(start, end) + ss
-    IntRange(ss, ee)
-  }
-
-
-
   def +(j: Unicode): Unicode = Unicode(str + j.str, if (size0 == -1 || j.size0 == -1) -1 else size0 + j.size0)
 
 

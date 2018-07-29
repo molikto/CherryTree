@@ -36,7 +36,6 @@ trait Server extends Api {
   private def onlineCount = clients.values.count(_.lastSeen > System.currentTimeMillis() - ApiConstants.ClientDeathTime)
 
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
-    // LATER sync mode back to client?
     val state = ClientInit(
       document,
       model.data.Node.defaultNormalMode(document, cursor.Node.root),

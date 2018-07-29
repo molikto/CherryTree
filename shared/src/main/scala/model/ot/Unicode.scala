@@ -6,7 +6,6 @@ import model.data.SpecialChar
 import model.range.IntRange
 import operation.Unicode._
 
-// LATER we currently don't generate any move operations, and we haven't handle it in our code
 object Unicode extends Ot[data.Unicode, mode.Unicode, operation.Unicode, conflict.Unicode] {
 
 
@@ -250,7 +249,6 @@ object Unicode extends Ot[data.Unicode, mode.Unicode, operation.Unicode, conflic
             free(w.modify(_.r).using(_.moveBy(ls.size + le.size)), l)
           }
         }
-      // LATER move related
       case (Delete(_), Move(_, _)) =>
         throw new IllegalAccessError("We don't have unicode move yet")
       case (Insert(_, _, _), Move(_, _)) =>
