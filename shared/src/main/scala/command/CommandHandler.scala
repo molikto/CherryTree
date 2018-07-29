@@ -19,8 +19,8 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
 
   private val miscCommands = new defaults.Misc()
-  val commands: Seq[Command] = Seq(
-    miscCommands,
+
+  private val defaultCategories =  Seq(
     new defaults.RichMotion(),
     new defaults.RichTextObject(),
     new defaults.RichInsertEnter(),
@@ -37,10 +37,12 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeFold(),
     new defaults.YankPaste(),
     new defaults.UndoRedo(),
-    new defaults.Scroll()
-  ).flatMap(_.commands)
+    new defaults.Scroll(),
+    miscCommands
+  )
+  val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 
-  val commandsByCategory: Map[String, Seq[Command]] = commands.groupBy(_.category)
+  val commandsByCategory: Seq[(String, Seq[Command])] = defaultCategories.map(a => (a.name, a.commands))
 
   //  private val status =  BehaviorSubject[CommandStatus](CommandStatus.Empty)
   //  def commandStatus: Observable[CommandStatus] = status
