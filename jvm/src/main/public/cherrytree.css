@@ -10,8 +10,11 @@
 }
 
 .ct-kbd2 {
+    padding: .2rem .4rem;
+    font-size: 87.5%;
     color: #CCCCCC;
     background-color: #444444;
+    border-radius: .2rem;
 }
 
 /* apply it on entire editor for now */

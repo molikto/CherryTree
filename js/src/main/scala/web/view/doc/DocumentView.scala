@@ -8,7 +8,7 @@ import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{html, window, document}
 import scalatags.JsDom.all._
 import view.EditorInterface
-import web.view.content.{CodeView, ContentView, RichView}
+import web.view.content.{SourceView, ContentView, RichView}
 import web.view.{KeyMap, View, theme}
 
 import scala.collection.mutable.ArrayBuffer
@@ -188,7 +188,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
       case model.data.Content.Rich(cs) =>
         new RichView(this, editor, cs).asInstanceOf[ContentView.General]
       case c@model.data.Content.Code(_, _) =>
-        new CodeView(this, editor, c).asInstanceOf[ContentView.General]
+        new SourceView(this, editor, c).asInstanceOf[ContentView.General]
     }
   }
 
@@ -212,7 +212,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
             case r: model.mode.Content.Rich =>
               current.asInstanceOf[RichView].updateMode(r, viewUpdated)
             case c: model.mode.Content.Code =>
-              current.asInstanceOf[CodeView].updateMode(c, viewUpdated)
+              current.asInstanceOf[SourceView].updateMode(c, viewUpdated)
           }
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()

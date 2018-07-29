@@ -14,7 +14,11 @@ import web.view._
 
 import scala.scalajs.js
 
-class CodeView(documentView: DocumentView, controller: EditorInterface, var c: model.data.Content.Code) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+class SourceView(
+  documentView: DocumentView,
+  controller: EditorInterface,
+  var c: model.data.Content.Code
+) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
   // background := "#304148",
   private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next", padding := "8px").render
@@ -22,6 +26,7 @@ class CodeView(documentView: DocumentView, controller: EditorInterface, var c: m
   private val remainingView = p(
     `class` := "ct-sans",
     marginTop := "0px",
+    marginLeft := "4px",
     marginBottom := "4px",
     fontSize := "70%",
     color := theme.disalbedInfo,
