@@ -1,6 +1,7 @@
 package doc
 
 import model.cursor
+import model.cursor.Node
 import model.data.Rich
 
 
@@ -34,6 +35,21 @@ case class DocState(node: model.data.Node, mode: Option[model.mode.Node]) {
 
   def isNormal: Boolean = mode match {
     case Some(model.mode.Node.Content(_, a)) if a.isNormal => true
+    case _ => false
+  }
+
+  def isCodeNormal: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeNormal)) => true
+    case _ => false
+  }
+
+  def getNode: Node = mode match {
+    case Some(model.mode.Node.Content(at, _)) => at
+    case Some(model.mode.Node.Visual(at, _)) => at
+  }
+
+  def isCodeInside: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside)) => true
     case _ => false
   }
 

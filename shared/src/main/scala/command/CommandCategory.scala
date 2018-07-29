@@ -28,7 +28,7 @@ class CommandCategory(val name: String) extends Settings {
     // currently these cannot be changed, you can change delimiters though
 
     private val systemKeys: Seq[KeySeq] =
-      if (deli == SpecialChar.Emphasis) Seq(ModKey + "i")
+      if (deli == SpecialChar.Emphasis) Seq(ModKey + "i", ModKey + "y")
       else if (deli == SpecialChar.Strong) Seq(ModKey + "b")
       else Seq.empty
 

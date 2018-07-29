@@ -73,13 +73,16 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   new Command {
     override val description: String = "yank selected text"
     override val defaultKeys: Seq[KeySeq] = Seq("y")
-    override def available(a: DocState): Boolean = a.isRichVisual
+    override def available(a: DocState): Boolean = a.isRichVisual || a.isCodeNormal
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       a.mode match {
         case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(fix, _))) =>
           commandState.yank(Registerable.Text(a.rich(pos).copyTextualRange(v.merged)), isDelete = false)
           DocTransaction.mode(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
+        case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal)) =>
+          commandState.yank(Registerable.Unicode(a.node(pos).content.asInstanceOf[data.Content.Code].unicode), isDelete = false)
+          DocTransaction.empty
         case _ => throw new IllegalArgumentException("Invalid command")
       }
     }

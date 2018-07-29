@@ -20,16 +20,29 @@ trait EditorView extends View {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
       var key = KeyMap.get(event.key).orNull
-      var isBiyz = false
+      var isBiy = false
+      var isZ = false
       if (key == null && Key.isUnicodeKey(event.key)) {
         key = Key.Grapheme(model.data.Unicode(event.key))
-        isBiyz = "biyz".contains(event.key)
+        isBiy = "biy".contains(event.key)
+        isZ = "z".contains(event.key)
       }
       if (key == null) key = Key.Unknown(event.key)
       val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
        // for meta keys, we ignore it, it is mostly browser keys
       // for modifier keys, we also ignore them
-      if ((!kk.meta || isBiyz) && !key.isInstanceOf[Key.Modifier]) {
+      val allow = if (!kk.meta) {
+        true
+      } else {
+        if (isBiy) {
+          !kk.shift
+        } else if (isZ) {
+          true
+        } else {
+          false
+        }
+      }
+      if (allow && !key.isInstanceOf[Key.Modifier]) {
         if (editor.onKeyDown(kk)) preventDefault(event)
       }
     })

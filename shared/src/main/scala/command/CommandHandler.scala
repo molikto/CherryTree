@@ -28,15 +28,17 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.RichVisual(),
     new defaults.RichChange(),
     new defaults.RichDelete(),
+    new defaults.Code(),
     new defaults.NodeMotion(),
     new defaults.NodeVisual(),
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
     new defaults.NodeMenu(),
+    new defaults.NodeFold(),
     new defaults.YankPaste(),
     new defaults.UndoRedo(),
-    new defaults.NodeFold(),
-    new defaults.Scroll()).flatMap(_.commands)
+    new defaults.Scroll()
+  ).flatMap(_.commands)
 
   val commandsByCategory: Map[String, Seq[Command]] = commands.groupBy(_.category)
 

@@ -21,7 +21,7 @@
 .ct-root {
   word-wrap: break-word;
   white-space: pre-wrap;
-  font-family: 'Gentium Book Basic', serif;
+  font-family: 'Gentium Book Basic', serif, sans-serif;
   font-size: 18px;
 }
 

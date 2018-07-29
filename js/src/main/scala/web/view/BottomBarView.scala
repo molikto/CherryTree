@@ -104,9 +104,9 @@ class BottomBarView(val client: Client) extends View {
             case model.mode.Content.RichNormal(_) =>
               "NORMAL"
             case model.mode.Content.CodeNormal =>
-              "CODE BLOCK"
-            case model.mode.Content.CodeInside =>
               "CODE"
+            case model.mode.Content.CodeInside =>
+              "CODE EDIT"
           }
         case v@model.mode.Node.Visual(_, _) =>
           "NODE VISUAL"

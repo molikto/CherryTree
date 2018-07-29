@@ -47,17 +47,29 @@ class RichVisual extends CommandCategory("text visual mode") {
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
-        val soc = rich.singleSpecials(r).map(_.range)
-        val remaining = r.minusOrderedInside(soc)
-        val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
-        val fakePoints = if (visual.fix.start <= visual.move.start) {
-          mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
+        val after = rich.after(r.start)
+        if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
+          val ret = if (visual.fix.start > visual.move.start) {
+            mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.fix)
+          } else {
+            mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
+          }
+          DocTransaction(Seq(operation.Node.Content(cursor,
+            operation.Content.Rich(operation.Rich.unwrap(r.start, after.text.asDelimited)))),
+            Some(a.copyContentMode(ret)))
         } else {
-          mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
+          val soc = rich.singleSpecials(r).map(_.range)
+          val remaining = r.minusOrderedInside(soc)
+          val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
+          val fakePoints = if (visual.fix.start <= visual.move.start) {
+            mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
+          } else {
+            mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
+          }
+          DocTransaction(Seq(operation.Node.Content(cursor,
+            operation.Content.Rich(operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli)))),
+            Some(a.copyContentMode(fakePoints)))
         }
-        DocTransaction(Seq(operation.Node.Content(cursor,
-          operation.Content.Rich(operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli)))),
-          Some(a.copyContentMode(fakePoints)))
     }
   }).toMap
 

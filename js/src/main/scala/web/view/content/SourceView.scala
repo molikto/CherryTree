@@ -58,6 +58,11 @@ class SourceView(
   updateCodeMirror()
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean): Unit = {
+    if (aa == model.mode.Content.CodeNormal) {
+
+    } else {
+
+    }
   }
 
   override def clearMode(): Unit = {
