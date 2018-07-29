@@ -20,6 +20,7 @@
 
 * why scrollbar not shown??
 * resizing the panel is buggy
+* main page focus problem
 
 
 ## improvements
