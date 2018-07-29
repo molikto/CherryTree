@@ -49,6 +49,8 @@ package object view {
 
   val jQ: js.Dynamic = js.Dynamic.global.jQuery
 
+  val CodeMirror: js.Dynamic = js.Dynamic.global.CodeMirror
+
   def jsObject(a: js.Dynamic => Unit): js.Dynamic = {
     val k =
       js.Object().asInstanceOf[js.Dynamic]

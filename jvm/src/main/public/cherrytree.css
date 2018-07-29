@@ -1,7 +1,7 @@
 /** LATER how to apply them as a theme? */
 
 
-kbd {
+.ct-kbd {
     padding: .2rem .4rem;
     font-size: 87.5%;
     color: #333333;
@@ -21,6 +21,7 @@ kbd {
   font-family: 'Gentium Book Basic', serif;
   font-size: 18px;
 }
+
 
 .ct-scroll::-webkit-scrollbar {
     width: 10px;
@@ -43,9 +44,6 @@ kbd {
 }
 
 
-.ct-pre {
-  white-space: pre-wrap;
-}
 
 .ct-content {
     margin-bottom: 0.5rem;
@@ -55,6 +53,17 @@ kbd {
     background: #d8617488;
 }
 
+.ct-code-pre {
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size: 70%;
+    white-space: pre-wrap;
+    margin-bottom : 0px;
+}
+
+.ct-sans {
+  font-family: sans-serif;
+  font-size: 95%;
+}
 
 .ct-code {
     font-style: normal;

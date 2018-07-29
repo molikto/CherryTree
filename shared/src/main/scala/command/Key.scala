@@ -25,10 +25,10 @@ case class Key(
 
   override def toString: String = {
     val sb = new ArrayBuffer[String]()
-    if (shift) sb.append("Shift")
+    if (meta) sb.append("⌘")
     if (control) sb.append("Ctrl")
+    if (shift) sb.append("Shift")
     if (alt) sb.append("Alt")
-    if (meta) sb.append("Meta")
     sb.append(a.toString)
     sb.mkString("+")
   }
@@ -57,6 +57,7 @@ object Key {
     def +(key: Key): Key = key.copy(shift = true)
   }
   case object Meta extends Modifier {
+    override def toString: String = "⌘"
     def +(key: Key): Key = key.copy(meta = true)
   }
   case object Ctrl extends Modifier {

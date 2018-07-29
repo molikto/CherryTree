@@ -203,7 +203,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     } else if (pos == rich.size) {
       rich.text.last match {
         case plain: Text.Plain =>
-          updateExistingTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.size)
+          updateExistingTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.unicode.str.length)
         case _ =>
           updateTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
       }

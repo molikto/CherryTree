@@ -205,13 +205,15 @@ case class Unicode(var str: String) extends Seq[Int] {
   }
 
   def after(b: Int): Iterator[(Int, Unicode)] = new Iterator[(Int, Unicode)] {
+    private var ii = b - 1
     private var i = toStringPosition(b)
     override def hasNext: Boolean = i < str.length
 
     override def next(): (Int, Unicode) = {
       val p = i
       i = GraphemeSplitter.nextBreak(str, p)
-      (p, Unicode(str.substring(p, i)))
+      ii += 1
+      (ii, Unicode(str.substring(p, i)))
     }
   }
 

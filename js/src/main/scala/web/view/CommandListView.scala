@@ -39,7 +39,7 @@ class CommandListView(val client: Client) extends View {
                 div(
                   p(marginLeft := "12px",
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
-                    c.keys.map(a => span(tag("kbd")(renderKeySeq(a)), " ")),
+                    c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", renderKeySeq(a)), " ")),
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "char"), " ")).filter(_ => c.needsChar),
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ")).filter(_ => c.needsMotion),
                     c.description)

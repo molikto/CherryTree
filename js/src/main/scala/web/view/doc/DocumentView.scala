@@ -187,8 +187,8 @@ class DocumentView(private val client: DocInterface, override protected val edit
     c match {
       case model.data.Content.Rich(cs) =>
         new RichView(this, editor, cs).asInstanceOf[ContentView.General]
-      case model.data.Content.Code(a, lang) =>
-        new CodeView(this, editor, a, lang).asInstanceOf[ContentView.General]
+      case c@model.data.Content.Code(_, _) =>
+        new CodeView(this, editor, c).asInstanceOf[ContentView.General]
     }
   }
 

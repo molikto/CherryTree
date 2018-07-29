@@ -1,20 +1,56 @@
 package web.view.content
 
-import model.data.Unicode
+import model._
+import model.data._
+import model.range.IntRange
+import monix.execution.Cancelable
+import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import view.EditorInterface
 import web.view.doc.DocumentView
+import web.view.{EmptyStr, removeAllChild, theme}
+import web.view._
 
-class CodeView(documentView: DocumentView, controller: EditorInterface, var code: Unicode, var lang: String) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+import scala.scalajs.js
 
-  dom = pre(code.str).render
+class CodeView(documentView: DocumentView, controller: EditorInterface, var c: model.data.Content.Code) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+
+  // background := "#304148",
+  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next", padding := "8px").render
+
+  private val remainingView = p(
+    `class` := "ct-sans",
+    marginTop := "0px",
+    marginBottom := "4px",
+    fontSize := "70%",
+    color := theme.disalbedInfo,
+    "").render
+  dom = div(preCode, remainingView).render
+
 
 
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
-    code = c.unicode
-    lang = c.lang
-    dom = pre(code.str).render
+    this.c= c
+    removeAllChild(dom)
+    updateCodeMirror()
   }
+
+  def updateCodeMirror(): Unit = {
+    val lines = c.unicode.str.lines
+    val look = lines.take(5).toVector
+    val remaining = lines.size
+    val totalSize = remaining + look.size
+    CodeMirror.runMode(look.mkString("\n"), c.asSourceMime, preCode)
+    if (remaining > 0) {
+      remainingView.textContent = s"$totalSize lines"
+    } else {
+      remainingView.textContent = ""
+    }
+    //CodeMirror.runMode(c.unicode.str, c.asSourceMime, dom)
+  }
+
+  updateCodeMirror()
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean): Unit = {
   }

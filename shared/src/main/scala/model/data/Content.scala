@@ -20,9 +20,27 @@ abstract sealed class Content {
   * but rich it is not, so we need to be sure that the data we are editing is valid
   */
 object Content extends DataObject[Content] {
+
+  /**
+    *
+    * what's in lang
+    *
+    * code:
+    *
+    * code/mime
+    *
+    */
   case class Code(unicode: Unicode, lang: String) extends Content {
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
+
+    def isSource: Boolean = lang.startsWith("source/")
+    def asSourceMime: String = {
+      if (isSource)
+        lang.substring("source/".length)
+      else
+        ""
+    }
   }
   case class Rich(content: data.Rich) extends Content {
     def size: Int = content.size

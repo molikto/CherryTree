@@ -32,6 +32,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeVisual(),
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
+    new defaults.NodeMenu(),
     new defaults.YankPaste(),
     new defaults.UndoRedo(),
     new defaults.NodeFold(),
