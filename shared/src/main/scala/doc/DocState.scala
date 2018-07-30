@@ -1,17 +1,21 @@
 package doc
 
-import model.cursor
+import model.{cursor, data}
 import model.cursor.Node
 import model.data.Rich
 
 
-case class DocState(node: model.data.Node, mode: Option[model.mode.Node]) {
+case class DocState(
+  node: model.data.Node,
+  mode: Option[model.mode.Node],
+  foldedNodes: Set[String]
+) {
+  def folded(root: data.Node): Boolean = foldedNodes.contains(root.uuid)
 
-  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, isFolded)
+  def folded(a: cursor.Node): Boolean = folded(node(a))
 
-  def isFolded(a: cursor.Node): Boolean = {
-    false
-  }
+  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, folded)
+
 
   def rich(n: cursor.Node): Rich = node(n).content.asInstanceOf[model.data.Content.Rich].content
 

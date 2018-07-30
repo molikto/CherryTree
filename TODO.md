@@ -1,5 +1,7 @@
 ## roadmap
 
+* node fold/unfold
+    * read/save to local storage
 * code editor integration
     * the most simple will be just open a new dialog
     * no integration of vim keybindings
@@ -11,6 +13,7 @@
           this remote edit -- cannot undo outside
     * copy & paste
 * global history
+* node menu
 * conflicts??
 
 ## bugs

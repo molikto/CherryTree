@@ -70,6 +70,10 @@
   font-size: 18px;
 }
 
+.ct-folded {
+  display: none;
+}
+
 .ct-d-frame {
    display: flex;
    flex-direction: row;
@@ -79,12 +83,12 @@
 .ct-d-hold {
     width: 18px;
     height: 18px;
-    margin-top: 8px;
+    margin-top: 9px;
     background-size: auto;
 }
 
 .ct-d-box {
-  padding: 4px;
+  margin-left: 4px;
   width: 100%
 }
 
@@ -97,6 +101,7 @@
 .ct-rich {
     margin-bottom: 0rem;
     outline: 0px solid transparent;
+    padding: 4px;
 }
 
 
@@ -126,7 +131,6 @@
 
 .ct-latex {
    color: #abb2bf;
-    content-editable: false;
 }
 
 .ct-strong {
@@ -142,7 +146,6 @@
     font-style: normal;
     color: #636e83;
     font-weight:normal;
-    content-editable: false;
 }
 
 
@@ -153,6 +156,7 @@
     font-size: 70%;
     white-space: pre-wrap;
     margin-bottom : 0px;
+    padding: 4px;
 }
 
 

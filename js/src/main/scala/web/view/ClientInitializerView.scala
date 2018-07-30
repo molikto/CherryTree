@@ -2,8 +2,18 @@ package web.view
 
 import api.{Api, Authentication}
 import client.{Client, ClientInitializer}
+import model.LocalStorage
 import org.scalajs.dom
 import web.net.JsAutowireClient
+import command.Key
+import model.data.Content
+import org.scalajs.dom.raw._
+import org.scalajs.dom.{html, window}
+import org.scalajs.dom.{document, html, window}
+import scalatags.JsDom.all._
+import view.EditorInterface
+import web.view.content.{ContentView, RichView, SourceView}
+import web.view._
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import scala.util.{Failure, Random, Success}
@@ -19,6 +29,20 @@ object ClientInitializerView {
     if (!globalInitialized) {
       model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
       globalInitialized = true
+
+      model.localStorage = new LocalStorage {
+        override def set(key: String, str: String): Unit = {
+          window.localStorage.setItem(key, str)
+        }
+
+        override def remove(key: String): Unit = {
+          window.localStorage.removeItem(key)
+        }
+
+        override def get(key: String): Option[String] = {
+          Option(window.localStorage.getItem(key))
+        }
+      }
     }
   }
 }

@@ -21,7 +21,7 @@ class SourceView(
 ) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
   // background := "#304148",
-  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next", padding := "4px").render
+  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next").render
 
   private val remainingView = p(
     `class` := "ct-sans",

@@ -15,6 +15,6 @@ import scala.util.{Failure, Success}
 
 object ClientInitializer {
   def init(server: Client.Proxy, token: Authentication.Token): Future[Client] = {
-    transform(server.init(token).call()).map { it => new Client(server, it, token) }
+    transform(server.init(token).call()).map { it => new Client("debugDoc", server, it, token) }
   }
 }

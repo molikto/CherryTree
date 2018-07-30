@@ -80,27 +80,29 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     sel.addRange(range)
   }
 
+  private def cg(a: String) = span(`class` := "ct-cg", contenteditable := "false", a)
+
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
-        span(`class` := "ct-cg", "*"),
+        cg("*"),
         em(`class` := "ct-em", rec(c)),
-        span(`class` := "ct-cg", "*")
+        cg("*")
       )
       case Text.Strong(c) => span(
-        span(`class` := "ct-cg", "#"),
+        cg("#"),
         strong(`class` := "ct-strong", rec(c)),
-        span(`class` := "ct-cg", "#") // LATER ** char as a single char
+        cg("#")
       )
       case Text.StrikeThrough(c) => span(
-        span(`class` := "ct-cg", "-"),
+        cg("~"),
         del(`class` := "ct-del", rec(c)),
-        span(`class` := "ct-cg", "-")
+        cg("~")
       )
       case Text.Link(t, b, c) => span(
-        span(`class` := "ct-cg", "["),
+        cg("["),
         span(`class` := "ct-link", rec(t), href := b.str),
-        span(`class` := "ct-cg", "]")
+        cg("]")
       )
       case Text.Image(b, c) =>
         img(`class` := "ct-image", src := b.str)
@@ -112,15 +114,16 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
           case a: Throwable => a.printStackTrace()
         }
         span(`class` := "ct-latex",
+          contenteditable := false,
           span(evilChar), // don't fuck with my cursor!!!
           a,
           span(evilChar)
         )
       case Text.Code(c) =>
         span(
-          span(`class` := "ct-cg", "`"),
+          cg("`"),
           code(`class` := "ct-code", c.str),
-          span(`class` := "ct-cg", "`")
+          cg("`")
         )
       case Text.Plain(c) => stringFrag(c.str)
     }

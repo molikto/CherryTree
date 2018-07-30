@@ -20,6 +20,7 @@ import model._
 import model.data.{SpecialChar, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
+import model.cursor.Node
 import monix.reactive.subjects.PublishSubject
 import register.RegisterHandler
 import undoer.Undoer
@@ -43,6 +44,7 @@ object Client {
 }
 
 class Client(
+  private val docId: String,
   private val server: Client.Proxy,
   private val initial: ClientInit,
   private val authentication: Authentication.Token
@@ -54,6 +56,7 @@ class Client(
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
+
 
   /**
     * connection state
@@ -99,7 +102,10 @@ class Client(
     *
     * editor queue
     */
-  private var state_ = DocState(committed, Some(initial.mode))
+  private var state_ = DocState(committed, Some(initial.mode), localStorage.get(docId + ".folded") match {
+    case Some(s) => s.split(",").toSet
+    case _ => Set.empty
+  })
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
@@ -142,19 +148,28 @@ class Client(
 
   private var insertingFlusher: Cancelable = null
 
-  private def updateState(a: DocState, from: model.transaction.Node, ty: Undoer.Type, viewUpdated: Boolean, viewFrom: model.transaction.Node): Unit = {
-    val res = DocUpdate(a.node, viewFrom, a.mode, viewUpdated)
+  private def updateState(a: DocState,
+    from: model.transaction.Node,
+    ty: Undoer.Type,
+    viewUpdated: Boolean,
+    viewFrom: model.transaction.Node,
+    foldBefore: Map[cursor.Node, Boolean] = Map.empty
+  ): Unit = {
+    val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debugView) {
       //println("client update inner root: " + res.root)
-      println("client update view transactions: " + viewFrom)
-      println("client update mode: " + a.mode)
+//      println("client update view transactions: " + viewFrom)
+//      println("client update mode: " + a.mode)
     }
     updatingState = true
     val modeBefore = state.mode
     val docBefore = state.node
-    state_ = DocState(a.node, a.mode)
+    state_ = a
+    if (foldBefore.nonEmpty) {
+      localStorage.set(docId + ".folded", state_.foldedNodes.mkString(","))
+    }
     onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(from, ty, modeBefore, docBefore)
     stateUpdates_.onNext(res)
@@ -274,7 +289,10 @@ class Client(
         uncommitted = uc
         connection_.update(Some(success.serverStatus))
         if (wp0.nonEmpty) updateState(
-          DocState(operation.Node.apply(wp0, state.node), state.mode.flatMap(a => operation.Node.transform(wp0, a))),
+          state.copy(
+            node = operation.Node.apply(wp0, state.node),
+            mode = state.mode.flatMap(a => operation.Node.transform(wp0, a))
+          ),
           wp0,
           Undoer.Remote,
           viewUpdated = false, wp0)
@@ -338,7 +356,20 @@ class Client(
     localChange(update)
   }
 
-  def localChange(update0: DocTransaction): Boolean = {
+  def applyFolds(folded0: Set[String], unfold0: Set[cursor.Node], toggle0: Set[cursor.Node], changes: transaction.Node): (Set[String], Map[cursor.Node, Boolean]) = {
+    if (unfold0.isEmpty && toggle0.isEmpty) {
+      (folded0, Map.empty)
+    } else {
+      val toggle = toggle0.map(c => (c, state.node(c).uuid))
+      val unfold = unfold0.map(c => (c, state.node(c).uuid))
+      var toFold = toggle.filter(a => !folded0.contains(a._2))
+      val toUnfold = (toggle -- toFold) ++ unfold.filter(a => folded0.contains(a._2))
+      toFold = toFold -- toUnfold
+      (folded0 ++ toFold.map(_._2) -- toUnfold.map(_._2), toFold.map(a => a._1 -> true).toMap ++ toUnfold.map(a => a._1 -> false).toMap)
+    }
+  }
+
+  def localChange(update0: DocTransaction): Unit = {
     var update: DocTransaction = update0
     if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
     // for a delete of a non empty node, we disable sync from server for sometime
@@ -363,7 +394,7 @@ class Client(
           update.transaction match {
             case Seq(i@operation.Node.Insert(at, childs)) if childs == disableUpdateBecauseLocalNodeDelete._3 =>
               cutOneLocalHistory(Seq(d))
-              state_ = disableUpdateBecauseLocalNodeDelete._4
+              state_ = disableUpdateBecauseLocalNodeDelete._4.copy(foldedNodes = state_.foldedNodes)
               val inverse = d.reverse(state.node)
               uncommitted = uncommitted.dropRight(1)
               viewAdd = Seq(inverse)
@@ -378,9 +409,7 @@ class Client(
     }
     val changes = update.transaction
     val mode = update.mode
-    var changed = false
     val d = if (changes.nonEmpty) {
-      changed = true
       if (update.handyAppliedResult.isDefined) {
         update.handyAppliedResult.get
       } else {
@@ -391,25 +420,24 @@ class Client(
     }
     val m = mode match {
       case Some(_) =>
-        changed = true
         mode
       case None =>
-        if (changed) {
-          state.mode.flatMap(a => operation.Node.transform(changes, a))
-        } else {
-          state.mode
-        }
+        state.mode.flatMap(a => operation.Node.transform(changes, a))
     }
-    if (changed) {
-      updateState(DocState(d, m),
+    if (update != DocTransaction.empty) {
+      if (debugView) {
+        println(update)
+      }
+      val (res, ch) = applyFolds(state.foldedNodes, update.unfoldBefore, update.toggleBefore, changes)
+      updateState(DocState(d, m, res),
         changes,
         update.undoType.getOrElse(Undoer.Local),
         viewUpdated = update.viewUpdated,
-        if (viewAdd.isEmpty) changes else viewAdd ++ changes)
+        if (viewAdd.isEmpty) changes else viewAdd ++ changes,
+        foldBefore = ch)
       if (changes.nonEmpty) uncommitted = uncommitted :+ changes
       self.sync()
     }
-    changed
   }
 
   override def onKeyDown(k: Key): Boolean = keyDown(k)

@@ -4,7 +4,7 @@ import command.Key
 import command.Key.KeySeq
 import org.scalajs.dom
 import org.scalajs.dom.raw.{HTMLDivElement, HTMLElement}
-import org.scalajs.dom.{Event, Node, html}
+import org.scalajs.dom._
 
 import scala.scalajs.js
 
@@ -64,5 +64,11 @@ package object view {
     } else {
       k.mkString(" ")
     }
+  }
+
+
+  def svgSourceToBackgroundStr(svg: String): String = {
+    val encoded = window.btoa(svg)
+    "url(data:image/svg+xml;base64," + encoded + ")"
   }
 }

@@ -9,7 +9,7 @@ import org.scalajs.dom.{html, window, document}
 import scalatags.JsDom.all._
 import view.EditorInterface
 import web.view.content.{SourceView, ContentView, RichView}
-import web.view.{KeyMap, View, theme}
+import web.view._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -172,7 +172,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
         contentAt(Seq.empty, rootFrame = frame).destroy()
       }
     }
-    
+
     val p = childListAt(range.parent)
     destroyContents(p, range.childs.start, range.childs.until)
     for (_ <- range.childs) {
@@ -190,27 +190,44 @@ class DocumentView(private val client: DocInterface, override protected val edit
     })
   }
 
-  private val holdBg = {
-    val svg =
-      s"""<?xml version="1.0"?>
-         |<svg viewBox="0 0 100 100" version="1.1"
-         |  xmlns="http://www.w3.org/2000/svg">
-         |  <circle cx="50" cy="50" r="21" style="fill: #555c75;"/>
-         |</svg>
-       """.stripMargin
-    val encoded = window.btoa(svg)
-    "url(data:image/svg+xml;base64," + encoded + ")"
-  }
 
+  private val viewBoxStr = {
+    val padding = 128
+    val size = 512 + padding * 2
+    s"-$padding -$padding $size $size"
+  }
+  private val holdBg = svgSourceToBackgroundStr(
+    s"""
+       |<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBoxStr"><path style="fill: #555c75;" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8z"/></svg>
+     """.stripMargin)
+
+  private val holdFoldBg = svgSourceToBackgroundStr(
+    s"""
+       |<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBoxStr"><path style="fill: #555c75;" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6 0-12-5.4-12-12v-92h-92c-6.6 0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6 0 12 5.4 12 12v92h92c6.6 0 12 5.4 12 12v56z"/></svg>
+     """.stripMargin)
+
+  private def toggleHoldRendering(hold0: Node, fold: Boolean): Unit = {
+    val hold = hold0.asInstanceOf[HTMLElement]
+    if (fold) {
+      hold.style.background = holdFoldBg
+    } else {
+      hold.style.background = holdBg
+    }
+  }
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val hold = a(`class` := "ct-d-hold").render
-    hold.style.background = holdBg
+    val hold = tag("i")(`class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
     val box = div(`class` := "ct-d-box").render
     parent.insertBefore(box, firstChild)
     createContent(root.content).attachToNode(box)
     val list = div().render
+    if (client.state.folded(root)) {
+      list.classList.add("ct-folded")
+      toggleHoldRendering(hold, true)
+    } else {
+      toggleHoldRendering(hold, false)
+    }
     box.appendChild(list)
     insertNodes(list, 0, root.childs)
   }
@@ -259,12 +276,20 @@ class DocumentView(private val client: DocInterface, override protected val edit
   // we use onAttach because we access window.setSelection
   override def onAttach(): Unit = {
     super.onAttach()
-    val DocState(node, selection) = client.state
+    val DocState(node, selection, _) = client.state
     insertNodesRec(node, dom)
     dom.appendChild(noEditable) // dom contains this random thing, this is ok now, but... damn
     updateMode(selection, viewUpdated = false)
 
     observe(client.stateUpdates.doOnNext(update => {
+      update.folds.foreach(f => {
+        toggleHoldRendering(holdAt(f._1), f._2)
+        if (f._2) {
+          childListAt(f._1).classList.add("ct-folded")
+        } else {
+          childListAt(f._1).classList.remove("ct-folded")
+        }
+      })
       duringStateUpdate = true
       for (t <- update.transaction) {
         t match {

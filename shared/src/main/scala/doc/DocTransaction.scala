@@ -6,10 +6,10 @@ import undoer.Undoer
 case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
-  // TODO make use of them
   handyAppliedResult: Option[model.data.Node] = None,
-  unfoldBefore: Seq[cursor.Node] = Seq.empty,
-  foldBefore: Seq[cursor.Node] = Seq.empty,
+  // TODO make use of them
+  unfoldBefore: Set[cursor.Node] = Set.empty,
+  toggleBefore: Set[cursor.Node] = Set.empty,
   undoType: Option[Undoer.Type] = None,
   tryMergeDeletes: Boolean = false,
   tryMergeInsertOfDeleteRange: Option[range.Node] = None,
