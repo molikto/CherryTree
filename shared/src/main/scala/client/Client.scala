@@ -40,6 +40,7 @@ object Client {
   }
   object ViewMessage {
     case class VisitUrl(url: String) extends ViewMessage
+    case class ShowCommandMenu() extends ViewMessage
   }
 }
 
@@ -75,6 +76,11 @@ class Client(
   protected val viewMessages_ : PublishSubject[Client.ViewMessage] = PublishSubject()
 
   def viewMessages: Observable[Client.ViewMessage] = viewMessages_
+
+  def publishViewMessage(a: Client.ViewMessage): Unit = {
+    viewMessages_.onNext(a)
+  }
+
 
   private var subscription: Cancelable = null
 
@@ -424,7 +430,7 @@ class Client(
       case None =>
         state.mode.flatMap(a => operation.Node.transform(changes, a))
     }
-    if (update != DocTransaction.empty) {
+    if (!update.nonTransactional) {
       if (debugView) {
         println(update)
       }

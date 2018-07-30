@@ -18,9 +18,10 @@ abstract class CommandHandler extends Settings with CommandInterface {
   self: Client =>
 
 
-  private val miscCommands = new defaults.Misc()
+  private val miscCommands = new defaults.Misc(this)
 
   private val defaultCategories =  Seq(
+    miscCommands,
     new defaults.RichMotion(),
     new defaults.RichTextObject(),
     new defaults.RichInsertEnter(),
@@ -33,12 +34,10 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeVisual(),
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
-    new defaults.NodeMenu(),
     new defaults.NodeFold(),
     new defaults.YankPaste(),
     new defaults.UndoRedo(),
-    new defaults.Scroll(),
-    miscCommands
+    new defaults.Scroll()
   )
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 
@@ -279,38 +278,6 @@ abstract class CommandHandler extends Settings with CommandInterface {
       val res = tryComplete()
       commandBufferUpdates_.onNext(buffer)
       res || !state.isRichInserting
-    }
-  }
-
-
-  new SideEffectingCommand {
-    override def category: String = miscCommands.name
-
-    override val description: String = "visit link url"
-
-    override def defaultKeys: Seq[KeySeq] = Seq("gx")
-
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual && {
-      val (_, rich, nv) = a.asRichNormalOrVisual
-      if (rich.isEmpty) false
-      else {
-        val t = rich.after(nv.focus.start)
-        t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
-      }
-    }
-
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (_, rich, nv) = a.asRichNormalOrVisual
-      val t = rich.after(nv.focus.start)
-      val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
-      import io.lemonlabs.uri._
-      Try {
-        Url.parse(url)
-      } match {
-        case Success(_) => viewMessages_.onNext(Client.ViewMessage.VisitUrl(url))
-        case _ =>
-      }
-      DocTransaction.empty
     }
   }
 

@@ -1,12 +1,15 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable}
+import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.data.SpecialChar
 import model.range.IntRange
 
-class Misc extends CommandCategory("misc") {
+import scala.util.{Success, Try}
+
+class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
 
   // what/s these?
@@ -54,6 +57,50 @@ class Misc extends CommandCategory("misc") {
     }
 
   }
+
+
+  val commandSearch = new Command {
+    override protected def available(a: DocState): Boolean = a.isNormal || a.isVisual
+    override val description: String = "show contextual command menu"
+    override def defaultKeys: Seq[KeySeq] = Seq(":")
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
+    }
+  }
+
+  val visitLink = new Command {
+    override val description: String = "visit link url"
+
+    override def defaultKeys: Seq[KeySeq] = Seq("gx")
+
+    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual && {
+      val (_, rich, nv) = a.asRichNormalOrVisual
+      if (rich.isEmpty) false
+      else {
+        val t = rich.after(nv.focus.start)
+        t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+      }
+    }
+
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val (_, rich, nv) = a.asRichNormalOrVisual
+      val t = rich.after(nv.focus.start)
+      val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
+      import io.lemonlabs.uri._
+      Try {
+        Url.parse(url)
+      } match {
+        case Success(_) =>
+          DocTransaction.message(Client.ViewMessage.VisitUrl(url))
+        case _ =>
+          DocTransaction.empty
+      }
+    }
+  }
+
+
+
 
   // these are currently NOT implemented becuase we want a different mark system
   // also the rest which are useful can be implemented later
@@ -142,6 +189,7 @@ class Misc extends CommandCategory("misc") {
   //:r       :r [file]       insert the contents of [file] below the cursor
   //:r!      :r! {command}   insert the standard output of {command} below the
   //                              cursor
+
 
 }
 

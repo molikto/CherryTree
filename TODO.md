@@ -22,6 +22,7 @@
 * resizing the panel is buggy
 * main page focus problem
 * change kbd font so apple key looks good
+* movement in bidi text is wired, seems we have something wrong in our grapheme code
 
 
 ## improvements
