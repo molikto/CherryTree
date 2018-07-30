@@ -167,12 +167,12 @@ class DocumentView(private val client: DocInterface, override protected val edit
     def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
       for (i <- start until u) {
         val frame = frameInList(a, i)
-        val at = Seq(i)
-        val ll = childListAt(at, rootFrame = frame)
+        val ll = childListAt(Seq.empty, rootFrame = frame)
         destroyContents(ll, 0, ll.children.length)
-        contentAt(at, rootFrame = frame).destroy()
+        contentAt(Seq.empty, rootFrame = frame).destroy()
       }
     }
+    
     val p = childListAt(range.parent)
     destroyContents(p, range.childs.start, range.childs.until)
     for (_ <- range.childs) {
