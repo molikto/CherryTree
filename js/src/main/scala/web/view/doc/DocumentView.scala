@@ -16,12 +16,12 @@ import scala.collection.mutable.ArrayBuffer
 class DocumentView(private val client: DocInterface, override protected val editor: EditorInterface) extends EditorView {
 
   dom = div(
+    `class` := "ct-root ct-scroll ct-d-frame",
     width := "100%",
     height := "100%",
-    padding := "48px",
-    color := theme.contentText,
-    `class` := "ct-root ct-scroll",
-    overflowY := "scroll"
+    padding := "36px",
+    overflowY := "scroll",
+    color := theme.contentText
   ).render
 
   /**
@@ -100,40 +100,54 @@ class DocumentView(private val client: DocInterface, override protected val edit
     *
     *
     */
-  private def childListAt(at: model.cursor.Node): HTMLElement = {
+  //   frame = dom
+  //     hold
+  //     box
+  //       content
+  //       child list
+  //         frame...
+  //         frame...
+  //         frame...
+  //    nonEditable...
+
+  private def frameAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
-      // ul, li, content
-      else rec(a.childNodes(b.head).childNodes(0).childNodes(1), b.tail)
+      else rec(a.childNodes(1).childNodes(1).childNodes(b.head), b.tail)
     }
-    rec(dom.childNodes(0).childNodes(1), at).asInstanceOf[HTMLElement]
+    rec(rootFrame, at).asInstanceOf[HTMLElement]
   }
 
-  private def contentAt(at: model.cursor.Node): ContentView.General = {
-    def rec(a: Node, b: model.cursor.Node): Node = {
-      if (b.isEmpty) a.childNodes(0)
-      // ul, li, content
-      else rec(a.childNodes(1).childNodes(b.head).childNodes(0), b.tail)
-    }
-    View.fromDom[ContentView.General](rec(dom.childNodes(0), at))
+  private def boxAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+    frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
+  }
+
+  private def childListAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+    boxAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
+  }
+
+  private def frameInList(parent: HTMLElement, at: Int) = parent.childNodes(at).asInstanceOf[HTMLElement]
+
+
+  private def holdAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+    frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
+  }
+
+  private def contentAt(at: model.cursor.Node, rootFrame: Node = dom): ContentView.General = {
+    val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
+    View.fromDom[ContentView.General](v)
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
 
   private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
     val newVisual = new ArrayBuffer[Element]()
-    def update(overall: HTMLElement, start: Int, u: Int): Unit = {
-      for (i <- start until u) {
-        val c = overall.children(i).children(0)
-        newVisual.append(c)
-      }
-    }
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
       case None =>
-        val rd = dom.children(0)
+        val rd = boxAt(model.cursor.Node.root)
         newVisual.append(rd)
-      case Some(range) => update(childListAt(range.parent), range.childs.start, range.childs.until)
+      case Some(range) => range.foreach(c => newVisual.append(boxAt(c)))
     }
     (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
     (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
@@ -150,16 +164,19 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
 
   private def removeNodes(range: model.range.Node): Unit = {
-    def destroyContents(a: Element, start: Int, u: Int): Unit = {
+    def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
       for (i <- start until u) {
-        val ll = a.children(i).children(0).children(1)
+        val frame = frameInList(a, i)
+        val at = Seq(i)
+        val ll = childListAt(at, rootFrame = frame)
         destroyContents(ll, 0, ll.children.length)
-        View.fromDom[ContentView.General](a.children(i).children(0).children(0)).destroy()
+        contentAt(at, rootFrame = frame).destroy()
       }
     }
     val p = childListAt(range.parent)
     destroyContents(p, range.childs.start, range.childs.until)
     for (_ <- range.childs) {
+      // not using correct api here
       p.removeChild(p.children(range.childs.start))
     }
   }
@@ -167,15 +184,31 @@ class DocumentView(private val client: DocInterface, override protected val edit
   private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
     val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
     contents.foreach(a => {
-      val item = div(paddingLeft := "24px").render
-      list.insertBefore(item, before)
-      insertNodesRec(a, item)
+      val frame = div(`class` := "ct-d-frame").render
+      list.insertBefore(frame, before)
+      insertNodesRec(a, frame)
     })
   }
 
+  private val holdBg = {
+    val svg =
+      s"""<?xml version="1.0"?>
+         |<svg viewBox="0 0 100 100" version="1.1"
+         |  xmlns="http://www.w3.org/2000/svg">
+         |  <circle cx="50" cy="50" r="21" style="fill: #555c75;"/>
+         |</svg>
+       """.stripMargin
+    val encoded = window.btoa(svg)
+    "url(data:image/svg+xml;base64," + encoded + ")"
+  }
+
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
-    val box = div().render
-    parent.insertBefore(box, parent.firstChild)
+    val firstChild = parent.firstChild
+    val hold = a(`class` := "ct-d-hold").render
+    hold.style.background = holdBg
+    parent.insertBefore(hold, firstChild)
+    val box = div(`class` := "ct-d-box").render
+    parent.insertBefore(box, firstChild)
     createContent(root.content).attachToNode(box)
     val list = div().render
     box.appendChild(list)
@@ -305,7 +338,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   event("contextmenu", (a: MouseEvent) => {
     window.console.log(a)
     // LATER fix this??
-    preventDefault(a)
+    //preventDefault(a)
   })
 
 

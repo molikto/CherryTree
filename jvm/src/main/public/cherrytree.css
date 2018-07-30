@@ -1,30 +1,15 @@
 /** LATER how to apply them as a theme? */
 
+/** general classes **/
 
-.ct-kbd {
-    padding: .2rem .4rem;
-    font-size: 87.5%;
-    color: #333333;
-    background-color: #DDDDDD;
-    border-radius: .2rem;
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
-
-.ct-kbd2 {
-    padding: .2rem .4rem;
-    font-size: 87.5%;
-    color: #CCCCCC;
-    background-color: #444444;
-    border-radius: .2rem;
-}
-
-/* apply it on entire editor for now */
-.ct-root {
-  word-wrap: break-word;
-  white-space: pre-wrap;
-  font-family: 'Gentium Book Basic', serif, sans-serif;
-  font-size: 18px;
-}
-
 
 .ct-scroll::-webkit-scrollbar {
     width: 10px;
@@ -46,26 +31,85 @@
     background: #747D9180;
 }
 
+.ct-sans {
+  font-family: sans-serif;
+  font-size: 95%;
+}
 
 
-.ct-content {
-    margin-bottom: 0.5rem;
+/** command keys **/
+
+.ct-kbd {
+    padding: .2rem .4rem;
+    font-size: 87.5%;
+    color: #333333;
+    background-color: #DDDDDD;
+    border-radius: .2rem;
+}
+
+.ct-kbd2 {
+    padding: .2rem .4rem;
+    font-size: 87.5%;
+    color: #CCCCCC;
+    background-color: #444444;
+    border-radius: .2rem;
+}
+
+/** client view **/
+
+.ct-splitter {
+    cursor: col-resize;
+    max-width: 50%
+}
+
+/* document view */
+.ct-root {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: 'Gentium Book Basic', serif, sans-serif;
+  font-size: 18px;
+}
+
+.ct-d-frame {
+   display: flex;
+   flex-direction: row;
+   width: 100%;
+}
+
+.ct-d-hold {
+    width: 18px;
+    height: 18px;
+    margin-top: 8px;
+    background-size: auto;
+}
+
+.ct-d-box {
+  padding: 4px;
+  width: 100%
+}
+
+
+.ct-node-visual {
+    background: #58617488;
+}
+
+/**  rich view **/
+.ct-rich {
+    margin-bottom: 0rem;
+    outline: 0px solid transparent;
+}
+
+
+.ct-image {
+    verticalAlign : bottom;
 }
 
 ::selection {
     background: #d8617488;
 }
 
-.ct-code-pre {
-    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    font-size: 70%;
-    white-space: pre-wrap;
-    margin-bottom : 0px;
-}
-
-.ct-sans {
-  font-family: sans-serif;
-  font-size: 95%;
+.ct-selection {
+    background: #d8617433;
 }
 
 .ct-code {
@@ -76,39 +120,13 @@
     color: #f0c5ce;
 }
 
-.ct-node-visual {
-    background: #58617488;
-}
-
-/*
-    padding: .15rem .2rem;
-     border-radius: .15rem;
-    background: #3b404b;
-*/
-
-/* control glyph */
-.ct-cg {
-    font-style: normal;
-    color: #636e83;
-    font-weight:normal;
-}
-
-.ct-splitter {
-    cursor: col-resize;
-    max-width: 50%
-}
-
-/*
-    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    font-size: 50%;
-*/
-
 .ct-link {
    color: #268bd2;
 }
 
 .ct-latex {
    color: #abb2bf;
+    content-editable: false;
 }
 
 .ct-strong {
@@ -119,11 +137,28 @@
     text-decoration-color: #FFFFFF33;
 }
 
-.unselectable {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+/* control glyph */
+.ct-cg {
+    font-style: normal;
+    color: #636e83;
+    font-weight:normal;
+    content-editable: false;
 }
+
+
+/** source view **/
+
+.ct-code-pre {
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size: 70%;
+    white-space: pre-wrap;
+    margin-bottom : 0px;
+}
+
+
+/*
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size: 50%;
+*/
+
+

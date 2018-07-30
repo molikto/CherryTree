@@ -1,8 +1,5 @@
 ## roadmap
 
-* test if partial strong ot is possible
-* fix undo, redo
-* test in collabrative env
 * code editor integration
     * the most simple will be just open a new dialog
     * no integration of vim keybindings
@@ -21,6 +18,7 @@
 * why scrollbar not shown??
 * resizing the panel is buggy
 * main page focus problem
+* change kbd font so apple key looks good
 
 
 ## improvements

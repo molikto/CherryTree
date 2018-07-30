@@ -21,7 +21,7 @@ class SourceView(
 ) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
   // background := "#304148",
-  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next", padding := "8px").render
+  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next", padding := "4px").render
 
   private val remainingView = p(
     `class` := "ct-sans",
@@ -66,10 +66,10 @@ class SourceView(
   }
 
   override def clearMode(): Unit = {
-    dom.classList.remove("ct-node-visual")
+    dom.classList.remove("ct-selection")
   }
 
   override def initMode(): Unit = {
-    dom.classList.add("ct-node-visual")
+    dom.classList.add("ct-selection")
   }
 }

@@ -33,10 +33,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     *
     */
 
-  dom = p(`class` := "ct-content").render
-
-
-  dom.style = "outline: 0px solid transparent;"
+  dom = p(`class` := "ct-rich").render
 
 
   private var insertEmptyTextNode: raw.Text = null
@@ -86,27 +83,27 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
-        span(`class` := "ct-cg",contenteditable := "false", "*"),
+        span(`class` := "ct-cg", "*"),
         em(`class` := "ct-em", rec(c)),
-        span(`class` := "ct-cg",contenteditable := "false", "*")
+        span(`class` := "ct-cg", "*")
       )
       case Text.Strong(c) => span(
-        span(`class` := "ct-cg",contenteditable := "false", "#"),
+        span(`class` := "ct-cg", "#"),
         strong(`class` := "ct-strong", rec(c)),
-        span(`class` := "ct-cg",contenteditable := "false", "#") // LATER ** char as a single char
+        span(`class` := "ct-cg", "#") // LATER ** char as a single char
       )
       case Text.StrikeThrough(c) => span(
-        span(`class` := "ct-cg",contenteditable := "false", "-"),
+        span(`class` := "ct-cg", "-"),
         del(`class` := "ct-del", rec(c)),
-        span(`class` := "ct-cg",contenteditable := "false", "-")
+        span(`class` := "ct-cg", "-")
       )
       case Text.Link(t, b, c) => span(
-        span(`class` := "ct-cg",contenteditable := "false", "["),
+        span(`class` := "ct-cg", "["),
         span(`class` := "ct-link", rec(t), href := b.str),
-        span(`class` := "ct-cg",contenteditable := "false", "]")
+        span(`class` := "ct-cg", "]")
       )
       case Text.Image(b, c) =>
-        img(verticalAlign := "bottom", src := b.str)
+        img(`class` := "ct-image", src := b.str)
       case Text.LaTeX(c) =>
         val a = span().render
         try {
@@ -114,16 +111,16 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         } catch {
           case a: Throwable => a.printStackTrace()
         }
-        span(contenteditable := "false", `class` := "ct-latex",
+        span(`class` := "ct-latex",
           span(evilChar), // don't fuck with my cursor!!!
           a,
           span(evilChar)
         )
       case Text.Code(c) =>
         span(
-          span(`class` := "ct-cg", contenteditable := "false", "`"),
+          span(`class` := "ct-cg", "`"),
           code(`class` := "ct-code", c.str),
-          span(`class` := "ct-cg", contenteditable := "false", "`")
+          span(`class` := "ct-cg", "`")
         )
       case Text.Plain(c) => stringFrag(c.str)
     }
