@@ -83,7 +83,7 @@ trait Server extends Api {
   override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
     checkWriteStateConsistency(authentication, clientVersion).map { ws =>
       try {
-        if (debugModel) {
+        if (debug_model) {
           assert(debugClientDoc == debugHistoryDocuments(clientVersion))
         }
         val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
@@ -93,7 +93,7 @@ trait Server extends Api {
         if (transformed.nonEmpty) {
           debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
         }
-        if (debugModel) {
+        if (debug_model) {
           for (t <- transformed) {
             debugTopDocument = operation.Node.apply(t, debugTopDocument)
             debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument

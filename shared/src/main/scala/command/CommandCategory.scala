@@ -18,6 +18,10 @@ class CommandCategory(val name: String) extends Settings {
     override def category: String = name
   }
 
+  abstract class TextualCommand extends Command {
+    override def defaultKeys: Seq[KeySeq] = Seq.empty
+  }
+
 
   trait NeedsCharCommand extends Command {
     override def needsChar: Boolean = true
@@ -41,7 +45,6 @@ class CommandCategory(val name: String) extends Settings {
 
   trait OverrideCommand extends Command {
     def defaultKeys: Seq[KeySeq] = Seq.empty
-    override def shownInCommandList: Boolean = false
   }
 
 }

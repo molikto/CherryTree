@@ -9,11 +9,11 @@ package object model extends Picklers {
 
 
   var oldDocVersion = false
-  var debugView = true
-  var debugModel = false
+  var debug_view = true
+  var debug_model = false
 
-  var debugRenderEmptyInsertionPointAsBox = false
-  var debugDisableFocusHandling = false
+  var debug_RenderEmptyInsertionPointAsBox = false
+  var debug_DisableFocusHandling = false
 
   var isMac: Boolean = false
 

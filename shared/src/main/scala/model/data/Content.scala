@@ -47,6 +47,11 @@ object Content extends DataObject[Content] {
 
     override def isEmpty: Boolean = unicode.isEmpty
   }
+
+  object Code {
+    val empty: Content = Code(Unicode.empty, "")
+  }
+
   case class Rich(content: data.Rich) extends Content {
     def size: Int = content.size
 

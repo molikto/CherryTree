@@ -21,6 +21,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     `class` := "cherrytree",
     height := "100%",
     display :="flex",
+    position := "relative",
     backgroundColor := theme.contentBackground,
     flexDirection := "row",
     overflow := "hidden").render
@@ -49,9 +50,18 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   new DocumentView(client, client).attachToNode(rightPanel)
 
+  private val commandMenu = {
+    val a = new CommandMenu(client)
+    a.attachToNode(dom)
+    a
+  }
+
+
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)
+    case Client.ViewMessage.ShowCommandMenu() =>
+      commandMenu.showAt(500, 500)
   })
 
 }

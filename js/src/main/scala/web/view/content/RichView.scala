@@ -496,7 +496,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
-      if (debugView) println(s"mode change from  $previousMode to $i")
+      if (debug_view) println(s"mode change from  $previousMode to $i")
       if (previousMode == 0) {
         clearInsertionMode()
       } else if (previousMode == 1) {

@@ -4,7 +4,7 @@ import client.Client
 import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.SpecialChar
+import model.data.{SpecialChar, Unicode}
 import model.range.IntRange
 
 import scala.util.{Success, Try}
@@ -59,13 +59,28 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
 
-  val commandSearch = new Command {
-    override protected def available(a: DocState): Boolean = a.isNormal || a.isVisual
-    override val description: String = "show contextual command menu"
+  val commandMenu = new Command {
+    override protected def available(a: DocState): Boolean = true
+    override def emptyAsFalseInInsertMode: Boolean = true
+
+    override val description: String = "show dropdown command menu"
     override def defaultKeys: Seq[KeySeq] = Seq(":")
 
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      val av = if (a.isInsert) {
+        key match {
+          case None => true
+          case Some(Seq(k)) => k.meta || k.control
+          case _ => false
+        }
+      } else {
+        true
+      }
+      if (av) {
+        DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
+      } else {
+        DocTransaction.empty
+      }
     }
   }
 

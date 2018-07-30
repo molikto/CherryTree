@@ -35,9 +35,10 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
     new defaults.NodeFold(),
+    new defaults.NodeMisc(),
     new defaults.YankPaste(),
     new defaults.UndoRedo(),
-    new defaults.Scroll()
+    new defaults.Scroll(),
   )
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 
@@ -250,7 +251,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       case Some(Part.UnidentifiedCommand(_, _)) =>
         parseCommand(key)
       case _ =>
-        if (state.isRichInserting) {
+        if (state.isRichInsert) {
           parseCommand(key)
           buffer.headOption match {
             case Some(Part.IdentifiedCommand(_, _, _)) =>
@@ -277,7 +278,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     } else {
       val res = tryComplete()
       commandBufferUpdates_.onNext(buffer)
-      res || !state.isRichInserting
+      res || !state.isRichInsert
     }
   }
 

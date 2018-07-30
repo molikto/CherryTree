@@ -21,8 +21,20 @@ case class DocState(
 
   def isRich(n: cursor.Node): Boolean = node(n).content.isRich
 
-  def isRichInserting: Boolean = mode match {
+  def isInsert: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert(_))) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside)) => true
+    case _ => false
+  }
+
+  def isRichInsert: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert(_))) => true
+    case _ => false
+  }
+
+  def isRichNormalOrVisual: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => true
     case _ => false
   }
 

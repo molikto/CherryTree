@@ -7,8 +7,6 @@ import model.data.Unicode
 import model.range.IntRange
 
 abstract class Command {
-
-  def shownInCommandList: Boolean = true
   def category: String
   val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty

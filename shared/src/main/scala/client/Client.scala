@@ -41,6 +41,7 @@ object Client {
   object ViewMessage {
     case class VisitUrl(url: String) extends ViewMessage
     case class ShowCommandMenu() extends ViewMessage
+    case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
   }
 }
 
@@ -77,9 +78,6 @@ class Client(
 
   def viewMessages: Observable[Client.ViewMessage] = viewMessages_
 
-  def publishViewMessage(a: Client.ViewMessage): Unit = {
-    viewMessages_.onNext(a)
-  }
 
 
   private var subscription: Cancelable = null
@@ -164,7 +162,7 @@ class Client(
     val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
-    if (debugView) {
+    if (debug_view) {
       //println("client update inner root: " + res.root)
 //      println("client update view transactions: " + viewFrom)
 //      println("client update mode: " + a.mode)
@@ -180,7 +178,7 @@ class Client(
     trackUndoerChange(from, ty, modeBefore, docBefore)
     stateUpdates_.onNext(res)
     updatingState = false
-    if (state_.isRichInserting) {
+    if (state_.isRichInsert) {
       if (insertingFlusher == null) {
         insertingFlusher = Observable.interval(100.millis).doOnNext(_ => flush()).subscribe()
       }
@@ -246,7 +244,7 @@ class Client(
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debugModel) committed else data.Node.debug_empty).call(), succsss => {
+          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
             updateFromServer(succsss)
           })
         case _ =>
@@ -430,8 +428,11 @@ class Client(
       case None =>
         state.mode.flatMap(a => operation.Node.transform(changes, a))
     }
+    for (m <- update.viewMessagesBefore) {
+      viewMessages_.onNext(m)
+    }
     if (!update.nonTransactional) {
-      if (debugView) {
+      if (debug_view) {
         println(update)
       }
       val (res, ch) = applyFolds(state.foldedNodes, update.unfoldBefore, update.toggleBefore, changes)

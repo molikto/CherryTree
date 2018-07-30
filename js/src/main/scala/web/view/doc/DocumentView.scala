@@ -41,7 +41,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
     a.relatedTarget match {
       case h: HTMLElement if dom.contains(h) =>
       case _ =>
-        if (!model.debugDisableFocusHandling) {
+        if (!model.debug_DisableFocusHandling) {
           if (!duringStateUpdate) {
             isFocusedOut = true
             updateMode(None, viewUpdated = false)
@@ -51,7 +51,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   })
 
   event("focusin", (a: FocusEvent) => {
-    if (!model.debugDisableFocusHandling) {
+    if (!model.debug_DisableFocusHandling) {
       if (!duringStateUpdate && isFocusedOut) {
         isFocusedOut = false
         updateMode(client.state.mode, viewUpdated = false)

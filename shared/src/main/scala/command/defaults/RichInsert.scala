@@ -13,7 +13,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
   trait EditCommand extends Command  {
     def edit(content: Rich,a: Int): Seq[model.operation.Rich]
-    override def available(a: DocState): Boolean = a.isRichInserting
+    override def available(a: DocState): Boolean = a.isRichInsert
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       val res = model.operation.Node.rich(n, edit(content, insert.pos))
@@ -37,7 +37,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override val description: String = "delete word before cursor"
     override val hardcodeKeys: Seq[KeySeq] = Seq(Alt + Backspace: KeySeq, Ctrl + "w")
 
-    override def available(a: DocState): Boolean = a.isRichInserting
+    override def available(a: DocState): Boolean = a.isRichInsert
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cursor, content, insert) = a.asRichInsert
       val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
@@ -62,7 +62,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override val description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
-    override def available(a: DocState): Boolean = a.isRichInserting
+    override def available(a: DocState): Boolean = a.isRichInsert
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
       if (insert.pos == rich.size) {
@@ -84,7 +84,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def emptyAsFalseInInsertMode: Boolean = true
 
-    override def available(a: DocState): Boolean = a.isRichInserting && {
+    override def available(a: DocState): Boolean = a.isRichInsert && {
       val (node, rich, insert) = a.asRichInsert
       if (deli.codedNonEmpty) {
         if (rich.insideCoded(insert.pos)) {
@@ -122,7 +122,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }).toMap
 
   abstract class InsertMovementCommand extends Command {
-    override def available(a: DocState): Boolean = a.isRichInserting
+    override def available(a: DocState): Boolean = a.isRichInsert
     def move(rich: Rich, i: Int): Int
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichInsert match {
       case (node, rich, insert) =>

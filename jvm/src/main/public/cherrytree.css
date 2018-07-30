@@ -83,6 +83,7 @@
 .ct-d-hold {
     width: 18px;
     height: 18px;
+    margin-left: 4px;
     margin-top: 9px;
     background-size: auto;
 }
