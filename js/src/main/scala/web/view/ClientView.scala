@@ -59,7 +59,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     a
   }
 
-
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)

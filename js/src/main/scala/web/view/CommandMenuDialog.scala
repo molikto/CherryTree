@@ -16,8 +16,9 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
 
   private val list = div(
     maxWidth := "560px",
-    maxHeight := "480px",
-    overflowY := "overlay",
+    maxHeight := "280px",
+    overflowY := "scroll",
+    paddingRight := "-10px",
     color := "#cccccc",
     `class` := "ct-scroll"
   ).render
@@ -77,7 +78,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
               paddingLeft := "5px",
               if (c._2 < 10)
                 span(
-                  minWidth := "18px",
+                  minWidth := "18px",paddingBottom := "2px",
                   tag("kbd")(`class` := "ct-kbd-small", c._2),
                   " ")
               else span(
@@ -112,9 +113,25 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
   private def ensureDismiss(): Unit = {
     if (!dismissed) {
       available = Seq.empty
+      marked = null
       dom.style.display = "none"
       search.textContent = ""
       onDismiss()
+    }
+  }
+
+  private def mark(i: Int): Unit = {
+    val oldIndex = available.indexOf(marked)
+    val newIndex = ((oldIndex + i) min available.size - 1) max 0
+    if (oldIndex != newIndex) {
+      marked = available(newIndex)
+      val old = list.childNodes(oldIndex).asInstanceOf[HTMLElement]
+      val n = list.childNodes(newIndex).asInstanceOf[HTMLElement]
+      old.classList.remove("ct-selected")
+      old.classList.add("ct-not-selected")
+      n.classList.add("ct-selected")
+      n.classList.remove("ct-not-selected")
+      n.scrollIntoView(false)
     }
   }
 
@@ -123,6 +140,12 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
       case Some(Key.Escape) =>
         ev.preventDefault()
         ensureDismiss()
+      case Some(Key.Down) =>
+        ev.preventDefault()
+        mark(+1)
+      case Some(Key.Up) =>
+        ev.preventDefault()
+        mark(-1)
       case _ =>
         if (term.isEmpty) {
           val nt = ev.key

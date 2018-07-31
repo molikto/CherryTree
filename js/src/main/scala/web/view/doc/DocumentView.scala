@@ -39,32 +39,27 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
 
   event("focusout", (a: FocusEvent) => {
-//    println("focus out")
+    println("focus out")
     a.relatedTarget match {
       case h: HTMLElement if dom.contains(h) =>
       case _ =>
-        if (!model.debug_DisableFocusHandling) {
-          if (!duringStateUpdate) {
-            isFocusedOut = true
-            updateMode(None, viewUpdated = false)
-          }
+        if (!duringStateUpdate) {
+          isFocusedOut = true
+          updateMode(None, false, onlyChangeFocus = true)
         }
     }
   })
 
   override def focus(): Unit = {
     isFocusedOut = false
-    updateMode(client.state.mode, viewUpdated = false)
+    updateMode(client.state.mode, false, onlyChangeFocus = true)
   }
 
 
   event("focusin", (a: FocusEvent) => {
-//    println("focus in")
-    if (!model.debug_DisableFocusHandling) {
-      if (!duringStateUpdate && isFocusedOut) {
-        isFocusedOut = false
-        updateMode(client.state.mode, viewUpdated = false)
-      }
+    if (!duringStateUpdate && isFocusedOut) {
+      isFocusedOut = false
+      updateMode(client.state.mode, false, onlyChangeFocus = true)
     }
   })
 
@@ -105,11 +100,11 @@ class DocumentView(private val client: DocInterface, override protected val edit
   }
 
 
-//  window.setInterval(() => {
-//    window.console.log(document.activeElement)
-//    window.console.log(noEditable.contentEditable)
-//    window.console.log(currentEditable)
-//  }, 3000)
+  window.setInterval(() => {
+    window.console.log(document.activeElement)
+    window.console.log(noEditable.contentEditable)
+    window.console.log(currentEditable)
+  }, 3000)
   /**
     *
     * node list

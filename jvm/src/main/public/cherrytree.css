@@ -21,7 +21,7 @@
 }
 
 /* Handle */
-.ct-scroll:-webkit-scrollbar-thumb {
+.ct-scroll::-webkit-scrollbar-thumb {
     background: #5A637580;
 }
 
@@ -61,6 +61,7 @@
   width: 100%;
   padding-left: 22px;
   padding-right: 22px;
+  margin-right: -10px;
   padding-top: 4px;
   padding-bottom: 4px;
 }
@@ -166,8 +167,17 @@
     background: #d8617488;
 }
 
+::selection:window-inactive {
+  background: #b97e8888;
+}
+
+
 .ct-selection {
     background: #d8617433;
+}
+
+.ct-selection-window-inactive {
+    background: #b97e8833;
 }
 
 .ct-code {

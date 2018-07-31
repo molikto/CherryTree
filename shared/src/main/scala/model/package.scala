@@ -13,7 +13,6 @@ package object model extends Picklers {
   var debug_model = false
 
   var debug_RenderEmptyInsertionPointAsBox = false
-  var debug_DisableFocusHandling = false
 
   var isMac: Boolean = false
 
