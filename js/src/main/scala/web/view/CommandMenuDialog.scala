@@ -91,10 +91,11 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     }
   }
 
-  def showAt(x: Float, y: Float): Unit = {
+  def showAt(x: Double, y: Double): Unit = {
     dismissed = false
-    menu.style.left = x.toString + "px"
-    menu.style.top = y.toString + "px"
+    val bounding = dom.getBoundingClientRect()
+    menu.style.left = (x - bounding.left).toString + "px"
+    menu.style.top = (y - bounding.top).toString + "px"
     dom.style.display = "block"
     search.textContent = ""
     search.focus()

@@ -13,7 +13,11 @@ import web.view._
 
 import scala.collection.mutable.ArrayBuffer
 
-class DocumentView(private val client: DocInterface, override protected val editor: EditorInterface) extends EditorView {
+class DocumentView(
+  private val client: DocInterface,
+  override protected val editor: EditorInterface,
+  private val commandMenu: CommandMenuDialog
+) extends EditorView {
 
   private val rootFrame = div(
     `class` := "ct-root ct-d-frame",
@@ -22,7 +26,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   dom = div(
-    `class` := "ct-scroll text-selectable",
+    `class` := "ct-scroll",
     width := "100%",
     height := "100%",
     paddingLeft := "36px",
@@ -362,30 +366,28 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
 
   event("mousedown", (a: MouseEvent) => {
-    if (!isFocusedOut) preventDefault(a)
-    else window.console.log(a)
+    preventDefault(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    if (!isFocusedOut) preventDefault(a)
-    else window.console.log(a)
+    preventDefault(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    if (!isFocusedOut) preventDefault(a)
-    else window.console.log(a)
+    preventDefault(a)
+    focus() // TODO mark correct selection
   })
 
   event("dblclick", (a: MouseEvent) => {
-    if (!isFocusedOut) preventDefault(a)
-    else window.console.log(a)
+    preventDefault(a)
+    focus() // TODO mark correct selection
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    window.console.log(a)
-    // LATER fix this??
-    //preventDefault(a)
+    preventDefault(a)
+    focus() // TODO mark correct selection
+    commandMenu.showAt(a.clientX, a.clientY)
   })
 
 

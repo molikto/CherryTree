@@ -47,6 +47,7 @@ class BottomBarView(val client: Client) extends View {
     paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
+    `class` := "unselectable",
     height := size,
     backgroundColor := theme.bottomBarBackground,
     flexDirection := "row",
