@@ -39,36 +39,40 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
 
   event("focusout", (a: FocusEvent) => {
-    println("focus out")
     a.relatedTarget match {
       case h: HTMLElement if dom.contains(h) =>
       case _ =>
         if (!duringStateUpdate) {
           isFocusedOut = true
-          updateMode(None, false, onlyChangeFocus = true)
+          dom.classList.add("ct-window-inactive")
         }
     }
   })
 
   override def focus(): Unit = {
     isFocusedOut = false
-    updateMode(client.state.mode, false, onlyChangeFocus = true)
+    dom.classList.remove("ct-window-inactive")
+    if (document.activeElement != currentEditable) {
+      if (currentEditable != noEditable) {
+        currentEditable = null
+        updateMode(client.state.mode, viewUpdated = false)
+      } else {
+        noEditable.focus()
+      }
+    }
   }
 
 
   event("focusin", (a: FocusEvent) => {
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
-      updateMode(client.state.mode, false, onlyChangeFocus = true)
+      dom.classList.remove("ct-window-inactive")
     }
   })
 
 
   override def markEditable(dom: HTMLElement): Unit = {
     if (currentEditable == dom) return
-    if (currentEditable != noEditable) {
-      throw new IllegalArgumentException("You shouldn't mark editable if other is also editable")
-    }
     dom.contentEditable = "true"
     noEditable.contentEditable = "false"
     currentEditable = dom
@@ -81,9 +85,6 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
   override def unmarkEditable(dom: HTMLElement): Unit = {
     if (currentEditable == noEditable) return
-    if (currentEditable != dom) {
-      throw new IllegalArgumentException("You shouldn't unmark editable if you are not the one")
-    }
     dom.contentEditable = "false"
     currentEditable = noEditable
     noEditable.contentEditable = "true"
@@ -99,12 +100,6 @@ class DocumentView(private val client: DocInterface, override protected val edit
     }
   }
 
-
-  window.setInterval(() => {
-    window.console.log(document.activeElement)
-    window.console.log(noEditable.contentEditable)
-    window.console.log(currentEditable)
-  }, 3000)
   /**
     *
     * node list
@@ -150,6 +145,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
+  private var previousNodeMove: Element = null
 
   private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
     val newVisual = new ArrayBuffer[Element]()
@@ -163,6 +159,9 @@ class DocumentView(private val client: DocInterface, override protected val edit
     (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
     (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
     previousNodeVisual = newVisual
+    if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
+    previousNodeMove = boxAt(v.move)
+    previousNodeMove.classList.add("ct-node-visual-move")
   }
 
   private def clearNodeVisual(): Unit = {
@@ -170,6 +169,8 @@ class DocumentView(private val client: DocInterface, override protected val edit
       c.classList.remove("ct-node-visual")
     }
     previousNodeVisual = ArrayBuffer.empty
+    if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
+    previousNodeMove = null
   }
 
 

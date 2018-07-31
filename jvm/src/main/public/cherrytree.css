@@ -151,6 +151,20 @@
     background: #58617488;
 }
 
+.ct-window-inactive .ct-node-visual {
+    background: #58617466;
+}
+
+
+
+.ct-node-visual-move {
+    outline: 5px solid #d8617488;
+}
+
+.ct-window-inactive .ct-node-visual-move {
+    outline: 5px solid #d8617466;
+}
+
 /**  rich view **/
 .ct-rich {
     margin-bottom: 0rem;
@@ -168,7 +182,7 @@
 }
 
 ::selection:window-inactive {
-  background: #b97e8888;
+  background: #d8617466;
 }
 
 
@@ -176,8 +190,9 @@
     background: #d8617433;
 }
 
-.ct-selection-window-inactive {
-    background: #b97e8833;
+
+.ct-window-inactive .ct-selection {
+    background: #d8617422;
 }
 
 .ct-code {
