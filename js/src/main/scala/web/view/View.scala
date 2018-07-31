@@ -100,6 +100,12 @@ abstract class View {
     dom.focus()
   }
 
+  def scrollToTop(): Unit =
+    dom.scrollTop = 0
+
+  def scrollToBottom(): Unit =
+  dom.scrollTop = dom.scrollHeight - dom.clientHeight
+
   def preventDefault(a: Event,notCancelable: () => Unit = () => console.log("Not cancelable event not handled")): Unit  = {
     if (a.cancelable) {
       a.preventDefault()

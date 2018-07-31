@@ -173,10 +173,17 @@ class DocumentView(
     (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
     (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
     previousNodeVisual = newVisual
-    if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
-    previousNodeMove = boxAt(v.move)
-    previousNodeMove.classList.add("ct-node-visual-move")
-    scrollInToViewIfNotVisible(previousNodeMove, dom)
+    val newMove = boxAt(v.move)
+    if (newMove != previousNodeMove) {
+      if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
+      previousNodeMove = newMove
+      previousNodeMove.classList.add("ct-node-visual-move")
+      if (v.move == model.cursor.Node.root) {
+        scrollToTop()
+      } else {
+        scrollInToViewIfNotVisible(previousNodeMove, dom)
+      }
+    }
   }
 
   private def clearNodeVisual(): Unit = {
