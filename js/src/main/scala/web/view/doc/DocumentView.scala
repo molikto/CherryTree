@@ -145,7 +145,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
-  private var previousNodeMove: Element = null
+  private var previousNodeMove: HTMLElement = null
 
   private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
     val newVisual = new ArrayBuffer[Element]()
@@ -162,6 +162,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
     if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
     previousNodeMove = boxAt(v.move)
     previousNodeMove.classList.add("ct-node-visual-move")
+    scrollInToViewIfNotVisible(previousNodeMove, dom)
   }
 
   private def clearNodeVisual(): Unit = {

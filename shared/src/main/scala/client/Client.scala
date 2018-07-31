@@ -42,6 +42,8 @@ object Client {
     case class VisitUrl(url: String) extends ViewMessage
     case class ShowCommandMenu() extends ViewMessage
     case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
+    case object ScrollToTop extends ViewMessage
+    case object ScrollToBottom extends ViewMessage
   }
 }
 

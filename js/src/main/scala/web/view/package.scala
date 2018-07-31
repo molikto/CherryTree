@@ -72,10 +72,17 @@ package object view {
     "url(data:image/svg+xml;base64," + encoded + ")"
   }
 
-  def scrollInToViewIfNotVisible(a: HTMLElement, scroll: HTMLElement) = {
-    if (a.offsetTop >= scroll.scrollTop && a.offsetTop + a.clientHeight <= scroll.scrollTop + scroll.clientHeight) {
-    } else {
-      a.scrollIntoView(false)
+  def contains(p: ClientRect, c: ClientRect): Boolean = {
+    p.top <= c.top && p.left <= c.left && p.right >= c.right && p.bottom >= c.bottom
+  }
+
+  def scrollInToViewIfNotVisible(a: HTMLElement, scroll: HTMLElement): Unit = {
+    val p = scroll.getBoundingClientRect()
+    val c = a.getBoundingClientRect()
+    if (c.top < p.top) {
+      scroll.scrollTop = scroll.scrollTop - (p.top - c.top)
+    } else if (c.bottom > p.bottom) {
+      scroll.scrollTop = scroll.scrollTop + (c.bottom - p.bottom)
     }
   }
 }

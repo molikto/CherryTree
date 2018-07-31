@@ -1,6 +1,7 @@
 package command.defaults
 
 import client.Client
+import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -16,6 +17,7 @@ class NodeMotion extends CommandCategory("move among notes") {
   abstract class NodeMotionCommand extends Command {
     override def repeatable: Boolean = true
     def move(data: DocState, a: cursor.Node): Option[cursor.Node]
+    def message: Option[ViewMessage] = None
 
     override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
@@ -41,7 +43,7 @@ class NodeMotion extends CommandCategory("move among notes") {
           }
         }
         case None => throw new MatchError("Not allowed")
-      }))
+      }), viewMessagesBefore = message.toSeq)
     }
   }
   val up: Command = new NodeMotionCommand {
@@ -76,11 +78,13 @@ class NodeMotion extends CommandCategory("move among notes") {
     override val description: String = "move to top of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("gg")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
+    override def message: Option[ViewMessage] = Some(ViewMessage.ScrollToTop)
   }
   val visibleEnd: Command = new NodeMotionCommand {
     override val description: String = "move to bottom of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("G")
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
+    override def message: Option[ViewMessage] = Some(ViewMessage.ScrollToBottom)
   }
 
   // not implemented for not understand what should it behave

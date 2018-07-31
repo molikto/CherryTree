@@ -51,7 +51,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   new BottomBarView(client).attachToNode(rightPanel)
 
-  val docView = new DocumentView(client, client).attachToNode(rightPanel)
+  val docView = new DocumentView(client, client).attachToNode(rightPanel).asInstanceOf[DocumentView]
 
   private val commandMenu = {
     val a = new CommandMenuDialog(client, _ => docView.focus())
@@ -64,6 +64,10 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
       commandMenu.showAt(500, 150)
+    case Client.ViewMessage.ScrollToTop =>
+      docView.dom.scrollTop = 0
+    case Client.ViewMessage.ScrollToBottom =>
+      docView.dom.scrollTop = docView.dom.scrollHeight - docView.dom.clientHeight
   })
 
 }
