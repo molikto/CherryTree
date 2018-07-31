@@ -11,6 +11,15 @@
     user-select: none;
 }
 
+.text-selectable {
+    -webkit-touch-callout: text;
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
 .ct-scroll::-webkit-scrollbar {
     width: 10px;
 }

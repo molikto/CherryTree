@@ -14,7 +14,7 @@ class CommandListView(val client: Client) extends View {
     height := "100%",
     color := "#cccccc",
     overflowY := "scroll",
-    `class` := "ct-scroll unselectable",
+    `class` := "ct-scroll",
     padding := "24px",
     background := theme.bottomBarBackground
   ).render

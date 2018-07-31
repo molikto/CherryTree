@@ -22,7 +22,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
 
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   dom = div(
-    `class` := "ct-scroll",
+    `class` := "ct-scroll text-selectable",
     width := "100%",
     height := "100%",
     paddingLeft := "36px",
