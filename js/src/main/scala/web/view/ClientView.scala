@@ -64,7 +64,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
-      commandMenu.showAt(500, 150)
+      commandMenu.showAt(docView.selectionRect)
     case Client.ViewMessage.ScrollToTop =>
       docView.scrollToTop()
     case Client.ViewMessage.ScrollToBottom =>

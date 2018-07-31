@@ -7,6 +7,7 @@ import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
+import util.Rect
 import view.EditorInterface
 import web.view.doc.DocumentView
 import web.view.{EmptyStr, removeAllChild, theme}
@@ -73,5 +74,9 @@ class SourceView(
 
   override def initMode(): Unit = {
     dom.classList.add("ct-selection")
+  }
+
+  override def selectionRect: Rect = {
+    toRect(dom.getBoundingClientRect())
   }
 }

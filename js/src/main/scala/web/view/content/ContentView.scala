@@ -1,6 +1,7 @@
 package web.view.content
 
 import model._
+import util.Rect
 import web.view.View
 
 object ContentView {
@@ -15,4 +16,6 @@ trait ContentView[T <: data.Content, O <: model.operation.Content, M <: model.mo
   def clearMode(): Unit
 
   def initMode(): Unit
+
+  def selectionRect: Rect
 }

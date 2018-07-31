@@ -7,6 +7,7 @@ import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
+import util.Rect
 import view.EditorInterface
 import web.view.doc.DocumentView
 import web.view.{EmptyStr, removeAllChild, theme}
@@ -271,8 +272,8 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       ss.special) {
       val isStart = ss.delimitationStart
       val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
-      val a = span.childNodes(if (isStart) 0 else 2).childNodes(0)
-      (createRange(a, 0, a, 1), span)
+      val (s, e) = if (isStart) (0, 1) else (2, 3)
+      (createRange(span, s, span, e), span) // change this might causes problems when focus out then focus in...
     } else {
       val start = if (ss.isInstanceOf[Atom.PlainGrapheme]) {
         val text = domAt(ss.nodeCursor)
@@ -469,6 +470,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
+  override def selectionRect: Rect = {
+    val range = window.getSelection().getRangeAt(0)
+    web.view.toRect(range.getBoundingClientRect())
+  }
+
 
   private def updateNormalMode(r: IntRange): Unit = {
     val (range, light) = nonEmptySelectionToDomRange(r)
@@ -553,4 +559,5 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     documentView.unmarkEditableIfEditable(dom)
     super.destroy()
   }
+
 }

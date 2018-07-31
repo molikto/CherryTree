@@ -5,10 +5,11 @@ import doc.{DocInterface, DocState}
 import model.data.Content
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
-import org.scalajs.dom.{html, window, document}
+import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
+import util.Rect
 import view.EditorInterface
-import web.view.content.{SourceView, ContentView, RichView}
+import web.view.content.{ContentView, RichView, SourceView}
 import web.view._
 
 import scala.collection.mutable.ArrayBuffer
@@ -18,6 +19,7 @@ class DocumentView(
   override protected val editor: EditorInterface,
   private val commandMenu: CommandMenuDialog
 ) extends EditorView {
+
 
   private val rootFrame = div(
     `class` := "ct-root ct-d-frame",
@@ -276,6 +278,18 @@ class DocumentView(
     }
   }
 
+
+  def selectionRect: Rect = {
+    if (focusContent != null) {
+      focusContent.selectionRect
+    } else if (previousNodeMove != null) {
+      toRect(previousNodeMove.getBoundingClientRect())
+    } else {
+      toRect(dom.getBoundingClientRect())
+    }
+  }
+
+
   private def updateMode(mm: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
     duringStateUpdate = true
     val m = if (isFocusedOut) None else mm
@@ -394,7 +408,7 @@ class DocumentView(
   event("contextmenu", (a: MouseEvent) => {
     preventDefault(a)
     focus() // TODO mark correct selection
-    commandMenu.showAt(a.clientX, a.clientY)
+    commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
   })
 
 

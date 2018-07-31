@@ -5,6 +5,7 @@ import command.Key.KeySeq
 import org.scalajs.dom
 import org.scalajs.dom.raw.{HTMLDivElement, HTMLElement}
 import org.scalajs.dom._
+import util.Rect
 
 import scala.scalajs.js
 
@@ -84,5 +85,9 @@ package object view {
     } else if (c.bottom > p.bottom) {
       scroll.scrollTop = scroll.scrollTop + ((c.bottom - p.bottom) min (c.top - p.top))
     }
+  }
+
+  def toRect(rect: ClientRect): util.Rect = {
+    Rect(rect.left, rect.top, rect.width, rect.height)
   }
 }

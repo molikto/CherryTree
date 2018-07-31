@@ -5,6 +5,7 @@ import command.Key
 import org.scalajs.dom.raw._
 import org.scalajs.dom.window
 import scalatags.JsDom.all._
+import util.Rect
 import web.view.doc.DocumentView
 
 class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends View {
@@ -91,11 +92,17 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     }
   }
 
-  def showAt(x: Double, y: Double): Unit = {
+  def whereToShow(bounding: Rect, rec: Rect) = {
+
+  }
+
+  def showAt(rect: Rect): Unit = {
     dismissed = false
-    val bounding = dom.getBoundingClientRect()
-    menu.style.left = (x - bounding.left).toString + "px"
-    menu.style.top = (y - bounding.top).toString + "px"
+    val bounding = toRect(dom.getBoundingClientRect())
+    val rec = rect.moveBy(-bounding.left, -bounding.top)
+    //whereToShow(bounding, rec)
+    menu.style.left = rec.left.toString + "px"
+    menu.style.top = rec.bottom.toString + "px"
     dom.style.display = "block"
     search.textContent = ""
     search.focus()
@@ -141,6 +148,11 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
       case Some(Key.Escape) =>
         ev.preventDefault()
         ensureDismiss()
+      case Some(Key.Enter) =>
+        ev.preventDefault()
+        if (marked != null) {
+          client.runTextual(marked)
+        }
       case Some(Key.Down) =>
         ev.preventDefault()
         mark(+1)
