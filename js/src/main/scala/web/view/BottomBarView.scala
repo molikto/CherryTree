@@ -22,7 +22,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class BottomBarView(val client: Client) extends View {
+class BottomBarView(val client: Client) extends UnselectableView  {
 
 
   val size = "24px"
@@ -47,7 +47,6 @@ class BottomBarView(val client: Client) extends View {
     paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
-    `class` := "unselectable",
     height := size,
     backgroundColor := theme.bottomBarBackground,
     flexDirection := "row",

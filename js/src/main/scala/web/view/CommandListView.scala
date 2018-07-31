@@ -5,7 +5,7 @@ import client.Client
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
-class CommandListView(val client: Client) extends View {
+class CommandListView(val client: Client) extends UnselectableView  {
 
 
   dom = div(
@@ -14,7 +14,7 @@ class CommandListView(val client: Client) extends View {
     height := "100%",
     color := "#cccccc",
     overflowY := "scroll",
-    `class` := "ct-scroll unselectable",
+    `class` := "ct-scroll",
     padding := "24px",
     background := theme.bottomBarBackground
   ).render
