@@ -5,7 +5,7 @@ import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Atom, SpecialChar}
-import model.{mode, operation}
+import model.{data, mode, operation}
 import model.range.IntRange
 
 class RichVisual extends CommandCategory("text visual mode") {
@@ -39,38 +39,69 @@ class RichVisual extends CommandCategory("text visual mode") {
   }
 
   abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
-    override def available(a: DocState): Boolean = a.isRichVisual
+    override def available(a: DocState): Boolean = a.isRichVisual || {
+      if (a.isNodeVisual) {
+        val v = a.asNodeVisual
+        if (v.fix == v.move) {
+          val node = a.node(v.fix)
+          node.content.isRich && node.childs.isEmpty
+        } else {
+          false
+        }
+      } else {
+        false
+      }
+    }
   }
 
   SpecialChar.nonCodedSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
-      case (cursor, rich, visual) =>
-        val r = visual.merged
-        val after = rich.after(r.start)
-        if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
-          val ret = if (visual.fix.start > visual.move.start) {
-            mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.fix)
-          } else {
-            mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
-          }
-          DocTransaction(Seq(operation.Node.Content(cursor,
-            operation.Content.Rich(operation.Rich.unwrap(r.start, after.text.asDelimited)))),
-            Some(a.copyContentMode(ret)))
-        } else {
-          val soc = rich.singleSpecials(r).map(_.range)
-          val remaining = r.minusOrderedInside(soc)
-          val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
-          val fakePoints = if (visual.fix.start <= visual.move.start) {
-            mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
-          } else {
-            mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
-          }
-          DocTransaction(Seq(operation.Node.Content(cursor,
-            operation.Content.Rich(operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli)))),
-            Some(a.copyContentMode(fakePoints)))
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      if (a.isRichVisual) {
+        a.asRichVisual match {
+          case (cursor, rich, visual) =>
+            val r = visual.merged
+            val after = rich.after(r.start)
+            if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
+              val ret = if (visual.fix.start > visual.move.start) {
+                mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.fix)
+              } else {
+                mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
+              }
+              DocTransaction(Seq(operation.Node.Content(cursor,
+                operation.Content.Rich(operation.Rich.unwrap(r.start, after.text.asDelimited)))),
+                Some(a.copyContentMode(ret)))
+            } else {
+              val soc = rich.singleSpecials(r).map(_.range)
+              val remaining = r.minusOrderedInside(soc)
+              val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
+              val fakePoints = if (visual.fix.start <= visual.move.start) {
+                mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
+              } else {
+                mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
+              }
+              DocTransaction(Seq(operation.Node.rich(cursor,
+                operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
+                Some(a.copyContentMode(fakePoints)))
+            }
         }
-    }
+      } else if (a.isNodeVisual) {
+        val v = a.asNodeVisual
+        if (v.fix == v.move) {
+          val node = a.node(v.fix)
+          if (node.content.isRich && node.childs.isEmpty) {
+            val rich = node.content.asInstanceOf[data.Content.Rich].content
+            if (rich.text.size == 1 && rich.text.head.isDelimited && rich.text.head.asDelimited.delimitation == deli) {
+              return DocTransaction(Seq(operation.Node.rich(v.fix, operation.Rich.deleteOrUnwrapAt(rich, 0))), None)
+            } else {
+              return DocTransaction(Seq(operation.Node.rich(v.fix, operation.Rich.wrap(IntRange(0, rich.size), deli))), None)
+            }
+          }
+        }
+        DocTransaction.empty
+      } else {
+        DocTransaction.empty
+      }
   }).toMap
 
   /**
