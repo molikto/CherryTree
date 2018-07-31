@@ -21,7 +21,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   dom = div(
     width := "100%",
-    `class` := "cherrytree unselectable",
+    `class` := "cherrytree",
     height := "100%",
     display :="flex",
     position := "relative",
