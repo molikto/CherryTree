@@ -96,6 +96,10 @@ abstract class View {
     defer(_ => node.removeEventListener(ty, listener))
   }
 
+  def focus(): Unit = {
+    dom.focus()
+  }
+
   def preventDefault(a: Event,notCancelable: () => Unit = () => console.log("Not cancelable event not handled")): Unit  = {
     if (a.cancelable) {
       a.preventDefault()

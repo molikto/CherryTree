@@ -57,7 +57,7 @@ object Key {
     def +(key: Key): Key = key.copy(shift = true)
   }
   case object Meta extends Modifier {
-    override def toString: String = "⌘"
+    override def toString: String = if (model.isMac) "Cmd" else "Meta"
     def +(key: Key): Key = key.copy(meta = true)
   }
   case object Ctrl extends Modifier {

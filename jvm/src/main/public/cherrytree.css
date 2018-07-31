@@ -32,10 +32,62 @@
 }
 
 .ct-sans {
-  font-family: sans-serif;
+  font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
   font-size: 95%;
 }
 
+.ct-input {
+  outline: 0px solid transparent;
+  background: #1b1d23;
+  border: 1px solid #181a1f;
+  padding: 4px;
+  min-height: 23px;
+  color: #cccccc;
+}
+
+.ct-input:focus {
+    border: 1px solid #528bff;
+}
+
+.ct-card {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.11);
+  background: #202328;
+  border: 1px solid #474a4f;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.ct-menu-item {
+  width: 100%;
+  padding-left: 22px;
+  padding-right: 22px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.ct-kbd-small {
+    padding: .1rem .2rem;
+    font-size: 80%;
+    color: #DDDDDD;
+    background-color: #676f80;
+    border-radius: .15rem;
+}
+
+
+.ct-selected {
+  background: #90a2b922;
+}
+
+.ct-not-selected {
+}
+
+.ct-not-selected:hover {
+  background: #90a2b911;
+}
+
+
+.ct-not-selected {
+}
 
 /** command keys **/
 

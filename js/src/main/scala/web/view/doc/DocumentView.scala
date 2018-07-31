@@ -37,7 +37,9 @@ class DocumentView(private val client: DocInterface, override protected val edit
   private var isFocusedOut: Boolean = false
   private var duringStateUpdate: Boolean = false
 
+
   event("focusout", (a: FocusEvent) => {
+//    println("focus out")
     a.relatedTarget match {
       case h: HTMLElement if dom.contains(h) =>
       case _ =>
@@ -50,7 +52,14 @@ class DocumentView(private val client: DocInterface, override protected val edit
     }
   })
 
+  override def focus(): Unit = {
+    isFocusedOut = false
+    updateMode(client.state.mode, viewUpdated = false)
+  }
+
+
   event("focusin", (a: FocusEvent) => {
+//    println("focus in")
     if (!model.debug_DisableFocusHandling) {
       if (!duringStateUpdate && isFocusedOut) {
         isFocusedOut = false
@@ -58,6 +67,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
       }
     }
   })
+
 
   override def markEditable(dom: HTMLElement): Unit = {
     if (currentEditable == dom) return
@@ -94,6 +104,12 @@ class DocumentView(private val client: DocInterface, override protected val edit
     }
   }
 
+
+//  window.setInterval(() => {
+//    window.console.log(document.activeElement)
+//    window.console.log(noEditable.contentEditable)
+//    window.console.log(currentEditable)
+//  }, 3000)
   /**
     *
     * node list

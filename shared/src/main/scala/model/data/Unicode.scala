@@ -120,8 +120,17 @@ object Unicode extends DataObject[Unicode] {
 }
 
 case class Unicode(var str: String) extends Seq[Int] {
-
-
+  def isBlank: Boolean = {
+    var i = 0
+    while (i < str.length) {
+      val c = str.charAt(i)
+      if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+        return false
+      }
+      i += 1
+    }
+    true
+  }
 
 
   override def length: Int = size

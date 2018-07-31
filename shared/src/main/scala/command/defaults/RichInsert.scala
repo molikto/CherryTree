@@ -4,16 +4,19 @@ import client.Client
 import command.{CommandCategory, CommandInterface, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.{mode, operation}
+import model.{mode, operation, range}
 import model.data.{Rich, SpecialChar, Unicode}
 import model.range.IntRange
 
 class RichInsert extends CommandCategory("when in insert mode") {
 
 
-  trait EditCommand extends Command  {
-    def edit(content: Rich,a: Int): Seq[model.operation.Rich]
+  trait RichInsertCommand extends Command {
     override def available(a: DocState): Boolean = a.isRichInsert
+  }
+
+  trait EditCommand extends RichInsertCommand  {
+    def edit(content: Rich,a: Int): Seq[model.operation.Rich]
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (n, content, insert) = a.asRichInsert
       val res = model.operation.Node.rich(n, edit(content, insert.pos))
@@ -21,27 +24,42 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
 
-  new EditCommand with OverrideCommand {
+  new RichInsertCommand with OverrideCommand {
     override val description: String = "delete text before cursor"
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
-    override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
-      if (a > 0) {
-        Seq(operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(a).start)) // we don't explicitly set mode, as insert mode transformation is always correct
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val (cursor, content, insert) = a.asRichInsert
+      if (insert.pos > 0) {
+        DocTransaction(
+          Seq(operation.Node.rich(cursor, operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(insert.pos).start))),
+          None) // we don't explicitly set mode, as insert mode transformation is always correct
       } else {
-        Seq.empty
+        joinWithPrevious(a)
       }
     }
   }
 
-  new Command with OverrideCommand {
+  // TODO join with previous
+  def joinWithPrevious(a: DocState): DocTransaction = {
+    DocTransaction.empty
+  }
+
+  new RichInsertCommand with OverrideCommand {
     override val description: String = "delete word before cursor"
     override val hardcodeKeys: Seq[KeySeq] = Seq(Alt + Backspace: KeySeq, Ctrl + "w")
 
     override def available(a: DocState): Boolean = a.isRichInsert
+
+
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cursor, content, insert) = a.asRichInsert
-      val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
-      deleteRichNormalRange(a, commandState,cursor, IntRange(r, insert.pos), insert =true, noHistory = true)
+      if (insert.pos > 0) {
+        val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
+        deleteRichNormalRange(a, commandState,cursor, IntRange(r, insert.pos), insert =true, noHistory = true)
+      } else {
+        joinWithPrevious(a)
+      }
     }
   }
 
@@ -58,11 +76,10 @@ class RichInsert extends CommandCategory("when in insert mode") {
   }
 
 
-  new OverrideCommand {
+  new RichInsertCommand with OverrideCommand {
     override val description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
-    override def available(a: DocState): Boolean = a.isRichInsert
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
       if (insert.pos == rich.size) {

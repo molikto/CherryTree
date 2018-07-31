@@ -18,10 +18,10 @@
 
 ## bugs
 
+* define how the focus should work. and make it works
 * why scrollbar not shown??
 * resizing the panel is buggy
 * main page focus problem
-* change kbd font so apple key looks good
 * movement in bidi text is wired, seems we have something wrong in our grapheme code
 
 

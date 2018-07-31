@@ -17,4 +17,94 @@ class NodeMisc extends CommandCategory("node: other") {
         Some(a.copyContentMode(mode.Content.CodeNormal)))
     }
   }
+
+  new TextualCommand {
+    override val description: String = "placeholder 1"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 2"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 3"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 4"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+
+  new TextualCommand {
+    override val description: String = "placeholder 5"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+
+  new TextualCommand {
+    override val description: String = "placeholder 6"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 7"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 8"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 9"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 10"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "placeholder 11"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
 }

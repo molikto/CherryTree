@@ -108,7 +108,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       }
       exacts.headOption match {
         case Some(exact) =>
-          buffer.append(Part.IdentifiedCommand(kk, exact, ac.filter(_ != exact)))
+          buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(_ != exact)))
         case None =>
           buffer.append(Part.UnidentifiedCommand(kk, ac))
       }
@@ -116,6 +116,12 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
 
 
+  def runTextual(command: Command): Unit = {
+    clearPreviousCommand()
+    buffer.append(IdentifiedCommand(None, command, Seq.empty))
+    tryComplete()
+    commandBufferUpdates_.onNext(buffer)
+  }
 
   /**
     * boolean means this command is accepted
@@ -174,9 +180,9 @@ abstract class CommandHandler extends Settings with CommandInterface {
         }
       }
       buffer match {
-        case a :+ Part.IdentifiedCommand(key1, c1, r1) :+ Part.UnknownCommand(key2) =>
+        case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.UnknownCommand(key2) =>
           tryMerge(key1, r1, key2)
-        case a :+ Part.IdentifiedCommand(key1, c1, r1) :+ Part.IdentifiedCommand(key2, c2, _) =>
+        case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.IdentifiedCommand(Some(key2), c2, _) =>
           tryMerge(key1, r1, key2)
         case _ =>
           markUnknownPattern()
@@ -205,7 +211,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     true
   }
 
-  private def actAndMarkComplete(c: Command, count: Int, key: KeySeq, char: Option[Unicode], motion: Option[Motion]): Boolean = {
+  private def actAndMarkComplete(c: Command, count: Int, key: Option[KeySeq], char: Option[Unicode], motion: Option[Motion]): Boolean = {
     flush()
     if (char.isDefined) {
       c match {
@@ -219,24 +225,28 @@ abstract class CommandHandler extends Settings with CommandInterface {
         case _ =>
       }
     }
-    val res = c.action(state, count, this, Some(key), char, motion)
+    val res = c.action(state, count, this, key, char, motion)
     buffer.append(Part.CompleteMark)
     localChange(res)
     !c.emptyAsFalseInInsertMode || res != DocTransaction.empty
   }
 
-  def keyDown(key: Key): Boolean = {
+  private def clearPreviousCommand(): Unit = {
     buffer.lastOption match {
       case Some(_: Part.Finished) => buffer.clear()
       case _ =>
     }
+  }
+
+  def keyDown(key: Key): Boolean = {
+    clearPreviousCommand()
     buffer.lastOption match {
       case Some(Part.IdentifiedCommand(k, c, _)) if c.needsChar =>
         key.a match {
           case Key.Grapheme(g) => buffer.append(Part.Char(g))
           case _ =>
             if (miscCommands.exit.keys.contains(Seq(key))) {
-              buffer.append(Part.IdentifiedCommand(Seq(key), miscCommands.exit, Seq.empty))
+              buffer.append(Part.IdentifiedCommand(Some(Seq(key)), miscCommands.exit, Seq.empty))
             } else {
               buffer.append(Part.UnknownCommand(Seq(key)))
             }

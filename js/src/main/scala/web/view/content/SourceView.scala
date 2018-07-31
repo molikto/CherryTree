@@ -49,6 +49,8 @@ class SourceView(
     CodeMirror.runMode(look.mkString("\n"), c.asSourceMime, preCode)
     if (remaining > 0) {
       remainingView.textContent = s"$totalSize lines"
+    } else if (c.unicode.isBlank) {
+      remainingView.textContent = "empty code block"
     } else {
       remainingView.textContent = ""
     }

@@ -56,6 +56,7 @@ class Client(
   with EditorInterface
   with DocInterface { self =>
 
+
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
 

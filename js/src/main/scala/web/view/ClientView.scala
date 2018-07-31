@@ -1,10 +1,13 @@
 package web.view
 
 import client.Client
+import org.scalajs.dom._
 import org.scalajs.dom.raw._
 import org.scalajs.dom.window
 import scalatags.JsDom.all._
 import web.view.doc.DocumentView
+
+import scala.scalajs._
 
 // in this class we use nulls for a various things, but not for public API
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
@@ -48,10 +51,10 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   new BottomBarView(client).attachToNode(rightPanel)
 
-  new DocumentView(client, client).attachToNode(rightPanel)
+  val docView = new DocumentView(client, client).attachToNode(rightPanel)
 
   private val commandMenu = {
-    val a = new CommandMenu(client)
+    val a = new CommandMenuDialog(client, _ => docView.focus())
     a.attachToNode(dom)
     a
   }
@@ -61,7 +64,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
-      commandMenu.showAt(500, 500)
+      commandMenu.showAt(500, 150)
   })
 
 }
