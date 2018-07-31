@@ -71,4 +71,11 @@ package object view {
     val encoded = window.btoa(svg)
     "url(data:image/svg+xml;base64," + encoded + ")"
   }
+
+  def scrollInToViewIfNotVisible(a: HTMLElement, scroll: HTMLElement) = {
+    if (a.offsetTop >= scroll.scrollTop && a.offsetTop + a.clientHeight <= scroll.scrollTop + scroll.clientHeight) {
+    } else {
+      a.scrollIntoView(false)
+    }
+  }
 }

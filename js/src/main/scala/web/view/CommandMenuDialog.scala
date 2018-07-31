@@ -131,7 +131,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
       old.classList.add("ct-not-selected")
       n.classList.add("ct-selected")
       n.classList.remove("ct-not-selected")
-      n.scrollIntoView(false)
+      scrollInToViewIfNotVisible(n, list)
     }
   }
 

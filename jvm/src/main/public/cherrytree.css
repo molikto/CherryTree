@@ -158,11 +158,13 @@
 
 
 .ct-node-visual-move {
-    outline: 5px solid #d8617488;
+  outline-offset: -2px;
+  outline: 2px solid #d8617488;
 }
 
 .ct-window-inactive .ct-node-visual-move {
-    outline: 5px solid #d8617466;
+  outline-offset: -2px;
+  outline: 2px solid #d8617466;
 }
 
 /**  rich view **/
