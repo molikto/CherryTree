@@ -64,7 +64,7 @@ class RichVisual extends CommandCategory("text visual mode") {
             val after = rich.after(r.start)
             if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
               val ret = if (visual.fix.start > visual.move.start) {
-                mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.fix)
+                mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.move)
               } else {
                 mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
               }
