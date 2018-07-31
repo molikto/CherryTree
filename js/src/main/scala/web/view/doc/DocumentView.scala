@@ -15,12 +15,23 @@ import scala.collection.mutable.ArrayBuffer
 
 class DocumentView(private val client: DocInterface, override protected val editor: EditorInterface) extends EditorView {
 
+  private val rootFrame = div(
+    `class` := "ct-root ct-d-frame",
+    width := "100%"
+  ).render
+
+  private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   dom = div(
-    `class` := "ct-root ct-scroll ct-d-frame",
+    `class` := "ct-scroll",
     width := "100%",
     height := "100%",
-    padding := "36px",
+    paddingLeft := "36px",
+    paddingRight := "36px",
     overflowY := "scroll",
+    div(height := "36px", display := "block"),
+    rootFrame,
+    div(height := "36px", display := "block"),
+    noEditable,
     color := theme.contentText
   ).render
 
@@ -32,7 +43,6 @@ class DocumentView(private val client: DocInterface, override protected val edit
     *
     *
     */
-  private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   private var currentEditable: HTMLElement = noEditable
   private var isFocusedOut: Boolean = false
   private var duringStateUpdate: Boolean = false
@@ -106,7 +116,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
     *
     *
     */
-  //   frame = dom
+  //   frame = rootframe
   //     hold
   //     box
   //       content
@@ -116,7 +126,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   //         frame...
   //    nonEditable...
 
-  private def frameAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+  private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       else rec(a.childNodes(1).childNodes(1).childNodes(b.head), b.tail)
@@ -124,22 +134,22 @@ class DocumentView(private val client: DocInterface, override protected val edit
     rec(rootFrame, at).asInstanceOf[HTMLElement]
   }
 
-  private def boxAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+  private def boxAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
-  private def childListAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+  private def childListAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     boxAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
   private def frameInList(parent: HTMLElement, at: Int) = parent.childNodes(at).asInstanceOf[HTMLElement]
 
 
-  private def holdAt(at: model.cursor.Node, rootFrame: Node = dom): HTMLElement = {
+  private def holdAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
   }
 
-  private def contentAt(at: model.cursor.Node, rootFrame: Node = dom): ContentView.General = {
+  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
     val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
     View.fromDom[ContentView.General](v)
   }
@@ -290,8 +300,7 @@ class DocumentView(private val client: DocInterface, override protected val edit
   override def onAttach(): Unit = {
     super.onAttach()
     val DocState(node, selection, _) = client.state
-    insertNodesRec(node, dom)
-    dom.appendChild(noEditable) // dom contains this random thing, this is ok now, but... damn
+    insertNodesRec(node, rootFrame)
     updateMode(selection, viewUpdated = false)
 
     observe(client.stateUpdates.doOnNext(update => {

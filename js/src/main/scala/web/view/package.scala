@@ -82,7 +82,7 @@ package object view {
     if (c.top < p.top) {
       scroll.scrollTop = scroll.scrollTop - (p.top - c.top)
     } else if (c.bottom > p.bottom) {
-      scroll.scrollTop = scroll.scrollTop + (c.bottom - p.bottom)
+      scroll.scrollTop = scroll.scrollTop + ((c.bottom - p.bottom) min (c.top - p.top))
     }
   }
 }
