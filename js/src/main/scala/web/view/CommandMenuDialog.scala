@@ -8,7 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, val layer: OverlayLayer) extends Overlay {
+class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends Overlay {
 
   private val search = input(
     width := "100%",
@@ -97,12 +97,8 @@ class CommandMenuDialog(val client: Client, val layer: OverlayLayer) extends Ove
     dom.style.left = rec.left.toString + "px"
     dom.style.top = rec.bottom.toString + "px"
     updateMenuContent()
-    showOverlay()
     search.textContent = ""
-    search.focus()
-    window.setTimeout(() => {
-      if (available.nonEmpty) search.focus()
-    }, 0)
+    showOverlay()
   }
 
 

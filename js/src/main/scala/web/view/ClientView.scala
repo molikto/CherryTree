@@ -51,22 +51,20 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   new BottomBarView(client).attachToNode(rightPanel)
 
-  private val docView = new DocumentView(client, client, rect => {
-    //noinspection ForwardReference
-    commandMenu.showAt(rect)
-  }).attachToNode(rightPanel).asInstanceOf[DocumentView]
+  private val docView = new DocumentView(client, client).attachToNode(rightPanel).asInstanceOf[DocumentView]
 
   private val overlayLayer = {
-    val o = new OverlayLayer(docView)
+    val o = new OverlayLayer(dom, docView)
     o.attachToNode(dom)
     o
   }
 
   private val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
 
+  private val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer)
 
-
-
+  docView.sourceEditor = sourceEditor
+  docView.commandMenu = commandMenu
 
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>

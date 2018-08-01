@@ -55,18 +55,24 @@ class SourceView(
     } else {
       remainingView.textContent = ""
     }
-    //CodeMirror.runMode(c.unicode.str, c.asSourceMime, dom)
   }
 
   updateCodeMirror()
+
+  private var editing: SourceEditDialog= null
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
     if (aa == model.mode.Content.CodeNormal) {
+      if (editing != null) {
+        editing.dismiss()
+        editing = null
+      }
     } else {
-
+      editing = documentView.sourceEditor
+      editing.documentEdit(c.unicode.str, documentView.dom)
     }
   }
 

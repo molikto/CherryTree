@@ -9,8 +9,9 @@ class CommandListView(val client: Client) extends UnselectableView  {
 
 
   dom = div(
+    flex := "0 0 auto",
     minWidth := "150px",
-    width := "500px",
+    width := "350px",
     height := "100%",
     color := "#cccccc",
     overflowY := "scroll",

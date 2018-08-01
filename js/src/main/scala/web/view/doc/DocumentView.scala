@@ -16,10 +16,12 @@ import scala.collection.mutable.ArrayBuffer
 
 class DocumentView(
   private val client: DocInterface,
-  override protected val editor: EditorInterface,
-  private val showCommandMenu: Rect => Unit
+  override protected val editor: EditorInterface
 ) extends EditorView {
 
+
+  var sourceEditor: SourceEditDialog = null
+  var commandMenu: CommandMenuDialog = null
 
   private val rootFrame = div(
     `class` := "ct-root ct-d-frame",
@@ -29,8 +31,7 @@ class DocumentView(
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
   dom = div(
     `class` := "ct-scroll",
-    width := "100%",
-    height := "100%",
+    flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
     overflowY := "scroll",
@@ -408,7 +409,7 @@ class DocumentView(
   event("contextmenu", (a: MouseEvent) => {
     preventDefault(a)
     focus() // TODO mark correct selection
-    showCommandMenu(Rect(a.clientX, a.clientY, 0, 0))
+    commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
   })
 
 

@@ -15,7 +15,6 @@
 
 ## bugs
 
-* resizing the panel is buggy
 * movement in bidi text is wired, seems we have something wrong in our grapheme code
 * when use j/k the cursor jumps too much scroll
 * make menu scrollbar overlay

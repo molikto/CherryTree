@@ -10,7 +10,7 @@ import util.Rect
 import scala.collection.mutable.ArrayBuffer
 
 abstract class Overlay extends View {
-  def layer: OverlayLayer
+  protected def layer: OverlayLayer
 
   private var attached = false
 
@@ -19,9 +19,15 @@ abstract class Overlay extends View {
       attached = true
       attachTo(layer)
     }
-    dismissed = false
-    dom.style.display = "block"
-    layer.showOverlay(this)
+    if (dismissed) {
+      dismissed = false
+      dom.style.display = "block"
+      layer.showOverlay(this)
+      focus()
+      window.setTimeout(() => {
+        if (!dismissed) focus()
+      }, 0)
+    }
   }
 
   def dismiss(): Unit = {
@@ -48,7 +54,7 @@ abstract class Overlay extends View {
     super.destroy()
   }
 }
-class OverlayLayer(base: View) extends View {
+class OverlayLayer(val parent: HTMLElement, base: View) extends View {
 
   private val showingOverlay = ArrayBuffer[Overlay]()
   def showOverlay(overlay: Overlay): Unit = {
