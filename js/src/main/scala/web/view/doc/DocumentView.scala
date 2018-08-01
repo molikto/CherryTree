@@ -290,7 +290,7 @@ class DocumentView(
   }
 
 
-  private def updateMode(mm: Option[model.mode.Node], viewUpdated: Boolean): Unit = {
+  private def updateMode(mm: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true
     val m = if (isFocusedOut) None else mm
     m match {
@@ -308,9 +308,9 @@ class DocumentView(
           }
           aa match {
             case r: model.mode.Content.Rich =>
-              current.asInstanceOf[RichView].updateMode(r, viewUpdated)
+              current.asInstanceOf[RichView].updateMode(r, viewUpdated, fromUser)
             case c: model.mode.Content.Code =>
-              current.asInstanceOf[SourceView].updateMode(c, viewUpdated)
+              current.asInstanceOf[SourceView].updateMode(c, viewUpdated, fromUser)
           }
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
@@ -366,7 +366,7 @@ class DocumentView(
         }
       }
       duringStateUpdate = false
-      updateMode(update.mode, update.viewUpdated)
+      updateMode(update.mode, update.viewUpdated, fromUser = update.fromUser)
     }))
 
   }

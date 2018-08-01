@@ -423,7 +423,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     clearSelection()
   }
 
-  private def updateVisualMode(fix: IntRange, move: IntRange): Unit = {
+  private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
     val (r1,_) = nonEmptySelectionToDomRange(fix)
     val (r2,_) = nonEmptySelectionToDomRange(move)
     val range = document.createRange()
@@ -437,7 +437,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     } else {
       range.setEnd(r2.endContainer, r2.endOffset)
     }
-    setSelection(range)
+    setSelection(range, fromUser)
   }
 
   private def clearSelection(): Unit = {
@@ -450,7 +450,8 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     clearFormattedNodeHighlight()
   }
 
-  private def updateInsertMode(pos: Int): Unit = {
+
+  private def updateInsertMode(pos: Int, fromUser: Boolean): Unit = {
     if (flushSubscription == null) {
       flushSubscription = observe(controller.flushes.doOnNext(_ => {
         flushInsertionMode()
@@ -464,9 +465,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     }
     range.setStart(start._1, start._2)
     range.setEnd(start._1, start._2)
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
+    setSelection(range, fromUser)
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
@@ -476,17 +475,29 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
 
-  private def updateNormalMode(r: IntRange): Unit = {
+  private def updateNormalMode(r: IntRange, fromUser: Boolean): Unit = {
     val (range, light) = nonEmptySelectionToDomRange(r)
-    setSelection(range)
+    setSelection(range, fromUser = fromUser)
     if (light != astHighlight) clearFormattedNodeHighlight()
     if (light != null) addFormattedNodeHighlight(light)
   }
 
-  private def setSelection(range: Range): Unit = {
+  private def setSelection(range: Range, fromUser: Boolean): Unit = {
+//    if (fromUser) {
+//      val r1 = dom.getBoundingClientRect()
+//      val r2 = documentView.dom.getBoundingClientRect()
+//      val rect = if (r1.height < r2.height) {
+//        r1
+//      } else {
+//        range.getBoundingClientRect()
+//      }
+//      web.view.scrollInToViewIfNotVisible(rect, documentView.dom)
+//    }
+//    val top = documentView.dom.scrollTop
     val sel = window.getSelection
     sel.removeAllRanges
     sel.addRange(range)
+//    documentView.dom.scrollTop = top
   }
 
   override def clearMode(): Unit = {
@@ -523,20 +534,20 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     }
   }
 
-  override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean): Unit = {
+  override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     aa match {
       case mode.Content.RichInsert(pos) =>
         initMode(0)
-        updateInsertMode(pos)
+        updateInsertMode(pos, fromUser)
       case mode.Content.RichVisual(fix, move) =>
         initMode(1)
-        updateVisualMode(fix, move)
+        updateVisualMode(fix, move, fromUser)
       case mode.Content.RichNormal(range) =>
         if (isEmpty) {
           initMode(3)
         } else {
           initMode(2)
-          updateNormalMode(range)
+          updateNormalMode(range, fromUser)
         }
     }
   }

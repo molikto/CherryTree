@@ -60,9 +60,11 @@ class SourceView(
 
   updateCodeMirror()
 
-  override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean): Unit = {
+  override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
+    if (fromUser) {
+      web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
+    }
     if (aa == model.mode.Content.CodeNormal) {
-
     } else {
 
     }

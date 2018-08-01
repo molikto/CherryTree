@@ -160,9 +160,10 @@ class Client(
     ty: Undoer.Type,
     viewUpdated: Boolean,
     viewFrom: model.transaction.Node,
+    fromUser: Boolean,
     foldBefore: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
-    val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, viewUpdated)
+    val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, fromUser, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debug_view) {
@@ -302,7 +303,7 @@ class Client(
           ),
           wp0,
           Undoer.Remote,
-          viewUpdated = false, wp0)
+          viewUpdated = false, wp0, fromUser = false)
       } catch {
         case e: Exception =>
           throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -444,6 +445,7 @@ class Client(
         update.undoType.getOrElse(Undoer.Local),
         viewUpdated = update.viewUpdated,
         if (viewAdd.isEmpty) changes else viewAdd ++ changes,
+        fromUser = true,
         foldBefore = ch)
       if (changes.nonEmpty) uncommitted = uncommitted :+ changes
       self.sync()

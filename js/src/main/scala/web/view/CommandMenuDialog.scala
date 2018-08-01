@@ -8,7 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends View {
+class CommandMenuDialog(val client: Client, runDismiss: Unit => Unit, val layer: OverlayLayer) extends Overlay {
 
   private val search = input(
     width := "100%",
@@ -24,26 +24,18 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     `class` := "ct-scroll"
   ).render
 
-  private val menu = div(
-    position := "absolute",
-    left := "0px",
-    top := "0px",
-    `class` := "ct-card",
-    div(width := "100%", padding := "6px", search),
-    list
-  ).render
-
-
   dom = div(
     position := "absolute",
     left := "0px",
     top := "0px",
-    width := "100%",
-    height := "100%",
-    zIndex := "100",
+    `class` := "ct-card",
     display := "none",
-    menu,
+    div(width := "100%", padding := "6px", search),
+    list
   ).render
+
+  attachTo(layer)
+
 
   private var available: Seq[command.Command] = Seq.empty
 
@@ -62,7 +54,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     if (n != available) {
       available = n
       if (available.isEmpty) {
-        ensureDismiss()
+        dismiss()
       } else {
         removeAllChild(list)
         if (marked == null) {
@@ -97,35 +89,30 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
   }
 
   def showAt(rect: Rect): Unit = {
-    dismissed = false
-    val bounding = toRect(dom.getBoundingClientRect())
+    val bounding = toRect(layer.dom.getBoundingClientRect())
     val rec = rect.moveBy(-bounding.left, -bounding.top)
     //whereToShow(bounding, rec)
-    menu.style.left = rec.left.toString + "px"
-    menu.style.top = rec.bottom.toString + "px"
-    dom.style.display = "block"
+    dom.style.left = rec.left.toString + "px"
+    dom.style.top = rec.bottom.toString + "px"
+    updateMenuContent()
+    showOverlay()
     search.textContent = ""
     search.focus()
     window.setTimeout(() => {
       if (available.nonEmpty) search.focus()
     }, 0)
-    updateMenuContent()
   }
 
-  var dismissed = true
 
 
 
-  def dismiss(): Unit = ensureDismiss()
 
-  private def ensureDismiss(): Unit = {
-    if (!dismissed) {
-      available = Seq.empty
-      marked = null
-      dom.style.display = "none"
-      search.textContent = ""
-      onDismiss()
-    }
+  override protected def onDismiss(): Unit = {
+    super.onDismiss()
+    available = Seq.empty
+    marked = null
+    search.textContent = ""
+    runDismiss()
   }
 
   private def mark(i: Int): Unit = {
@@ -147,7 +134,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     KeyMap.get(ev.key) match {
       case Some(Key.Escape) =>
         ev.preventDefault()
-        ensureDismiss()
+        dismiss()
       case Some(Key.Enter) =>
         ev.preventDefault()
         if (marked != null) {
@@ -167,7 +154,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
             if (n < available.size) {
               ev.preventDefault()
               val command = available(n)
-              ensureDismiss()
+              dismiss()
               client.runTextual(command)
             }
           }
@@ -180,7 +167,7 @@ class CommandMenuDialog(val client: Client, onDismiss: Unit => Unit) extends Vie
     updateMenuContent()
   })
 
-  event(menu, "focusout", (ev: FocusEvent) => {
-    ensureDismiss()
+  event(dom, "focusout", (ev: FocusEvent) => {
+    dismiss()
   })
 }
