@@ -2,7 +2,7 @@ package doc
 
 import model.{cursor, data}
 import model.cursor.Node
-import model.data.Rich
+import model.data.{Atom, Rich}
 
 
 case class DocState(
@@ -63,6 +63,28 @@ case class DocState(
   def isCodeInside: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside)) => true
     case _ => false
+  }
+
+  def asRichNormalAtom: Atom = {
+    val (_, rich, nv) = asRichNormal
+    if (rich.isEmpty) throw new IllegalArgumentException("Wrong!")
+    else {
+      val t = rich.after(nv.focus.start)
+      t
+    }
+  }
+
+  def isRichNormal(a: Atom => Boolean): Boolean = {
+    if (isRichNormal) {
+      val (_, rich, nv) = asRichNormal
+      if (rich.isEmpty) false
+      else {
+        val t = rich.after(nv.focus.start)
+        a(t)
+      }
+    } else {
+      false
+    }
   }
 
   def isRichNormal: Boolean = mode match {
@@ -150,6 +172,7 @@ case class DocState(
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
     }
   }
+
 
   def asRichNormal: (cursor.Node, Rich, model.mode.Content.RichNormal) = {
     mode match {

@@ -1,6 +1,7 @@
 package command.defaults
 
 import client.Client
+import client.Client.ViewMessage
 import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -84,23 +85,29 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     }
   }
 
+  val editUrl = new Command {
+    override val description: String = "edit link url"
+    override def defaultKeys: Seq[KeySeq] = Seq(Enter)
+    override def priority: Int = 1
+    override def available(a: DocState): Boolean = a.isRichNormal(t => {
+      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+    })
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.message(ViewMessage.ShowSimplePlainTextAttributeEditor())
+    }
+  }
+
   val visitLink = new Command {
     override val description: String = "visit link url"
 
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
-    override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual && {
-      val (_, rich, nv) = a.asRichNormalOrVisual
-      if (rich.isEmpty) false
-      else {
-        val t = rich.after(nv.focus.start)
-        t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
-      }
-    }
+    override def available(a: DocState): Boolean = a.isRichNormal(t => {
+      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+    })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (_, rich, nv) = a.asRichNormalOrVisual
-      val t = rich.after(nv.focus.start)
+      val t = a.asRichNormalAtom
       val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {

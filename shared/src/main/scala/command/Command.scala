@@ -18,15 +18,17 @@ abstract class Command {
   def needsMotion: Boolean = false
   def needsStuff = needsMotion || needsChar
 
+  
+  def priority: Int = 0
   // TODO user keymap
   def keyLevel(c: KeySeq): Int = {
-    if (defaultKeys.contains(c)) {
+    ( if (defaultKeys.contains(c)) {
       1
     } else if (hardcodeKeys.contains(c)) {
       0
     } else {
       -1
-    }
+    }) + priority
   }
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
