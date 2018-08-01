@@ -12,10 +12,11 @@ import scala.collection.mutable.ArrayBuffer
 abstract class Overlay extends View {
   def layer: OverlayLayer
 
-  private val attached = false
+  private var attached = false
 
   def showOverlay(): Unit = {
     if (!attached) {
+      attached = true
       attachTo(layer)
     }
     dismissed = false

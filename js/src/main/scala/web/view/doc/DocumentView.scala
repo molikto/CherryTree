@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 class DocumentView(
   private val client: DocInterface,
   override protected val editor: EditorInterface,
-  private val commandMenu: CommandMenuDialog
+  private val showCommandMenu: Rect => Unit
 ) extends EditorView {
 
 
@@ -408,7 +408,7 @@ class DocumentView(
   event("contextmenu", (a: MouseEvent) => {
     preventDefault(a)
     focus() // TODO mark correct selection
-    commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
+    showCommandMenu(Rect(a.clientX, a.clientY, 0, 0))
   })
 
 
