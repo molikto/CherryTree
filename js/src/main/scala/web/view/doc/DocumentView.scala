@@ -19,7 +19,6 @@ class DocumentView(
   override protected val editor: EditorInterface
 ) extends EditorView {
 
-
   var sourceEditor: SourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
 
@@ -96,16 +95,13 @@ class DocumentView(
     currentEditable.focus()
   }
 
-  override def unmarkEditableIfEditable(dom: HTMLElement): Unit = {
-    if (dom == currentEditable) unmarkEditable(dom)
-  }
-
   override def unmarkEditable(dom: HTMLElement): Unit = {
-    if (currentEditable == noEditable) return
-    dom.contentEditable = "false"
-    currentEditable = noEditable
-    noEditable.contentEditable = "true"
-    noEditable.focus()
+    if (dom == currentEditable) {
+      dom.contentEditable = "false"
+      currentEditable = noEditable
+      noEditable.contentEditable = "true"
+      noEditable.focus()
+    }
   }
 
   private var focusContent: ContentView.General = null

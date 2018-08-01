@@ -12,7 +12,6 @@ trait EditorView extends View {
   protected def editor: EditorInterface
 
   def markEditable(dom: HTMLElement): Unit
-  def unmarkEditableIfEditable(dom: HTMLElement): Unit
   def unmarkEditable(dom: HTMLElement): Unit
 
 

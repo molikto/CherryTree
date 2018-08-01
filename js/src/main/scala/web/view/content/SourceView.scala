@@ -61,23 +61,41 @@ class SourceView(
 
   private var editing: SourceEditDialog= null
 
+  def removeEditor(): Unit = {
+    if (editing != null) {
+      editing.dismiss()
+      editing = null
+    }
+  }
+
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
     if (aa == model.mode.Content.CodeNormal) {
-      if (editing != null) {
-        editing.dismiss()
-        editing = null
-      }
+      removeEditor()
     } else {
       editing = documentView.sourceEditor
-      editing.documentEdit(c.unicode.str, documentView.dom)
+      editing.documentEdit(c.unicode.str, documentView.dom, src => {
+        c.unicode.str
+        controller.exitCodeEditMode(src)
+      })
     }
   }
 
   override def clearMode(): Unit = {
+    removeEditor()
     dom.classList.remove("ct-selection")
+  }
+
+
+  /**
+    * will also remove from parent
+    * ALSO make sure you destroy child dom attachments!!!
+    */
+  override def destroy(): Unit = {
+    clearMode()
+    super.destroy()
   }
 
   override def initMode(): Unit = {

@@ -312,6 +312,12 @@ class Client(
   }
 
 
+  override def exitCodeEditMode(): Unit = {
+    if (state.isCodeInside) {
+      localChange(DocTransaction.mode(state.copyContentMode(mode.Content.CodeNormal)))
+    }
+  }
+
   /**
     * view calls this method to insert text at current insertion point,
     */

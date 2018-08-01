@@ -567,7 +567,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     * will also remove from parent
     */
   override def destroy(): Unit = {
-    documentView.unmarkEditableIfEditable(dom)
+    clearMode()
     super.destroy()
   }
 

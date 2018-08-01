@@ -188,6 +188,11 @@
     verticalAlign : bottom;
 }
 
+
+/**
+selection
+**/
+
 ::selection {
     background: #d8617488;
 }
@@ -196,6 +201,28 @@
   background: #d8617466;
 }
 
+/**
+code mirror cursor
+**/
+
+.cm-fat-cursor .CodeMirror-cursor {
+    background-color: #d86174AA;
+}
+
+.cm-animate-fat-cursor {
+    background-color: #d86174AA;
+}
+
+.cm-fat-cursor-mark {
+    background-color: #d86174AA;
+}
+
+
+/**
+
+block selection
+
+**/
 .ct-selection {
     background: #d8617433;
 }
