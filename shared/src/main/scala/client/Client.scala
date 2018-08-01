@@ -318,7 +318,7 @@ class Client(
       localChange(DocTransaction(
         ps.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
         , Some(state.copyContentMode(mode.Content.CodeNormal))))
-      
+
     }
   }
 

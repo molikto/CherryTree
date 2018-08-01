@@ -38,7 +38,7 @@ class SourceView(
 
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
     this.c= c
-    removeAllChild(dom)
+    removeAllChild(preCode)
     updateCodeMirror()
   }
 
