@@ -2,7 +2,9 @@ package util.diff
 
 import util.diff.OperationType._
 
-case class Diff(original: String, modified: String, diffs: List[Operation]) {
+import scala.collection.mutable.ArrayBuffer
+
+case class Diff(original: Seq[String], modified: Seq[String], diffs: List[Operation]) {
 
   /**
    * The unaltered diff result
@@ -16,7 +18,7 @@ case class Diff(original: String, modified: String, diffs: List[Operation]) {
    */
   def html: String = {
     Diff.clean(diffs).foldLeft("") { (html, diff) =>
-      val text = diff.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+      val text = diff.text.mkString("").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
       val tag = diff.op match {
         case Insert => s"<ins>$text</ins>"
         case Delete => s"<del>$text</del>"
@@ -32,9 +34,9 @@ case class Diff(original: String, modified: String, diffs: List[Operation]) {
   def humanized: String = {
     Diff.clean(diffs).foldLeft("") { (res, diff) =>
       val text = diff.op match {
-        case Insert => s"+[${diff.text}]"
-        case Delete => s"-[${diff.text}]"
-        case Equals => diff.text
+        case Insert => s"+[${diff.text.mkString("")}]"
+        case Delete => s"-[${diff.text.mkString("")}]"
+        case Equals => diff.text.mkString("")
       }
       res + text
     }
@@ -51,41 +53,41 @@ object Diff {
    * @param b Second string
    * @return Diff
    */
-  def create(a: String, b: String): Diff = {
+  def create(a: Seq[String], b: Seq[String]): Diff = {
     import scala.util.control.Breaks._
 
-    var (original: String, modified: String) = (a, b)
-    var subsequence: String = lcs(original, modified)
+    var (original: Seq[String], modified: Seq[String]) = (a, b)
+    var subsequence: Seq[String] = lcs(original, modified)
     var result = List.empty[Operation]
 
-    while (subsequence.length > 0) {
-      val sFirst = subsequence(0)
+    while (subsequence.nonEmpty) {
+      val sFirst = subsequence.head
       subsequence = subsequence.drop(1)
 
-      breakable { while (modified.length > 0) {
-        val mFirst = modified(0)
+      breakable { while (modified.nonEmpty) {
+        val mFirst = modified.head
         modified = modified.drop(1)
         if (mFirst == sFirst) break
 
-        result = result :+ Operation(Insert, mFirst.toString)
+        result = result :+ Operation(Insert, Seq(mFirst))
       } }
-      breakable { while (original.length > 0) {
-        val oFirst = original(0)
+      breakable { while (original.nonEmpty) {
+        val oFirst = original.head
         original = original.drop(1)
         if (oFirst == sFirst) break
-        result = result :+ Operation(Delete, oFirst.toString)
+        result = result :+ Operation(Delete, Seq(oFirst.toString))
       } }
-      result = result :+ Operation(Equals, sFirst.toString)
+      result = result :+ Operation(Equals, Seq(sFirst.toString))
     }
-    while (modified.length > 0) {
-      val mFirst = modified(0)
+    while (modified.nonEmpty) {
+      val mFirst = modified.head
       modified = modified.drop(1)
-      result = result :+ Operation(Insert, mFirst.toString)
+      result = result :+ Operation(Insert, Seq(mFirst.toString))
     }
-    while (original.length > 0) {
-      val oFirst = original(0)
+    while (original.nonEmpty) {
+      val oFirst = original.head
       original = original.drop(1)
-      result = result :+ Operation(Delete, oFirst.toString)
+      result = result :+ Operation(Delete, Seq(oFirst.toString))
     }
 
     Diff(a, b, result)
@@ -99,7 +101,7 @@ object Diff {
     var buffer = diffs
     var changes = false
     var equalities = List.empty[Int] // Stack of indices where equalities are found
-    var lastEquality = "" // Always equal to equalities.last.text
+    var lastEquality = Seq.empty[String] // Always equal to equalities.last.text
     var currentIndex = 0
     var preInsert  = false // Is there an insert op before the last equality
     var preDelete  = false // Is there a delete op before the last equality
@@ -118,7 +120,7 @@ object Diff {
         else {
           // Not a candidate
           equalities   = List.empty[Int]
-          lastEquality = ""
+          lastEquality = Seq.empty
         }
         postInsert = false
         postDelete = false
@@ -138,12 +140,12 @@ object Diff {
          * +A-BX-C
          */
         val bools = Seq(preInsert, preDelete, postInsert, postDelete)
-        if (!lastEquality.isEmpty && (bools.forall(b=>b) || ((lastEquality.length < MAX_EDIT_COST / 2) && bools.filter(b=>b).length == 3))) {
+        if (lastEquality.nonEmpty && (bools.forall(b=>b) || ((lastEquality.length < MAX_EDIT_COST / 2) && bools.count(b => b) == 3))) {
           // Duplicate record
           // Change second copy to insert
           buffer     = replace(buffer, equalities.last, 1)(Operation(Delete, lastEquality), Operation(Insert, lastEquality))
           equalities = equalities.dropRight(1)
-          lastEquality = ""
+          lastEquality = Seq.empty
           if (preInsert && preDelete) {
             // No changes made which could affect previous entry, keep going
             postInsert = true
@@ -151,7 +153,7 @@ object Diff {
             equalities = List.empty[Int]
           }
           else {
-            if (!equalities.isEmpty) {
+            if (equalities.nonEmpty) {
               equalities   = equalities.dropRight(1) // Throw away previous equality
               currentIndex = equalities.lastOption.getOrElse(-1)
             }
@@ -172,26 +174,24 @@ object Diff {
    * @param diffs List of Operations
    */
   private def cleanMerge(diffs: List[Operation]): List[Operation] = {
-    var buffer       = diffs :+ Operation(Equals, "")
+    var buffer       = diffs :+ Operation(Equals, Seq.empty)
     var deletes      = 0
     var inserts      = 0
-    var deleted      = ""
-    var inserted     = ""
+    var deleted      = Vector.empty[String]
+    var inserted     = Vector.empty[String]
     var currentIndex = 0
 
     while (currentIndex < buffer.length) {
       buffer(currentIndex).op match {
-        case Insert => {
+        case Insert =>
           inserts      += 1
-          inserted     += buffer(currentIndex).text
+          inserted = inserted ++ buffer(currentIndex).text
           currentIndex += 1
-        }
-        case Delete => {
+        case Delete =>
           deletes      += 1
-          deleted      += buffer(currentIndex).text
+          deleted = deleted ++ buffer(currentIndex).text
           currentIndex += 1
-        }
-        case Equals => {
+        case Equals =>
           // Upon reaching an equality, check for prior redundancies
           if (deletes + inserts > 1) {
             if (deletes != 0 && inserts != 0) {
@@ -201,21 +201,21 @@ object Diff {
                 val idx = currentIndex - deletes - inserts
                 if (idx > 0 && buffer(idx - 1).op == Equals) {
                   var op = buffer(idx - 1)
-                  op     = op.copy(op.op, op.text + sliceLeft(inserted, prefixLength))
+                  op     = op.copy(op.op, op.text ++ sliceLeft(inserted, prefixLength))
                   buffer = insert(buffer, idx)(op)
                 }
                 else {
                   buffer = Operation(Equals, sliceLeft(inserted, prefixLength)) +: buffer
                   currentIndex += 1
                 }
-                inserted = inserted.substring(prefixLength, inserted.length - 1)
-                deleted  = deleted.substring(prefixLength, deleted.length - 1)
+                inserted = inserted.slice(prefixLength, inserted.length - 1)
+                deleted  = deleted.slice(prefixLength, deleted.length - 1)
               }
               // Factor out any common suffixes
               val suffixLength = commonSuffix(inserted, deleted)
               if (suffixLength != 0) {
                 var op = buffer(currentIndex)
-                op     = op.copy(op.op, sliceRight(inserted, suffixLength) + op.text)
+                op     = op.copy(op.op, sliceRight(inserted, suffixLength) ++ op.text)
                 buffer = insert(buffer, currentIndex)(op)
               }
             }
@@ -240,7 +240,7 @@ object Diff {
             // Merge this equality with the previous one
             val previous = buffer(currentIndex - 1)
             val current  = buffer(currentIndex)
-            buffer = replace(buffer, currentIndex - 1, 2)(previous.copy(previous.op, previous.text + current.text))
+            buffer = replace(buffer, currentIndex - 1, 2)(previous.copy(previous.op, previous.text ++ current.text))
             currentIndex -= 1
           }
           else {
@@ -249,13 +249,12 @@ object Diff {
 
           inserts  = 0
           deletes  = 0
-          inserted = ""
-          deleted  = ""
-        }
+          inserted = Vector.empty
+          deleted  = Vector.empty
       }
     }
 
-    if (buffer.last.text == "") {
+    if (buffer.last.text.isEmpty) {
       buffer = buffer.dropRight(1) // Remove the dummy entry at the end
     }
 
@@ -274,8 +273,8 @@ object Diff {
       if (previous.op == Equals && next.op == Equals) {
         // This is a single edit surrounded by equalities
         if (current.text.endsWith(previous.text)) {
-          current = current.copy(current.op, previous.text + sliceLeft(current.text, previous.text.length))
-          next    = next.copy(next.op, previous.text + next.text)
+          current = current.copy(current.op, previous.text ++ sliceLeft(current.text, previous.text.length))
+          next    = next.copy(next.op, previous.text ++ next.text)
           // Shift the edit over the previous equality
           buffer  = replace(buffer, currentIndex, 2)(current, next)
           changes = true
@@ -283,8 +282,8 @@ object Diff {
         else {
           if (current.text.startsWith(next.text)) {
             // Shift the edit over the next equality
-            previous = previous.copy(previous.op, previous.text + next.text)
-            current  = current.copy(current.op, sliceRight(current.text, next.text.length) + next.text)
+            previous = previous.copy(previous.op, previous.text ++ next.text)
+            current  = current.copy(current.op, sliceRight(current.text, next.text.length) ++ next.text)
             buffer   = replace(buffer, currentIndex - 1, 2)(previous, current)
             changes  = true
           }
@@ -304,18 +303,18 @@ object Diff {
    * @param b Second string
    * @return Longest common subsequence
    */
-  private def lcs(a: String, b: String): String = {
+  private def lcs(a: Seq[String], b: Seq[String]): Seq[String] = {
     // Empty pair of strings? No LCS...
-    if (a.size == 0 || b.size == 0) { return "" }
+    if (a.isEmpty || b.isEmpty) { Seq.empty }
     else {
       // Same string? LCS is the string itself..
-      if (a == b) { return a }
+      if (a == b) { a }
       else {
         // Construct the LCS matrix using the lengths of the subsequences,
         // this is done to reduce the memory needed to solve the problem
         val lengths = Array.ofDim[Int](a.size + 1,b.size + 1)
-        for (i <- 0 until a.size) {
-          for (j <- 0 until b.size) {
+        for (i <- a.indices) {
+          for (j <- b.indices) {
             if (a(i) == b(j)) {
               lengths(i + 1)(j + 1) = lengths(i)(j) + 1
             }
@@ -326,20 +325,20 @@ object Diff {
         }
 
         // Starting from the last cell in the matrix, trace back towards the origin, accumulating commonalities
-        val builder = new StringBuilder()
+        val builder = new ArrayBuffer[String]()
         var (x, y) = (a.size, b.size)
         do {
           if      (lengths(x)(y) == lengths(x - 1)(y)) { x -= 1 }
           else if (lengths(x)(y) == lengths(x)(y - 1)) { y -= 1 }
           else {
-            builder += a(x-1)
+            builder.append(a(x-1))
             x -= 1
             y -= 1
           }
         } while (x != 0 && y != 0)
 
         // Due to the traceback approach, we built the result in reverse
-        builder.toString.reverse
+        builder.reverse
       }
     }
   }
@@ -350,11 +349,11 @@ object Diff {
    * @param text2 Second string.
    * @return The number of characters common to the start of each string.
    */
-  private def commonPrefix(text1: String, text2: String): Int = {
+  private def commonPrefix(text1: Seq[String], text2: Seq[String]): Int = {
     // Performance analysis: http://neil.fraser.name/news/2007/10/09/
     val n = Math.min(text1.length, text2.length) - 1
     for (i <- 0 to n) {
-      if (text1.charAt(i) != text2.charAt(i)) {
+      if (text1(i) != text2(i)) {
         return i
       }
     }
@@ -367,7 +366,7 @@ object Diff {
    * @param text2 Second string.
    * @return The number of characters common to the end of each string.
    */
-  private def commonSuffix(text1: String, text2: String): Int = {
+  private def commonSuffix(text1: Seq[String], text2: Seq[String]): Int = {
     // Performance analysis: http://neil.fraser.name/news/2007/10/09/
     val (text1length, text2length) = (text1.length, text2.length)
     // Return early if strings are empty
@@ -375,7 +374,7 @@ object Diff {
       return 0
     val n = Math.min(text1length, text2length) - 1
     for (i <- 1 to n) {
-      if (text1.charAt(text1length - i) != text2.charAt(text2length - i)) {
+      if (text1(text1length - i) != text2(text2length - i)) {
         return i - 1
       }
     }

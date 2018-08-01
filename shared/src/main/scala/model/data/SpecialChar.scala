@@ -85,7 +85,7 @@ object SpecialChar {
     ty: Int,
     attributes: Seq[SpecialChar] = Seq.empty
   ) {
-    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode(attributes :+ end)
+    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode.specials(attributes :+ end)
 
     def atomic: Boolean = ty == DelimitationType.Atomic || ty == DelimitationType.Empty
     def codedNonEmpty: Boolean =  ty == DelimitationType.Atomic || ty == DelimitationType.NonAtomic

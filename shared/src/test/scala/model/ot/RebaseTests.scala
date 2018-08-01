@@ -23,7 +23,7 @@ object RebaseTests extends TestSuite {
         val nContent = r.head
         val childs = r.tail.takeWhile(_.startsWith(" ")).map(_.drop(2))
         val r0 = r.tail.drop(childs.size)
-        val n = data.Node(data.Content.Code(data.Unicode(nContent), ""), rec2(Seq.empty, childs)._1)
+        val n = data.Node("test node", data.Content.Code(data.Unicode(nContent), ""), Map.empty, rec2(Seq.empty, childs)._1)
         rec2(left :+ n, r0)
       }
     }

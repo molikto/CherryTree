@@ -312,9 +312,13 @@ class Client(
   }
 
 
-  override def exitCodeEditMode(): Unit = {
+  override def exitCodeEditMode(ps: Seq[model.operation.Unicode]): Unit = {
     if (state.isCodeInside) {
-      localChange(DocTransaction.mode(state.copyContentMode(mode.Content.CodeNormal)))
+      val at = state.asCodeInside
+      localChange(DocTransaction(
+        ps.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
+        , Some(state.copyContentMode(mode.Content.CodeNormal))))
+      
     }
   }
 

@@ -77,8 +77,7 @@ class SourceView(
     } else {
       editing = documentView.sourceEditor
       editing.documentEdit(c.unicode.str, documentView.dom, src => {
-        c.unicode.str
-        controller.exitCodeEditMode(src)
+        controller.exitCodeEditMode(c.unicode.diff(Unicode(src)))
       })
     }
   }

@@ -5,7 +5,7 @@ import model.data.Unicode
 import monix.reactive.Observable
 
 trait EditorInterface {
-  def exitCodeEditMode(str: String): Unit
+  def exitCodeEditMode(ops: Seq[model.operation.Unicode]): Unit
 
 
   def disableStateUpdate: Boolean

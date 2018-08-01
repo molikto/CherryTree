@@ -7,6 +7,7 @@ import java.util.stream.IntStream
 import model._
 import model.range.IntRange
 import util.GraphemeSplitter
+import util.diff.{Diff, Operation, OperationType}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -97,6 +98,14 @@ object Unicode extends DataObject[Unicode] {
     override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
   }
 
+  def apply(a: Seq[String]): Unicode = {
+    if (a.size == 1 ) {
+      Unicode(a.head)
+    } else {
+      Unicode(a.mkString(""))
+    }
+  }
+
   def apply(a: String, size: Int): Unicode = {
     val u = Unicode(a)
     u.size0 = size
@@ -107,7 +116,7 @@ object Unicode extends DataObject[Unicode] {
     Unicode(new String(Character.toChars(SpecialCharStart + a.id)), 1)
   }
 
-  def apply(a: Seq[SpecialChar]): Unicode = {
+  def specials(a: Seq[SpecialChar]): Unicode = {
     Unicode(a.map(apply).mkString, a.size)
   }
 
@@ -131,6 +140,7 @@ case class Unicode(var str: String) extends Seq[Int] {
     }
     true
   }
+
 
 
   override def length: Int = size
@@ -224,6 +234,38 @@ case class Unicode(var str: String) extends Seq[Int] {
       ii += 1
       (ii, Unicode(str.substring(p, i)))
     }
+  }
+
+  private def toStrList: Seq[String] = {
+    val sp = new ArrayBuffer[String]()
+    var i = 0
+    while (i < str.length) {
+      val oi = i
+      i = GraphemeSplitter.nextBreak(str, i)
+      sp.append(str.substring(oi, i))
+    }
+    sp
+  }
+
+  def diff(to: Unicode): Seq[operation.Unicode] = {
+    val diff = util.diff.Diff.create(toStrList, to.toStrList).diffs
+    var olen = 0
+    val ops = new ArrayBuffer[operation.Unicode]()
+    for (d <- diff) {
+      d.op match {
+        case OperationType.Insert =>
+          val text = Unicode(d.text)
+          ops.append(operation.Unicode.Insert(olen, text))
+          olen += text.size
+        case OperationType.Delete =>
+          val size = Unicode(d.text).size
+          ops.append(operation.Unicode.Delete(olen, olen + size))
+        case OperationType.Equals =>
+          val size = Unicode(d.text).size
+          olen += size
+      }
+    }
+    ops
   }
 
   def graphemes: Iterator[(Int, Unicode)] = after(0)

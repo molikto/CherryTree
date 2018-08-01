@@ -128,7 +128,7 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
 
   def wrapNonOverlappingOrderedRanges(soc: Seq[IntRange], deli: SpecialChar.Delimitation): operation.Rich = {
     Rich(soc.reverse.map(a => {
-      Unicode.Surround(a, data.Unicode(deli.start), data.Unicode(deli.attributes :+ deli.end))
+      Unicode.Surround(a, data.Unicode(deli.start), data.Unicode.specials(deli.attributes :+ deli.end))
     }), Type.Add)
   }
 

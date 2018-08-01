@@ -34,13 +34,13 @@ package object diff {
    * @param length The number of characters to slice
    * @return String
    */
-  def slice(s: String, start: Int, length: Int = Int.MinValue): String = {
+  def slice(s: Seq[String], start: Int, length: Int = Int.MinValue): Seq[String] = {
     val len = if (length == Int.MinValue) s.length - start else length
-    if (s == null)                    return ""
-    else if (start < 0 || len < 0)    return ""
-    else if (start > s.length)        return ""
-    else if (len >= s.length - start) return s.substring(start)
-    else                              s.substring(start, start + len)
+    if (s == null)                    return Seq.empty
+    else if (start < 0 || len < 0)    return Seq.empty
+    else if (start > s.length)        return Seq.empty
+    else if (len >= s.length - start) return s.slice(start, s.size)
+    else                              s.slice(start, start + len)
   }
 
   /**
@@ -49,11 +49,11 @@ package object diff {
    * @param x The number of characters to select
    * @return String
    */
-  def sliceLeft(s: String, x: Int): String = {
-    if (s == null)          return ""
-    else if (x <= 0)        return ""
+  def sliceLeft(s: Seq[String], x: Int): Seq[String] = {
+    if (s == null)          return Seq.empty
+    else if (x <= 0)        return Seq.empty
     else if (x > s.length)  return s
-    else                    s.substring(0, x)
+    else                    s.slice(0, x)
   }
 
   /**
@@ -62,10 +62,10 @@ package object diff {
    * @param x The number of characters to select
    * @return String
    */
-  def sliceRight(s: String, x: Int): String = {
-    if (s == null)         return ""
-    else if (x <= 0)       return ""
+  def sliceRight(s: Seq[String], x: Int): Seq[String] = {
+    if (s == null)         return Seq.empty
+    else if (x <= 0)       return Seq.empty
     else if (x > s.length) return s
-    else                   s.substring(s.length - x)
+    else                   s.slice(s.length - x, s.size)
   }
 }

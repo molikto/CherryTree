@@ -91,6 +91,17 @@ case class DocState(
     case _ => throw new MatchError("Not possible")
   }
 
+  def asCodeInside: cursor.Node = {
+    mode match {
+      case Some(model.mode.Node.Content(n, c)) =>
+        c match {
+          case t@model.mode.Content.CodeInside => n
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
+  }
+
   def asNormal: (cursor.Node, model.mode.Content.Normal) = {
     mode match {
       case Some(model.mode.Node.Content(n, c)) =>
