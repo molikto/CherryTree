@@ -203,7 +203,6 @@ selection
 
 /**
 code mirror cursor
-**/
 
 .cm-fat-cursor .CodeMirror-cursor {
     background-color: #d86174AA;
@@ -216,6 +215,8 @@ code mirror cursor
 .cm-fat-cursor-mark {
     background-color: #d86174AA;
 }
+**/
+
 
 
 /**

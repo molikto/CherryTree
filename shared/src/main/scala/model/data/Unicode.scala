@@ -248,23 +248,37 @@ case class Unicode(var str: String) extends Seq[Int] {
   }
 
   def diff(to: Unicode): Seq[operation.Unicode] = {
+    val time = System.currentTimeMillis()
     val diff = util.diff.Diff.create(toStrList, to.toStrList).diffs
     var olen = 0
     val ops = new ArrayBuffer[operation.Unicode]()
-    for (d <- diff) {
+    var i = 0
+    while (i < diff.size) {
+      val d = diff(i)
       d.op match {
         case OperationType.Insert =>
-          val text = Unicode(d.text)
+          val j = i
+          while (i < diff.size && diff(i).op == OperationType.Insert) {
+            i += 1
+          }
+          val text = Unicode(diff.slice(j, i).flatMap(_.text))
           ops.append(operation.Unicode.Insert(olen, text))
           olen += text.size
         case OperationType.Delete =>
-          val size = Unicode(d.text).size
+          val j = i
+          while (i < diff.size && diff(i).op == OperationType.Delete) {
+            i += 1
+          }
+          val text = Unicode(diff.slice(j, i).flatMap(_.text))
+          val size = text.size
           ops.append(operation.Unicode.Delete(olen, olen + size))
         case OperationType.Equals =>
           val size = Unicode(d.text).size
           olen += size
+          i += 1
       }
     }
+    println("diff in " +  (System.currentTimeMillis() - time))
     ops
   }
 
