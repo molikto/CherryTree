@@ -8,12 +8,17 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, runDismiss: Unit => Unit, val layer: OverlayLayer) extends Overlay {
+class CommandMenuDialog(val client: Client, val layer: OverlayLayer) extends Overlay {
 
   private val search = input(
     width := "100%",
     `class` := "ct-input"
   ).render
+
+
+  override def focus(): Unit = {
+    search.focus()
+  }
 
   private val list = div(
     maxWidth := "560px",
@@ -33,9 +38,6 @@ class CommandMenuDialog(val client: Client, runDismiss: Unit => Unit, val layer:
     div(width := "100%", padding := "6px", search),
     list
   ).render
-
-  attachTo(layer)
-
 
   private var available: Seq[command.Command] = Seq.empty
 
@@ -112,7 +114,6 @@ class CommandMenuDialog(val client: Client, runDismiss: Unit => Unit, val layer:
     available = Seq.empty
     marked = null
     search.textContent = ""
-    runDismiss()
   }
 
   private def mark(i: Int): Unit = {

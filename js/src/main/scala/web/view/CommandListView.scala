@@ -20,6 +20,8 @@ class CommandListView(val client: Client) extends UnselectableView  {
   ).render
 
 
+
+
   observe(client.stateUpdates.map(_ => 0).startWith(Seq(0)).map(_ => {
     client.commandsByCategory.map {
       case (name, cs) =>
@@ -55,4 +57,5 @@ class CommandListView(val client: Client) extends UnselectableView  {
     dom.appendChild(res)
     dom.childNodes(0).asInstanceOf[HTMLElement].scrollIntoView(true)
   }))
+
 }

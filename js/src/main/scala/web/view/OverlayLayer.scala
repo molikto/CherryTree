@@ -12,7 +12,12 @@ import scala.collection.mutable.ArrayBuffer
 abstract class Overlay extends View {
   def layer: OverlayLayer
 
+  private val attached = false
+
   def showOverlay(): Unit = {
+    if (!attached) {
+      attachTo(layer)
+    }
     dismissed = false
     dom.style.display = "block"
     layer.showOverlay(this)
@@ -42,7 +47,7 @@ abstract class Overlay extends View {
     super.destroy()
   }
 }
-class OverlayLayer() extends View {
+class OverlayLayer(base: View) extends View {
 
   private val showingOverlay = ArrayBuffer[Overlay]()
   def showOverlay(overlay: Overlay): Unit = {
@@ -54,9 +59,12 @@ class OverlayLayer() extends View {
 
   def dismissOverlay(overlay: Overlay): Unit = {
     if (showingOverlay.contains(overlay)) {
-      showingOverlay.remove(showingOverlay.indexOf(overlay))
+      val index = showingOverlay.indexOf(overlay)
+      showingOverlay.remove(index)
       if (showingOverlay.isEmpty) {
         dismiss()
+      } else if (index == showingOverlay.size) {
+        showingOverlay.last.focus()
       }
     }
   }
@@ -79,6 +87,7 @@ class OverlayLayer() extends View {
 
   private def dismiss(): Unit = {
     dom.style.display = "none"
+    base.focus()
   }
 
 }

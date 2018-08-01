@@ -1,5 +1,4 @@
 package web.view
 
-class SourceEditDialog extends Overlay {
-
+class SourceEditDialog(val layer: OverlayLayer) extends Overlay {
 }
