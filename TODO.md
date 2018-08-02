@@ -18,6 +18,7 @@
 * movement in bidi text is wired, seems we have something wrong in our grapheme code
 * when use j/k the cursor jumps too much scroll
 * make menu scrollbar overlay
+* open code view the page size changes
 
 
 ## improvements
