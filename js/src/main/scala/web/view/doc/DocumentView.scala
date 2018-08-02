@@ -255,6 +255,7 @@ class DocumentView(
     parent.insertBefore(box, firstChild)
     createContent(root.content).attachToNode(box)
     val list = div().render
+    // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     if (client.state.folded(root)) {
       list.classList.add("ct-folded")
       toggleHoldRendering(hold, true)
