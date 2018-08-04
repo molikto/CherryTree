@@ -89,8 +89,8 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override val description: String = "edit link url"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
-    override def available(a: DocState): Boolean = a.isRichNormal(t => {
-      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+    override def available(a: DocState): Boolean = a.isRichNormalOrInsert((rich, t) => {
+      rich.insideUrlAttributed(t.nodeCursor).nonEmpty
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       DocTransaction.message(ViewMessage.ShowSimplePlainTextAttributeEditor())
@@ -102,13 +102,14 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
-    override def available(a: DocState): Boolean = a.isRichNormal(t => {
-      t.text.isDelimited && SpecialChar.urlAttributed.contains(t.text.asDelimited.delimitation)
+    override def available(a: DocState): Boolean = a.isRichNormal((rich, t) => {
+      rich.insideUrlAttributed(t.nodeCursor).nonEmpty
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val t = a.asRichNormalAtom
-      val url = t.text.asDelimited.attribute(model.data.UrlAttribute).str
+      val (rich, t0) = a.asRichNormalAtom
+      val t = rich.insideUrlAttributed(t0.nodeCursor).get
+      val url = t.asDelimited.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {
         Url.parse(url)

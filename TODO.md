@@ -24,6 +24,7 @@
 ## improvements
 
 * change to a better networking for change, server pushed content, or websocket
+* don't use available/action, use precondition, and remove empty as false
 
 ## code improvements
 

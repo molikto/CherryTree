@@ -3,6 +3,7 @@ package model.data
 import boopickle._
 import model.range.IntRange
 import model.cursor
+import model.data.Text.Delimited
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -213,6 +214,33 @@ case class Rich(text: Seq[Text]) {
         false
       }
     }
+  }
+
+
+  def apply(parent: Seq[Text], cur: cursor.Node): Text = {
+    val a = parent(cur.head)
+    if (cur.size == 1) {
+      a
+    } else {
+      apply(a.asInstanceOf[Text.Formatted].content, cur.tail)
+    }
+  }
+
+  def apply(i: cursor.Node): Text = {
+    apply(text, i)
+  }
+
+  def insideUrlAttributed(nodeCursor: cursor.Node): Option[Text] = {
+    var i = nodeCursor
+    while (i.nonEmpty) {
+      val t = apply(i)
+      t match {
+        case a: Delimited[Any] if a.attributes.contains(UrlAttribute) => return Some(a)
+        case _ =>
+      }
+      i = i.dropRight(1)
+    }
+    None
   }
 
   def wrappedByCodedContent(pos: Int): Boolean = {

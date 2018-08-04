@@ -13,6 +13,8 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+
+
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
@@ -52,6 +54,11 @@ case class Node (
     val a = this(r)
     delete(r).insert(r.transformAfterDeleted(at).get, a)
   }
+
+
+
+
+
 }
 
 object Node extends DataObject[Node] {

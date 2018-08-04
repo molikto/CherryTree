@@ -65,22 +65,42 @@ case class DocState(
     case _ => false
   }
 
-  def asRichNormalAtom: Atom = {
+  def asRichNormalAtom: (Rich, Atom) = {
     val (_, rich, nv) = asRichNormal
     if (rich.isEmpty) throw new IllegalArgumentException("Wrong!")
     else {
       val t = rich.after(nv.focus.start)
-      t
+      (rich, t)
     }
   }
 
-  def isRichNormal(a: Atom => Boolean): Boolean = {
+  def isRichNormalOrInsert(a: (Rich, Atom) => Boolean): Boolean = {
+    if (isRichInsert) {
+      val (_, rich, nv) = asRichInsert
+      if (rich.isEmpty) false
+      else {
+        val t = rich.after(nv.pos)
+        a(rich, t)
+      }
+    } else if (isRichNormal) {
+      val (_, rich, nv) = asRichNormal
+      if (rich.isEmpty) false
+      else {
+        val t = rich.after(nv.focus.start)
+        a(rich, t)
+      }
+    } else {
+      false
+    }
+  }
+
+  def isRichNormal(a: (Rich, Atom) => Boolean): Boolean = {
     if (isRichNormal) {
       val (_, rich, nv) = asRichNormal
       if (rich.isEmpty) false
       else {
         val t = rich.after(nv.focus.start)
-        a(t)
+        a(rich, t)
       }
     } else {
       false
