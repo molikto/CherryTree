@@ -220,7 +220,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
               if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
                 updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
               } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-                if (ee.text.isCode) {
+                if (ee.text.isCodedNonAtomic) {
                   updateExistingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0)
                 } else {
                   updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
@@ -262,7 +262,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     if (ss.isInstanceOf[Atom.CodedGrapheme] &&
       ee.isInstanceOf[Atom.CodedGrapheme] &&
       ss.nodeCursor == ee.nodeCursor &&
-      ss.text.isCode) {
+      ss.text.isCodedNonAtomic) {
       val codeText = domCodeText(domAt(ss.nodeCursor))
       val ast = ss.text.asCoded
       val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)

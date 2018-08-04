@@ -1,7 +1,7 @@
 package model.data
 
 import model.cursor
-import model.data.SpecialChar.Delimitation
+import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
@@ -11,7 +11,7 @@ abstract sealed class Text {
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
-  def isCode: Boolean = this.isInstanceOf[Text.Code]
+  def isCodedNonAtomic: Boolean = this.isInstanceOf[Text.Coded] && asCoded.delimitation.codedNonAtomic
   def isPlain: Boolean = this.isInstanceOf[Text.Plain]
   def isDelimited: Boolean = this.isInstanceOf[Text.Delimited[Any]]
   def asDelimited: Text.Delimited[Any] = this.asInstanceOf[Text.Delimited[Any]]
@@ -336,10 +336,18 @@ object Text {
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
   }
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends Coded with Atomic {
+
+
+  sealed trait DelimitedEmpty extends Delimited[Unit] {
+    override def content: Unit = Unit
+    override def contentSize: Int = 0
+    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {}
+  }
+
+
+  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends DelimitedEmpty with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
-    override def content: Unicode = Unicode.empty
   }
 
   /**

@@ -103,7 +103,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def available(a: DocState): Boolean = a.isRichInsert && {
       val (node, rich, insert) = a.asRichInsert
-      if (deli.codedNonEmpty) {
+      if (deli.coded) {
         if (rich.insideCoded(insert.pos)) {
           if (rich.insideCoded(insert.pos, deli)) {
             !rich.wrappedByCodedContent(insert.pos)

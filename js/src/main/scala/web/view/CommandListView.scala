@@ -8,6 +8,7 @@ import org.scalajs.dom.raw.HTMLElement
 class CommandListView(val client: Client) extends UnselectableView  {
 
 
+
   dom = div(
     flex := "0 0 auto",
     minWidth := "150px",

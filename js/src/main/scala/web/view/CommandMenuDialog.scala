@@ -91,11 +91,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
   def showAt(rect: Rect): Unit = {
-    val bounding = toRect(layer.dom.getBoundingClientRect())
-    val rec = rect.moveBy(-bounding.left, -bounding.top)
-    //whereToShow(bounding, rec)
-    dom.style.left = rec.left.toString + "px"
-    dom.style.top = rec.bottom.toString + "px"
+    setDomAttributeBy(rect)
     updateMenuContent()
     search.textContent = ""
     showOverlay()

@@ -74,20 +74,20 @@ case class DocState(
     }
   }
 
-  def isRichNormalOrInsert(a: (Rich, Atom) => Boolean): Boolean = {
+  def isRichNormalOrInsert(a: (cursor.Node, Rich, Atom) => Boolean): Boolean = {
     if (isRichInsert) {
-      val (_, rich, nv) = asRichInsert
+      val (cur, rich, nv) = asRichInsert
       if (rich.isEmpty) false
       else {
         val t = rich.after(nv.pos)
-        a(rich, t)
+        a(cur, rich, t)
       }
     } else if (isRichNormal) {
-      val (_, rich, nv) = asRichNormal
+      val (cur, rich, nv) = asRichNormal
       if (rich.isEmpty) false
       else {
         val t = rich.after(nv.focus.start)
-        a(rich, t)
+        a(cur, rich, t)
       }
     } else {
       false

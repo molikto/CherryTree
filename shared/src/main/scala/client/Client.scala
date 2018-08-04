@@ -21,6 +21,7 @@ import model.data.{SpecialChar, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import model.cursor.Node
+import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
 import register.RegisterHandler
 import undoer.Undoer

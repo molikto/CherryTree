@@ -94,7 +94,7 @@ class RichChange extends CommandCategory("change text") {
                 )
               }
 
-              if (SpecialChar.codedNonEmpty.contains(deli._1)) {
+              if (SpecialChar.coded.contains(deli._1)) {
                 in.text match {
                   case formatted: Text.Formatted if formatted.content.size == 1 && formatted.content.head.isPlain =>
                     val unicode = formatted.content.head.asPlain.unicode
@@ -110,7 +110,7 @@ class RichChange extends CommandCategory("change text") {
                     return wrapUnwrap()
                   }
                 }
-              } else if (SpecialChar.nonCodedSplittable.contains(deli._1) || SpecialChar.nonCodedNonSplittable.contains(deli._1)) {
+              } else if (SpecialChar.formattedSplittable.contains(deli._1) || SpecialChar.formattedNonSplittable.contains(deli._1)) {
                 return wrapUnwrap()
               }
             case None =>

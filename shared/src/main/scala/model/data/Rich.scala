@@ -230,6 +230,19 @@ case class Rich(text: Seq[Text]) {
     apply(text, i)
   }
 
+  def insideAttributed(nodeCursor: cursor.Node): Option[Text] = {
+    var i = nodeCursor
+    while (i.nonEmpty) {
+      val t = apply(i)
+      t match {
+        case a: Delimited[Any] if a.attributes.nonEmpty => return Some(a)
+        case _ =>
+      }
+      i = i.dropRight(1)
+    }
+    None
+  }
+
   def insideUrlAttributed(nodeCursor: cursor.Node): Option[Text] = {
     var i = nodeCursor
     while (i.nonEmpty) {

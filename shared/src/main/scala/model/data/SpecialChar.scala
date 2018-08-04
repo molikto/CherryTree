@@ -26,15 +26,14 @@ object SpecialChar {
 
   private object DelimitationType {
 
-    val Atomic = 1
-    val NonAtomic = 3
+    val CodedAtomic = 1
+    val CodedNonAtomic = 3
     val Empty = 2
-    val Splittable = 4
-    val NonSplittable = 5
+    val FormattedSplittable = 4
+    val FormattedNonSplittable = 5
     // all
-    // 0coded                   non-coded
+    // 0coded                   non-coded                        empty
     // 1atomic 3non-atomic       4splittable 5non-splittable
-    // 2empty
   }
 
   def apply(id: Int): SpecialChar = createSpecialChar(id)
@@ -42,37 +41,37 @@ object SpecialChar {
   val attributes = Seq(UrlAttribute, TitleAttribute)
 
   val Emphasis =
-    Delimitation("emphasis", EmphasisStart, EmphasisEnd, DelimitationType.Splittable)
+    Delimitation("emphasis", EmphasisStart, EmphasisEnd, DelimitationType.FormattedSplittable)
   val Strong =
-    Delimitation("strong", StrongStart, StrongEnd, DelimitationType.Splittable)
+    Delimitation("strong", StrongStart, StrongEnd, DelimitationType.FormattedSplittable)
   val StrikeThrough =
-    Delimitation("strike through", StrikeThroughStart, StrikeThroughEnd, DelimitationType.Splittable)
+    Delimitation("strike through", StrikeThroughStart, StrikeThroughEnd, DelimitationType.FormattedSplittable)
   val Link =
-    Delimitation("link", LinkStart, LinkEnd, DelimitationType.NonSplittable, attributes)
+    Delimitation("link", LinkStart, LinkEnd, DelimitationType.FormattedNonSplittable, attributes)
   val Image =
     Delimitation("image", ImageStart, ImageEnd, DelimitationType.Empty, attributes)
   val Code =
-    Delimitation("code", CodeStart, CodeEnd, DelimitationType.NonAtomic)
+    Delimitation("code", CodeStart, CodeEnd, DelimitationType.CodedNonAtomic)
   val LaTeX =
-    Delimitation("LaTeX", LaTeXStart, LaTeXEnd, DelimitationType.Atomic)
+    Delimitation("LaTeX", LaTeXStart, LaTeXEnd, DelimitationType.CodedAtomic)
 
   val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, LaTeX, Image)
 
-  val nonCodedSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.Splittable)
-  val nonCodedNonSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.NonSplittable)
-  val atomicNonEmpty: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.Atomic)
-  val codedNonAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.NonAtomic)
+  val formatted = formattedSplittable ++ formattedNonSplittable
+  val formattedSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedSplittable)
+  val formattedNonSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedNonSplittable)
+  val coded: Seq[Delimitation] = all.filter(_.coded)
+  val codedAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.CodedAtomic)
+  val codedNonAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.CodedNonAtomic)
   val emptyContent: Seq[Delimitation] = all.filter(_.ty == DelimitationType.Empty)
-  val codedNonEmpty: Seq[Delimitation] = all.filter(_.codedNonEmpty)
-  val nonCoded = nonCodedSplittable ++ nonCodedNonSplittable
 
 
   val urlAttributed: Seq[Delimitation] = all.filter(_.attributes.contains(UrlAttribute))
 
   //** from inner to outer
   // also inner splits
-  val breakOthersOrderedUnicode: Seq[Unicode] = nonCoded.map(a => a.startUnicode)
-  val noBreakeeOrderedUnicode: Seq[Unicode] = nonCodedNonSplittable.map(a => a.startUnicode)
+  val breakOthersOrderedUnicode: Seq[Unicode] = formatted.map(a => a.startUnicode)
+  val noBreakeeOrderedUnicode: Seq[Unicode] = formattedNonSplittable.map(a => a.startUnicode)
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
@@ -87,8 +86,9 @@ object SpecialChar {
   ) {
     def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode.specials(attributes :+ end)
 
-    def atomic: Boolean = ty == DelimitationType.Atomic || ty == DelimitationType.Empty
-    def codedNonEmpty: Boolean =  ty == DelimitationType.Atomic || ty == DelimitationType.NonAtomic
+    def atomic: Boolean = ty == DelimitationType.CodedAtomic || ty == DelimitationType.Empty
+    def coded: Boolean =  ty == DelimitationType.CodedAtomic || ty == DelimitationType.CodedNonAtomic
+    def codedNonAtomic = ty == DelimitationType.CodedNonAtomic
 
     private[model] def startUnicode = Unicode(start)
     private[model] def endUnicode = Unicode(end)

@@ -54,7 +54,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     }
   }
 
-  SpecialChar.nonCodedSplittable.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.formattedSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
       if (a.isRichVisual) {
@@ -108,7 +108,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     * code wrap CANNOT use surround!!! because this breaks cursor placement and might insert special char inside code
     * also we currently only wraps plain text
     */
-  SpecialChar.codedNonEmpty.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection as ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
@@ -135,7 +135,7 @@ class RichVisual extends CommandCategory("text visual mode") {
 
   }).toMap
 
-  SpecialChar.nonCodedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
+  SpecialChar.formattedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>

@@ -10,6 +10,7 @@ import util.Rect
 import scala.collection.mutable.ArrayBuffer
 
 abstract class Overlay extends View {
+
   protected def layer: OverlayLayer
 
   private var attached = false
@@ -52,6 +53,14 @@ abstract class Overlay extends View {
   override def destroy(): Unit = {
     dismiss()
     super.destroy()
+  }
+
+  def setDomAttributeBy(rect: Rect): Unit = {
+    val bounding = toRect(layer.dom.getBoundingClientRect())
+    val rec = rect.moveBy(-bounding.left, -bounding.top)
+    //whereToShow(bounding, rec)
+    dom.style.left = rec.left.toString + "px"
+    dom.style.top = rec.bottom.toString + "px"
   }
 }
 class OverlayLayer(val parent: HTMLElement, base: View) extends View {

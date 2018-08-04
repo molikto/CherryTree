@@ -186,7 +186,7 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
     val rc = r.nextInt(9)
     rc match {
       case 0 =>
-        val randomFormat = SpecialChar.nonCodedSplittable(r.nextInt(SpecialChar.nonCodedSplittable.size))
+        val randomFormat = SpecialChar.formattedSplittable(r.nextInt(SpecialChar.formattedSplittable.size))
         val range = randomSubrich(d, r)
         Rich(Seq(
           operation.Unicode.Surround(range, data.Unicode(randomFormat.start), data.Unicode(randomFormat.end))), Type.Add)
@@ -275,7 +275,7 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
 
   private def randomFormatted(d: data.Rich, r: Random): Option[IntRange] = {
     val info = d.afters(0)
-    val starts = info.filter(a => SpecialChar.nonCodedSplittable.exists(j => a.special(j.start))).toSeq
+    val starts = info.filter(a => SpecialChar.formattedSplittable.exists(j => a.special(j.start))).toSeq
     if (starts.isEmpty) {
       None
     } else {

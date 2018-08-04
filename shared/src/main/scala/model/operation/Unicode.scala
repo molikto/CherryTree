@@ -77,13 +77,13 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
 
     override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = i match {
       case mode.Content.RichInsert(k) =>
-        Some(mode.Content.RichInsert(if (k <= r.start) {
-          k
+        if (k <= r.start) {
+          Some(i)
         } else if (k >= r.until) {
-          k - r.size
+          Some(mode.Content.RichInsert(k - r.size))
         } else {
-          k
-        }))
+          None
+        }
      case mode.Content.RichVisual(a, b) =>
        (transformRange(a), transformRange(b)) match {
          case (Some(aa), Some(bb)) => Some(mode.Content.RichVisual(aa, bb))

@@ -1,6 +1,7 @@
 package doc
 
 import model.cursor
+import model.range.IntRange
 import undoer.Undoer
 
 case class DocUpdate(
@@ -9,5 +10,6 @@ case class DocUpdate(
   mode: Option[model.mode.Node],
   folds: Map[cursor.Node, Boolean],
   fromUser: Boolean,
-  viewUpdated: Boolean)
+  viewUpdated: Boolean) {
+}
 

@@ -85,15 +85,23 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     }
   }
 
-  val editUrl = new Command {
-    override val description: String = "edit link url"
+  val editAttribute = new Command {
+    override val description: String = "edit attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
-    override def available(a: DocState): Boolean = a.isRichNormalOrInsert((rich, t) => {
-      rich.insideUrlAttributed(t.nodeCursor).nonEmpty
+    override def available(a: DocState): Boolean = a.isRichNormalOrInsert((cur, rich, t) => {
+      rich.insideAttributed(t.nodeCursor).nonEmpty
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.message(ViewMessage.ShowSimplePlainTextAttributeEditor())
+      a.isRichNormalOrInsert((cur, rich, t) => {
+        rich.insideAttributed(t.nodeCursor) match {
+          case Some(text) =>
+            return DocTransaction.message(ViewMessage.ShowSimplePlainTextAttributeEditor())
+          case None => return DocTransaction.empty
+        }
+
+      })
+      DocTransaction.empty
     }
   }
 

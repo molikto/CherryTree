@@ -63,6 +63,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   private val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer)
 
+  private val attributeEditor: AttributeEditDialog = new AttributeEditDialog(client, overlayLayer)
+
   docView.sourceEditor = sourceEditor
   docView.commandMenu = commandMenu
 
@@ -76,6 +78,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     case Client.ViewMessage.ScrollToBottom =>
       docView.scrollToBottom()
     case Client.ViewMessage.ShowSimplePlainTextAttributeEditor() =>
+      attributeEditor.showAt(docView.selectionRect)
   })
 
 }
