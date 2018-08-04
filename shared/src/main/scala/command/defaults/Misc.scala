@@ -6,6 +6,7 @@ import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{SpecialChar, Unicode}
+import model.mode
 import model.range.IntRange
 
 import scala.util.{Success, Try}
@@ -104,6 +105,16 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
       DocTransaction.empty
     }
   }
+
+  new Command {
+    override val description: String = "edit source code"
+    override def defaultKeys: Seq[KeySeq] = Seq(Enter)
+    override protected def available(a: DocState): Boolean = a.isCodeNormal
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.mode(a.copyContentMode(mode.Content.CodeInside))
+    }
+  }
+
 
   val visitLink = new Command {
     override val description: String = "visit link url"
