@@ -2,6 +2,7 @@ package web.view.doc
 
 import command.Key
 import doc.{DocInterface, DocState}
+import model.{cursor, range}
 import model.data.Content
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
@@ -19,8 +20,6 @@ class DocumentView(
   override protected val editor: EditorInterface
 ) extends EditorView {
 
-  var sourceEditor: SourceEditDialog = null
-  var commandMenu: CommandMenuDialog = null
 
   private val rootFrame = div(
     `class` := "ct-root ct-d-frame",
@@ -370,7 +369,21 @@ class DocumentView(
 
 
 
+  var sourceEditor: SourceEditDialog = null
+  var commandMenu: CommandMenuDialog = null
+  var attributeEditor: UrlAndImageAttributeEditDialog = null
 
+
+
+
+  def showCommandMenu(): Unit = {
+    commandMenu.showAt(selectionRect)
+  }
+
+
+  def showAttributeEditor(cur: model.cursor.Node, pos: range.IntRange): Unit = {
+    contentAt(cur).asInstanceOf[RichView].showAttributeEditor(pos)
+  }
 
 
 

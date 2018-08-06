@@ -60,26 +60,28 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     o
   }
 
-  private val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
 
-  private val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer)
+  {
+    val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
+    val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer)
+    val attributeEditor: UrlAndImageAttributeEditDialog = new UrlAndImageAttributeEditDialog(client, overlayLayer)
+    docView.sourceEditor = sourceEditor
+    docView.commandMenu = commandMenu
+    docView.attributeEditor = attributeEditor
+  }
 
-  private val attributeEditor: AttributeEditDialog = new AttributeEditDialog(client, overlayLayer)
-
-  docView.sourceEditor = sourceEditor
-  docView.commandMenu = commandMenu
 
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
-      commandMenu.showAt(docView.selectionRect)
+      docView.showCommandMenu()
     case Client.ViewMessage.ScrollToTop =>
       docView.scrollToTop()
     case Client.ViewMessage.ScrollToBottom =>
       docView.scrollToBottom()
-    case Client.ViewMessage.ShowSimplePlainTextAttributeEditor() =>
-      attributeEditor.showAt(docView.selectionRect)
+    case Client.ViewMessage.ShowUrlAndTitleAttributeEditor(cur, pos) =>
+      docView.showAttributeEditor(cur, pos)
   })
 
 }

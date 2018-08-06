@@ -16,6 +16,7 @@ import scala.scalajs.js
 
 class RichView(documentView: DocumentView, val controller: EditorInterface,  var rich: Rich) extends ContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
+
   private val evilChar = "\u200B"
   /**
     *
@@ -572,4 +573,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     super.destroy()
   }
 
+  def showAttributeEditor(pos: IntRange): Unit = {
+    //documentView.attributeEditor.showAt()
+  }
 }

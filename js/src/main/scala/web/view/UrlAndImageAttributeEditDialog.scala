@@ -6,7 +6,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import client.Client
 
-class AttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends Overlay {
+class UrlAndImageAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends Overlay {
 
   private val search = input(
     width := "100%",

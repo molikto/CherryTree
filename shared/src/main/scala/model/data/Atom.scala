@@ -23,6 +23,11 @@ sealed trait Atom {
 
   def range = IntRange(totalIndex, totalIndex + size)
 
+  def isStartWithAttribute(c: SpecialChar): Boolean = this match {
+    case a: Atom.Special => a.a == a.text.delimitation.start && a.text.attributes.contains(c)
+    case _ => false
+  }
+
   def delimitationStart: Boolean = this match {
     case a: Atom.Special => a.a == a.text.delimitation.start
     case _ => false

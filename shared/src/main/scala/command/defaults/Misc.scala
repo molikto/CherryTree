@@ -5,8 +5,9 @@ import client.Client.ViewMessage
 import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.{SpecialChar, Unicode}
+import model.data.{Atom, SpecialChar, Unicode}
 import model.mode
+import model.data.UrlAttribute
 import model.range.IntRange
 
 import scala.util.{Success, Try}
@@ -62,7 +63,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
 
   val commandMenu = new Command {
-    override protected def available(a: DocState): Boolean = true
+    override protected def available(a: DocState): Boolean = a.mode.nonEmpty
     override def emptyAsFalseInInsertMode: Boolean = true
 
     override val description: String = "show dropdown command menu"
@@ -79,6 +80,10 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
         true
       }
       if (av) {
+//        a.mode.get match {
+//          case model.mode.Node.Visual(fix, move) =>
+//          case model.mode.Node.Content(cur, c) =>
+//        }
         DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
       } else {
         DocTransaction.empty
@@ -86,21 +91,18 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     }
   }
 
+  // LATER we only support url and title attribute now, no need to worry about future
   val editAttribute = new Command {
     override val description: String = "edit attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRichNormalOrInsert((cur, rich, t) => {
-      rich.insideAttributed(t.nodeCursor).nonEmpty
+      rich.befores(t.range.start).exists(a => a.isStartWithAttribute(UrlAttribute))
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRichNormalOrInsert((cur, rich, t) => {
-        rich.insideAttributed(t.nodeCursor) match {
-          case Some(text) =>
-            return DocTransaction.message(ViewMessage.ShowSimplePlainTextAttributeEditor())
-          case None => return DocTransaction.empty
-        }
-
+        val text = rich.befores(t.range.start).find(a => a.isStartWithAttribute(UrlAttribute)).get.asInstanceOf[Atom.Special]
+        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange))
       })
       DocTransaction.empty
     }
@@ -122,13 +124,13 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRichNormal((rich, t) => {
-      rich.insideUrlAttributed(t.nodeCursor).nonEmpty
+      rich.befores(t.range.start).exists(_.isStartWithAttribute(UrlAttribute))
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (rich, t0) = a.asRichNormalAtom
-      val t = rich.insideUrlAttributed(t0.nodeCursor).get
-      val url = t.asDelimited.attribute(model.data.UrlAttribute).str
+      val t = rich.befores(t0.range.start).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
+      val url = t.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {
         Url.parse(url)
