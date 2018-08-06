@@ -12,16 +12,14 @@ import scala.util.Random
 /**
   */
 // LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
-case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich, mode.Rich] {
+case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
 
-  def transformRichMode(a: mode.Content.Rich): Option[mode.Content.Rich] = u.foldLeft(Some(a) : Option[mode.Content.Rich]) {(s, u) => u.transformRichMode(s) }
+  def transformRichMode(a: mode.Content.Rich): (mode.Content.Rich, Boolean) = u.foldLeft((a, false)) {(s, u) => u.transformRichMode(s) }
 
   override def apply(d: data.Rich): data.Rich =
     data.Rich.parse(Unicode.apply(u, d.serialize()))
 
   override type This = Rich
-
-  override def transform(a: mode.Rich): Option[mode.Rich] = Some(a)
 
   override def reverse(d: data.Rich): Rich = {
     Rich(u.foldLeft((d.serialize(), Seq.empty[operation.Unicode])) { (s, a) =>
@@ -64,7 +62,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
   override def isEmpty: Boolean = u.forall(_.isEmpty)
 }
 
-object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
+object Rich extends OperationObject[data.Rich, Rich] {
   def merge(op1: Rich, op2: Rich, ty: Type): Rich = {
     Rich(op1.u ++ op2.u, ty)
   }
@@ -84,11 +82,11 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
 
   def deleteTextualRange(rich: model.data.Rich, r0: IntRange): Option[(Seq[operation.Rich], IntRange, Int)] = {
     val ssss = util.last(rich.befores(r0.start).takeWhile {
-      case s: Atom.Special[Any] => r0.contains(s.another.range)
+      case s: Atom.Special => r0.contains(s.another.range)
       case _ => false
     }).map(_.range.start).getOrElse(r0.start)
     val uuuu = util.last(rich.afters(r0.until).takeWhile {
-      case s: Atom.Special[Any] => r0.contains(s.another.range)
+      case s: Atom.Special => r0.contains(s.another.range)
       case _ => false
     }).map(_.range.until).getOrElse(r0.until)
     val r = IntRange(ssss, uuuu)
@@ -141,7 +139,7 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
     }
   }
 
-  def unwrap(start: Int, value: Text.Delimited[Any]): operation.Rich = {
+  def unwrap(start: Int, value: Text.Delimited): operation.Rich = {
     operation.Rich(
       Seq(
         Unicode.Delete(start + value.contentSize + 1, start + value.size),
@@ -268,7 +266,7 @@ object Rich extends OperationObject[data.Rich, mode.Rich, Rich] {
     if (starts.isEmpty) {
       None
     } else {
-      val t = starts(r.nextInt(starts.size)).asInstanceOf[Atom.Special[Any]]
+      val t = starts(r.nextInt(starts.size)).asInstanceOf[Atom.Special]
       Some((t.textRange, t.text.rangeAttribute(UrlAttribute).moveBy(t.textTotalIndex)))
     }
   }

@@ -20,14 +20,6 @@ package object transaction {
       }
     }
 
-    def transform(pp: Node, m: Option[mode.Node]): Option[mode.Node] = {
-      pp.foldLeft(m) {(m, p) => p.transform(m) }
-    }
-
-    def transformSeq(pp: Seq[Node], m: Option[mode.Node]): Option[mode.Node] = {
-      transform(pp.flatten, m)
-    }
-
     def mergeForUndoer(current: Node, before: Node): Option[Node] = {
       (current, before) match {
         case (Seq(c), Seq(b)) =>

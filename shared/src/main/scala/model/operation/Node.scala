@@ -8,11 +8,11 @@ import model.range.IntRange
 import scala.util.Random
 
 
-abstract sealed class Node extends Operation[data.Node, mode.Node] {
+abstract sealed class Node extends OperationOnModal[data.Node, mode.Node] {
   override type This = Node
 }
 
-object Node extends OperationObject[data.Node, mode.Node, Node] {
+object Node extends OperationObject[data.Node, operation.Node] {
   def deleteRanges(aa: Seq[range.Node]): Seq[Node] = {
     val ddd = aa.foldLeft[(range.Node => Option[range.Node], Seq[range.Node])]((a => Some(a), Seq.empty)) { (pair, a) =>
       val r2 = pair._1(a)
@@ -25,8 +25,28 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
   def rich(c: cursor.Node, a: operation.Rich): Node = operation.Node.Content(c, operation.Content.Rich(a))
   def rich(c: cursor.Node, a: Seq[operation.Rich]): Seq[Node] = a.map(a => rich(c, a))
 
-  def transform(ns: Seq[Node], a: mode.Node): Option[mode.Node] = {
-    ns.foldLeft(Some(a) : Option[mode.Node]) { (a, n) => n.transform(a) }
+  def transform(nodeAfter: data.Node, ns: Seq[Node], a: (mode.Node, Boolean)): (mode.Node, Boolean) = {
+    val (c, j) = ns.foldLeft(a) { (a, n) => n.transform(a) }
+    fixTransformMode(nodeAfter, c, j)
+  }
+
+  // LATER transform code is written very badly with various hacks
+  private def fixTransformMode(a: data.Node, m: mode.Node, isBad: Boolean): (mode.Node, Boolean) = {
+    val mode = if (isBad) {
+      m match {
+        case model.mode.Node.Content(cur, c) =>
+          val tt = c match {
+            case null => a(cur).content.defaultNormalMode()
+            case model.mode.Content.RichInsert(ins) => model.mode.Content.RichNormal(a(cur).rich.after(ins).range)
+            case t => t
+          }
+          model.mode.Node.Content(cur, tt)
+        case j => j
+      }
+    } else {
+      m
+    }
+    (mode, isBad)
   }
 
   case class Content(at: cursor.Node, content: operation.Content) extends Node {
@@ -35,9 +55,15 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
       d.map(at, a => a.copy(content = content(a.content)))
     }
 
-    override def transform(a: mode.Node): Option[mode.Node] = a match {
-      case c: mode.Node.Content if c.node == at => content.transform(c.a).map(k => c.copy(a = k))
-      case _ => Some(a)
+    override def transform(a: MM): MODE = a match {
+      case c: mode.Node.Content if c.node == at =>
+        if (c.a != null) {
+          val (m, f) = content.transform(c.a)
+          (c.copy(a = m), f)
+        } else {
+          MODE(a)
+        }
+      case _ => MODE(a)
     }
 
     override def reverse(d: data.Node): Node = copy(content = content.reverse(d(at).content))
@@ -62,9 +88,9 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
 
     override def toString: String = s"Replace($at)"
 
-    override def transform(a: mode.Node): Option[mode.Node] = a match {
-      case c: mode.Node.Content if c.node == at => None
-      case _ => Some(a)
+    override def transform(a: MM): MODE = a match {
+      case c: mode.Node.Content if c.node == at => (mode.Node.Content(at, content.defaultNormalMode()), false)
+      case _ => MODE(a)
     }
 
     override def reverse(d: data.Node): Node = Replace(at, d(at).content)
@@ -84,11 +110,11 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
 
     override def toString: String = s"Insert($at, ${childs.size})"
 
-    override def transform(a: mode.Node): Option[mode.Node] = a match {
+    override def transform(a: MM): MODE = a match {
       case c: mode.Node.Content =>
-        Some(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
+        MODE(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
       case mode.Node.Visual(fix, move) =>
-        Some(mode.Node.Visual(
+        MODE(mode.Node.Visual(
           cursor.Node.transformAfterInserted(at, childs.size, fix),
           cursor.Node.transformAfterInserted(at, childs.size, move)))
     }
@@ -115,15 +141,17 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
 
-    override def transform(a: mode.Node): Option[mode.Node] = a match {
+    override def transform(a: MM): MODE = a match {
       case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
-        case Some(k) => Some(c.copy(node = k))
-        case None => None
+        case Some(k) => MODE(c.copy(node = k))
+        case None => MODE(mode.Node.Content(r.parent, null), false)
       }
       case mode.Node.Visual(fix, move) =>
         (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
-          case (Some(ff), Some(mm)) => Some(mode.Node.Visual(ff, mm))
-          case _ => None
+          case (Some(ff), Some(mm)) => MODE(mode.Node.Visual(ff, mm))
+          case (Some(ff), None) => MODE(mode.Node.Content(ff, null), false)
+          case (None, Some(ff))  =>  MODE(mode.Node.Content(ff, null), false)
+          case (None, None) => MODE(mode.Node.Content(r.parent, null), false)
         }
     }
 
@@ -152,10 +180,10 @@ object Node extends OperationObject[data.Node, mode.Node, Node] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
-    override def transform(a: mode.Node): Option[mode.Node] = Some(a match {
-      case mode.Node.Visual(fix, move) => mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move))
-      case mode.Node.Content(node, b) => mode.Node.Content(r.transformNodeAfterMoved(to, node), b)
-    })
+    override def transform(a: MM): MODE = a match {
+      case mode.Node.Visual(fix, move) => MODE(mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move)))
+      case mode.Node.Content(node, b) => MODE(mode.Node.Content(r.transformNodeAfterMoved(to, node), b))
+    }
 
     def reverse = operation.Node.Move(
         range.Node(cursor.Node.moveBy(r.transformNodeAfterMoved(to, to), -r.size), r.size),

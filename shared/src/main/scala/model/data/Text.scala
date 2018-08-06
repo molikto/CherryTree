@@ -13,8 +13,8 @@ abstract sealed class Text {
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
   def isCodedNonAtomic: Boolean = this.isInstanceOf[Text.Coded] && asCoded.delimitation.codedNonAtomic
   def isPlain: Boolean = this.isInstanceOf[Text.Plain]
-  def isDelimited: Boolean = this.isInstanceOf[Text.Delimited[Any]]
-  def asDelimited: Text.Delimited[Any] = this.asInstanceOf[Text.Delimited[Any]]
+  def isDelimited: Boolean = this.isInstanceOf[Text.Delimited]
+  def asDelimited: Text.Delimited = this.asInstanceOf[Text.Delimited]
   def asPlain: Text.Plain = this.asInstanceOf[Text.Plain]
 
   private[data] def serialize(buffer: UnicodeWriter)
@@ -168,10 +168,7 @@ object Text {
     buffer.toVector
   }
 
-  type DelimitedAny = Delimited[Any]
-
-  sealed trait Delimited[T] extends Text {
-    def content: T
+  sealed trait Delimited extends Text {
     def contentSize: Int
     private[model] def serializeContent(buffer: UnicodeWriter): Unit
     private[model] def serializeAttributes(buffer: UnicodeWriter): Unit  = {
@@ -203,7 +200,11 @@ object Text {
     final override lazy val size: Int = 2 + contentSize + skipSize
   }
 
-  sealed trait Formatted extends Delimited[Seq[Text]] {
+  sealed trait DelimitedT[T] extends Delimited {
+    def content: T
+  }
+
+  sealed trait Formatted extends DelimitedT[Seq[Text]] {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
@@ -273,7 +274,7 @@ object Text {
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
   }
 
-  sealed trait Coded extends Delimited[Unicode] {
+  sealed trait Coded extends DelimitedT[Unicode] {
     def content: Unicode
     def delimitation: SpecialChar.Delimitation
     override def contentSize: Int = content.size
@@ -338,7 +339,7 @@ object Text {
   }
 
 
-  sealed trait DelimitedEmpty extends Delimited[Unit] {
+  sealed trait DelimitedEmpty extends DelimitedT[Unit] {
     override def content: Unit = Unit
     override def contentSize: Int = 0
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {}

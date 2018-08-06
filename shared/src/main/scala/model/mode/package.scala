@@ -11,12 +11,6 @@ package object mode {
     def isNormal: Boolean = this.isInstanceOf[Content.Normal]
   }
 
-  sealed trait Rich extends Mode[data.Rich]
-  case object RichNothing extends Rich
-
-  sealed trait Unicode extends Mode[data.Unicode]
-  case object UnicodeNothing extends Rich
-
   object Content {
     sealed abstract class Rich extends Content
     sealed abstract class Code extends Content

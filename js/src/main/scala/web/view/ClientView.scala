@@ -10,6 +10,7 @@ import web.view.doc.DocumentView
 import scala.scalajs._
 
 // in this class we use nulls for a various things, but not for public API
+// TODO stop the client
 class ClientView(private val parent: HTMLElement, val client: Client) extends View {
 
   /**

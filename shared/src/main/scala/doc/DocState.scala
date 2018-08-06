@@ -55,11 +55,6 @@ case class DocState(
     case _ => false
   }
 
-  def getNode: Node = mode match {
-    case Some(model.mode.Node.Content(at, _)) => at
-    case Some(model.mode.Node.Visual(at, _)) => at
-  }
-
   def isCodeInside: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside)) => true
     case _ => false

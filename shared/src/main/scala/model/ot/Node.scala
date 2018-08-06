@@ -8,7 +8,7 @@ import model.range.IntRange
 
 import scala.util.Random
 
-object Node extends Ot[data.Node, mode.Node, operation.Node, conflict.Node] {
+object Node extends Ot[data.Node, operation.Node, conflict.Node] {
 
   type RebaseResult = Rebased[conflict.Node, (Seq[operation.Node], Seq[operation.Node])]
 

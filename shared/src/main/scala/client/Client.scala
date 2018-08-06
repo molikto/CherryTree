@@ -116,6 +116,12 @@ class Client(
     case _ => Set.empty
   })
 
+  /**
+    * in some case the current mode conflicts with other collaborator operation, what we do is render current
+    * mode as invalid, then reset to a default mode after some time,
+    */
+  private var modeTemp: mode.Node = null
+
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
   private var disableStateUpdate_ : Boolean = false
@@ -157,7 +163,10 @@ class Client(
 
   private var insertingFlusher: Cancelable = null
 
+  private var scheduledUpdateTempMode: Cancelable = null
+
   private def updateState(a: DocState,
+    modeTemp: mode.Node,
     from: model.transaction.Node,
     ty: Undoer.Type,
     viewUpdated: Boolean,
@@ -174,9 +183,18 @@ class Client(
 //      println("client update mode: " + a.mode)
     }
     updatingState = true
-    val modeBefore = state.mode
+    val modeBefore = state.mode.getOrElse(modeTemp)
     val docBefore = state.node
     state_ = a
+    if (scheduledUpdateTempMode != null) {
+      scheduledUpdateTempMode.cancel()
+      if (modeTemp != null) {
+        scheduledUpdateTempMode = Observable.delay(
+          updateState(a.copy(mode = Some(modeTemp)), null, Seq.empty, Undoer.Local, false, Seq.empty, false)
+        ).delaySubscription(2.seconds).subscribe()
+      }
+    }
+    this.modeTemp = modeTemp
     if (foldBefore.nonEmpty) {
       localStorage.set(docId + ".folded", state_.foldedNodes.mkString(","))
     }
@@ -298,14 +316,24 @@ class Client(
         val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
         uncommitted = uc
         connection_.update(Some(success.serverStatus))
-        if (wp0.nonEmpty) updateState(
-          state.copy(
-            node = operation.Node.apply(wp0, state.node),
-            mode = state.mode.flatMap(a => operation.Node.transform(wp0, a))
-          ),
-          wp0,
-          Undoer.Remote,
-          viewUpdated = false, wp0, fromUser = false)
+        if (wp0.nonEmpty) {
+          val nn = operation.Node.apply(wp0, state.node)
+          val mmm = operation.Node.transform(nn, wp0, state.mode.map(a => (a, false)).getOrElse((modeTemp, true)))
+          if (debug_view) {
+            println("after sever mode is: " + mmm)
+          }
+          updateState(
+            state.copy(
+              node = nn,
+              mode = if (mmm._2) None else Some(mmm._1)
+            ),
+            if (mmm._2) mmm._1 else null,
+            wp0,
+            Undoer.Remote,
+            viewUpdated = false,
+            wp0,
+            fromUser = false)
+      }
       } catch {
         case e: Exception =>
           throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -439,10 +467,11 @@ class Client(
       state.node
     }
     val m = mode match {
-      case Some(_) =>
-        mode
+      case Some(k) =>
+        k
       case None =>
-        state.mode.flatMap(a => operation.Node.transform(changes, a))
+        val mmm = state.mode.getOrElse(modeTemp)
+        operation.Node.transform(d, changes, (mmm, false))._1
     }
     for (m <- update.viewMessagesBefore) {
       viewMessages_.onNext(m)
@@ -452,7 +481,8 @@ class Client(
         println(update)
       }
       val (res, ch) = applyFolds(state.foldedNodes, update.unfoldBefore, update.toggleBefore, changes)
-      updateState(DocState(d, m, res),
+      updateState(DocState(d, Some(m), res),
+        null,
         changes,
         update.undoType.getOrElse(Undoer.Local),
         viewUpdated = update.viewUpdated,

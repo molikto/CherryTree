@@ -41,11 +41,11 @@ case class Rich(text: Seq[Text]) {
   def between(a: Int, b: Int): Iterator[Atom] = between(IntRange(a, b))
   def between(r: IntRange): Iterator[Atom] = afters(r.start).takeWhile(_.range.until <= r.until)
 
-  def singleSpecials(r: IntRange): Seq[Atom.Special[Any]] = {
+  def singleSpecials(r: IntRange): Seq[Atom.Special] = {
     between(r).filter(a => {
-      val singleSpecial = a.special && !r.contains(a.asInstanceOf[Atom.Special[Any]].another.range)
+      val singleSpecial = a.special && !r.contains(a.asInstanceOf[Atom.Special].another.range)
       singleSpecial
-    }).map(_.asInstanceOf[Atom.Special[Any]]).toSeq
+    }).map(_.asInstanceOf[Atom.Special]).toSeq
   }
   /**
     * a word is a:
@@ -235,7 +235,7 @@ case class Rich(text: Seq[Text]) {
     while (i.nonEmpty) {
       val t = apply(i)
       t match {
-        case a: Delimited[Any] if a.attributes.nonEmpty => return Some(a)
+        case a: Delimited if a.attributes.nonEmpty => return Some(a)
         case _ =>
       }
       i = i.dropRight(1)
@@ -248,7 +248,7 @@ case class Rich(text: Seq[Text]) {
     while (i.nonEmpty) {
       val t = apply(i)
       t match {
-        case a: Delimited[Any] if a.attributes.contains(UrlAttribute) => return Some(a)
+        case a: Delimited if a.attributes.contains(UrlAttribute) => return Some(a)
         case _ =>
       }
       i = i.dropRight(1)

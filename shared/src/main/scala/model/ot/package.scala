@@ -11,7 +11,7 @@ import scala.util.Random
 
 package object ot {
   
-  trait Ot[DATA, M <: Mode[DATA], OPERATION <: operation.Operation[DATA, M], CONFLICT] {
+  trait Ot[DATA, OPERATION <: operation.Operation[DATA], CONFLICT] {
 
     type TRANSACTION = Seq[OPERATION]
 

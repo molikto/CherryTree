@@ -12,15 +12,17 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import scala.util.Random
 
 
-sealed trait Unicode extends Operation[data.Unicode, mode.Unicode] {
+sealed trait Unicode extends Operation[data.Unicode] {
   override type This = Unicode
-  override def transform(a: mode.Unicode): Option[mode.Unicode] = Some(a)
 
-  def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich]
-  def transformRichMode(i: Option[mode.Content.Rich]): Option[mode.Content.Rich] = i.flatMap(transformRichMode)
+  def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean)
+  def transformRichMode(i: (mode.Content.Rich, Boolean)): (mode.Content.Rich, Boolean) = {
+    val res = transformRichMode(i._1)
+    (res._1, res._2 || i._2)
+  }
 }
 
-object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
+object Unicode extends OperationObject[data.Unicode, Unicode] {
 
   case class Insert(at: Int, unicode: data.Unicode, leftGlued: Boolean = false) extends Unicode {
     override def ty: Type = Type.Add
@@ -34,7 +36,7 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
         else IntRange(start, until + unicode.size)
     }
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = Some(i match {
+    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(s) =>
         mode.Content.RichInsert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
       case mode.Content.RichVisual(a, b) =>
@@ -49,7 +51,7 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
         } else {
           mode.Content.RichNormal(transformRange(r))
         }
-    })
+    }, false)
 
     override def reverse(d: data.Unicode): Unicode = Delete(at, at + unicode.size)
 
@@ -75,22 +77,26 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     def transformRange(range: IntRange): Option[IntRange] =
       r.transformDeletingRangeAfterDeleted(range)
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = i match {
+    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = i match {
       case mode.Content.RichInsert(k) =>
         if (k <= r.start) {
-          Some(i)
+          (i, false)
         } else if (k >= r.until) {
-          Some(mode.Content.RichInsert(k - r.size))
+          (mode.Content.RichInsert(k - r.size), false)
         } else {
-          None
+          (mode.Content.RichInsert(r.start), true)
         }
      case mode.Content.RichVisual(a, b) =>
        (transformRange(a), transformRange(b)) match {
-         case (Some(aa), Some(bb)) => Some(mode.Content.RichVisual(aa, bb))
-         case _ => None
+         case (Some(aa), Some(bb)) => (mode.Content.RichVisual(aa, bb), false)
+         case (Some(aa), None) => (mode.Content.RichNormal(aa), true)
+         case (None, Some(aa)) => (mode.Content.RichNormal(aa), true)
+         case _ => (mode.Content.RichInsert(r.start), true)
        }
       case mode.Content.RichNormal(range) =>
-        transformRange(range).map(r => mode.Content.RichNormal(r))
+        transformRange(range).map(r => (mode.Content.RichNormal(r) : mode.Content.Rich, false)).getOrElse(
+          (mode.Content.RichInsert(r.start), true)
+        )
     }
 
     override def reverse(d: data.Unicode): Unicode = Insert(r.start, d.slice(r))
@@ -137,7 +143,7 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
       }
     }
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = Some(i match {
+    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
         if (r.deletesCursor(k)) {
           throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
@@ -150,7 +156,7 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
         mode.Content.RichVisual(transformRange(a), transformRange(b))
       case mode.Content.RichNormal(range) =>
         mode.Content.RichNormal(transformRange(range))
-    })
+    }, false)
 
     override def reverse(d: data.Unicode): Unicode = ReplaceAtomic(IntRange(r.start, r.start + unicode.size), d.slice(r))
 
@@ -184,21 +190,21 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
       }
     }
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = i match {
+    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
-        Some(mode.Content.RichInsert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size))
+        mode.Content.RichInsert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size)
       case mode.Content.RichVisual(a, b) =>
         (transformRange(a), transformRange(b)) match {
-          case (Some(aa), Some(bb)) => Some(mode.Content.RichVisual(aa, bb))
-          case _ => None
+          case (Some(aa), Some(bb)) => mode.Content.RichVisual(aa, bb)
+          case _ => throw new IllegalArgumentException("Should not usually happen")
         }
       case mode.Content.RichNormal(range) =>
         if (range.isEmpty) {
-          Some(mode.Content.RichNormal(IntRange(0, 1))) // LATER we know all our surround is some surround by special char!!
+          mode.Content.RichNormal(IntRange(0, 1)) // LATER we know all our surround is some surround by special char!!
         } else {
-          transformRange(range).map(a => mode.Content.RichNormal(a))
+          transformRange(range).map(a => mode.Content.RichNormal(a)).get
         }
-    }
+    }, false)
 
     def reverse2: Seq[operation.Unicode] = {
       // ---- **** ----
@@ -217,7 +223,7 @@ object Unicode extends OperationObject[data.Unicode, mode.Unicode, Unicode] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
 
-    override def transformRichMode(i: mode.Content.Rich): Option[mode.Content.Rich] = throw new IllegalAccessError("We don't have unicode move yet")
+    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = throw new IllegalAccessError("We don't have unicode move yet")
 
     override def reverse(d: data.Unicode): Unicode =  throw new IllegalAccessError("We don't have unicode move yet")
 

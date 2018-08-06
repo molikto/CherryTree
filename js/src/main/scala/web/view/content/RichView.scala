@@ -55,7 +55,6 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   initDom()
 
   private def clearDom(): Unit = {
-    initMode(if (isEmpty) -2 else -1)
     removeAllChild(dom)
   }
 
@@ -535,6 +534,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
+    if (previousMode < 0) initMode()
     aa match {
       case mode.Content.RichInsert(pos) =>
         initMode(0)
@@ -558,6 +558,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     if (!viewUpdated) {
      // val cs = c.asInstanceOf[operation.Content.Rich]
       // TODO incrementally update dom remember to clear the empty range when needed
+      clearMode()
       clearDom()
       initDom()
     }

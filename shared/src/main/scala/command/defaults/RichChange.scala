@@ -75,7 +75,7 @@ class RichChange extends CommandCategory("change text") {
         val point = v.range.start
         val in = rich.after(point)
         if (in.special) {
-          val sp = in.asInstanceOf[Atom.Special[Any]]
+          val sp = in.asInstanceOf[Atom.Special]
           val isStart = sp.a == sp.text.delimitation.start
           delimitationSettings.find(d => (d._2 == char && isStart) || (d._3 == char & !isStart)) match {
             case Some(deli) =>

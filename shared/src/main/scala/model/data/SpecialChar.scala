@@ -19,7 +19,6 @@ trait SpecialCharTrait extends Enumeration {
     LaTeXStart, LaTeXEnd,
     UrlAttribute, TitleAttribute:
     SpecialChar = Value
-
 }
 
 object SpecialChar {
@@ -57,12 +56,14 @@ object SpecialChar {
 
   val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, LaTeX, Image)
 
-  val formatted = formattedSplittable ++ formattedNonSplittable
   val formattedSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedSplittable)
   val formattedNonSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedNonSplittable)
-  val coded: Seq[Delimitation] = all.filter(_.coded)
+  val formatted: Seq[Delimitation] = formattedSplittable ++ formattedNonSplittable
+
   val codedAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.CodedAtomic)
   val codedNonAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.CodedNonAtomic)
+  val coded: Seq[Delimitation] = all.filter(_.coded)
+
   val emptyContent: Seq[Delimitation] = all.filter(_.ty == DelimitationType.Empty)
 
 

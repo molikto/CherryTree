@@ -37,7 +37,7 @@ private[undoer] class HistoryItem(
   var reverse: transaction.Node,
   var docBefore: data.Node,
   val ty: Type,
-  val modeBefore: Option[mode.Node],
+  val modeBefore: mode.Node,
   var undoer: (Seq[transaction.Node], Int) = null
 ) {
 
@@ -86,8 +86,8 @@ trait Undoer extends UndoerInterface {
   private def base: Int = discarded
 
   // all mode is changed to insert mode, then converted back to normal upon redo
-  def convertMode(docBefore: Node, modeBefore: Option[mode.Node]): Option[mode.Node] = {
-    modeBefore.map {
+  def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node = {
+    modeBefore match {
       case v: model.mode.Node.Visual =>
         model.mode.Node.Content(v.fix, docBefore(v.fix).content match {
           case _: data.Content.Code => model.mode.Content.CodeNormal
@@ -108,8 +108,8 @@ trait Undoer extends UndoerInterface {
     }
   }
 
-  def convertBackMode(nodeNow: Node, modeNow: Option[mode.Node]): Option[mode.Node] = {
-    modeNow.map {
+  def convertBackMode(nodeNow: Node, modeNow: mode.Node, badMode: Boolean): mode.Node = {
+    modeNow match {
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
         // LATER this is also hacky!!!
         case model.mode.Content.RichInsert(pos) =>
@@ -122,7 +122,7 @@ trait Undoer extends UndoerInterface {
   }
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: Option[model.mode.Node], docBefore: data.Node): Unit = {
+  def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: model.mode.Node, docBefore: data.Node): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
@@ -165,7 +165,10 @@ trait Undoer extends UndoerInterface {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
     DocTransaction(tt,
-      convertBackMode(applied, transaction.Node.transformSeq(pp, item.modeBefore)),
+      {
+        val (modeNow, badMode) = operation.Node.transform(applied, pp.flatten, (item.modeBefore, false))
+        Some(convertBackMode(applied, modeNow, badMode))
+      },
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)),
       handyAppliedResult = Some(applied))
   }

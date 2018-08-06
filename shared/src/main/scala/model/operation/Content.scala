@@ -7,11 +7,11 @@ import model.range.IntRange
 
 import scala.util.Random
 
-abstract sealed class Content extends Operation[data.Content, mode.Content] {
+abstract sealed class Content extends OperationOnModal[data.Content, mode.Content] {
   override type This = Content
 }
 
-object Content extends OperationObject[data.Content, mode.Content, Content] {
+object Content extends OperationObject[data.Content, Content] {
 
   abstract sealed class Code extends operation.Content
 
@@ -24,7 +24,7 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = Some(a)
+    override def transform(a: MM): MODE = MODE(a)
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
 
@@ -44,7 +44,7 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = Some(a)
+    override def transform(a: MM): MODE = MODE(a)
 
     override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
 
@@ -64,9 +64,10 @@ object Content extends OperationObject[data.Content, mode.Content, Content] {
       }
     }
 
-    override def transform(a: mode.Content): Option[mode.Content] = a match {
+    override def transform(a: MM): MODE =  a match {
       case b: mode.Content.Rich => op.transformRichMode(b)
-      case _ => None
+      case _ => throw new IllegalStateException("What")
+
     }
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))

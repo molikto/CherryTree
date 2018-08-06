@@ -1,7 +1,7 @@
 package model.data
 
 import model.cursor
-import model.data.Text.{Atomic, Delimited}
+import model.data.Text.{Atomic, Delimited, DelimitedT}
 import model.range.IntRange
 
 sealed trait Atom {
@@ -24,17 +24,17 @@ sealed trait Atom {
   def range = IntRange(totalIndex, totalIndex + size)
 
   def delimitationStart: Boolean = this match {
-    case a: Atom.Special[Any] => a.a == a.text.delimitation.start
+    case a: Atom.Special => a.a == a.text.delimitation.start
     case _ => false
   }
 
   def delimitationEnd: Boolean = this match {
-    case a: Atom.Special[Any] => a.a == a.text.delimitation.end
+    case a: Atom.Special => a.a == a.text.delimitation.end
     case _ => false
   }
 
-  def special: Boolean = this.isInstanceOf[Atom.Special[Any]]
-  def special(a: SpecialChar): Boolean = this.isInstanceOf[Atom.Special[Any]] && this.asInstanceOf[Atom.Special[Any]].a == a
+  def special: Boolean = this.isInstanceOf[Atom.Special]
+  def special(a: SpecialChar): Boolean = this.isInstanceOf[Atom.Special] && this.asInstanceOf[Atom.Special].a == a
 
   private[data] def serialize(buffer: UnicodeWriter)
 }
@@ -53,10 +53,11 @@ object Atom {
 
     override private[data] def serialize(buffer: UnicodeWriter): Unit = text.serialize(buffer)
   }
-  sealed trait Special[T] extends SpecialOrMarked {
+
+  sealed trait Special extends SpecialOrMarked {
     def a: SpecialChar
-    override def text: Delimited[T]
     override def size: Int = 1
+    override def text: Delimited
     override def skipSize: Int = if (a == text.asDelimited.delimitation.end) text.asDelimited.skipSize else 0
     override def toString: String = a.toString
     override def matches(u: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Boolean = delimitationCodePoints.get(a).contains(u)
@@ -74,12 +75,21 @@ object Atom {
       }
     }
   }
-  case class FormattedSpecial(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val a: SpecialChar, override val text: Text.Formatted) extends Special[Seq[Text]] {
+  sealed trait SpecialT[T] extends Special {
+    override def text: DelimitedT[T]
+  }
+  case class FormattedSpecial(override val nodeCursor: cursor.Node,
+    override val totalIndex: Int,
+    override val a: SpecialChar,
+    override val text: Text.Formatted) extends SpecialT[Seq[Text]] {
     def another: Atom =
       if (delimitationStart) FormattedSpecial(nodeCursor, textTotalIndex + text.size - 1, text.delimitation.end, text)
       else FormattedSpecial(nodeCursor, textTotalIndex, text.delimitation.start, text)
   }
-  case class CodedSpecial(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val a: SpecialChar, override val text: Text.Coded) extends Special[Unicode] {
+  case class CodedSpecial(override val nodeCursor: cursor.Node,
+    override val totalIndex: Int,
+    override val a: SpecialChar,
+    override val text: Text.Coded) extends SpecialT[Unicode] {
     def another: Atom =
       if (delimitationStart) CodedSpecial(nodeCursor, textTotalIndex + text.size - 1, text.delimitation.end, text)
       else CodedSpecial(nodeCursor, textTotalIndex, text.delimitation.start, text)

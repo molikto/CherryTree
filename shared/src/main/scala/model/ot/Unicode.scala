@@ -6,7 +6,7 @@ import model.data.SpecialChar
 import model.range.IntRange
 import operation.Unicode._
 
-object Unicode extends Ot[data.Unicode, mode.Unicode, operation.Unicode, conflict.Unicode] {
+object Unicode extends Ot[data.Unicode, operation.Unicode, conflict.Unicode] {
 
 
   type RebaseResult = Rebased[conflict.Unicode, (Seq[operation.Unicode], Seq[operation.Unicode])]

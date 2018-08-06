@@ -27,15 +27,12 @@ package object operation {
   }
   import Type.Type
 
-
-  trait Operation[DATA, M <: Mode[DATA]] {
+  trait Operation[DATA] {
     type This
     def mergeForUndoer(before: This): Option[This] = None
     def ty: Type
     def apply(data: DATA): DATA
 
-    def transform(a: M): Option[M]
-    def transform(a: Option[M]): Option[M] = a.flatMap(transform)
     def reverse(d: DATA): This
 
     def merge(before: Any): Option[This]
@@ -43,7 +40,22 @@ package object operation {
     def isEmpty: Boolean
   }
 
-  trait OperationObject[DATA, M <: Mode[DATA], OPERATION <: Operation[DATA, M]] {
+  trait OperationOnModal[DATA, M <: Mode[DATA]] extends Operation[DATA] {
+
+        type MM = M
+        type MODE = (M, Boolean)
+        def MODE(a: MM, b: Boolean = false): MODE = (a, b)
+
+        def transform(a: M): MODE
+        def transform(a: MODE): MODE = {
+          val res = transform(a._1)
+          (res._1, res._2 || a._2)
+        }
+  }
+
+
+
+  trait OperationObject[DATA, OPERATION <: Operation[DATA]] {
 
     type TRANSACTION = Seq[OPERATION]
 
