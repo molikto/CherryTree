@@ -7,7 +7,7 @@ import monix.reactive.Observable
 
 import scala.collection.mutable.ArrayBuffer
 import org.scalajs.dom._
-import org.scalajs.dom.raw.HTMLElement
+import org.scalajs.dom.raw.{EventTarget, HTMLElement}
 
 import scala.scalajs.js
 
@@ -89,7 +89,7 @@ abstract class View {
     defer(_ => dom.removeEventListener(ty, listener))
   }
 
-  def event[T <: Event](node: Node, ty: String,
+  def event[T <: Event](node: EventTarget, ty: String,
     listener: js.Function1[T, _]): Unit = {
     if (des == null) throw new IllegalAccessException("Destroyed!")
     node.addEventListener(ty, listener)

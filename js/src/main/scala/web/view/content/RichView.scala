@@ -595,8 +595,10 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
   }
 
   def showAttributeEditor(pos: IntRange): Unit = {
+    attributeEditor = (documentView.attributeEditor, pos)
     val anchor = new OverlayAnchor {
       override def rect: Rect = {
+        val (_, pos) = attributeEditor
         val span = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))._2
         web.view.toRect(span.getClientRects().item(0))
       }
@@ -605,7 +607,6 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         attributeEditor = null
       }
     }
-    attributeEditor = (documentView.attributeEditor, pos)
     attributeEditor._1.show(anchor)
   }
 }

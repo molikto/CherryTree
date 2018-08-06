@@ -363,10 +363,19 @@ class DocumentView(
       }
       duringStateUpdate = false
       updateMode(update.mode, update.viewUpdated, fromUser = update.fromUser)
-      attributeEditor.refresh()
+      refreshMounted()
     }))
-
   }
+
+  def refreshMounted(): Unit = {
+    attributeEditor.refresh()
+  }
+
+  event(window, "resize", (a: MouseEvent) => {
+    refreshMounted()
+  })
+
+
 
 
 
