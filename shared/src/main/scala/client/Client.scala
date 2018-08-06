@@ -174,6 +174,7 @@ class Client(
     fromUser: Boolean,
     foldBefore: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
+    assert(a.mode.isDefined || modeTemp != null)
     val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, fromUser, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
@@ -188,11 +189,12 @@ class Client(
     state_ = a
     if (scheduledUpdateTempMode != null) {
       scheduledUpdateTempMode.cancel()
-      if (modeTemp != null) {
-        scheduledUpdateTempMode = Observable.delay(
-          updateState(a.copy(mode = Some(modeTemp)), null, Seq.empty, Undoer.Local, false, Seq.empty, false)
-        ).delaySubscription(2.seconds).subscribe()
-      }
+    }
+    if (modeTemp != null) {
+      scheduledUpdateTempMode = Observable.delay({
+        println("updating temp mode")
+        updateState(a.copy(mode = Some(modeTemp)), null, Seq.empty, Undoer.Local, false, Seq.empty, false)
+      }).delaySubscription(2.seconds).subscribe()
     }
     this.modeTemp = modeTemp
     if (foldBefore.nonEmpty) {

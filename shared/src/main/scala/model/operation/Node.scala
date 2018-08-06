@@ -37,7 +37,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
         case model.mode.Node.Content(cur, c) =>
           val tt = c match {
             case null => a(cur).content.defaultNormalMode()
-            case model.mode.Content.RichInsert(ins) => model.mode.Content.RichNormal(a(cur).rich.after(ins).range)
+            case model.mode.Content.RichInsert(ins) => model.mode.Content.RichNormal(a(cur).rich.rangeAfter(ins))
             case t => t
           }
           model.mode.Node.Content(cur, tt)
@@ -144,14 +144,14 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def transform(a: MM): MODE = a match {
       case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
         case Some(k) => MODE(c.copy(node = k))
-        case None => MODE(mode.Node.Content(r.parent, null), false)
+        case None => MODE(mode.Node.Content(r.parent, null), true)
       }
       case mode.Node.Visual(fix, move) =>
         (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
           case (Some(ff), Some(mm)) => MODE(mode.Node.Visual(ff, mm))
-          case (Some(ff), None) => MODE(mode.Node.Content(ff, null), false)
-          case (None, Some(ff))  =>  MODE(mode.Node.Content(ff, null), false)
-          case (None, None) => MODE(mode.Node.Content(r.parent, null), false)
+          case (Some(ff), None) => MODE(mode.Node.Content(ff, null), true)
+          case (None, Some(ff))  =>  MODE(mode.Node.Content(ff, null), true)
+          case (None, None) => MODE(mode.Node.Content(r.parent, null), true)
         }
     }
 

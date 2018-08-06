@@ -59,7 +59,7 @@ class SourceView(
 
   updateCodeMirror()
 
-  private var editing: SourceEditDialog= null
+  private var editing: SourceEditDialog = null
 
   def removeEditor(): Unit = {
     if (editing != null) {

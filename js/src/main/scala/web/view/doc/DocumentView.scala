@@ -288,14 +288,13 @@ class DocumentView(
   }
 
 
-  private def updateMode(mm: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
+  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true
-    val m = if (isFocusedOut) None else mm
     m match {
       case None =>
         removeFocusContent()
         clearNodeVisual()
-      case Some(mm) => mm match {
+      case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
           clearNodeVisual()
           val current = contentAt(at)
