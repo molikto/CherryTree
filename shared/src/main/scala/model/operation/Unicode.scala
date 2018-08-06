@@ -15,8 +15,8 @@ import scala.util.Random
 sealed trait Unicode extends Operation[data.Unicode] {
   override type This = Unicode
 
-  def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean)
-  def transformRichMode(i: (mode.Content.Rich, Boolean)): (mode.Content.Rich, Boolean) = {
+  private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean)
+  private[model] def transformRichMode(i: (mode.Content.Rich, Boolean)): (mode.Content.Rich, Boolean) = {
     val res = transformRichMode(i._1)
     (res._1, res._2 || i._2)
   }
@@ -36,7 +36,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         else IntRange(start, until + unicode.size)
     }
 
-    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
+    override private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(s) =>
         mode.Content.RichInsert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
       case mode.Content.RichVisual(a, b) =>
@@ -77,7 +77,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     def transformRange(range: IntRange): Option[IntRange] =
       r.transformDeletingRangeAfterDeleted(range)
 
-    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = i match {
+    override private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = i match {
       case mode.Content.RichInsert(k) =>
         if (k <= r.start) {
           (i, false)
@@ -143,7 +143,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       }
     }
 
-    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
+    override private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
         if (r.deletesCursor(k)) {
           throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
@@ -190,7 +190,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       }
     }
 
-    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
+    override private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
         mode.Content.RichInsert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size)
       case mode.Content.RichVisual(a, b) =>
@@ -223,7 +223,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
 
-    override def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = throw new IllegalAccessError("We don't have unicode move yet")
+    override private[model] def transformRichMode(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = throw new IllegalAccessError("We don't have unicode move yet")
 
     override def reverse(d: data.Unicode): Unicode =  throw new IllegalAccessError("We don't have unicode move yet")
 

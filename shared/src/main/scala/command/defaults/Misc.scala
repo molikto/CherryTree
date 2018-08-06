@@ -97,11 +97,11 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRichNormalOrInsert((cur, rich, t) => {
-      rich.befores(t.range.start).exists(a => a.isStartWithAttribute(UrlAttribute))
+      rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute))
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRichNormalOrInsert((cur, rich, t) => {
-        val text = rich.befores(t.range.start).find(a => a.isStartWithAttribute(UrlAttribute)).get.asInstanceOf[Atom.Special]
+        val text = rich.befores(t.range.until).find(a => a.isStartWithAttribute(UrlAttribute)).get.asInstanceOf[Atom.Special]
         return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange))
       })
       DocTransaction.empty
@@ -124,12 +124,12 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRichNormal((rich, t) => {
-      rich.befores(t.range.start).exists(_.isStartWithAttribute(UrlAttribute))
+      rich.befores(t.range.until).exists(_.isStartWithAttribute(UrlAttribute))
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (rich, t0) = a.asRichNormalAtom
-      val t = rich.befores(t0.range.start).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
+      val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
       Try {

@@ -9,6 +9,32 @@ import util.Rect
 
 import scala.collection.mutable.ArrayBuffer
 
+
+trait OverlayAnchor {
+  def rect: Rect
+  def onDismiss()
+}
+abstract class MountedOverlay extends Overlay {
+
+
+  private var anchor: OverlayAnchor = null
+
+  def show(anchor: OverlayAnchor) = {
+    this.anchor = anchor
+    setDomAttributeBy(anchor.rect)
+    showOverlay()
+  }
+
+  override protected def onDismiss(): Unit = {
+    anchor.onDismiss()
+    anchor = null
+    super.onDismiss()
+  }
+
+  def refresh(): Unit = {
+    if (anchor != null) setDomAttributeBy(anchor.rect)
+  }
+}
 abstract class Overlay extends View {
 
   protected def layer: OverlayLayer

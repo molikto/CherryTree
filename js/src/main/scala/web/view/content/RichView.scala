@@ -10,7 +10,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.view.doc.DocumentView
-import web.view.{EmptyStr, removeAllChild, theme}
+import web.view._
 
 import scala.scalajs.js
 
@@ -562,6 +562,17 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       clearMode()
       clearDom()
       initDom()
+      if (attributeEditor != null) {
+
+        val range = attributeEditor._2
+        val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
+        val res = c.transform(fakeMode)
+        res match {
+          case Some(model.mode.Content.RichVisual(a, b)) =>
+            attributeEditor = (attributeEditor._1, IntRange(a.start, b.until))
+          case _ => clearAttributeEditor()
+        }
+      }
     }
   }
 
@@ -570,10 +581,31 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     */
   override def destroy(): Unit = {
     clearMode()
+    clearAttributeEditor()
     super.destroy()
   }
 
+  private var attributeEditor: (UrlAttributeEditDialog, IntRange) = null
+
+  def clearAttributeEditor(): Unit = {
+    if (attributeEditor != null) {
+      attributeEditor._1.dismiss()
+      attributeEditor = null
+    }
+  }
+
   def showAttributeEditor(pos: IntRange): Unit = {
-    //documentView.attributeEditor.showAt()
+    val anchor = new OverlayAnchor {
+      override def rect: Rect = {
+        val span = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))._2
+        web.view.toRect(span.getClientRects().item(0))
+      }
+
+      override def onDismiss(): Unit = {
+        attributeEditor = null
+      }
+    }
+    attributeEditor = (documentView.attributeEditor, pos)
+    attributeEditor._1.show(anchor)
   }
 }

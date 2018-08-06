@@ -46,9 +46,15 @@ package object operation {
         type MODE = (M, Boolean)
         def MODE(a: MM, b: Boolean = false): MODE = (a, b)
 
-        def transform(a: M): MODE
-        def transform(a: MODE): MODE = {
-          val res = transform(a._1)
+    def transform(a: M): Option[M] = {
+      transformMaybeBad(a) match {
+        case (b, false) => Some(b)
+        case _ => None
+      }
+    }
+        private[model] def transformMaybeBad(a: M): MODE
+        private[model] def transformMaybeBad(a: MODE): MODE = {
+          val res = transformMaybeBad(a._1)
           (res._1, res._2 || a._2)
         }
   }

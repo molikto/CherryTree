@@ -6,16 +6,16 @@ import scalatags.JsDom.all._
 import util.Rect
 import client.Client
 
-class UrlAndImageAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends Overlay {
+class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay {
 
-  private val search = input(
+  private val urlInput = input(
     width := "100%",
     `class` := "ct-input"
   ).render
 
 
   override def focus(): Unit = {
-    search.focus()
+    urlInput.focus()
   }
 
   dom = div(
@@ -24,26 +24,18 @@ class UrlAndImageAttributeEditDialog(val client: Client, protected val layer: Ov
     top := "0px",
     `class` := "ct-card",
     display := "none",
-    div(width := "100%", padding := "6px", search)
+    div(width := "100%", padding := "6px", urlInput)
   ).render
 
 
-
-  def showAt(rect: Rect): Unit = {
-    setDomAttributeBy(rect)
-    search.textContent = ""
-    showOverlay()
+  override def show(anchor: OverlayAnchor): Unit = {
+    urlInput.value = ""
+    super.show(anchor)
   }
 
 
 
-
-
-  override protected def onDismiss(): Unit = {
-    super.onDismiss()
-  }
-
-  event(search, "keydown", (ev: KeyboardEvent) => {
+  event(urlInput, "keydown", (ev: KeyboardEvent) => {
     KeyMap.get(ev.key) match {
       case Some(Key.Escape) =>
         ev.preventDefault()
@@ -56,9 +48,5 @@ class UrlAndImageAttributeEditDialog(val client: Client, protected val layer: Ov
         ev.preventDefault()
       case _ =>
     }
-  })
-
-  event(dom, "focusout", (ev: FocusEvent) => {
-    dismiss()
   })
 }

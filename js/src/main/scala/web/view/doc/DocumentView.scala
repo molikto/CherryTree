@@ -363,6 +363,7 @@ class DocumentView(
       }
       duringStateUpdate = false
       updateMode(update.mode, update.viewUpdated, fromUser = update.fromUser)
+      attributeEditor.refresh()
     }))
 
   }
@@ -371,13 +372,13 @@ class DocumentView(
 
   var sourceEditor: SourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
-  var attributeEditor: UrlAndImageAttributeEditDialog = null
+  var attributeEditor: UrlAttributeEditDialog = null
 
 
 
 
   def showCommandMenu(): Unit = {
-    commandMenu.showAt(selectionRect)
+    //commandMenu.showAt(selectionRect)
   }
 
 
@@ -416,9 +417,9 @@ class DocumentView(
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    preventDefault(a)
+  //  preventDefault(a)
     focus() // TODO mark correct selection
-    commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
+    //commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
   })
 
 

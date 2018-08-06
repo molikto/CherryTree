@@ -26,7 +26,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
   def rich(c: cursor.Node, a: Seq[operation.Rich]): Seq[Node] = a.map(a => rich(c, a))
 
   def transform(nodeAfter: data.Node, ns: Seq[Node], a: (mode.Node, Boolean)): (mode.Node, Boolean) = {
-    val (c, j) = ns.foldLeft(a) { (a, n) => n.transform(a) }
+    val (c, j) = ns.foldLeft(a) { (a, n) => n.transformMaybeBad(a) }
     fixTransformMode(nodeAfter, c, j)
   }
 
@@ -55,10 +55,10 @@ object Node extends OperationObject[data.Node, operation.Node] {
       d.map(at, a => a.copy(content = content(a.content)))
     }
 
-    override def transform(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
       case c: mode.Node.Content if c.node == at =>
         if (c.a != null) {
-          val (m, f) = content.transform(c.a)
+          val (m, f) = content.transformMaybeBad(c.a)
           (c.copy(a = m), f)
         } else {
           MODE(a)
@@ -88,7 +88,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def toString: String = s"Replace($at)"
 
-    override def transform(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
       case c: mode.Node.Content if c.node == at => (mode.Node.Content(at, content.defaultNormalMode()), false)
       case _ => MODE(a)
     }
@@ -110,7 +110,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def toString: String = s"Insert($at, ${childs.size})"
 
-    override def transform(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
       case c: mode.Node.Content =>
         MODE(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
       case mode.Node.Visual(fix, move) =>
@@ -141,7 +141,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
 
-    override def transform(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
       case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
         case Some(k) => MODE(c.copy(node = k))
         case None => MODE(mode.Node.Content(r.parent, null), true)
@@ -180,7 +180,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
-    override def transform(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
       case mode.Node.Visual(fix, move) => MODE(mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move)))
       case mode.Node.Content(node, b) => MODE(mode.Node.Content(r.transformNodeAfterMoved(to, node), b))
     }

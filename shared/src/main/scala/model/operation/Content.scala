@@ -24,7 +24,7 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(a: MM): MODE = MODE(a)
+    private[model]  override def transformMaybeBad(a: MM): MODE = MODE(a)
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
 
@@ -44,7 +44,7 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(a: MM): MODE = MODE(a)
+    private[model]  override def transformMaybeBad(a: MM): MODE = MODE(a)
 
     override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
 
@@ -64,10 +64,9 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(a: MM): MODE =  a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE =  a match {
       case b: mode.Content.Rich => op.transformRichMode(b)
       case _ => throw new IllegalStateException("What")
-
     }
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))

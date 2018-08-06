@@ -8,7 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends Overlay {
+class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay {
 
   private val search = input(
     width := "100%",
@@ -86,16 +86,12 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     }
   }
 
-  def whereToShow(bounding: Rect, rec: Rect) = {
-
-  }
-
-  def showAt(rect: Rect): Unit = {
-    setDomAttributeBy(rect)
+  override def show(anchor: OverlayAnchor): Unit = {
     updateMenuContent()
-    search.textContent = ""
-    showOverlay()
+    search.value = ""
+    super.show(anchor)
   }
+
 
 
 
