@@ -18,24 +18,18 @@
 * movement in bidi text is wired, seems we have something wrong in our grapheme code
 * when use j/k the cursor jumps too much scroll
 * make menu scrollbar overlay
-* open code view the page size changes
 
 
 ## improvements
 
+* unicode handling by max codepoint instead
 * change to a better networking for change, server pushed content, or websocket
 * don't use available/action, use precondition, and remove empty as false
 
 ## code improvements
 
 * scan for grapheme boundary is linear
-* deal away with the hacky unicode transformation of `operation.Rich implementations`
-    * abstract `cursor.Rich`
-    * abstract `range.Rich`
-    * make operations works with these
-    * rigid `Rich` type
-        * no empty plain
-        * no two plain nearby in a `Text` list
+    * can do: when creating a unicode from parser, has a mark: simple. this is the case for most english text
 
 ## done
 
