@@ -6,10 +6,13 @@ import command.Part.IdentifiedCommand
 import doc.{DocState, DocTransaction}
 import model.data.{SpecialChar, Unicode}
 import model.range.IntRange
+import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.reactive.subjects._
 import register.{RegisterHandler, Registerable}
 import settings.Settings
+import concurrent.duration._
+import monix.execution.Scheduler.Implicits.global
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
@@ -119,7 +122,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       }
       exacts.headOption match {
         case Some(exact) =>
-          buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(a => !exacts.contains(a))))
+          buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(a => a.keys.exists(k => k != kk && k.startsWith(kk)))))
         case None =>
           if (removeForStrong != null) {
             buffer.append(removeForStrong)
@@ -141,10 +144,16 @@ abstract class CommandHandler extends Settings with CommandInterface {
     commandBufferUpdates_.onNext(buffer)
   }
 
+  private var scheduledComplete: Cancelable = null
+
   /**
     * boolean means this command is accepted
     */
   private def tryComplete(wfs: Boolean): Boolean = {
+    if (scheduledComplete != null) {
+      scheduledComplete.cancel()
+      scheduledComplete = null
+    }
     def rec(waitForStrong: Boolean): Boolean = {
       val count = buffer.map {
         case Part.Count(c) => c
@@ -165,6 +174,11 @@ abstract class CommandHandler extends Settings with CommandInterface {
           if (c.needsStuff) {
             false
           } else if (waitForStrong && remaining.exists(_.strong)) {
+            if (scheduledComplete != null) scheduledComplete.cancel()
+            scheduledComplete = Observable.delay({
+              scheduledComplete = null
+              tryComplete(false)
+            }).delaySubscription(300.milliseconds).subscribe()
             true
           } else {
             actAndMarkComplete(c, count, key, None, None)
