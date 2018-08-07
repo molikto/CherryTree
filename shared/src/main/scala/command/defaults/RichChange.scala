@@ -49,11 +49,12 @@ class RichChange extends CommandCategory("change text") {
     }
   }
 
-  new NeedsCharCommand {
-    override val description: String = "change content under the cursor"
-    override def defaultKeys: Seq[KeySeq] = Seq("gr", "r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
-    override def available(a: DocState): Boolean = a.isRichNormal
 
+
+  new NeedsCharCommand {
+    override val description: String = "change char under the cursor"
+    override def defaultKeys: Seq[KeySeq] = Seq("r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
+    override def available(a: DocState): Boolean = a.isRichNormal((_, p) => !p.special)
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (grapheme.isEmpty) return DocTransaction.empty
@@ -69,53 +70,6 @@ class RichChange extends CommandCategory("change text") {
           rafter.before(in.textTotalIndex + rafter.after(in.textTotalIndex).text.size).range
         }
         Some(a.copyContentMode(mode.Content.RichNormal(range)))
-      }
-
-      if (v.range.size == 1 && char.size == 1) {
-        val point = v.range.start
-        val in = rich.after(point)
-        if (in.special) {
-          val sp = in.asInstanceOf[Atom.Special]
-          val isStart = sp.a == sp.text.delimitation.start
-          delimitationSettings.find(d => (d._2 == char && isStart) || (d._3 == char & !isStart)) match {
-            case Some(deli) =>
-              if (sp.a == deli._1.start || sp.a == deli._1.end) {
-                return DocTransaction.empty
-              }
-
-              def wrapUnwrap(): DocTransaction = {
-                val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
-                val op2 = operation.Rich.wrap(IntRange(in.textTotalIndex, in.textTotalIndex + in.text.asDelimited.contentSize), deli._1)
-                DocTransaction(
-                  Seq(
-                    operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
-                  ),
-                  makeMode(in, Seq(op1, op2))
-                )
-              }
-
-              if (SpecialChar.coded.contains(deli._1)) {
-                in.text match {
-                  case formatted: Text.Formatted if formatted.content.size == 1 && formatted.content.head.isPlain =>
-                    val unicode = formatted.content.head.asPlain.unicode
-                    val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
-                    val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.textTotalIndex, in.textTotalIndex + unicode.size), deli._1)
-                    return DocTransaction(
-                      Seq(
-                        operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
-                      ),
-                      makeMode(in, Seq(op1, op2))
-                    )
-                  case _ => if (in.text.isCoded) {
-                    return wrapUnwrap()
-                  }
-                }
-              } else if (SpecialChar.formattedSplittable.contains(deli._1) || SpecialChar.formattedNonSplittable.contains(deli._1)) {
-                return wrapUnwrap()
-              }
-            case None =>
-          }
-        }
       }
       if (!rich.after(v.range.start).special) {
         val ops = operation.Rich.merge(

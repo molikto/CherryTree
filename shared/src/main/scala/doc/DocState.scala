@@ -66,12 +66,12 @@ case class DocState(
     case _ => false
   }
 
-  def asRichNormalAtom: (Rich, Atom) = {
-    val (_, rich, nv) = asRichNormal
+  def asRichNormalAtom: (cursor.Node, Rich, Atom) = {
+    val (cur, rich, nv) = asRichNormal
     if (rich.isEmpty) throw new IllegalArgumentException("Wrong!")
     else {
       val t = rich.after(nv.focus.start)
-      (rich, t)
+      (cur, rich, t)
     }
   }
 

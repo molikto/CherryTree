@@ -95,54 +95,8 @@ class RichInsert extends CommandCategory("when in insert mode") {
     }
   }
 
-  SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
 
 
-    override val description: String = if (deli.atomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
-
-    override def emptyAsFalseInInsertMode: Boolean = true
-
-    override def available(a: DocState): Boolean =
-      a.isRichNormalOrInsert && {
-      val (node, rich, insert, until) = a.asRichNormalOrInsert
-      if (deli.coded) {
-        if (rich.insideCoded(insert)) {
-          if (rich.insideCoded(insert, deli)) {
-            !rich.wrappedByCodedContent(insert)
-          } else {
-            false
-          }
-        } else {
-          true
-        }
-      } else {
-        !rich.insideCoded(insert)
-      }
-    }
-
-    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      val (n, content, insert, until) = a.asRichNormalOrInsert
-      val keyU = Unicode(key.map(a => Key.toString(a)).getOrElse(""))
-      def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
-      if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
-        DocTransaction(Seq.empty, moveSomeInsertMode(1))
-      } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
-        val wrap = deli.wrap()
-        val k = operation.Rich.insert(insert, wrap)
-        val trans = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
-        if (deli.atomic) {
-          DocTransaction(trans, moveSomeInsertMode(wrap.size),
-            viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
-        } else {
-          DocTransaction(trans, moveSomeInsertMode(1))
-        }
-      } else {
-        DocTransaction.empty
-      }
-    }
-
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
-  }).toMap
 
   abstract class InsertMovementCommand extends Command {
     override def available(a: DocState): Boolean = a.isRichInsert

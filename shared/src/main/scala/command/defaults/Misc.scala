@@ -128,7 +128,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (rich, t0) = a.asRichNormalAtom
+      val (_, rich, t0) = a.asRichNormalAtom
       val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
       import io.lemonlabs.uri._
