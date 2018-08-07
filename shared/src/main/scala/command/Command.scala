@@ -8,6 +8,7 @@ import model.range.IntRange
 
 abstract class Command {
   def category: String
+  def strong: Boolean = false
   val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]

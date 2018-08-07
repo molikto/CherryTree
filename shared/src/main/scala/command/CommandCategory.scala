@@ -30,6 +30,7 @@ class CommandCategory(val name: String) extends Settings {
 
   abstract class DeliCommand(deli: SpecialChar.Delimitation) extends Command {
     // currently these cannot be changed, you can change delimiters though
+    override def strong: Boolean = true
 
     private val systemKeys: Seq[KeySeq] =
       if (deli == SpecialChar.Emphasis) Seq(ModKey + "i", ModKey + "y")
@@ -38,9 +39,7 @@ class CommandCategory(val name: String) extends Settings {
 
     override def defaultKeys: Seq[KeySeq] = Seq.empty
     override def hardcodeKeys: Seq[KeySeq] =
-      Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => Grapheme(a) : KeySeq) ++ systemKeys
-
-
+      Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => a.str : KeySeq) ++ systemKeys
   }
 
   trait OverrideCommand extends Command {

@@ -14,8 +14,8 @@ trait Settings {
   val delimitationSettings = Seq(
     (SpecialChar.StrikeThrough, Unicode("~"), Unicode("~")),
     (SpecialChar.Code, Unicode("`"), Unicode("`")),
-    (SpecialChar.Strong, Unicode("#"), Unicode("#")),
-    (SpecialChar.LaTeX, Unicode("&"), Unicode("&")),
+    (SpecialChar.Strong, Unicode("**"), Unicode("**")),
+    (SpecialChar.LaTeX, Unicode("$"), Unicode("$")),
     (SpecialChar.Link, Unicode("["), Unicode("]")),
     (SpecialChar.Emphasis, Unicode("*"), Unicode("*"))
   )

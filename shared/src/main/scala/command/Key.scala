@@ -107,10 +107,10 @@ object Key {
 
   private def assciiKeyWithModifier(a: Int): Key = Key(Grapheme(Unicode(a)), shift = shifted.contains(a))
 
-  implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).toSeq.map(assciiKeyWithModifier)
+  implicit def defaultAsciiKeysToKeySeq(s: String): KeySeq = Unicode(s).map(assciiKeyWithModifier)
 
   implicit def singleToKey(s: V): KeySeq = s match {
-    case Grapheme(u) if u.size == 1 => Seq(Key(s, shift = shifted.contains(u(0))))
+    case Grapheme(u) if u.size == 1 => Seq(Key(s, shift = shifted.contains(u.head)))
     case _ => Seq(Key(s))
   }
 

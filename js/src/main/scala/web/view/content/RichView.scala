@@ -91,9 +91,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         cg("*")
       )
       case Text.Strong(c) => span(
-        cg("#"),
+        cg("**"),
         strong(`class` := "ct-strong", rec(c)),
-        cg("#")
+        cg("**")
       )
       case Text.StrikeThrough(c) => span(
         cg("~"),

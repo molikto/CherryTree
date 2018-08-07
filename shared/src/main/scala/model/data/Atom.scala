@@ -70,7 +70,7 @@ object Atom {
     override def text: Delimited
     override def skipSize: Int = if (a == text.asDelimited.delimitation.end) text.asDelimited.skipSize else 0
     override def toString: String = a.toString
-    override def matches(u: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Boolean = delimitationCodePoints.get(a).contains(u)
+    override def matches(u: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Boolean = delimitationCodePoints.get(a).exists(_.startsWith(u))
     override def subIndex: Int = if (a == text.asDelimited.delimitation.start) 0 else text.size - 1
     def delimitation: SpecialChar.Delimitation = text.delimitation
     def another: Atom

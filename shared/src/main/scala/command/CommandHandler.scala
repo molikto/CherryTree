@@ -126,8 +126,8 @@ abstract class CommandHandler extends Settings with CommandInterface {
   /**
     * boolean means this command is accepted
     */
-  private def tryComplete(): Boolean = {
-    def rec() = {
+  private def tryComplete(wfs: Boolean = true): Boolean = {
+    def rec(waitForStrong: Boolean): Boolean = {
       val count = buffer.map {
         case Part.Count(c) => c
         case _ => 1
@@ -143,9 +143,11 @@ abstract class CommandHandler extends Settings with CommandInterface {
         case _ => Seq.empty
       }.headOption
       (commands, char) match {
-        case (Part.IdentifiedCommand(key, c, _) +: Nil, None) =>
+        case (Part.IdentifiedCommand(key, c, remaining) +: Nil, None) =>
           if (c.needsStuff) {
             false
+          } else if (waitForStrong && remaining.exists(_.strong)) {
+            true
           } else {
             actAndMarkComplete(c, count, key, None, None)
           }
@@ -170,20 +172,43 @@ abstract class CommandHandler extends Settings with CommandInterface {
     def tryMergeThenRec(): Boolean = {
       def tryMerge(key1: KeySeq, r1: Seq[Command], key2: KeySeq) = {
         if (key2.size == 1) {
-          buffer.remove(buffer.size - 1)
-          buffer.remove(buffer.size - 1)
+          val c2 = buffer.remove(buffer.size - 1)
+          val c1 = buffer.remove(buffer.size - 1)
+          val size = buffer.size
           buffer.append(Part.UnidentifiedCommand(key1, r1))
           parseCommand(key2.head)
-          rec()
+          if (!rec(false)) {
+            while (buffer.size > size) buffer.remove(buffer.size - 1)
+            buffer.append(c1)
+            buffer.append(c2)
+            false
+          } else {
+            true
+          }
         } else {
-          markUnknownPattern()
+          false
         }
       }
       buffer match {
         case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.UnknownCommand(key2) =>
-          tryMerge(key1, r1, key2)
+          if (!tryMerge(key1, r1, key2)) {
+            markUnknownPattern()
+          } else {
+            true
+          }
         case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.IdentifiedCommand(Some(key2), c2, _) =>
-          tryMerge(key1, r1, key2)
+          if (tryMerge(key1, r1, key2)) {
+            true
+          } else if (!c1.needsStuff && key2.size == 1) {
+            val c2 = buffer.remove(buffer.size - 1)
+            rec(false)
+            buffer.clear()
+            parseCommand(key2.)
+            buffer.append(c2)
+            rec(false)
+          } else {
+            markUnknownPattern()
+          }
         case _ =>
           markUnknownPattern()
       }
@@ -199,7 +224,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     }) {
       true
     } else {
-      rec()
+      rec(wfs)
     }
 
     // command
@@ -276,20 +301,14 @@ abstract class CommandHandler extends Settings with CommandInterface {
         }
     }
 
-    if (buffer.exists {
+    val hasExit = buffer.exists {
       case IdentifiedCommand(k, c, _) if c == miscCommands.exit => true
       case _ => false
-    }) {
-      flush()
-      localChange(miscCommands.exit.action(state, 1, this, None, None, None))
-      buffer.clear()
-      commandBufferUpdates_.onNext(buffer)
-      true
-    } else {
-      val res = tryComplete()
-      commandBufferUpdates_.onNext(buffer)
-      res || !state.isRichInsert
     }
+    val res = tryComplete()
+    if (hasExit) buffer.clear()
+    commandBufferUpdates_.onNext(buffer)
+    hasExit || res || !state.isRichInsert
   }
 
 }

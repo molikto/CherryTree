@@ -52,6 +52,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     override val description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
     override def move(content: Rich, a: IntRange):  (IntRange, Int) = (content.rangeEnd, 1)
+    override def priority: Int = 1 // override LaTeX
   }
 
   // screen related is not implemented
