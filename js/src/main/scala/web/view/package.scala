@@ -52,6 +52,8 @@ package object view {
 
   val CodeMirror: js.Dynamic = js.Dynamic.global.CodeMirror
 
+  val KaTeX = window.asInstanceOf[js.Dynamic].katex
+
   def jsObject(a: js.Dynamic => Unit): js.Dynamic = {
     val k =
       js.Object().asInstanceOf[js.Dynamic]

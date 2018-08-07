@@ -101,7 +101,8 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     super.onDismiss()
     available = Seq.empty
     marked = null
-    search.textContent = ""
+    removeAllChild(list)
+    search.value = ""
   }
 
   private def mark(i: Int): Unit = {

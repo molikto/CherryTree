@@ -109,11 +109,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
           cg("]")
         )
       case Text.Image(b, c) =>
-        img(`class` := "ct-image", src := b.str)
+        img(`class` := "ct-image", src := b.str, title := c.str)
       case Text.LaTeX(c) =>
         val a = span().render
         try {
-          window.asInstanceOf[js.Dynamic].katex.render(c.str, a)
+          KaTeX.render(c.str, a)
         } catch {
           case a: Throwable => a.printStackTrace()
         }
