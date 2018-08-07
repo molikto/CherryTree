@@ -91,7 +91,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       case Some(Part.UnidentifiedCommand(kks, ccs)) =>
         buffer.remove(buffer.size - 1)
         (kks, ccs)
-      case Some(Part.IdentifiedCommand(Some(kks), css, others)) if mergeForStrong && !css.needsStuff =>
+      case Some(Part.IdentifiedCommand(Some(kks), css, others)) if mergeForStrong && !css.needsStuff && others.nonEmpty =>
         removeForStrong = buffer.remove(buffer.size - 1)
         (kks, others)
       case _ => (Seq.empty, keyToCommand.getOrElse(key, Seq.empty))
@@ -119,7 +119,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       }
       exacts.headOption match {
         case Some(exact) =>
-          buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(_ != exact)))
+          buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(a => !exacts.contains(a))))
         case None =>
           if (removeForStrong != null) {
             buffer.append(removeForStrong)
