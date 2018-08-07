@@ -204,6 +204,14 @@ case class Rich(text: Seq[Text]) {
     }
   }
 
+
+  def insideUrlAttributed(pos: Int): Option[Atom] = {
+    if (pos >= 0 && before(pos).isAtomicWithAttribute(UrlAttribute)) {
+      Some(before(pos))
+    } else {
+      befores(pos).find(a => a.isStartWithAttribute(UrlAttribute))
+    }
+  }
   def insideCoded(pos: Int, deli: SpecialChar.Delimitation): Boolean = {
     val bs = befores(pos)
     if (!bs.hasNext) false

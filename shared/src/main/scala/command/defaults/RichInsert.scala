@@ -1,11 +1,12 @@
 package command.defaults
 
 import client.Client
+import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation, range}
-import model.data.{Rich, SpecialChar, Unicode}
+import model.data.{Rich, SpecialChar, Text, Unicode}
 import model.range.IntRange
 
 class RichInsert extends CommandCategory("when in insert mode") {
@@ -101,12 +102,13 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def emptyAsFalseInInsertMode: Boolean = true
 
-    override def available(a: DocState): Boolean = a.isRichInsert && {
-      val (node, rich, insert) = a.asRichInsert
+    override def available(a: DocState): Boolean =
+      a.isRichNormalOrInsert && {
+      val (node, rich, insert, until) = a.asRichNormalOrInsert
       if (deli.coded) {
-        if (rich.insideCoded(insert.pos)) {
-          if (rich.insideCoded(insert.pos, deli)) {
-            !rich.wrappedByCodedContent(insert.pos)
+        if (rich.insideCoded(insert)) {
+          if (rich.insideCoded(insert, deli)) {
+            !rich.wrappedByCodedContent(insert)
           } else {
             false
           }
@@ -114,19 +116,26 @@ class RichInsert extends CommandCategory("when in insert mode") {
           true
         }
       } else {
-        !rich.insideCoded(insert.pos)
+        !rich.insideCoded(insert)
       }
     }
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      val (n, content, insert) = a.asRichInsert
-      def moveOneInsertMode() = Some(a.copyContentMode(mode.Content.RichInsert(insert.pos + 1)))
-      if (key.isDefined && key.get.size == 1) {
-        if (insert.pos < content.size && content.after(insert.pos).special(deli.end) &&  delimitationGraphemes.get(deli.end).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
-          DocTransaction(Seq.empty, moveOneInsertMode())
-        } else if (!content.insideCoded(insert.pos) && delimitationGraphemes.get(deli.start).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
-          val k = operation.Rich.insert(insert.pos, deli.wrap())
-          DocTransaction(Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k))), moveOneInsertMode())
+      val (n, content, insert, until) = a.asRichNormalOrInsert
+      def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
+      if (key.isEmpty || (key.isDefined && key.get.size == 1)) {
+        if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
+          DocTransaction(Seq.empty, moveSomeInsertMode(1))
+        } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(key.get.head.a.asInstanceOf[Grapheme].a))) {
+          val wrap = deli.wrap()
+          val k = operation.Rich.insert(insert, wrap)
+          val trans = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+          if (deli.atomic) {
+            DocTransaction(trans, moveSomeInsertMode(wrap.size),
+              viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
+          } else {
+            DocTransaction(trans, moveSomeInsertMode(1))
+          }
         } else {
           DocTransaction.empty
         }

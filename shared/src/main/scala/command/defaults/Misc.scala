@@ -67,7 +67,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def emptyAsFalseInInsertMode: Boolean = true
 
     override val description: String = "show dropdown command menu"
-    override def defaultKeys: Seq[KeySeq] = Seq(":")
+    override def defaultKeys: Seq[KeySeq] = Seq(":", Key.Ctrl + ";")
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val av = if (a.isInsert) {
@@ -97,12 +97,12 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
-      rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute))
+      rich.insideUrlAttributed(t.range.until).nonEmpty
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, rich, t) => {
-        val text = rich.befores(t.range.until).find(a => a.isStartWithAttribute(UrlAttribute)).get.asInstanceOf[Atom.Special]
-        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange, text.text))
+        val text = rich.insideUrlAttributed(t.range.until).get
+        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange, text.text.asDelimited))
       })
       DocTransaction.empty
     }

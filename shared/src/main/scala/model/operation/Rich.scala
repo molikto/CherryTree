@@ -74,7 +74,6 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def changeAttributeAt(rich: data.Rich, range: IntRange, url: data.Unicode, title: data.Unicode): Rich = {
     val atom = rich.after(range.start)
     val text = atom.text.asDelimited
-    assert(atom.isStartWithAttribute(UrlAttribute))
     Rich(
       Seq(
         Unicode.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(range.start), title),

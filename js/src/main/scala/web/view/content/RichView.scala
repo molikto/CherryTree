@@ -278,23 +278,26 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       val (s, e) = if (isStart) (0, 1) else (2, 3)
       (createRange(span, s, span, e), span) // change this might causes problems when focus out then focus in...
     } else {
-      val start = if (ss.isInstanceOf[Atom.PlainGrapheme]) {
-        val text = domAt(ss.nodeCursor)
-        val s = ss.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex)
-        (text, s)
-      } else {
-        assert(ss.delimitationStart || ss.isInstanceOf[Atom.Marked])
-        val node = domChildArray(domAt(ss.nodeCursor.dropRight(1)))
-        (node, ss.nodeCursor.last)
+      val start = ss match {
+        case grapheme: Atom.PlainGrapheme =>
+          val text = domAt(grapheme.nodeCursor)
+          val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex)
+          (text, s)
+        case aa =>
+          assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked])
+          val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
+          (node, aa.nodeCursor.last)
       }
-      val end = if (ee.isInstanceOf[Atom.PlainGrapheme]) {
-        val text = domAt(ee.nodeCursor)
-        val e = ee.text.asPlain.unicode.toStringPosition(ss.asInstanceOf[Atom.PlainGrapheme].unicodeIndex + ss.size)
-        (text, e)
-      } else {
-        assert(ss.delimitationEnd || ss.isInstanceOf[Atom.Marked])
-        val node = domChildArray(domAt(ee.nodeCursor.dropRight(1)))
-        (node, ee.nodeCursor.last + 1)
+
+      val end = ss match {
+        case grapheme: Atom.PlainGrapheme =>
+          val text = domAt(grapheme.nodeCursor)
+          val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex + grapheme.size)
+          (text, s)
+        case aa =>
+          assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked])
+          val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
+          (node, aa.nodeCursor.last + 1)
       }
       (createRange(start._1, start._2, end._1, end._2), null)
     }
@@ -602,8 +605,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     val anchor = new UrlAttributeEditDialog.Anchor {
       override def rect: Rect = {
         val (_, pos) = attributeEditor
-        val span = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))._2
-        web.view.toRect(span.getClientRects().item(0))
+        val (sel, span) = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))
+        val rects = if (span == null) sel.getClientRects() else span.getClientRects()
+        web.view.toRect(rects.item(0))
       }
 
       override def onDismiss(): Unit = {

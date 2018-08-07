@@ -191,7 +191,7 @@
 
 
 .ct-image {
-    verticalAlign : bottom;
+  vertical-align: baseline;
 }
 
 
