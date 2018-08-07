@@ -190,6 +190,8 @@ object Text {
 
     def attributes: Seq[SpecialChar] = delimitation.attributes
     def attribute(i: SpecialChar): Unicode = throw new NotImplementedError()
+    def urlAttr: Unicode = attribute(UrlAttribute)
+    def titleAttr: Unicode = attribute(TitleAttribute)
     def rangeAttribute(i: SpecialChar): IntRange = {
       val skip = 1 + contentSize + attributes.takeWhile(_ != i).map(a => attribute(a).size + 1).sum + 1
       IntRange(skip, skip + attribute(i).size)

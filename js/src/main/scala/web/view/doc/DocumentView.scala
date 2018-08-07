@@ -2,7 +2,7 @@ package web.view.doc
 
 import command.Key
 import doc.{DocInterface, DocState}
-import model.{cursor, range}
+import model.{cursor, data, range}
 import model.data.Content
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
@@ -154,6 +154,27 @@ class DocumentView(
   private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
     val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
     View.fromDom[ContentView.General](v)
+  }
+
+  def cursorOf[T <: model.data.Content, O <: model.operation.Content, M <: model.mode.Content](a: ContentView[T, O, M]): model.cursor.Node = {
+    def rec(a: Node): Seq[Int] = {
+      val frame = a.parentNode.parentNode
+      if (frame == rootFrame) {
+        Seq.empty
+      } else {
+        val parent = frame.parentNode.childNodes
+        var i = -1
+        var j = 0
+        while (i < 0 && j < parent.length) {
+          if (frame == parent(j)) {
+            i = j
+          }
+          j += 1
+        }
+        rec(frame.parentNode) :+ i
+      }
+    }
+    rec(a.dom)
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
@@ -369,6 +390,7 @@ class DocumentView(
 
   def refreshMounted(): Unit = {
     attributeEditor.refresh()
+    commandMenu.refresh()
   }
 
   event(window, "resize", (a: MouseEvent) => {
@@ -386,13 +408,18 @@ class DocumentView(
 
 
 
+  private val commandMenuAnchor = new OverlayAnchor {
+    override def rect: Rect = selectionRect
+    override def onDismiss(): Unit = {
+    }
+  }
   def showCommandMenu(): Unit = {
-    //commandMenu.showAt(selectionRect)
+    commandMenu.show(commandMenuAnchor)
   }
 
 
-  def showAttributeEditor(cur: model.cursor.Node, pos: range.IntRange): Unit = {
-    contentAt(cur).asInstanceOf[RichView].showAttributeEditor(pos)
+  def showAttributeEditor(cur: model.cursor.Node, pos: range.IntRange, text: model.data.Text.Delimited): Unit = {
+    contentAt(cur).asInstanceOf[RichView].showAttributeEditor(pos, text)
   }
 
 

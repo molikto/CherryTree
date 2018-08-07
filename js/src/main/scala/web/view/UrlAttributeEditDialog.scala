@@ -5,12 +5,23 @@ import org.scalajs.dom.raw._
 import scalatags.JsDom.all._
 import util.Rect
 import client.Client
+import model.data.Unicode
 
-class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay {
+object UrlAttributeEditDialog {
+  trait Anchor extends OverlayAnchor {
+    def update(url: Unicode, title: Unicode): Unit
+  }
+}
+class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay[UrlAttributeEditDialog.Anchor] {
 
   private val urlInput = input(
     width := "100%",
-    `class` := "ct-input"
+    `class` := "ct-input text-selectable"
+  ).render
+
+  private val titleInput = input(
+    width := "100%",
+    `class` := "ct-input text-selectable"
   ).render
 
 
@@ -22,17 +33,49 @@ class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLay
     position := "absolute",
     left := "0px",
     top := "0px",
-    `class` := "ct-card",
+    `class` := "ct-card unselectable",
+    padding := "6px",
     display := "none",
-    div(width := "100%", padding := "6px", urlInput)
+    span("URL", `class` := "ct-input-label"),
+    div(width := "100%", urlInput),
+    span("title", `class` := "ct-input-label", paddingTop := "12px"),
+    div(width := "100%", titleInput),
   ).render
 
 
-  override def show(anchor: OverlayAnchor): Unit = {
-    urlInput.value = ""
+  def show(anchor: UrlAttributeEditDialog.Anchor, url: String, title: String): Unit = {
+    urlInput.value = url
+    titleInput.value = title
     super.show(anchor)
   }
 
+
+  override def show(anchor: UrlAttributeEditDialog.Anchor): Unit = {
+    throw new IllegalStateException("Call another one!")
+  }
+
+  override protected def onDismiss(): Unit = {
+    anchor.update(Unicode(urlInput.value), Unicode(titleInput.value))
+    super.onDismiss()
+  }
+
+
+
+
+  event(titleInput, "keydown", (ev: KeyboardEvent) => {
+    KeyMap.get(ev.key) match {
+      case Some(Key.Escape) =>
+        ev.preventDefault()
+        dismiss()
+      case Some(Key.Tab) =>
+        ev.preventDefault()
+        urlInput.focus()
+      case Some(Key.Enter) =>
+        ev.preventDefault()
+        dismiss()
+      case _ =>
+    }
+  })
 
 
   event(urlInput, "keydown", (ev: KeyboardEvent) => {
@@ -42,11 +85,9 @@ class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLay
         dismiss()
       case Some(Key.Enter) =>
         ev.preventDefault()
-      case Some(Key.Down) =>
-        ev.preventDefault()
-      case Some(Key.Up) =>
-        ev.preventDefault()
+        dismiss()
       case _ =>
     }
   })
+
 }

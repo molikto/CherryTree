@@ -71,6 +71,19 @@ object Rich extends OperationObject[data.Rich, Rich] {
     Rich(op1.flatMap(_.u), ty)
   }
 
+  def changeAttributeAt(rich: data.Rich, range: IntRange, url: data.Unicode, title: data.Unicode): Rich = {
+    val atom = rich.after(range.start)
+    val text = atom.text.asDelimited
+    assert(atom.isStartWithAttribute(UrlAttribute))
+    Rich(
+      Seq(
+        Unicode.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(range.start), title),
+        Unicode.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(range.start), url)
+      ),
+      Type.AddDelete)
+  }
+
+
 
   def wrapAsCoded(a: data.Unicode, r: IntRange, deli: SpecialChar.Delimitation): Rich = {
     Rich(

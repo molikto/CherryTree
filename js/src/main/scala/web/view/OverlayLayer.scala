@@ -14,12 +14,12 @@ trait OverlayAnchor {
   def rect: Rect
   def onDismiss()
 }
-abstract class MountedOverlay extends Overlay {
+abstract class MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
 
 
-  private var anchor: OverlayAnchor = null
+  protected var anchor: ANCHOR = null.asInstanceOf[ANCHOR]
 
-  def show(anchor: OverlayAnchor) = {
+  def show(anchor: ANCHOR): Unit = {
     this.anchor = anchor
     setDomAttributeBy(anchor.rect)
     showOverlay()
@@ -27,7 +27,7 @@ abstract class MountedOverlay extends Overlay {
 
   override protected def onDismiss(): Unit = {
     anchor.onDismiss()
-    anchor = null
+    anchor = null.asInstanceOf[ANCHOR]
     super.onDismiss()
   }
 

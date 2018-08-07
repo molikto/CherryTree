@@ -42,7 +42,7 @@ object Client {
   object ViewMessage {
     case class VisitUrl(url: String) extends ViewMessage
     case class ShowCommandMenu() extends ViewMessage
-    case class ShowUrlAndTitleAttributeEditor(node: cursor.Node, range: IntRange) extends ViewMessage
+    case class ShowUrlAndTitleAttributeEditor(node: cursor.Node, range: IntRange, text: data.Text.Delimited) extends ViewMessage
     //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
@@ -364,6 +364,13 @@ class Client(
       DocTransaction(Seq(operation.Node.rich(n, operation.Rich.insert(insert.pos, unicode))),
       Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
       viewUpdated = true))
+  }
+
+  override def onAttributeModified(cur: Node, range: IntRange, url: data.Unicode, title: data.Unicode): Unit = {
+    val rich = state.node(cur).rich
+    localChange(DocTransaction(Seq(
+      operation.Node.rich(cur, operation.Rich.changeAttributeAt(rich, range, url, title))
+    ), state.mode))
   }
 
   override def onExternalPastePlain(unicode: Unicode): Unit = {

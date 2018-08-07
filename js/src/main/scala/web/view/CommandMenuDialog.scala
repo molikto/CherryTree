@@ -8,7 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay {
+class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay[OverlayAnchor] {
 
   private val search = input(
     width := "100%",

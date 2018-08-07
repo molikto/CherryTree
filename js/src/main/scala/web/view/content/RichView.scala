@@ -102,6 +102,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       )
       case Text.Link(t, b, c) => span(
         cg("["),
+        // LATER show title here
         span(`class` := "ct-link", rec(t), href := b.str),
         cg("]")
       )
@@ -594,9 +595,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     }
   }
 
-  def showAttributeEditor(pos: IntRange): Unit = {
+  def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
     attributeEditor = (documentView.attributeEditor, pos)
-    val anchor = new OverlayAnchor {
+    val anchor = new UrlAttributeEditDialog.Anchor {
       override def rect: Rect = {
         val (_, pos) = attributeEditor
         val span = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))._2
@@ -606,7 +607,11 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
       override def onDismiss(): Unit = {
         attributeEditor = null
       }
+
+      override def update(url: Unicode, title: Unicode): Unit = {
+        controller.onAttributeModified(documentView.cursorOf(RichView.this), attributeEditor._2, url, title)
+      }
     }
-    attributeEditor._1.show(anchor)
+    attributeEditor._1.show(anchor, text.urlAttr.str, text.titleAttr.str)
   }
 }

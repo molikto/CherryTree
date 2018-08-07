@@ -92,17 +92,17 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   // LATER we only support url and title attribute now, no need to worry about future
-  val editAttribute = new Command {
+  new Command {
     override val description: String = "edit attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
-    override def available(a: DocState): Boolean = a.isRichNormalOrInsert((cur, rich, t) => {
+    override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute))
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.isRichNormalOrInsert((cur, rich, t) => {
+      a.isRich((cur, rich, t) => {
         val text = rich.befores(t.range.until).find(a => a.isStartWithAttribute(UrlAttribute)).get.asInstanceOf[Atom.Special]
-        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange))
+        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange, text.text))
       })
       DocTransaction.empty
     }

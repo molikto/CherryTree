@@ -199,7 +199,8 @@ case class Rich(text: Seq[Text]) {
     val bs = befores(pos)
     if (!bs.hasNext) false
     else {
-      bs.next().text.isCoded
+      val atom = bs.next()
+      atom.text.isCoded && !atom.delimitationEnd
     }
   }
 
@@ -208,7 +209,7 @@ case class Rich(text: Seq[Text]) {
     if (!bs.hasNext) false
     else {
       val a = bs.next()
-      if (a.text.isCoded) {
+      if (a.text.isCoded && !a.delimitationEnd) {
         a.text.asCoded.delimitation == deli
       } else {
         false

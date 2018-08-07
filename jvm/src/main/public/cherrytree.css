@@ -45,6 +45,12 @@
   font-size: 95%;
 }
 
+.ct-input-label {
+  font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
+  font-size: 95%;
+  color: #ccccccaa;
+}
+
 .ct-input {
   outline: 0px solid transparent;
   background: #1b1d23;
