@@ -66,14 +66,14 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     val ts = c.map {
       case command.Part.IdentifiedCommand(key, c, _) =>
         key match {
-          case Some(ss) => renderKeySeq(ss)
-          case None if c.keys.nonEmpty => renderKeySeq(c.keys.head)
+          case Some(ss) => Key.toString(ss)
+          case None if c.keys.nonEmpty => Key.toString(c.keys.head)
           case _ => "(command)"
         }
-      case command.Part.UnidentifiedCommand(key, _) => renderKeySeq(key)
+      case command.Part.UnidentifiedCommand(key, _) => Key.toString(key)
       case command.Part.UnknownCommand(key) =>
         isError = true
-        renderKeySeq(key)
+        Key.toString(key)
       case command.Part.Count(c) => c.toString
       case command.Part.Char(c) => c.str
       case command.Part.CompleteMark =>

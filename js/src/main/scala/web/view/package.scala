@@ -61,14 +61,6 @@ package object view {
     k
   }
 
-  def renderKeySeq(k: KeySeq): String = {
-    if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
-      k.map(_.a.asInstanceOf[Key.Grapheme]).mkString("")
-    } else {
-      k.mkString(" ")
-    }
-  }
-
 
   def svgSourceToBackgroundStr(svg: String): String = {
     val encoded = window.btoa(svg)

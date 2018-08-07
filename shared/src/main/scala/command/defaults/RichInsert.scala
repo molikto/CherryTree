@@ -2,7 +2,7 @@ package command.defaults
 
 import client.Client
 import client.Client.ViewMessage
-import command.{CommandCategory, CommandInterface, Motion}
+import command.{CommandCategory, CommandInterface, Key, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{mode, operation, range}
@@ -122,7 +122,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert, until) = a.asRichNormalOrInsert
-      val keyU = Unicode(key.map(_.toString()).getOrElse(""))
+      val keyU = Unicode(key.map(a => Key.toString(a)).getOrElse(""))
       def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
       if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
         DocTransaction(Seq.empty, moveSomeInsertMode(1))

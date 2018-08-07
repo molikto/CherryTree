@@ -48,6 +48,14 @@ case class Key(
 object Key {
   type KeySeq = Seq[Key]
 
+  def toString(k: KeySeq): String = {
+    if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
+      k.map(_.a.asInstanceOf[Key.Grapheme]).mkString("")
+    } else {
+      k.mkString(" ")
+    }
+  }
+
   sealed trait Modifier extends V {
     def +(key: Key): Key
     def +(a: String): KeySeq = defaultAsciiKeysToKeySeq(a).map(this + _)

@@ -1,7 +1,7 @@
 package web.view
 
 import client.Client
-
+import command.Key
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
@@ -43,7 +43,7 @@ class CommandListView(val client: Client) extends UnselectableView  {
                 div(
                   p(marginLeft := "12px",
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
-                    c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", renderKeySeq(a)), " ")),
+                    c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "char"), " ")).filter(_ => c.needsChar),
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ")).filter(_ => c.needsMotion),
                     c.description)
