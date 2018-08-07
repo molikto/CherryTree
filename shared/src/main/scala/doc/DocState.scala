@@ -38,6 +38,12 @@ case class DocState(
     case _ => false
   }
 
+  def isRichNormalOrInsert: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert( _))) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => true
+    case _ => false
+  }
+
   def isNonEmptyRichNormalOrVisual: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
     case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => a.nonEmpty
@@ -157,6 +163,19 @@ case class DocState(
         val content = rich(n)
         c match {
           case v@model.mode.Content.RichVisual(fix, m) => (n, content, v)
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
+  }
+
+  def asRichNormalOrInsert: (cursor.Node, Rich, Int, Int) = {
+    mode match {
+      case Some(o@model.mode.Node.Content(n, c)) =>
+        val content = rich(n)
+        c match {
+          case nor@model.mode.Content.RichNormal(r) => (n, content, r.start, r.until)
+          case v@model.mode.Content.RichInsert(m) => (n, content, m, -1)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

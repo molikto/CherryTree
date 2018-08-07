@@ -29,6 +29,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.RichVisual(),
     new defaults.RichChange(),
     new defaults.RichDelete(),
+    new defaults.RichMisc(),
     new defaults.NodeMotion(),
     new defaults.NodeVisual(),
     new defaults.NodeMove(),

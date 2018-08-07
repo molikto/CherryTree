@@ -17,6 +17,7 @@ case class DocTransaction(
 
   // TODO zoom options
   viewUpdated: Boolean = false,
+  viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {
   def nonTransactional: Boolean = {
     transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty
