@@ -86,6 +86,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
   override def show(anchor: OverlayAnchor): Unit = {
+    marked = null
     updateMenuContent()
     search.value = ""
     super.show(anchor)
@@ -105,17 +106,19 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
   private def mark(i: Int): Unit = {
-    val oldIndex = available.indexOf(marked)
-    val newIndex = ((oldIndex + i) min available.size - 1) max 0
-    if (oldIndex != newIndex) {
-      marked = available(newIndex)
-      val old = list.childNodes(oldIndex).asInstanceOf[HTMLElement]
-      val n = list.childNodes(newIndex).asInstanceOf[HTMLElement]
-      old.classList.remove("ct-selected")
-      old.classList.add("ct-not-selected")
-      n.classList.add("ct-selected")
-      n.classList.remove("ct-not-selected")
-      scrollInToViewIfNotVisible(n, list)
+    if (marked != null) {
+      val oldIndex = available.indexOf(marked)
+      val newIndex = ((oldIndex + i) min (available.size - 1)) max 0
+      if (oldIndex != newIndex) {
+        marked = available(newIndex)
+        val old = list.childNodes(oldIndex).asInstanceOf[HTMLElement]
+        val n = list.childNodes(newIndex).asInstanceOf[HTMLElement]
+        old.classList.remove("ct-selected")
+        old.classList.add("ct-not-selected")
+        n.classList.add("ct-selected")
+        n.classList.remove("ct-not-selected")
+        scrollInToViewIfNotVisible(n, list)
+      }
     }
   }
 

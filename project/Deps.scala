@@ -41,5 +41,6 @@ object Deps {
       Nil))
 
   val clientJs = Seq(
+    "commonmark" -> "0.28.1"
   )
 }

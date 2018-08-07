@@ -3,6 +3,7 @@ package web.view
 import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw._
+import web._
 import org.scalajs.dom.window
 import scalatags.JsDom.all._
 import web.view.doc.DocumentView

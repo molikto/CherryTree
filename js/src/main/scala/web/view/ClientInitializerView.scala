@@ -43,6 +43,8 @@ object ClientInitializerView {
           Option(window.localStorage.getItem(key))
         }
       }
+      model.parseFromMarkdown = web.util.parseFromMarkdown
+
     }
   }
 }

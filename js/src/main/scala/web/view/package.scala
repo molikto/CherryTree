@@ -5,7 +5,7 @@ import command.Key.KeySeq
 import org.scalajs.dom
 import org.scalajs.dom.raw.{HTMLDivElement, HTMLElement}
 import org.scalajs.dom._
-import util.Rect
+import _root_.util.Rect
 
 import scala.scalajs.js
 
@@ -54,12 +54,6 @@ package object view {
 
   val KaTeX = window.asInstanceOf[js.Dynamic].katex
 
-  def jsObject(a: js.Dynamic => Unit): js.Dynamic = {
-    val k =
-      js.Object().asInstanceOf[js.Dynamic]
-    a(k)
-    k
-  }
 
 
   def svgSourceToBackgroundStr(svg: String): String = {
@@ -84,7 +78,7 @@ package object view {
     scrollInToViewIfNotVisible(a.getBoundingClientRect(), scroll)
   }
 
-  def toRect(rect: ClientRect): util.Rect = {
+  def toRect(rect: ClientRect): Rect = {
     Rect(rect.left, rect.top, rect.width, rect.height)
   }
 }

@@ -1,5 +1,6 @@
 package web.view
 
+import web._
 import model._
 import model.data._
 import model.range.IntRange
@@ -7,8 +8,6 @@ import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
-import util.Rect
-import view.EditorInterface
 import web.view.doc.DocumentView
 import web.view._
 
@@ -64,14 +63,14 @@ class SourceEditDialog(protected val layer: OverlayLayer) extends Overlay {
   var isInnerNormal = true
 
   CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
-    if (isInnerNormal && e == "<Esc>") {
+    if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
       dismiss()
     }
   })
 
 
   CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-    val isNormal = e.mode == "normal"
+    val isNormal = e.mode.asInstanceOf[String] == "normal"
     if (!isNormal) isInnerNormal = false
     else window.setTimeout(() => {
       isInnerNormal = true
