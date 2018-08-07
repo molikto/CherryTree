@@ -8,7 +8,7 @@ import model._
 class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
-    override val description: String = "remove content and change to code node"
+    override val description: String = "change to empty code node"
     override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asRichNormalOrVisual._1
