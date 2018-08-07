@@ -8,6 +8,8 @@ package object util extends ObservablePropertyImplicits  {
   private val debugOn = false
 
 
+  def matchCommandSearch(str: String, term: String) = str.contains(term)
+
   def head[T](a: Iterator[T]): Option[T] = if (a.hasNext) Some(a.next()) else None
   def last[T](a: Iterator[T]): Option[T] = {
     var n: Option[T] = None

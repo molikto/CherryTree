@@ -23,8 +23,9 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   private val list = div(
     maxWidth := "560px",
     maxHeight := "280px",
+    minHeight := "0px",
     overflowY := "scroll",
-    paddingRight := "-10px",
+    overflowX := "hidden",
     color := "#cccccc",
     `class` := "ct-scroll"
   ).render
@@ -45,43 +46,41 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   private var term: String = ""
 
   observe(client.stateUpdates.doOnNext(u => {
-    if (available.nonEmpty) {
+    if (u.mode.isEmpty) {
+      dismiss()
+    } else {
       // update command list
       updateMenuContent()
     }
   }))
 
   def updateMenuContent(): Unit = {
-    val n = client.commands.filter(a => a.available(client.state, client) && a.keys.isEmpty )
+    val n = client.commands.filter(a => util.matchCommandSearch(a.description, term) && a.available(client.state, client) && a.keys.isEmpty )
     if (n != available) {
       available = n
-      if (available.isEmpty) {
-        dismiss()
-      } else {
-        removeAllChild(list)
-        if (marked == null) {
-          marked = available.head
-        }
+      removeAllChild(list)
+      if (marked == null) {
+        marked = available.head
+      }
 
-        for (c <- available.zipWithIndex) {
-          list.appendChild(
-            div(
-              display := "flex",
-              flexDirection := "row",
-              alignContent := "center",
-              `class` := "ct-menu-item " + (if (marked == c._1) "ct-selected" else "ct-not-selected"),
-              paddingLeft := "5px",
-              if (c._2 < 10)
-                span(
-                  minWidth := "18px",paddingBottom := "2px",
-                  tag("kbd")(`class` := "ct-kbd-small", c._2),
-                  " ")
-              else span(
-                minWidth := "18px"
-              ),
-              c._1.description
-            ).render)
-        }
+      for (c <- available.zipWithIndex) {
+        list.appendChild(
+          div(
+            display := "flex",
+            flexDirection := "row",
+            alignContent := "center",
+            `class` := "ct-menu-item " + (if (marked == c._1) "ct-selected" else "ct-not-selected"),
+            paddingLeft := "5px",
+            if (c._2 < 10)
+              span(
+                minWidth := "18px",paddingBottom := "2px",
+                tag("kbd")(`class` := "ct-kbd-small", c._2),
+                " ")
+            else span(
+              minWidth := "18px"
+            ),
+            c._1.description
+          ).render)
       }
     }
   }
@@ -153,11 +152,11 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   })
 
   event(search, "input", (ev: Event) => {
-    term = search.textContent
+    term = search.value
     updateMenuContent()
   })
 
   event(dom, "focusout", (ev: FocusEvent) => {
-    dismiss()
+    //dismiss()
   })
 }

@@ -16,8 +16,8 @@ class Search extends CommandCategory("search & pattern matches") {
   //N     N  N            repeat last search, in opposite direction
   //star  N  *            search forward for the identifier under the cursor
   //#     N  #            search backward for the identifier under the cursor
-  //gstar N  g*           like "*", but also find partial matches
-  //g#    N  g#           like "#", but also find partial matches
+  //gstar N  g*           like *, but also find partial matches
+  //g#    N  g#           like #, but also find partial matches
   //gd       gd           goto local declaration of identifier under the cursor
   //gD       gD           goto global declaration of identifier under the cursor
   //
