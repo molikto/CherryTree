@@ -122,22 +122,19 @@ class RichInsert extends CommandCategory("when in insert mode") {
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert, until) = a.asRichNormalOrInsert
+      val keyU = Unicode(key.map(_.toString()).getOrElse(""))
       def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
-      if (key.isEmpty || (key.isDefined && key.get.size == 1)) {
-        if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(key.get.head.a.asInstanceOf[Grapheme].a)) {
-          DocTransaction(Seq.empty, moveSomeInsertMode(1))
-        } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(key.get.head.a.asInstanceOf[Grapheme].a))) {
-          val wrap = deli.wrap()
-          val k = operation.Rich.insert(insert, wrap)
-          val trans = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
-          if (deli.atomic) {
-            DocTransaction(trans, moveSomeInsertMode(wrap.size),
-              viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
-          } else {
-            DocTransaction(trans, moveSomeInsertMode(1))
-          }
+      if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
+        DocTransaction(Seq.empty, moveSomeInsertMode(1))
+      } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
+        val wrap = deli.wrap()
+        val k = operation.Rich.insert(insert, wrap)
+        val trans = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+        if (deli.atomic) {
+          DocTransaction(trans, moveSomeInsertMode(wrap.size),
+            viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
         } else {
-          DocTransaction.empty
+          DocTransaction(trans, moveSomeInsertMode(1))
         }
       } else {
         DocTransaction.empty

@@ -85,17 +85,28 @@ abstract class CommandHandler extends Settings with CommandInterface {
   // LATER updatable keymap
   private lazy val keyToCommand: Map[Key, Seq[command.Command]] = commands.flatMap(c => c.keys.map(_ -> c)).groupBy(_._1.head).map(a => (a._1, a._2.map(_._2)))
 
-  def parseCommand(key: Key): Unit = {
+  def parseCommand(key: Key, mergeForStrong: Boolean = true): Unit = {
+    var removeForStrong: Part = null
     val (ks, cs) = buffer.lastOption match {
       case Some(Part.UnidentifiedCommand(kks, ccs)) =>
         buffer.remove(buffer.size - 1)
         (kks, ccs)
+      case Some(Part.IdentifiedCommand(Some(kks), css, others)) if mergeForStrong && !css.needsStuff =>
+        removeForStrong = buffer.remove(buffer.size - 1)
+        (kks, others)
       case _ => (Seq.empty, keyToCommand.getOrElse(key, Seq.empty))
     }
     val kk = ks :+ key
     val ac = cs.filter(a => a.keys.exists(_.startsWith(kk)) && a.available(state, this))
     if (ac.isEmpty) {
-      buffer.append(Part.UnknownCommand(kk))
+      if (removeForStrong != null) {
+        buffer.append(removeForStrong)
+        tryComplete(false)
+        clearPreviousCommand()
+        parseCommand(key, false)
+      } else {
+        buffer.append(Part.UnknownCommand(kk))
+      }
     } else {
       var exacts = ac.filter(_.keys.contains(kk))
       if (exacts.size > 1) {
@@ -110,7 +121,14 @@ abstract class CommandHandler extends Settings with CommandInterface {
         case Some(exact) =>
           buffer.append(Part.IdentifiedCommand(Some(kk), exact, ac.filter(_ != exact)))
         case None =>
-          buffer.append(Part.UnidentifiedCommand(kk, ac))
+          if (removeForStrong != null) {
+            buffer.append(removeForStrong)
+            tryComplete(false)
+            clearPreviousCommand()
+            parseCommand(key, false)
+          } else {
+            buffer.append(Part.UnidentifiedCommand(kk, ac))
+          }
       }
     }
   }
@@ -119,14 +137,14 @@ abstract class CommandHandler extends Settings with CommandInterface {
   def runTextual(command: Command): Unit = {
     clearPreviousCommand()
     buffer.append(IdentifiedCommand(None, command, Seq.empty))
-    tryComplete()
+    tryComplete(false)
     commandBufferUpdates_.onNext(buffer)
   }
 
   /**
     * boolean means this command is accepted
     */
-  private def tryComplete(wfs: Boolean = true): Boolean = {
+  private def tryComplete(wfs: Boolean): Boolean = {
     def rec(waitForStrong: Boolean): Boolean = {
       val count = buffer.map {
         case Part.Count(c) => c
@@ -172,43 +190,20 @@ abstract class CommandHandler extends Settings with CommandInterface {
     def tryMergeThenRec(): Boolean = {
       def tryMerge(key1: KeySeq, r1: Seq[Command], key2: KeySeq) = {
         if (key2.size == 1) {
-          val c2 = buffer.remove(buffer.size - 1)
-          val c1 = buffer.remove(buffer.size - 1)
-          val size = buffer.size
+          buffer.remove(buffer.size - 1)
+          buffer.remove(buffer.size - 1)
           buffer.append(Part.UnidentifiedCommand(key1, r1))
-          parseCommand(key2.head)
-          if (!rec(false)) {
-            while (buffer.size > size) buffer.remove(buffer.size - 1)
-            buffer.append(c1)
-            buffer.append(c2)
-            false
-          } else {
-            true
-          }
+          parseCommand(key2.head, false)
+          rec(false)
         } else {
-          false
+          markUnknownPattern()
         }
       }
       buffer match {
         case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.UnknownCommand(key2) =>
-          if (!tryMerge(key1, r1, key2)) {
-            markUnknownPattern()
-          } else {
-            true
-          }
+          tryMerge(key1, r1, key2)
         case a :+ Part.IdentifiedCommand(Some(key1), c1, r1) :+ Part.IdentifiedCommand(Some(key2), c2, _) =>
-          if (tryMerge(key1, r1, key2)) {
-            true
-          } else if (!c1.needsStuff && key2.size == 1) {
-            val c2 = buffer.remove(buffer.size - 1)
-            rec(false)
-            buffer.clear()
-            parseCommand(key2.)
-            buffer.append(c2)
-            rec(false)
-          } else {
-            markUnknownPattern()
-          }
+          tryMerge(key1, r1, key2)
         case _ =>
           markUnknownPattern()
       }
@@ -305,7 +300,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       case IdentifiedCommand(k, c, _) if c == miscCommands.exit => true
       case _ => false
     }
-    val res = tryComplete()
+    val res = tryComplete(true)
     if (hasExit) buffer.clear()
     commandBufferUpdates_.onNext(buffer)
     hasExit || res || !state.isRichInsert
