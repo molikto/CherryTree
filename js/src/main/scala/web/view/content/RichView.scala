@@ -100,12 +100,14 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         del(`class` := "ct-del", rec(c)),
         cg("~")
       )
-      case Text.Link(t, b, c) => span(
-        cg("["),
-        // LATER show title here
-        span(`class` := "ct-link", rec(t), href := b.str),
-        cg("]")
-      )
+      case Text.Link(t, b, c) =>
+        val tt: String = if (c.isEmpty) b.str else s"${c.str}\n${b.str}"
+        span(
+          title := tt,
+          cg("["),
+          span(`class` := "ct-link", rec(t), href := b.str),
+          cg("]")
+        )
       case Text.Image(b, c) =>
         img(`class` := "ct-image", src := b.str)
       case Text.LaTeX(c) =>

@@ -413,6 +413,7 @@ class DocumentView(
     override def onDismiss(): Unit = {
     }
   }
+
   def showCommandMenu(): Unit = {
     commandMenu.show(commandMenuAnchor)
   }

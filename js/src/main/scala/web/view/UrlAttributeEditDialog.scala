@@ -42,8 +42,12 @@ class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLay
     div(width := "100%", titleInput),
   ).render
 
+  private var urlStart: String = null
+  private var titleStart: String = null
 
   def show(anchor: UrlAttributeEditDialog.Anchor, url: String, title: String): Unit = {
+    urlStart = url
+    titleStart = title
     urlInput.value = url
     titleInput.value = title
     super.show(anchor)
@@ -55,7 +59,12 @@ class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLay
   }
 
   override protected def onDismiss(): Unit = {
-    anchor.update(Unicode(urlInput.value), Unicode(titleInput.value))
+    var url = urlInput.value
+    if (url.isEmpty) url = urlStart
+    val title = titleInput.value
+    if (url != urlStart || title != titleStart) {
+      anchor.update(Unicode(urlInput.value), Unicode(titleInput.value))
+    }
     super.onDismiss()
   }
 

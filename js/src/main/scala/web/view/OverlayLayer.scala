@@ -8,6 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 
 import scala.collection.mutable.ArrayBuffer
+import scala.scalajs.js
 
 
 trait OverlayAnchor {
@@ -49,7 +50,7 @@ abstract class Overlay extends View {
     if (dismissed) {
       dismissed = false
       dom.style.display = "block"
-      layer.showOverlay(this)
+      layer.onShowOverlay(this)
       focus()
       window.setTimeout(() => {
         if (!dismissed) focus()
@@ -66,7 +67,7 @@ abstract class Overlay extends View {
 
   protected def onDismiss(): Unit = {
     dom.style.display = "none"
-    layer.dismissOverlay(this)
+    layer.onDismissOverlay(this)
   }
 
   private var dismissed = true
@@ -92,14 +93,15 @@ abstract class Overlay extends View {
 class OverlayLayer(val parent: HTMLElement, base: View) extends View {
 
   private val showingOverlay = ArrayBuffer[Overlay]()
-  def showOverlay(overlay: Overlay): Unit = {
+
+  def onShowOverlay(overlay: Overlay): Unit = {
     if (!showingOverlay.contains(overlay)) {
       if (showingOverlay.isEmpty) show()
       showingOverlay.append(overlay)
     }
   }
 
-  def dismissOverlay(overlay: Overlay): Unit = {
+  def onDismissOverlay(overlay: Overlay): Unit = {
     if (showingOverlay.contains(overlay)) {
       val index = showingOverlay.indexOf(overlay)
       showingOverlay.remove(index)
@@ -112,6 +114,12 @@ class OverlayLayer(val parent: HTMLElement, base: View) extends View {
   }
 
 
+  private val clicker = div(
+    position := "absolute",
+    width := "100%",
+    height := "100%"
+  ).render
+
   dom = div(
     position := "absolute",
     left := "0px",
@@ -120,14 +128,31 @@ class OverlayLayer(val parent: HTMLElement, base: View) extends View {
     height := "100%",
     zIndex := "100",
     display := "none",
+    clicker
   ).render
 
   private def show(): Unit = {
     dom.style.display = "block"
+    clicker.addEventListener("click", clickEvent)
+    clicker.addEventListener("dbclick", clickEvent)
+  }
+
+  private val clickEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
+    dismissAllOverlay()
   }
 
 
+  def dismissAllOverlay(): Unit = {
+    while (showingOverlay.nonEmpty) {
+      showingOverlay.head.dismiss()
+    }
+  }
+
+
+
   private def dismiss(): Unit = {
+    clicker.removeEventListener("click", clickEvent)
+    clicker.removeEventListener("dbclick", clickEvent)
     dom.style.display = "none"
     base.focus()
   }
