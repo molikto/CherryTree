@@ -131,13 +131,13 @@ class DocumentView(
   private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
-      else rec(a.childNodes(1).childNodes(1).childNodes(b.head), b.tail)
+      else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
     }
     rec(rootFrame, at).asInstanceOf[HTMLElement]
   }
 
   private def boxAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
+    frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
   }
 
   private def childListAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
@@ -148,7 +148,7 @@ class DocumentView(
 
 
   private def holdAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
+    frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
   private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
@@ -244,27 +244,16 @@ class DocumentView(
   }
 
 
-  private val viewBoxStr = {
-    val padding = 128
-    val size = 512 + padding * 2
-    s"-$padding -$padding $size $size"
-  }
-  private val holdBg = svgSourceToBackgroundStr(
-    s"""
-       |<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBoxStr"><path style="fill: #555c75;" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8z"/></svg>
-     """.stripMargin)
 
-  private val holdFoldBg = svgSourceToBackgroundStr(
-    s"""
-       |<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBoxStr"><path style="fill: #555c75;" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6 0-12-5.4-12-12v-92h-92c-6.6 0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6 0 12 5.4 12 12v92h92c6.6 0 12 5.4 12 12v56z"/></svg>
-     """.stripMargin)
-
-  private def toggleHoldRendering(hold0: Node, fold: Boolean): Unit = {
+  private def toggleHoldRendering(frame0: Node, hold0: Node, fold: Boolean): Unit = {
     val hold = hold0.asInstanceOf[HTMLElement]
+    val frame = frame0.asInstanceOf[HTMLElement]
     if (fold) {
-      hold.style.background = holdFoldBg
+      frame.classList.add("ct-d-folded")
+      hold.classList.add("ct-d-hold-folded")
     } else {
-      hold.style.background = holdBg
+      frame.classList.remove("ct-d-folded")
+      hold.classList.remove("ct-d-hold-folded")
     }
   }
 
@@ -272,7 +261,7 @@ class DocumentView(
     node.attribute(model.data.Node.ContentType).map {
       case model.data.Node.ContentType.Cite => "ct-d-cite"
       case model.data.Node.ContentType.Br => "ct-d-br"
-      case model.data.Node.ContentType.Heading(j) => s"ct-d-h$j"
+      case model.data.Node.ContentType.Heading(j) => s"ct-d-heading ct-d-h$j"
       case _ => ""
     }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
       case model.data.Node.ChildrenType.Blockquote => "ct-d-blockquote"
@@ -286,19 +275,14 @@ class DocumentView(
 
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val hold = tag("i")(`class` := "ct-d-hold").render
-    parent.insertBefore(hold, firstChild)
     val box = div(`class` := "ct-d-box " + classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
+    val hold = tag("i")(`class` := "ct-d-hold").render
+    parent.insertBefore(hold, firstChild)
     createContent(root.content).attachToNode(box)
-    val list = div().render
+    val list = div(`class` := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
-    if (client.state.folded(root)) {
-      list.classList.add("ct-folded")
-      toggleHoldRendering(hold, true)
-    } else {
-      toggleHoldRendering(hold, false)
-    }
+    toggleHoldRendering(parent, hold, client.state.folded(root))
     box.appendChild(list)
     insertNodes(list, 0, root.childs)
   }
@@ -364,12 +348,7 @@ class DocumentView(
 
     observe(client.stateUpdates.doOnNext(update => {
       update.folds.foreach(f => {
-        toggleHoldRendering(holdAt(f._1), f._2)
-        if (f._2) {
-          childListAt(f._1).classList.add("ct-folded")
-        } else {
-          childListAt(f._1).classList.remove("ct-folded")
-        }
+        toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
       })
       duringStateUpdate = true
       for (t <- update.transaction) {
