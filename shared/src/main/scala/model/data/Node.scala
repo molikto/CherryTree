@@ -89,7 +89,6 @@ object Node extends DataObject[Node] {
     case object OrderedList extends ChildrenType
     case object UnorderedList extends ChildrenType
     case object DashList extends ChildrenType
-    case object Blockquote extends ChildrenType
 
     override private[model] val name = "ChildrenType"
 
@@ -99,7 +98,7 @@ object Node extends DataObject[Node] {
         case "1" => OrderedList
         case "2" => UnorderedList
         case "3" => DashList
-        case "4" => Blockquote
+        case _ => Paragraphs
       }
 
     override private[model] def serialize(t: ChildrenType) = t match {
@@ -107,17 +106,20 @@ object Node extends DataObject[Node] {
       case OrderedList => "1"
       case UnorderedList => "2"
       case DashList => "3"
-      case Blockquote => "4"
     }
   }
 
   sealed trait ContentType {
-
+    def preferredChildrenType: Option[ChildrenType] = None
   }
   object ContentType extends NodeTag[ContentType] {
-    case object Cite extends ContentType
+    case object Cite extends ContentType {
+      override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
+    }
     case object Br extends ContentType
-    case class Heading(i: Int) extends ContentType
+    case class Heading(i: Int) extends ContentType {
+      override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
+    }
 
     override private[model] val name = "ContentType"
 

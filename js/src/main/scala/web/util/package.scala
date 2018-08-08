@@ -89,7 +89,6 @@ package object util {
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
               .attribute(data.Node.ContentType, data.Node.ContentType.Cite)
-              .attribute(data.Node.ChildrenType, data.Node.ChildrenType.Blockquote)
             )
             c = c.next
           case "code_block" =>

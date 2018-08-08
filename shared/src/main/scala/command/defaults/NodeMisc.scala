@@ -35,8 +35,13 @@ class NodeMisc extends CommandCategory("node: misc") {
     override protected def available(a: DocState): Boolean = a.isNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asNormal._1
+      val chidlren = if (!a.node(cur).has(data.Node.ChildrenType)) {
+        to.flatMap(_.preferredChildrenType).map(a => operation.Node.AttributeChange(cur, data.Node.ChildrenType, Some(a))).toSeq
+      } else {
+        Seq.empty
+      }
       DocTransaction(
-        Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)),
+        Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren,
         a.mode)
     }
   }
@@ -63,7 +68,6 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   new ChildrenStyleCommand("paragraphs", Some(data.Node.ChildrenType.Paragraphs))
-  new ChildrenStyleCommand("blockquote", Some(data.Node.ChildrenType.Blockquote))
   new ChildrenStyleCommand("ordered list", Some(data.Node.ChildrenType.OrderedList))
   new ChildrenStyleCommand("unordered list", Some(data.Node.ChildrenType.UnorderedList))
   new ChildrenStyleCommand("dash list", Some(data.Node.ChildrenType.DashList))

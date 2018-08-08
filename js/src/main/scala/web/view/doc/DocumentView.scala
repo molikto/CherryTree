@@ -264,7 +264,6 @@ class DocumentView(
       case model.data.Node.ContentType.Heading(j) => s"ct-d-heading ct-d-h$j"
       case _ => ""
     }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
-      case model.data.Node.ChildrenType.Blockquote => "ct-d-blockquote"
       case model.data.Node.ChildrenType.UnorderedList => "ct-d-ul"
       case model.data.Node.ChildrenType.OrderedList => "ct-d-ol"
       case model.data.Node.ChildrenType.Paragraphs => "ct-d-ps"
