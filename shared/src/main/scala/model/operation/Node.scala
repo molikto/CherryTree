@@ -1,6 +1,6 @@
 package model.operation
 
-import model._
+import model.{data, _}
 import Type.Type
 import com.softwaremill.quicklens._
 import model.range.IntRange
@@ -49,6 +49,20 @@ object Node extends OperationObject[data.Node, operation.Node] {
     (mode, isBad)
   }
 
+  case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
+    override private[model] def transformMaybeBad(a: mode.Node): (mode.Node, Boolean) = MODE(a)
+    override def ty: Type = Type.Structural
+
+    override def apply(d: data.Node): data.Node = d.map(at, _.attribute(tag, to))
+
+    override def reverse(d: data.Node): Node = AttributeChange(at, tag, d(at).attribute(tag))
+
+    override def merge(before: Any): Option[Node] = None
+
+    override def isEmpty: Boolean = false
+  }
+
+
   case class Content(at: cursor.Node, content: operation.Content) extends Node {
     override def ty: Type = content.ty
     override def apply(d: data.Node): data.Node = {
@@ -80,6 +94,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def isEmpty: Boolean = content.isEmpty
   }
+
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = {

@@ -77,7 +77,7 @@ class RichChange extends CommandCategory("change text") {
           operation.Rich.insert(v.range.start, char
           ), operation.Type.AddDelete)
         val focus = IntRange(v.range.start, v.range.start + char.size)
-        DocTransaction(Seq(operation.Node.Content(cursor, operation.Content.Rich(ops))),
+        DocTransaction(Seq(operation.Node.rich(cursor, ops)),
           Some(a.copyContentMode(mode.Content.RichNormal(focus))))
       } else {
         DocTransaction.empty

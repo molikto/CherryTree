@@ -46,7 +46,7 @@ class RichSpecial extends CommandCategory("text format") {
       } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
         val wrap = deli.wrap()
         val k = operation.Rich.insert(insert, wrap)
-        val trans = Seq(model.operation.Node.Content(n, model.operation.Content.Rich(k)))
+        val trans = Seq(model.operation.Node.rich(n, k))
         if (deli.atomic) {
           DocTransaction(trans, moveSomeInsertMode(wrap.size),
             viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
@@ -78,7 +78,7 @@ class RichSpecial extends CommandCategory("text format") {
         val op2 = operation.Rich.wrap(IntRange(in.textTotalIndex, in.textTotalIndex + in.text.asDelimited.contentSize), deli)
         DocTransaction(
           Seq(
-            operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+            operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
           ),
           Some(a.mode.get)
         )
@@ -92,7 +92,7 @@ class RichSpecial extends CommandCategory("text format") {
             val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.textTotalIndex, in.textTotalIndex + unicode.size), deli)
             return DocTransaction(
               Seq(
-                operation.Node.Content(cursor, operation.Content.Rich(operation.Rich.merge(op1, op2, operation.Type.AddDelete)))
+                operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
               ),
               Some(a.mode.get)
             )
@@ -140,8 +140,8 @@ class RichSpecial extends CommandCategory("text format") {
               } else {
                 mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
               }
-              DocTransaction(Seq(operation.Node.Content(cursor,
-                operation.Content.Rich(operation.Rich.unwrap(r.start, after.text.asDelimited)))),
+              DocTransaction(Seq(operation.Node.rich(cursor,
+                operation.Rich.unwrap(r.start, after.text.asDelimited))),
                 Some(a.copyContentMode(ret)))
             } else {
               val soc = rich.singleSpecials(r).map(_.range)
@@ -197,8 +197,8 @@ class RichSpecial extends CommandCategory("text format") {
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
           DocTransaction(Seq(
-            operation.Node.Content(cursor,
-              operation.Content.Rich(operation.Rich.wrapAsCoded(rich.subPlain(r), r, deli)))),
+            operation.Node.rich(cursor,
+              operation.Rich.wrapAsCoded(rich.subPlain(r), r, deli))),
             Some(a.copyContentMode(fakeMode)))
         } else {
           DocTransaction.empty
@@ -222,8 +222,7 @@ class RichSpecial extends CommandCategory("text format") {
               mode.Content.RichVisual(IntRange(r.until - 1 + deli.wrapSizeOffset), IntRange(r.start))
             }
           DocTransaction(Seq(
-            operation.Node.Content(cursor,
-              operation.Content.Rich(operation.Rich.wrap(r, deli)))),
+            operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
             Some(a.copyContentMode(fakeMode)))
         } else {
           DocTransaction.empty

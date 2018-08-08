@@ -55,6 +55,7 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def isEmpty: Boolean = false
   }
+
   case class Rich(op: operation.Rich) extends operation.Content {
     override def ty: Type = op.ty
     override def apply(d: data.Content): data.Content = {

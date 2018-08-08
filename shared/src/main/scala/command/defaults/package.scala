@@ -15,9 +15,7 @@ package object defaults {
     operation.Rich.deleteTextualRange(rich, r) match {
       case Some((a, b, c)) =>
         DocTransaction(
-          a.map(r => operation.Node.Content(pos,
-            operation.Content.Rich(r)))
-          ,
+          a.map(r => operation.Node.rich(pos, r)),
           Some(mode.Node.Content(pos,
             if (insert)
               mode.Content.RichInsert(if (c == 0) b.start else b.until)

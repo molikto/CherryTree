@@ -24,9 +24,17 @@ case class Node (
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
 
 
-  def has[T](t: NodeTag[T]): Boolean = attributes.contains(t.name)
+  def has[T](t: NodeTag[T]): Boolean = attributes.get(t.name).exists(_.nonEmpty)
+  def has(t: String): Boolean = attributes.get(t).exists(_.nonEmpty)
+
+  def clear[T](a: NodeTag[T]) : Node = copy(attributes = attributes - a.name)
+  def clear(a: String) : Node = copy(attributes = attributes - a)
+
   def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.updated(t.name, t.serialize(a)))
-  def attribute[T](a: NodeTag[T]): Option[T] = attributes.get(a.name).map(a.parse)
+  def attribute(t: String, a: String): Node = copy(attributes = attributes.updated(t, a))
+
+  def attribute[T](a: NodeTag[T]): Option[T] = attributes.get(a.name).filter(_.nonEmpty).map(a.parse)
+  def attribute(a: String): String = attributes.getOrElse(a, "")
 
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
@@ -147,8 +155,10 @@ object Node extends DataObject[Node] {
       Content.pickler.pickle(obj.content)
       writeInt(obj.attributes.size)
       for (c <- obj.attributes) {
-        writeString(c._1)
-        writeString(c._2)
+        if (c._2.nonEmpty) {
+          writeString(c._1)
+          writeString(c._2)
+        }
       }
       writeInt(obj.childs.size)
       for (c <- obj.childs) Node.pickler.pickle(c)

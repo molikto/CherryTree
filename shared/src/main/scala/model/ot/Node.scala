@@ -98,6 +98,8 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
     winner match {
       case w@operation.Node.Content(wc, wo) =>
         loser match {
+          case operation.Node.AttributeChange(at, lc, lo) =>
+            free(winner, loser)
           case operation.Node.Content(lc, lo) =>
             if (wc == lc) {
               val r = Content.rebase(wo, lo)
@@ -123,6 +125,12 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
         }
       case w@operation.Node.Replace(wc, _) =>
         loser match {
+          case operation.Node.AttributeChange(lc, at, av) =>
+            if (wc == lc) {
+              Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
+            } else {
+              free(winner, loser)
+            }
           case operation.Node.Content(lc, _) =>
             if (wc == lc) {
               Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
@@ -149,6 +157,8 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
         loser match {
           case l@operation.Node.Content(lc, _) =>
             free(w, l.copy(at = cursor.Node.transformAfterInserted(wc, wcs.size, lc)))
+          case l@operation.Node.AttributeChange(lc, at, av) =>
+            free(w, l.copy(at = cursor.Node.transformAfterInserted(wc, wcs.size, lc)))
           case l@operation.Node.Replace(lc, _) =>
             free(w, l.copy(at = cursor.Node.transformAfterInserted(wc, wcs.size, lc)))
           case l@operation.Node.Insert(lc, lcs) =>
@@ -169,6 +179,11 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               case Some(p) => free(winner, l.copy(at = p))
               case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Seq(winner), Seq.empty))
             }
+          case l@operation.Node.AttributeChange(lc, at, av) =>
+            wr.transformAfterDeleted(lc) match {
+              case Some(p) => free(winner, l.copy(at = p))
+              case None => Rebased(Set(conflict.Node.WinnerDeletesLoser()), (Seq(winner), Seq.empty))
+            }
           case l@operation.Node.Replace(lc, _) =>
             wr.transformAfterDeleted(lc) match {
               case Some(p) => free(winner, l.copy(at = p))
@@ -183,9 +198,38 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case m@operation.Node.Move(_, _) =>
             deleteMove(d, m, conflict.Node.WinnerDeletesLoser())
         }
+
+      case w@operation.Node.AttributeChange(wc, wt, wv) =>
+        loser match {
+          case operation.Node.Content(lc, lo) =>
+            free(winner, loser)
+          case operation.Node.Replace(lc, _) =>
+            if (wc == lc) {
+              Rebased(Set(conflict.Node.ReplacedByLoser()), (Seq.empty, Seq(loser)))
+            } else {
+              free(winner, loser)
+            }
+          case operation.Node.Insert(lc, lcs) =>
+            free(w.copy(at = cursor.Node.transformAfterInserted(lc, lcs.size, wc)), loser)
+          case operation.Node.Delete(lr) =>
+            lr.transformAfterDeleted(wc) match {
+              case Some(p) => free(w.copy(at = p), loser)
+              case None => Rebased(Set(conflict.Node.LoserDeletesWinner()), (Seq.empty, Seq(loser)))
+            }
+          case m@operation.Node.Move(lr, la) =>
+            free(w.copy(at = lr.transformNodeAfterMoved(la, wc)), m)
+          case operation.Node.AttributeChange(at, lc, lo) =>
+            if (wc == at && wt == lc)  {
+              Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
+            } else {
+              free(winner, loser)
+            }
+        }
       case w@operation.Node.Move(wr, wa) =>
         loser match {
           case l@operation.Node.Content(lc, lo) =>
+            free(w, l.copy(at = wr.transformNodeAfterMoved(wa, lc)))
+          case l@operation.Node.AttributeChange(lc, at, av) =>
             free(w, l.copy(at = wr.transformNodeAfterMoved(wa, lc)))
           case l@operation.Node.Replace(lc, lo) =>
             free(w, l.copy(at = wr.transformNodeAfterMoved(wa, lc)))
