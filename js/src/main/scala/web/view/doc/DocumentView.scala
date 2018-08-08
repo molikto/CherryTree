@@ -355,6 +355,13 @@ class DocumentView(
         t match {
           case model.operation.Node.Content(at, c) =>
             contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
+          case model.operation.Node.AttributeChange(at, tag, to) =>
+            val to = classesFromNodeAttribute(update.root(at)).split(" ").filter(_.nonEmpty) :+ "ct-d-box"
+            val cl = boxAt(at).classList
+            while (cl.length > 0) {
+              cl.remove(cl.item(0))
+            }
+            to.foreach(cl.add)
           case model.operation.Node.Replace(at, c) =>
             val previousContent = contentAt(at)
             val p = previousContent.dom.parentNode

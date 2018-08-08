@@ -8,9 +8,9 @@ import model.range.IntRange
 import scala.util.Random
 
 trait NodeTag[T] {
-  private[data] val name: String
-  private[data] def parse(a: String): T
-  private[data] def serialize(t: T): String
+  private[model] val name: String
+  private[model] def parse(a: String): T
+  private[model] def serialize(t: T): String
 }
 
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
@@ -93,9 +93,9 @@ object Node extends DataObject[Node] {
     case object DashList extends ChildrenType
     case object Blockquote extends ChildrenType
 
-    override private[data] val name = "ChildrenType"
+    override private[model] val name = "ChildrenType"
 
-    override private[data] def parse(a: String) =
+    override private[model] def parse(a: String) =
       a match {
         case "0" => Paragraphs
         case "1" => OrderedList
@@ -104,7 +104,7 @@ object Node extends DataObject[Node] {
         case "4" => Blockquote
       }
 
-    override private[data] def serialize(t: ChildrenType) = t match {
+    override private[model] def serialize(t: ChildrenType) = t match {
       case Paragraphs => "0"
       case OrderedList => "1"
       case UnorderedList => "2"
@@ -121,15 +121,15 @@ object Node extends DataObject[Node] {
     case object Br extends ContentType
     case class Heading(i: Int) extends ContentType
 
-    override private[data] val name = "ContentType"
+    override private[model] val name = "ContentType"
 
-    override private[data] def parse(a: String) =
+    override private[model] def parse(a: String) =
       if (a.startsWith("h")) Heading(a.substring(1).toInt)
       else if (a == "cite") Cite
       else if (a == "br") Br
       else throw new IllegalStateException("Not possible")
 
-    override private[data] def serialize(t: ContentType) = t match {
+    override private[model] def serialize(t: ContentType) = t match {
       case Heading(a) => "h" + a
       case Cite => "cite"
       case Br => "br"

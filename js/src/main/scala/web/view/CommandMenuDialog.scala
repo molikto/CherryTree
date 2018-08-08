@@ -156,6 +156,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
 
   event(search, "input", (ev: Event) => {
     term = search.value
+    marked = null
     updateMenuContent()
   })
 

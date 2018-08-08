@@ -220,7 +220,11 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
             free(w.copy(at = lr.transformNodeAfterMoved(la, wc)), m)
           case operation.Node.AttributeChange(at, lc, lo) =>
             if (wc == at && wt == lc)  {
-              Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
+              if (wv == lo) {
+                free(Seq.empty, Seq.empty)
+              } else {
+                Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
+              }
             } else {
               free(winner, loser)
             }

@@ -3,6 +3,7 @@ package model.operation
 import model.{data, _}
 import Type.Type
 import com.softwaremill.quicklens._
+import model.data.NodeTag
 import model.range.IntRange
 
 import scala.util.Random
@@ -49,6 +50,10 @@ object Node extends OperationObject[data.Node, operation.Node] {
     (mode, isBad)
   }
 
+  object AttributeChange {
+    def apply[T](at: cursor.Node, tag: NodeTag[T], to: Option[T]): AttributeChange =
+      AttributeChange(at, tag.name, to.map(tag.serialize).getOrElse(""))
+  }
   case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
     override private[model] def transformMaybeBad(a: mode.Node): (mode.Node, Boolean) = MODE(a)
     override def ty: Type = Type.Structural
@@ -236,6 +241,11 @@ object Node extends OperationObject[data.Node, operation.Node] {
           writeInt(4)
           range.Node.pickler.pickle(r)
           writeIntArray(a.toArray)
+        case AttributeChange(at, t, t2) =>
+          writeInt(5)
+          writeIntArray(at.toArray)
+          writeString(t)
+          writeString(t2)
       }
     }
 
@@ -252,6 +262,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
           Delete(range.Node.pickler.unpickle)
         case 4 =>
           Move(range.Node.pickler.unpickle, readIntArray)
+        case 5 =>
+          AttributeChange(readIntArray, readString, readString)
       }
     }
   }
