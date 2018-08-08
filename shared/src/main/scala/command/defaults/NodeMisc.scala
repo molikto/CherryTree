@@ -30,7 +30,6 @@ class NodeMisc extends CommandCategory("node: misc") {
     }
   }
 
-
   class ContentStyleCommand(desc: String, to: Option[data.Node.ContentType]) extends TextualCommand {
     override val description: String = s"content style: $desc"
     override protected def available(a: DocState): Boolean = a.isNormal
@@ -51,6 +50,23 @@ class NodeMisc extends CommandCategory("node: misc") {
   new ContentStyleCommand("br", Some(data.Node.ContentType.Br))
 
   new ContentStyleCommand("clear", None)
+
+  class ChildrenStyleCommand(desc: String, to: Option[data.Node.ChildrenType]) extends TextualCommand {
+    override val description: String = s"children style: $desc"
+    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asNormal._1
+      DocTransaction(
+        Seq(operation.Node.AttributeChange(cur, data.Node.ChildrenType, to)),
+        a.mode)
+    }
+  }
+
+  new ChildrenStyleCommand("paragraphs", Some(data.Node.ChildrenType.Paragraphs))
+  new ChildrenStyleCommand("blockquote", Some(data.Node.ChildrenType.Blockquote))
+  new ChildrenStyleCommand("ordered list", Some(data.Node.ChildrenType.OrderedList))
+  new ChildrenStyleCommand("unordered list", Some(data.Node.ChildrenType.UnorderedList))
+  new ChildrenStyleCommand("dash list", Some(data.Node.ChildrenType.DashList))
 
 
 

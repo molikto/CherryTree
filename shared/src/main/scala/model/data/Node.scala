@@ -19,8 +19,6 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
-
-
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
 
 

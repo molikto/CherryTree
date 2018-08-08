@@ -102,6 +102,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     available = Seq.empty
     marked = null
     removeAllChild(list)
+    term = ""
     search.value = ""
   }
 
@@ -163,6 +164,6 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   })
 
   event(dom, "focusout", (ev: FocusEvent) => {
-    //dismiss()
+    dismiss()
   })
 }
