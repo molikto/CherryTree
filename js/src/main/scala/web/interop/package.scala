@@ -22,11 +22,13 @@ package object interop {
       def firstChild: Node = js.native
       def `type`: String = js.native
       def next: Node = js.native
+      def level: Int = js.native
       def destination: String = js.native
       def title: String = js.native
       def listType: String = js.native //, either Bullet or Ordered.
       def listTight: Boolean = js.native
       def literal: String = js.native
+      def info: String = js.native
     }
   }
 

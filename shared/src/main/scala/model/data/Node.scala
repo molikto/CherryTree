@@ -7,6 +7,12 @@ import model.range.IntRange
 
 import scala.util.Random
 
+trait NodeTag[T] {
+  private[data] val name: String
+  private[data] def parse(a: String): T
+  private[data] def serialize(t: T): String
+}
+
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node (
   uuid: String,
@@ -16,6 +22,12 @@ case class Node (
 
 
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
+
+
+  def has[T](t: NodeTag[T]): Boolean = attributes.contains(t.name)
+  def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.updated(t.name, t.serialize(a)))
+  def attribute[T](a: NodeTag[T]): Option[T] = attributes.get(a.name).map(a.parse)
+
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
@@ -62,6 +74,59 @@ case class Node (
 }
 
 object Node extends DataObject[Node] {
+
+  sealed trait ChildrenType {
+
+  }
+  object ChildrenType extends NodeTag[ChildrenType] {
+    case object Paragraphs extends ChildrenType
+    case object OrderedList extends ChildrenType
+    case object UnorderedList extends ChildrenType
+    case object DashList extends ChildrenType
+    case object Blockquote extends ChildrenType
+
+    override private[data] val name = "ChildrenType"
+
+    override private[data] def parse(a: String) =
+      a match {
+        case "0" => Paragraphs
+        case "1" => OrderedList
+        case "2" => UnorderedList
+        case "3" => DashList
+        case "4" => Blockquote
+      }
+
+    override private[data] def serialize(t: ChildrenType) = t match {
+      case Paragraphs => "0"
+      case OrderedList => "1"
+      case UnorderedList => "2"
+      case DashList => "3"
+      case Blockquote => "4"
+    }
+  }
+
+  sealed trait ContentType {
+
+  }
+  object ContentType extends NodeTag[ContentType] {
+    case object Cite extends ContentType
+    case object Br extends ContentType
+    case class Heading(i: Int) extends ContentType
+
+    override private[data] val name = "ContentType"
+
+    override private[data] def parse(a: String) =
+      if (a.startsWith("h")) Heading(a.substring(1).toInt)
+      else if (a == "cite") Cite
+      else if (a == "br") Br
+      else throw new IllegalStateException("Not possible")
+
+    override private[data] def serialize(t: ContentType) = t match {
+      case Heading(a) => "h" + a
+      case Cite => "cite"
+      case Br => "br"
+    }
+  }
   def cloneNodes(n: Seq[Node]): Seq[Node] = {
     n.map(_.cloneNode())
   }
@@ -73,6 +138,7 @@ object Node extends DataObject[Node] {
   val debug_empty = Node("", data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
 
   def create(): Node =  Node(UUID.randomUUID().toString, data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
+
 
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {

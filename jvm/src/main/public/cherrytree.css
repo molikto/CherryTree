@@ -162,6 +162,60 @@
   width: 100%
 }
 
+.ct-d-cite {
+}
+
+.ct-d-br {
+}
+
+.ct-d-h1 > .ct-rich {
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+.ct-d-h2 > .ct-rich  {
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.ct-d-h3 > .ct-rich {
+  font-size: 1.75rem;
+  font-weight: 500;
+}
+
+.ct-d-h4 > .ct-rich {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.ct-d-h5 > .ct-rich {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.ct-d-h6 > .ct-rich {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.ct-d-blockquote {
+}
+
+.ct-d-ul {
+}
+
+.ct-d-ol {
+}
+
+.ct-d-ps {
+}
+
+.ct-d-dl {
+}
+
+.ct-d- {
+}
+
 
 .ct-node-visual {
     background: #58617488;

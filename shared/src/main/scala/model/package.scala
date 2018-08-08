@@ -7,7 +7,7 @@ package object model extends Picklers {
 
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
-  var parseFromMarkdown: String => data.Node = null
+  var parseFromCommonMarkMarkdown: String => data.Node = null
 
   var oldDocVersion = false
   var debug_view = true

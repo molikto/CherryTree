@@ -267,11 +267,28 @@ class DocumentView(
       hold.style.background = holdBg
     }
   }
+
+  private def classesFromNodeAttribute(node: model.data.Node): String = {
+    node.attribute(model.data.Node.ContentType).map {
+      case model.data.Node.ContentType.Cite => "ct-d-cite"
+      case model.data.Node.ContentType.Br => "ct-d-br"
+      case model.data.Node.ContentType.Heading(j) => s"ct-d-h$j"
+      case _ => ""
+    }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
+      case model.data.Node.ChildrenType.Blockquote => "ct-d-blockquote"
+      case model.data.Node.ChildrenType.UnorderedList => "ct-d-ul"
+      case model.data.Node.ChildrenType.OrderedList => "ct-d-ol"
+      case model.data.Node.ChildrenType.Paragraphs => "ct-d-ps"
+      case model.data.Node.ChildrenType.DashList => "ct-d-dl"
+      case _ => ""
+    }.getOrElse("")
+  }
+
   private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
     val hold = tag("i")(`class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
-    val box = div(`class` := "ct-d-box").render
+    val box = div(`class` := "ct-d-box " + classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
     createContent(root.content).attachToNode(box)
     val list = div().render
