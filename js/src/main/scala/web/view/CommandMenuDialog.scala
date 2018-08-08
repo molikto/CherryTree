@@ -56,13 +56,13 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
 
   def updateMenuContent(): Unit = {
     val n = client.commands.filter(a => util.matchCommandSearch(a.description, term) && a.available(client.state, client) && a.keys.isEmpty )
-    if (n != available) {
-      available = n
+    val oldA = available
+    available = n
+    if (marked == null && available.nonEmpty) {
+      marked = available.head
+    }
+    if (n != oldA) {
       removeAllChild(list)
-      if (marked == null) {
-        marked = available.head
-      }
-
       for (c <- available.zipWithIndex) {
         list.appendChild(
           div(
@@ -130,7 +130,9 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
       case Some(Key.Enter) =>
         ev.preventDefault()
         if (marked != null) {
-          client.runTextual(marked)
+          val m = marked
+          dismiss()
+          client.runTextual(m)
         }
       case Some(Key.Down) =>
         ev.preventDefault()

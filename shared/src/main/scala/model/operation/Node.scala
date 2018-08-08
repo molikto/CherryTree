@@ -58,7 +58,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override private[model] def transformMaybeBad(a: mode.Node): (mode.Node, Boolean) = MODE(a)
     override def ty: Type = Type.Structural
 
-    override def apply(d: data.Node): data.Node = d.map(at, _.attribute(tag, to))
+    override def apply(d: data.Node): data.Node = d.map(at, nn => if (to.isEmpty) nn.clear(tag) else nn.attribute(tag, to))
 
     override def reverse(d: data.Node): Node = AttributeChange(at, tag, d(at).attribute(tag))
 
