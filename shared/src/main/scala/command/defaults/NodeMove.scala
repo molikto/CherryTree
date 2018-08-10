@@ -34,7 +34,7 @@ class NodeMove extends CommandCategory("move nodes around") {
       val res = a.mode.get match {
         case v: model.mode.Node.Visual =>
           a.asNodeVisual.minimalRange.flatMap(k => act(k))
-        case c@model.mode.Node.Content(at, _) => if (at == cursor.Node.root) None else act(range.Node(at))
+        case c@model.mode.Node.Content(at, _) => if (at == a.zoom) None else act(range.Node(at))
       }
       DocTransaction(res.toSeq, None, unfoldBefore = res.map(_.to.dropRight(1)).toSet)
     }

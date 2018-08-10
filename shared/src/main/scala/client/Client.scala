@@ -29,7 +29,7 @@ import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 
 object Client {
@@ -113,7 +113,13 @@ class Client(
     *
     * editor queue
     */
-  private var state_ = DocState(committed, Some(initial.mode), localStorage.get(docId + ".folded") match {
+  private var state_ = DocState(committed, localStorage.get(docId + ".zoom") match {
+    case Some(s) => Try {s.split(",").map(_.toInt).toSeq } match {
+      case Success(a) if committed.get(a).isDefined => a
+      case _ => cursor.Node.root
+    }
+    case _ => cursor.Node.root
+  }, Some(initial.mode), localStorage.get(docId + ".folded") match {
     case Some(s) => s.split(",").toSet
     case _ => Set.empty
   })
@@ -177,7 +183,7 @@ class Client(
     foldBefore: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
     assert(a.mode.isDefined || modeTemp != null)
-    val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, fromUser, viewUpdated)
+    val res = DocUpdate(a.node, viewFrom, a.mode, foldBefore, if (a.zoom != state_.zoom) Some(a.zoom) else None,fromUser, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debug_view) {
@@ -195,12 +201,12 @@ class Client(
     if (modeTemp != null) {
       scheduledUpdateTempMode = Observable.delay({
         println("updating temp mode")
-        updateState(a.copy(mode = Some(modeTemp)), null, Seq.empty, Undoer.Local, false, Seq.empty, false)
+        updateState(state_.copy(mode = Some(modeTemp)), null, Seq.empty, Undoer.Local, false, Seq.empty, false)
       }).delaySubscription(2.seconds).subscribe()
     }
     this.modeTemp = modeTemp
     if (foldBefore.nonEmpty) {
-      localStorage.set(docId + ".folded", state_.foldedNodes.mkString(","))
+      localStorage.set(docId + ".folded", state_.userFoldedNodes.mkString(","))
     }
     onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(from, ty, modeBefore, docBefore)
@@ -453,7 +459,7 @@ class Client(
           update.transaction match {
             case Seq(i@operation.Node.Insert(at, childs)) if childs == disableUpdateBecauseLocalNodeDelete._3 =>
               cutOneLocalHistory(Seq(d))
-              state_ = disableUpdateBecauseLocalNodeDelete._4.copy(foldedNodes = state_.foldedNodes)
+              state_ = disableUpdateBecauseLocalNodeDelete._4.copy(userFoldedNodes = state_.userFoldedNodes)
               val inverse = d.reverse(state.node)
               uncommitted = uncommitted.dropRight(1)
               viewAdd = Seq(inverse)
@@ -491,8 +497,8 @@ class Client(
       if (debug_view) {
         println(update)
       }
-      val (res, ch) = applyFolds(state.foldedNodes, update.unfoldBefore, update.toggleBefore, changes)
-      updateState(DocState(d, Some(m), res),
+      val (res, ch) = applyFolds(state.userFoldedNodes, update.unfoldBefore, update.toggleBefore, changes)
+      updateState(DocState(d, update.zoom.getOrElse(state.zoom), Some(m), res),
         null,
         changes,
         update.undoType.getOrElse(Undoer.Local),

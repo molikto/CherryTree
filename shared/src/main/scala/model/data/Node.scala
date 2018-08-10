@@ -2,6 +2,7 @@ package model.data
 
 import java.util.UUID
 
+import doc.DocTransaction
 import model._
 import model.range.IntRange
 
@@ -19,6 +20,14 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+
+  def allChildrenUuids(cur: cursor.Node, in: Set[String]): Seq[cursor.Node] = {
+    childs.zipWithIndex.flatMap(c => {
+      val cs = c._1.allChildrenUuids(cur :+ c._2, in)
+      if (in.contains(c._1.uuid)) cs :+ (cur :+ c._2) else cs
+    })
+  }
+
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
 
 

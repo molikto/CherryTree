@@ -130,11 +130,12 @@ class DocumentView(
   //    nonEditable...
 
   private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
+    assert(at.startsWith(currentZoom))
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
     }
-    rec(rootFrame, at).asInstanceOf[HTMLElement]
+    rec(rootFrame, at.drop(currentZoom.size)).asInstanceOf[HTMLElement]
   }
 
   private def boxAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
@@ -161,7 +162,7 @@ class DocumentView(
     def rec(a: Node): Seq[Int] = {
       val frame = a.parentNode.parentNode
       if (frame == rootFrame) {
-        Seq.empty
+        currentZoom
       } else {
         val parent = frame.parentNode.childNodes
         var i = -1
@@ -186,7 +187,7 @@ class DocumentView(
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
       case None =>
-        val rd = boxAt(model.cursor.Node.root)
+        val rd = boxAt(currentZoom)
         newVisual.append(rd)
       case Some(range) => range.foreach(c => newVisual.append(boxAt(c)))
     }
@@ -198,7 +199,7 @@ class DocumentView(
       if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
       previousNodeMove = newMove
       previousNodeMove.classList.add("ct-node-visual-move")
-      if (v.move == model.cursor.Node.root) {
+      if (v.move == currentZoom) {
         scrollToTop()
       } else {
         scrollInToViewIfNotVisible(previousNodeMove, dom)
@@ -235,12 +236,12 @@ class DocumentView(
     }
   }
 
-  private def insertNodes(list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
+  private def insertNodes(parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
     val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
-    contents.foreach(a => {
+    contents.zipWithIndex.foreach(a => {
       val frame = div(`class` := "ct-d-frame").render
       list.insertBefore(frame, before)
-      insertNodesRec(a, frame)
+      insertNodesRec(parentCur :+ a._2, a._1, frame)
     })
   }
 
@@ -273,7 +274,15 @@ class DocumentView(
     }.getOrElse("")
   }
 
-  private def insertNodesRec(root: model.data.Node, parent: html.Element): Unit = {
+
+  private def cleanFrame(a: html.Element): Unit = {
+    a.removeChild(a.childNodes(0))
+    a.removeChild(a.childNodes(0))
+  }
+
+  private var currentZoom: model.cursor.Node = null
+
+  private def insertNodesRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
     val box = div(`class` := "ct-d-box " + classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
@@ -282,9 +291,9 @@ class DocumentView(
     createContent(root.content).attachToNode(box)
     val list = div(`class` := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
-    toggleHoldRendering(parent, hold, client.state.folded(root))
+    toggleHoldRendering(parent, hold, client.state.folded(cur))
     box.appendChild(list)
-    insertNodes(list, 0, root.childs)
+    insertNodes(cur, list, 0, root.childs)
   }
 
 
@@ -338,12 +347,12 @@ class DocumentView(
     duringStateUpdate = false
   }
 
-
   // we use onAttach because we access window.setSelection
   override def onAttach(): Unit = {
     super.onAttach()
-    val DocState(node, selection, _) = client.state
-    insertNodesRec(node, rootFrame)
+    val DocState(node, zoom, selection, _) = client.state
+    currentZoom = zoom
+    insertNodesRec(zoom, node(zoom), rootFrame)
     updateMode(selection, viewUpdated = false)
 
     observe(client.stateUpdates.doOnNext(update => {
@@ -373,8 +382,9 @@ class DocumentView(
             // look out for this!!!
             removeNodes(r)
           case model.operation.Node.Insert(at, childs) =>
-            val root = childListAt(at.dropRight(1))
-            insertNodes(root, at.last, childs)
+            val pCur = at.dropRight(1)
+            val root = childListAt(pCur)
+            insertNodes(pCur, root, at.last, childs)
           case model.operation.Node.Move(range, to) =>
             val parent = childListAt(range.parent)
             val toParent = childListAt(to.dropRight(1))
@@ -386,6 +396,20 @@ class DocumentView(
             // might lost focus due to implementation, so we force a update!
             updateMode(None, viewUpdated = false)
         }
+      }
+      // destructive!
+      update.zoom match {
+        case Some(a) =>
+          // TODO make zoom handling this simpler
+//          if (currentZoom.startsWith(a)) {
+//          } else {
+//            cleanFrame(rootFrame)
+//            insertNodesRec(update.root(a), rootFrame)
+//          }
+          cleanFrame(rootFrame)
+          currentZoom = a
+          insertNodesRec(a, update.root(a), rootFrame)
+        case None =>
       }
       duringStateUpdate = false
       updateMode(update.mode, update.viewUpdated, fromUser = update.fromUser)

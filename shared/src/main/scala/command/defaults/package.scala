@@ -30,8 +30,8 @@ package object defaults {
 
   private[defaults] def insertPointAfter(a: DocState, pos: cursor.Node): cursor.Node = {
     val mover = a.mover()
-    if (pos == cursor.Node.root) {
-      Seq(0)
+    if (pos == a.zoom) {
+      a.zoom :+ 0
     } else {
       mover.firstChild(pos).getOrElse(mover.nextOver(pos))
     }

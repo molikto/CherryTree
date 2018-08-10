@@ -21,6 +21,16 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   new TextualCommand {
+    override val description: String = "unfold all children"
+    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asNormal._1
+      val tog = a.node(cur).allChildrenUuids(cur, a.userFoldedNodes)
+      DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
+    }
+  }
+
+  new TextualCommand {
     override val description: String = "reset content to: rich text"
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

@@ -8,8 +8,10 @@ case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
   handyAppliedResult: Option[model.data.Node] = None,
+
   unfoldBefore: Set[cursor.Node] = Set.empty,
   toggleBefore: Set[cursor.Node] = Set.empty,
+  zoom: Option[cursor.Node] = None,
 
   undoType: Option[Undoer.Type] = None,
   tryMergeDeletes: Boolean = false,
@@ -20,7 +22,7 @@ case class DocTransaction(
   viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {
   def nonTransactional: Boolean = {
-    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty
+    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoom.isEmpty
   }
 
 }

@@ -77,13 +77,13 @@ class NodeMotion extends CommandCategory("move among notes") {
   val visibleBeginning: Command = new NodeMotionCommand {
     override val description: String = "move to top of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("gg")
-    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(cursor.Node.root)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.zoom)
     override def message: Option[ViewMessage] = Some(ViewMessage.ScrollToTop)
   }
   val visibleEnd: Command = new NodeMotionCommand {
     override val description: String = "move to bottom of viewport"
     override val defaultKeys: Seq[KeySeq] = Seq("G")
-    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(cursor.Node.root))
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(data.zoom))
     override def message: Option[ViewMessage] = Some(ViewMessage.ScrollToBottom)
   }
 

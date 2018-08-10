@@ -9,6 +9,7 @@ case class DocUpdate(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
   folds: Map[cursor.Node, Boolean],
+  zoom: Option[cursor.Node],
   fromUser: Boolean,
   viewUpdated: Boolean) {
 }

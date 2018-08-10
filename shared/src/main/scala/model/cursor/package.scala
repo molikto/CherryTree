@@ -22,11 +22,12 @@ package object cursor {
 
     def moveBy(a: cursor.Node, i: Int): cursor.Node = a.dropRight(1) :+ (a.last + i)
 
-    class Mover(root: data.Node, isFolded: Node => Boolean) {
+    class Mover(root: data.Node, zoom: cursor.Node, isFolded: Node => Boolean) {
+
 
 
       def parent(a: Node): Option[Node] = {
-        if (a.isEmpty) None else Some(a.dropRight(1))
+        if (a == zoom) None else Some(a.dropRight(1))
       }
 
       def size(a: Node): Int = root(a).childs.size
@@ -53,8 +54,9 @@ package object cursor {
           }
         }
       }
+
       def previous(a: Node): Option[Node] = {
-        if (a.isEmpty) {
+        if (a == zoom) {
           None
         } else {
           val last = a.last
@@ -67,7 +69,7 @@ package object cursor {
       }
 
       def nextOver(a: Node): Node = {
-        if (a.isEmpty) {
+        if (a == zoom) {
           throw new IllegalArgumentException("Root has no next")
         } else {
           a.dropRight(1) :+ (a.last + 1)
@@ -75,7 +77,7 @@ package object cursor {
       }
 
       def next(a: Node): Option[Node] = {
-        if (a.isEmpty) {
+        if (a == zoom) {
           None
         } else {
           val last = a.last

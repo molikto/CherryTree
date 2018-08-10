@@ -32,7 +32,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asNormal._1
-      if (pos == cursor.Node.root) {
+      if (pos == a.zoom) {
         // LATER wrap?
         DocTransaction.empty
       } else {

@@ -46,7 +46,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.mode match {
         case Some(v@model.mode.Node.Visual(fix, _)) =>
-          val ns = if (v.fix == v.move && v.fix == cursor.Node.root) {
+          val ns = if (v.fix == v.move && v.fix == a.zoom) {
             Seq(a.node)
           } else {
             a.node(v.minimalRange.get)
@@ -160,7 +160,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override def defaultKeys: Seq[KeySeq] = Seq("P")
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
-      val pt = if (at == cursor.Node.root) Seq(0) else at
+      val pt = if (at == a.zoom) a.zoom :+ 0 else at
       (Seq(operation.Node.Insert(pt, node)), mode.Node.Content(pt, node.head.content.defaultNormalMode()))
     }
 

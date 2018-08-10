@@ -7,14 +7,16 @@ import model.data.{Atom, Rich}
 
 case class DocState(
   node: model.data.Node,
+  zoom: cursor.Node,
   mode: Option[model.mode.Node],
-  foldedNodes: Set[String]
+  userFoldedNodes: Set[String]
 ) {
-  def folded(root: data.Node): Boolean = foldedNodes.contains(root.uuid)
+  def folded(a: cursor.Node): Boolean = {
+    assert(a.startsWith(zoom))
+    a != zoom && userFoldedNodes.contains(node(a).uuid)
+  }
 
-  def folded(a: cursor.Node): Boolean = folded(node(a))
-
-  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, folded)
+  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, zoom, folded)
 
 
   def rich(n: cursor.Node): Rich = node(n).content.asInstanceOf[model.data.Content.Rich].content
