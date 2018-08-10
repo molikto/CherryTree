@@ -70,6 +70,7 @@ class DocumentView(
     if (document.activeElement != currentEditable) {
       if (currentEditable != noEditable) {
         currentEditable = null
+        updateMode(None, viewUpdated = false)
         updateMode(client.state.mode, viewUpdated = false)
       } else {
         noEditable.focus()
@@ -261,7 +262,7 @@ class DocumentView(
     node.attribute(model.data.Node.ContentType).map {
       case model.data.Node.ContentType.Cite => "ct-d-cite"
       case model.data.Node.ContentType.Br => "ct-d-br"
-      case model.data.Node.ContentType.Heading(j) => s"ct-d-heading ct-d-h$j"
+      case model.data.Node.ContentType.Heading(j) => if (j > 1) s"ct-d-heading ct-d-h$j" else s"ct-d-h$j"
       case _ => ""
     }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
       case model.data.Node.ChildrenType.UnorderedList => "ct-d-ul"
@@ -361,11 +362,13 @@ class DocumentView(
               cl.remove(cl.item(0))
             }
             to.foreach(cl.add)
+            updateMode(None, viewUpdated = false)
           case model.operation.Node.Replace(at, c) =>
             val previousContent = contentAt(at)
             val p = previousContent.dom.parentNode
-            createContent(c).attachToNode(p, previousContent.dom)
+            val before = previousContent.dom.nextSibling
             previousContent.destroy()
+            createContent(c).attachToNode(p, before.asInstanceOf[HTMLElement])
           case model.operation.Node.Delete(r) =>
             // look out for this!!!
             removeNodes(r)

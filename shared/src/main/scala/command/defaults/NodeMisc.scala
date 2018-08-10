@@ -5,6 +5,7 @@ import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model._
 import model.data.{Content, Text}
+import model.range.IntRange
 
 class NodeMisc extends CommandCategory("node: misc") {
 
@@ -24,9 +25,10 @@ class NodeMisc extends CommandCategory("node: misc") {
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, code) = a.asCodeNormal
+      val rich = data.Rich(if (code.unicode.isEmpty) Seq.empty else Seq(Text.Plain(code.unicode)))
       DocTransaction(
-        Seq(operation.Node.Replace(cur, data.Content.Rich(data.Rich(Seq(Text.Plain(code.unicode)))))),
-        Some(a.copyContentMode(mode.Content.CodeNormal)))
+        Seq(operation.Node.Replace(cur, data.Content.Rich(rich))),
+        Some(a.copyContentMode(mode.Content.RichNormal(rich.rangeBeginning))))
     }
   }
 
