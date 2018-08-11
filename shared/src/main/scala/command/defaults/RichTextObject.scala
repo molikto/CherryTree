@@ -24,7 +24,7 @@ class RichTextObject extends CommandCategory("text object motion") {
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (node, rich, visual) = a.asRichVisual
       move(rich, visual.move, None) match {
-        case Some(r) => DocTransaction.mode(a.copyContentMode(model.mode.Content.RichVisual(visual.fix, ???)))
+        case Some(r) => DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(visual.fix, ???)))
         case None => DocTransaction.empty
       }
     }

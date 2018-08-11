@@ -22,10 +22,10 @@ class RichVisual extends CommandCategory("text visual mode") {
           if (rich.isEmpty) {
             DocTransaction.empty
           } else {
-            DocTransaction.mode(a.copyContentMode(model.mode.Content.RichVisual(r, r)))
+            DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(r, r)))
           }
         case model.mode.Content.RichVisual(fix, move) =>
-          DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))
+          DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
       }
     }
 
@@ -35,7 +35,7 @@ class RichVisual extends CommandCategory("text visual mode") {
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isRichVisual
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction.mode(a.copyContentMode(a.asRichVisual._3.swap))
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction(a.copyContentMode(a.asRichVisual._3.swap))
   }
 
 }

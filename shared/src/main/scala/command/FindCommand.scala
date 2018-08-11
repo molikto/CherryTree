@@ -20,7 +20,7 @@ trait FindCommand extends Command with RichMotion {
     def act(r: IntRange) = findGrapheme(content, mm.focus, char, count, skipCurrent)
     act(mm.focus) match {
       case Some(move) =>
-        DocTransaction.mode(a.copyContentMode(mm.copyWithNewFocus(move)))
+        DocTransaction(a.copyContentMode(mm.copyWithNewFocus(move)))
       case None =>
         DocTransaction.empty
     }

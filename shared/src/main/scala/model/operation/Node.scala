@@ -6,10 +6,11 @@ import com.softwaremill.quicklens._
 import model.data.NodeTag
 import model.range.IntRange
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-abstract sealed class Node extends OperationOnModal[data.Node, mode.Node] {
+abstract sealed class Node extends OperationOnModal[data.Node, mode.NodeWithZoom] {
   override type This = Node
 }
 
@@ -26,15 +27,22 @@ object Node extends OperationObject[data.Node, operation.Node] {
   def rich(c: cursor.Node, a: operation.Rich): Node = operation.Node.Content(c, operation.Content.Rich(a))
   def rich(c: cursor.Node, a: Seq[operation.Rich]): Seq[Node] = a.map(a => rich(c, a))
 
-  def transform(nodeAfter: data.Node, ns: Seq[Node], a: (mode.Node, Boolean)): (mode.Node, Boolean) = {
-    val (c, j) = ns.foldLeft(a) { (a, n) => n.transformMaybeBad(a) }
-    fixTransformMode(nodeAfter, c, j)
+  def transform(nodeAfter: data.Node, ns: Seq[Node], a: (mode.NodeWithZoom, Boolean)): (mode.NodeWithZoom, Boolean, Seq[cursor.Node]) = {
+    val buffer = new ArrayBuffer[model.cursor.Node]()
+    val (c, j) = ns.foldLeft(a) { (a, n) =>
+      buffer.append(a._1.zoom)
+      n.transformMaybeBad(a)
+    }
+    val kk = fixTransformMode(nodeAfter, c, j)
+    (kk._1, kk._2, buffer)
   }
 
+  def badModeWithZoom(a: cursor.Node) = (mode.NodeWithZoom(mode.Node.Content(a, null), a), true)
+
   // LATER transform code is written very badly with various hacks
-  private def fixTransformMode(a: data.Node, m: mode.Node, isBad: Boolean): (mode.Node, Boolean) = {
+  private def fixTransformMode(a: data.Node, m: mode.NodeWithZoom, isBad: Boolean): (mode.NodeWithZoom, Boolean) = {
     val mode = if (isBad) {
-      m match {
+      m.a match {
         case model.mode.Node.Content(cur, c) =>
           val tt = c match {
             case null => a(cur).content.defaultNormalMode()
@@ -45,9 +53,9 @@ object Node extends OperationObject[data.Node, operation.Node] {
         case j => j
       }
     } else {
-      m
+      m.a
     }
-    (mode, isBad)
+    (model.mode.NodeWithZoom(mode, m.zoom), isBad)
   }
 
   object AttributeChange {
@@ -55,7 +63,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
       AttributeChange(at, tag.name, to.map(tag.serialize).getOrElse(""))
   }
   case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
-    override private[model] def transformMaybeBad(a: mode.Node): (mode.Node, Boolean) = MODE(a)
+    override private[model] def transformMaybeBad(a: mode.NodeWithZoom): (mode.NodeWithZoom, Boolean) = MODE(a)
     override def ty: Type = Type.Structural
 
     override def apply(d: data.Node): data.Node = d.map(at, nn => if (to.isEmpty) nn.clear(tag) else nn.attribute(tag, to))
@@ -74,11 +82,11 @@ object Node extends OperationObject[data.Node, operation.Node] {
       d.map(at, a => a.copy(content = content(a.content)))
     }
 
-    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
+    private[model]  override def transformMaybeBad(a: MM): MODE = a.a match {
       case c: mode.Node.Content if c.node == at =>
         if (c.a != null) {
           val (m, f) = content.transformMaybeBad(c.a)
-          (c.copy(a = m), f)
+          (model.mode.NodeWithZoom(c.copy(a = m), a.zoom), f)
         } else {
           MODE(a)
         }
@@ -108,8 +116,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def toString: String = s"Replace($at)"
 
-    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
-      case c: mode.Node.Content if c.node == at => (mode.Node.Content(at, content.defaultNormalMode()), false)
+    private[model]  override def transformMaybeBad(a: MM): MODE = a.a match {
+      case c: mode.Node.Content if c.node == at => (model.mode.NodeWithZoom(mode.Node.Content(at, content.defaultNormalMode()), a.zoom), false)
       case _ => MODE(a)
     }
 
@@ -130,13 +138,16 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def toString: String = s"Insert($at, ${childs.size})"
 
-    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
-      case c: mode.Node.Content =>
-        MODE(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
-      case mode.Node.Visual(fix, move) =>
-        MODE(mode.Node.Visual(
-          cursor.Node.transformAfterInserted(at, childs.size, fix),
-          cursor.Node.transformAfterInserted(at, childs.size, move)))
+    private[model]  override def transformMaybeBad(a: MM): MODE = {
+      def MODE0(k: mode.Node): MODE = MODE(model.mode.NodeWithZoom(k, cursor.Node.transformAfterInserted(at, childs.size, a.zoom)))
+      a.a match {
+        case c: mode.Node.Content =>
+          MODE0(c.modify(_.node).using(a => cursor.Node.transformAfterInserted(at, childs.size, a)))
+        case mode.Node.Visual(fix, move) =>
+          MODE0(mode.Node.Visual(
+            cursor.Node.transformAfterInserted(at, childs.size, fix),
+            cursor.Node.transformAfterInserted(at, childs.size, move)))
+      }
     }
     override def reverse(d: data.Node): Node = Delete(range.Node(at, len = childs.size))
 
@@ -161,18 +172,21 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
 
-    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
-      case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
-        case Some(k) => MODE(c.copy(node = k))
-        case None => MODE(mode.Node.Content(r.parent, null), true)
-      }
-      case mode.Node.Visual(fix, move) =>
-        (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
-          case (Some(ff), Some(mm)) => MODE(mode.Node.Visual(ff, mm))
-          case (Some(ff), None) => MODE(mode.Node.Content(ff, null), true)
-          case (None, Some(ff))  =>  MODE(mode.Node.Content(ff, null), true)
-          case (None, None) => MODE(mode.Node.Content(r.parent, null), true)
+    private[model]  override def transformMaybeBad(a: MM): MODE = {
+      def MODE0(k: mode.Node, bool: Boolean = false): MODE = MODE(model.mode.NodeWithZoom(k, r.transformAfterDeleted(a.zoom).getOrElse(r.parent)), bool)
+      a.a match {
+        case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
+          case Some(k) => MODE0(c.copy(node = k))
+          case None => MODE0(mode.Node.Content(r.parent, null), true)
         }
+        case mode.Node.Visual(fix, move) =>
+          (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
+            case (Some(ff), Some(mm)) => MODE0(mode.Node.Visual(ff, mm))
+            case (Some(ff), None) => MODE0(mode.Node.Content(ff, null), true)
+            case (None, Some(ff))  =>  MODE0(mode.Node.Content(ff, null), true)
+            case (None, None) => MODE0(mode.Node.Content(r.parent, null), true)
+          }
+      }
     }
 
     override def reverse(d: data.Node): Node = Insert(r.start, d(r.parent).apply(r.childs))
@@ -200,9 +214,28 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
-    private[model]  override def transformMaybeBad(a: MM): MODE = a match {
-      case mode.Node.Visual(fix, move) => MODE(mode.Node.Visual(r.transformNodeAfterMoved(to, fix), r.transformNodeAfterMoved(to, move)))
-      case mode.Node.Content(node, b) => MODE(mode.Node.Content(r.transformNodeAfterMoved(to, node), b))
+    private[model]  override def transformMaybeBad(a: MM): MODE = {
+      val zz = r.transformNodeAfterMoved(to, a.zoom)
+      a.a match {
+        case mode.Node.Visual(fix, move) =>
+          val tt = r.transformNodeAfterMoved(to, fix)
+          val mm = r.transformNodeAfterMoved(to, move)
+          if (cursor.Node.contains(zz, tt) && cursor.Node.contains(zz, mm)) {
+            MODE(model.mode.NodeWithZoom(mode.Node.Visual(tt, mm), zz))
+          } else {
+            val alt = if (cursor.Node.contains(zz, tt)) tt
+            else if (cursor.Node.contains(zz, mm)) mm
+            else r.transformNodeAfterMoved(to, r.parent)
+            MODE(model.mode.NodeWithZoom(mode.Node.Content(alt, null), zz), true)
+          }
+        case mode.Node.Content(node, b) =>
+          val tt = r.transformNodeAfterMoved(to, node)
+          if (cursor.Node.contains(zz, tt)) {
+            MODE(model.mode.NodeWithZoom(mode.Node.Content(tt, b), zz))
+          } else {
+            MODE(model.mode.NodeWithZoom(mode.Node.Content(r.transformNodeAfterMoved(to, r.parent), null), zz), true)
+          }
+      }
     }
 
     def reverse = operation.Node.Move(

@@ -30,9 +30,9 @@ class NodeVisual extends CommandCategory("node visual") {
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.mode match {
       case Some(m) => m match {
         case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
-          DocTransaction.mode(mode.Node.Visual(at, at))
+          DocTransaction(mode.Node.Visual(at, at))
         case model.mode.Node.Visual(_, move) =>
-          DocTransaction.mode(model.data.Node.defaultNormalMode(a.node, move))
+          DocTransaction(model.data.Node.defaultNormalMode(a.node, move))
         case _ => throw new IllegalArgumentException("Wrong branch")
       }
       case None => throw new IllegalArgumentException("Wrong branch")
@@ -45,7 +45,7 @@ class NodeVisual extends CommandCategory("node visual") {
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNodeVisual
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction.mode(a.asNodeVisual.swap)
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = DocTransaction(a.asNodeVisual.swap)
   }
 
 }

@@ -19,6 +19,9 @@ package object cursor {
 
 
   object Node {
+    def parent(a: Node) = a.dropRight(1)
+    def contains(zoom: Node, node: Node): Boolean = node.startsWith(zoom)
+
 
     def moveBy(a: cursor.Node, i: Int): cursor.Node = a.dropRight(1) :+ (a.last + i)
 

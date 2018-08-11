@@ -11,7 +11,7 @@ case class DocTransaction(
 
   unfoldBefore: Set[cursor.Node] = Set.empty,
   toggleBefore: Set[cursor.Node] = Set.empty,
-  zoom: Option[cursor.Node] = None,
+  zoomAfter: Option[cursor.Node] = None,
 
   undoType: Option[Undoer.Type] = None,
   tryMergeDeletes: Boolean = false,
@@ -22,14 +22,13 @@ case class DocTransaction(
   viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {
   def nonTransactional: Boolean = {
-    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoom.isEmpty
+    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoomAfter.isEmpty
   }
-
 }
 
 object DocTransaction {
   val empty = DocTransaction(Seq.empty, None)
-  def mode(a: model.mode.Node) = DocTransaction(Seq.empty, Some(a))
+  def apply(a: model.mode.Node): DocTransaction = DocTransaction(Seq.empty, Some(a))
 
   def message(a: ViewMessage): DocTransaction = {
     DocTransaction(Seq.empty, None, viewMessagesBefore = Seq(a))

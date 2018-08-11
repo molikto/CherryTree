@@ -53,17 +53,26 @@ package object mode {
     case object CodeInside extends Code // user's mode is currently taken over by code editor
   }
 
-  sealed trait Node extends Mode[data.Node] {
+  case class NodeWithZoom(a: Node, zoom: cursor.Node) extends Mode[data.Node] {
+    assert(a.inside(zoom))
+  }
 
+  sealed trait Node extends Mode[data.Node] {
+    def inside(a: cursor.Node): Boolean
+    def focus: cursor.Node
   }
 
   object Node {
 
-    case class Content(node: cursor.Node, a: mode.Content) extends Node
+    case class Content(node: cursor.Node, a: mode.Content) extends Node {
+      override def focus: cursor.Node = node
+      def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, node)
+    }
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node {
       def minimalRange: Option[range.Node] = cursor.Node.minimalRange(fix, move)
-
       def swap: Visual = Visual(move, fix)
+      def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, fix) && cursor.Node.contains(zoom, move)
+      override def focus: cursor.Node = move
     }
 
 

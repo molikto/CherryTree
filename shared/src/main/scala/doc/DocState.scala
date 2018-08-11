@@ -9,11 +9,20 @@ case class DocState(
   node: model.data.Node,
   zoom: cursor.Node,
   mode: Option[model.mode.Node],
-  userFoldedNodes: Set[String]
+  userFoldedNodes: Map[String, Boolean]
 ) {
+  assert(node.get(zoom).isDefined)
+
+
+  def userFolded(a: cursor.Node) = {
+    val no = node(a)
+    userFoldedNodes.getOrElse(no.uuid, no.isH1)
+  }
+
   def folded(a: cursor.Node): Boolean = {
     assert(a.startsWith(zoom))
-    a != zoom && userFoldedNodes.contains(node(a).uuid)
+    val no = node(a)
+    a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
   def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, zoom, folded)

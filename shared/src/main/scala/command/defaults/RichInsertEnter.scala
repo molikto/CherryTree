@@ -52,7 +52,7 @@ class RichInsertEnter extends CommandCategory("ways to start insert text") {
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =  {
       val (cursor, content, normal) = a.asRichNormal
-      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichInsert(move(
+      DocTransaction(a.copyContentMode(model.mode.Content.RichInsert(move(
         content, normal.range))))
     }
   }

@@ -4,6 +4,7 @@ import java.util.UUID
 
 import doc.DocTransaction
 import model._
+import model.data.Node.ContentType
 import model.range.IntRange
 
 import scala.util.Random
@@ -20,11 +21,25 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+  def lastDefined(a: cursor.Node): cursor.Node = {
+    var len = a.length
+    while (len >= 0) {
+      val can = a.take(len)
+      if (get(can).isDefined) {
+        return can
+      }
+      len -= 1
+    }
+    cursor.Node.root
+  }
 
-  def allChildrenUuids(cur: cursor.Node, in: Set[String]): Seq[cursor.Node] = {
+  def isH1: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
+
+
+  def allChildrenUuids(cur: cursor.Node, in: Map[String, Boolean]): Seq[cursor.Node] = {
     childs.zipWithIndex.flatMap(c => {
       val cs = c._1.allChildrenUuids(cur :+ c._2, in)
-      if (in.contains(c._1.uuid)) cs :+ (cur :+ c._2) else cs
+      if (in.get(c._1.uuid).contains(true)) cs :+ (cur :+ c._2) else cs
     })
   }
 

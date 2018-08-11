@@ -37,7 +37,7 @@ private[undoer] class HistoryItem(
   var reverse: transaction.Node,
   var docBefore: data.Node,
   val ty: Type,
-  val modeBefore: mode.Node,
+  val modeBefore: mode.NodeWithZoom,
   var undoer: (Seq[transaction.Node], Int) = null
 ) {
 
@@ -86,8 +86,8 @@ trait Undoer extends UndoerInterface {
   private def base: Int = discarded
 
   // all mode is changed to insert mode, then converted back to normal upon redo
-  def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node = {
-    modeBefore match {
+  def convertMode(docBefore: Node, modeBefore: mode.NodeWithZoom): mode.NodeWithZoom = {
+    mode.NodeWithZoom(modeBefore.a match {
       case v: model.mode.Node.Visual =>
         model.mode.Node.Content(v.fix, docBefore(v.fix).content match {
           case _: data.Content.Code => model.mode.Content.CodeNormal
@@ -105,11 +105,11 @@ trait Undoer extends UndoerInterface {
           model.mode.Content.CodeNormal
         case a => a
       })
-    }
+    }, modeBefore.zoom)
   }
 
-  def convertBackMode(nodeNow: Node, modeNow: mode.Node, badMode: Boolean): mode.Node = {
-    modeNow match {
+  def convertBackMode(nodeNow: Node, modeNow: mode.NodeWithZoom, badMode: Boolean): mode.NodeWithZoom = {
+    mode.NodeWithZoom(modeNow.a match {
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
         // LATER this is also hacky!!!
         case model.mode.Content.RichInsert(pos) =>
@@ -118,11 +118,11 @@ trait Undoer extends UndoerInterface {
         case a => a
       })
       case _ => throw new IllegalArgumentException("That is impossible")
-    }
+    }, modeNow.zoom)
   }
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: model.mode.Node, docBefore: data.Node): Unit = {
+  def trackUndoerChange(trans: transaction.Node, ty: Type, modeBefore: model.mode.NodeWithZoom, docBefore: data.Node): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
@@ -164,11 +164,11 @@ trait Undoer extends UndoerInterface {
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
+    val (modeNow, badMode, _) = operation.Node.transform(applied, pp.flatten, (item.modeBefore, false))
+    val mm = convertBackMode(applied, modeNow, badMode)
     DocTransaction(tt,
-      {
-        val (modeNow, badMode) = operation.Node.transform(applied, pp.flatten, (item.modeBefore, false))
-        Some(convertBackMode(applied, modeNow, badMode))
-      },
+      Some(mm.a),
+      zoomAfter = Some(mm.zoom),
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)),
       handyAppliedResult = Some(applied))
   }

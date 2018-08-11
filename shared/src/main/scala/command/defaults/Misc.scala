@@ -33,22 +33,22 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
         case Some(m) =>
           m match {
             case model.mode.Node.Visual(fix, move) =>
-              DocTransaction.mode(model.data.Node.defaultNormalMode(a.node, move))
+              DocTransaction(model.data.Node.defaultNormalMode(a.node, move))
             case nc@model.mode.Node.Content(n, c) =>
               a.node(n).content match {
                 case model.data.Content.Rich(rich) =>
                   c match {
                     case model.mode.Content.RichInsert(pos) =>
                       val range = rich.rangeBefore(pos)
-                      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(range)))
+                      DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(range)))
                     case model.mode.Content.RichVisual(_, move) =>
-                      DocTransaction.mode(a.copyContentMode(model.mode.Content.RichNormal(move)))
+                      DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
                     case _ => DocTransaction.empty
                   }
                 case model.data.Content.Code(_, _) =>
                   c match {
                     case model.mode.Content.CodeInside =>
-                      DocTransaction.mode(a.copyContentMode(model.mode.Content.CodeNormal))
+                      DocTransaction(a.copyContentMode(model.mode.Content.CodeNormal))
                     case _ => DocTransaction.empty
                   }
                 case _ =>
@@ -113,7 +113,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.mode(a.copyContentMode(mode.Content.CodeInside))
+      DocTransaction(a.copyContentMode(mode.Content.CodeInside))
     }
   }
 

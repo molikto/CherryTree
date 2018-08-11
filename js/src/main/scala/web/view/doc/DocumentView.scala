@@ -129,8 +129,10 @@ class DocumentView(
   //         frame...
   //    nonEditable...
 
+  private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && a.startsWith(currentZoom)
+
   private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    assert(at.startsWith(currentZoom))
+    assert(inViewport(at))
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
@@ -251,11 +253,15 @@ class DocumentView(
     val hold = hold0.asInstanceOf[HTMLElement]
     val frame = frame0.asInstanceOf[HTMLElement]
     if (fold) {
-      frame.classList.add("ct-d-folded")
-      hold.classList.add("ct-d-hold-folded")
+      if (!frame.classList.contains("ct-d-folded")) {
+        frame.classList.add("ct-d-folded")
+        hold.classList.add("ct-d-hold-folded")
+      }
     } else {
-      frame.classList.remove("ct-d-folded")
-      hold.classList.remove("ct-d-hold-folded")
+      if (frame.classList.contains("ct-d-folded")) {
+        frame.classList.remove("ct-d-folded")
+        hold.classList.remove("ct-d-hold-folded")
+      }
     }
   }
 
@@ -280,6 +286,7 @@ class DocumentView(
     a.removeChild(a.childNodes(0))
   }
 
+  // this can temp be null during state update
   private var currentZoom: model.cursor.Node = null
 
   private def insertNodesRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
@@ -291,7 +298,8 @@ class DocumentView(
     createContent(root.content).attachToNode(box)
     val list = div(`class` := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
-    toggleHoldRendering(parent, hold, client.state.folded(cur))
+    // LATER our doc transaction/fold handling is MESSY!!!
+    toggleHoldRendering(parent, hold, cur != currentZoom && client.state.userFoldedNodes.getOrElse(root.uuid, root.isH1))
     box.appendChild(list)
     insertNodes(cur, list, 0, root.childs)
   }
@@ -356,60 +364,93 @@ class DocumentView(
     updateMode(selection, viewUpdated = false)
 
     observe(client.stateUpdates.doOnNext(update => {
-      update.folds.foreach(f => {
-        toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
+      update.foldsBefore.foreach(f => {
+        if (inViewport(f._1)) toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
       })
       duringStateUpdate = true
-      for (t <- update.transaction) {
-        t match {
-          case model.operation.Node.Content(at, c) =>
-            contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
-          case model.operation.Node.AttributeChange(at, tag, to) =>
-            val to = classesFromNodeAttribute(update.root(at)).split(" ").filter(_.nonEmpty) :+ "ct-d-box"
-            val cl = boxAt(at).classList
-            while (cl.length > 0) {
-              cl.remove(cl.item(0))
+      var destructive = false
+      update.transaction match {
+        case Left(transaction) =>
+          for ((t, index) <- transaction.zipWithIndex) {
+            if (!destructive)  {
+              currentZoom = t._2
+//              if (model.debug_view) {
+//                println(s"current zoom is $currentZoom")
+//                println(s"current trans is ${t._1}")
+//              }
+              t._1 match {
+                case model.operation.Node.Content(at, c) =>
+                  if (inViewport(at)) {
+                    contentAt(at).updateContent(update.root(at).content, c, update.viewUpdated)
+                  }
+                case model.operation.Node.AttributeChange(at, tag, to) =>
+                  if (inViewport(at)) {
+                    val to = classesFromNodeAttribute(update.root(at)).split(" ").filter(_.nonEmpty) :+ "ct-d-box"
+                    val cl = boxAt(at).classList
+                    while (cl.length > 0) {
+                      cl.remove(cl.item(0))
+                    }
+                    to.foreach(cl.add)
+                    updateMode(None, viewUpdated = false)
+                  }
+                case model.operation.Node.Replace(at, c) =>
+                  if (inViewport(at)) {
+                    val previousContent = contentAt(at)
+                    val p = previousContent.dom.parentNode
+                    val before = previousContent.dom.nextSibling
+                    previousContent.destroy()
+                    createContent(c).attachToNode(p, before.asInstanceOf[HTMLElement])
+                  }
+                case model.operation.Node.Delete(r) =>
+                  if (inViewport(r.parent)) {
+                    removeNodes(r)
+                  }
+                case model.operation.Node.Insert(at, childs) =>
+                  val pCur = at.dropRight(1)
+                  if (inViewport(pCur)) {
+                    val root = childListAt(pCur)
+                    insertNodes(pCur, root, at.last, childs)
+                  }
+                case model.operation.Node.Move(range, to) =>
+                  val toP = to.dropRight(1)
+                  if (inViewport(range.parent) && inViewport(toP)) {
+                    val parent = childListAt(range.parent)
+                    val toParent = childListAt(toP)
+                    val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
+                    val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
+                    nodes.foreach(n => {
+                      toParent.insertBefore(n, before)
+                    })
+                    // might lost focus due to implementation, so we force a update!
+                    updateMode(None, viewUpdated = false)
+                  } else if (inViewport(range.parent)) {
+                    removeNodes(range)
+                  } else if (inViewport(to)) {
+                    if (index == transaction.size - 1) {
+                      val data = update.root(model.range.Node(range.transformNodeAfterMoved(to, range.start), range.size))
+                      val p = model.cursor.Node.parent(to)
+                      val root = childListAt(p)
+                      insertNodes(p, root, to.last, data)
+                    } else {
+                      destructive = true
+                    }
+                  }
+              }
             }
-            to.foreach(cl.add)
-            updateMode(None, viewUpdated = false)
-          case model.operation.Node.Replace(at, c) =>
-            val previousContent = contentAt(at)
-            val p = previousContent.dom.parentNode
-            val before = previousContent.dom.nextSibling
-            previousContent.destroy()
-            createContent(c).attachToNode(p, before.asInstanceOf[HTMLElement])
-          case model.operation.Node.Delete(r) =>
-            // look out for this!!!
-            removeNodes(r)
-          case model.operation.Node.Insert(at, childs) =>
-            val pCur = at.dropRight(1)
-            val root = childListAt(pCur)
-            insertNodes(pCur, root, at.last, childs)
-          case model.operation.Node.Move(range, to) =>
-            val parent = childListAt(range.parent)
-            val toParent = childListAt(to.dropRight(1))
-            val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
-            val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
-            nodes.foreach(n => {
-              toParent.insertBefore(n, before)
-            })
-            // might lost focus due to implementation, so we force a update!
-            updateMode(None, viewUpdated = false)
-        }
+          }
+        case Right(_) =>
+          destructive = true
       }
-      // destructive!
-      update.zoom match {
-        case Some(a) =>
-          // TODO make zoom handling this simpler
-//          if (currentZoom.startsWith(a)) {
-//          } else {
-//            cleanFrame(rootFrame)
-//            insertNodesRec(update.root(a), rootFrame)
-//          }
-          cleanFrame(rootFrame)
-          currentZoom = a
-          insertNodesRec(a, update.root(a), rootFrame)
-        case None =>
+      currentZoom = update.zoomAfter
+      if (destructive) {
+        // TODO make zoom handling this simpler
+        //          if (currentZoom.startsWith(a)) {
+        //          } else {
+        //            cleanFrame(rootFrame)
+        //            insertNodesRec(update.root(a), rootFrame)
+        //          }
+        cleanFrame(rootFrame)
+        insertNodesRec(currentZoom, update.root(currentZoom), rootFrame)
       }
       duringStateUpdate = false
       updateMode(update.mode, update.viewUpdated, fromUser = update.fromUser)

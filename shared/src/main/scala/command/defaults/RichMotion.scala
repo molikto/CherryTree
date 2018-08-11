@@ -23,7 +23,7 @@ class RichMotion extends CommandCategory("move cursor inside text") {
     final override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, content, m) = a.asRichNormalOrVisual
       def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr)._1 }
-      DocTransaction.mode(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
+      DocTransaction(a.copyContentMode(m.copyWithNewFocus(act(m.focus))))
     }
   }
 

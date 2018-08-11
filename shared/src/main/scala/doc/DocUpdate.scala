@@ -6,11 +6,11 @@ import undoer.Undoer
 
 case class DocUpdate(
   root: model.data.Node,
-  transaction: model.transaction.Node,
+  transaction: Either[Seq[(model.operation.Node, cursor.Node)], cursor.Node],
   mode: Option[model.mode.Node],
-  folds: Map[cursor.Node, Boolean],
-  zoom: Option[cursor.Node],
-  fromUser: Boolean,
+  zoomAfter: model.cursor.Node,
+  foldsBefore: Map[cursor.Node, Boolean],
+  fromUser: Boolean, // if this is true, then when mode is updated, we perform scroll to mode etc.
   viewUpdated: Boolean) {
 }
 

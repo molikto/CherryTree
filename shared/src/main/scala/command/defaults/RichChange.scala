@@ -60,7 +60,7 @@ class RichChange extends CommandCategory("change text") {
       if (grapheme.isEmpty) return DocTransaction.empty
       val char = grapheme.get
       val (cursor, rich, v) = a.asRichNormal
-      if (rich.isEmpty) return DocTransaction.mode(a.copyContentMode(mode.Content.RichInsert(0)))
+      if (rich.isEmpty) return DocTransaction(a.copyContentMode(mode.Content.RichInsert(0)))
 
       def makeMode(in: Atom, riches: Seq[operation.Rich]): Option[mode.Node] = {
         val rafter = operation.Rich.apply(riches, rich)

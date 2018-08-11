@@ -21,7 +21,17 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   new TextualCommand {
-    override val description: String = "unfold all children"
+    override val description: String = "fold all direct children"
+    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asNormal._1
+      val tog = a.node(cur).childs.zipWithIndex.map(a => cur :+ a._2).filter(c => !a.userFolded(c))
+      DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "unfold all children recursively"
     override protected def available(a: DocState): Boolean = a.isNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asNormal._1

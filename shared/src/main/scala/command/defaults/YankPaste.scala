@@ -52,7 +52,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             a.node(v.minimalRange.get)
           }
           commandState.yank(Registerable.Node(ns, needsClone = true), isDelete = false)
-          DocTransaction.mode(model.mode.Node.Content(fix, a.node(fix).content.defaultNormalMode()))
+          DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultNormalMode()))
         case _ => throw new IllegalArgumentException("Invalid command")
       }
     }
@@ -79,7 +79,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
       a.mode match {
         case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(fix, _))) =>
           commandState.yank(Registerable.Text(a.rich(pos).copyTextualRange(v.merged)), isDelete = false)
-          DocTransaction.mode(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
+          DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
         case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal)) =>
           commandState.yank(Registerable.Unicode(a.node(pos).content.asInstanceOf[data.Content.Code].unicode), isDelete = false)
           DocTransaction.empty

@@ -104,7 +104,7 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichInsert match {
       case (node, rich, insert) =>
         val m = move(rich, insert.pos)
-        if (m != insert.pos) DocTransaction.mode(a.copyContentMode(mode.Content.RichInsert(m))) else DocTransaction.empty
+        if (m != insert.pos) DocTransaction(a.copyContentMode(mode.Content.RichInsert(m))) else DocTransaction.empty
     }
   }
 
