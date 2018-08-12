@@ -17,7 +17,6 @@ class CommandCategory(val name: String) extends Settings {
     commands.append(this)
     override def category: String = name
   }
-
   abstract class TextualCommand extends Command {
     override def defaultKeys: Seq[KeySeq] = Seq.empty
   }
