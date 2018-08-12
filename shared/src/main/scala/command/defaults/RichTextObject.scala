@@ -8,7 +8,7 @@ import model.range
 
 class RichTextObject extends CommandCategory("text object motion") {
 
-  // TODO
+  // TODO sentence quote
   //v_as     N  as        Select "a sentence"
   //v_is     N  is        Select "inner sentence"
   //v_a'     N  a'        Select "a single quoted string"

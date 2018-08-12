@@ -22,6 +22,10 @@ trait SpecialCharTrait extends Enumeration {
 }
 
 object SpecialChar {
+  def special(a: Int): Boolean = {
+    a >= SpecialCharStart && a <= SpecialCharStart + 0xFF
+  }
+
 
   private object DelimitationType {
 

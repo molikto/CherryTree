@@ -164,7 +164,7 @@ trait Undoer extends UndoerInterface {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
     val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore)
-    var zz = cursor.Node.parent(oldDocAsNowForModes.mode0.focus)
+    var zz = cursor.Node.parent(oldDocAsNowForModes.mode0.coverage)
     var break = false
     while (!break && zz.length > oldDocAsNowForModes.zoom.length) {
       if (!applied.folded(zz)) {

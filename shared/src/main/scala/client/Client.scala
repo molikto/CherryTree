@@ -60,6 +60,7 @@ class Client(
   with RegisterHandler
   with Undoer
   with EditorInterface
+  with InputRuler
   with DocInterface { self =>
 
 
@@ -473,6 +474,7 @@ class Client(
         disableUpdateBecauseLocalNodeDelete = null
       }
     }
+    val extra = extraInputRuleOperation(state_, update.transaction)
     val (last0, from) = operation.Node.apply(update.transaction, state)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
     val last = last0.copy(mode0 = update.mode.getOrElse(last0.mode0),
@@ -495,6 +497,10 @@ class Client(
     }
     for (m <- update.viewMessagesAfter) {
       viewMessages_.onNext(m)
+    }
+    extra match {
+      case Some(a) => localChange(a)
+      case None =>
     }
   }
 

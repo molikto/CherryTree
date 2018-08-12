@@ -56,15 +56,22 @@ package object mode {
   sealed trait Node extends Mode[data.Node] {
     def inside(a: cursor.Node): Boolean
     def focus: cursor.Node
+    def coverage: cursor.Node
   }
 
   object Node {
 
     case class Content(node: cursor.Node, a: mode.Content) extends Node {
       override def focus: cursor.Node = node
+      override def coverage: cursor.Node = node
       def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, node)
     }
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node {
+      override def coverage: cursor.Node = minimalRange match {
+        case Some(a) => a.parent
+        case None => cursor.Node.root
+      }
+
       def minimalRange: Option[range.Node] = cursor.Node.minimalRange(fix, move)
       def swap: Visual = Visual(move, fix)
       def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, fix) && cursor.Node.contains(zoom, move)

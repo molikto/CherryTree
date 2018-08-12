@@ -121,6 +121,17 @@ object Atom {
     override private[data] def serialize(buffer: UnicodeWriter): Unit = buffer.put(a)
   }
   case class PlainGrapheme(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val unicodeIndex: Int, override val a: Unicode, override val text: Text.Plain) extends Grapheme {
+
+    override def matches(u: Unicode, delimitationCodePoints: Map[_root_.model.data.SpecialChar, Unicode]): Boolean =
+      super.matches(u, delimitationCodePoints) ||
+      a.str == "–" && u.str == "-" ||
+        a.str == "—" && u.str == "-" ||
+        a.str == "“" && u.str == "\"" ||
+        a.str == "”" && u.str == "\"" ||
+        a.str == "‘" && u.str == "'" ||
+        a.str == "’" && u.str == "'" ||
+        a.str == "…" && u.str == "."
+
     override def subIndex: Int = unicodeIndex
   }
   case class CodedGrapheme(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val unicodeIndex: Int, override val a: Unicode, override val text: Text.Coded) extends Grapheme {

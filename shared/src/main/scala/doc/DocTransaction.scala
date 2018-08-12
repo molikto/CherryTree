@@ -16,7 +16,6 @@ case class DocTransaction(
   tryMergeDeletes: Boolean = false,
   tryMergeInsertOfDeleteRange: Option[range.Node] = None,
 
-  // TODO zoom options
   viewUpdated: Boolean = false,
   viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {

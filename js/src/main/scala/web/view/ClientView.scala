@@ -32,7 +32,9 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     overflow := "hidden").render
   attachToNode(parent)
 
-  private val leftPanel = new LeftPanelSwitcher(client).attachTo(this)
+  private var leftPanel: View = null
+
+  leftPanel = new LeftPanelSwitcher(client, enableResizePanel).attachTo(this)
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
 
@@ -42,6 +44,14 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     a.handleSelector = "#ctTopPanelSplitter"
     a.resizeHeight = false
   }))
+
+  private def enableResizePanel(enable: Boolean): Unit = {
+    if (enable) {
+      panelSplitter.style.display = "block"
+    } else {
+      panelSplitter.style.display = "none"
+    }
+  }
 
   private val rightPanel = div(
     width := "100%",

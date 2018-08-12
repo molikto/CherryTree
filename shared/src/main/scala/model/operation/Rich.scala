@@ -14,6 +14,36 @@ import scala.util.Random
 // LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
 case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
 
+
+  def canBeSmartInsert(rich: data.Rich): Option[(data.Unicode, Int, data.Unicode)] = {
+    def doIt(at: Int, unicode: data.Unicode):  Option[(data.Unicode, Int, data.Unicode)]  = {
+      if (unicode.forall(a => !SpecialChar.special(a))) {
+        if (at == 0) {
+          return Some((data.Unicode.empty, at, unicode))
+        }
+        val before = rich.before(at)
+        if (before.text.isCoded && !before.delimitationEnd) {
+          return None
+        } else if (before.text.isPlain) {
+          val g = before.asInstanceOf[Atom.PlainGrapheme]
+          return Some((before.text.asPlain.unicode.slice(IntRange(0, g.unicodeIndex + g.size)), at, unicode))
+        } else {
+          return Some((Rich.returnUnicodeOnNonText, at, unicode))
+        }
+      }
+      None
+    }
+    
+    u match {
+      case Seq(Unicode.Insert(at, unicode, _)) =>
+        doIt(at, unicode)
+      case Seq(Unicode.Insert(start, b, _), Unicode.Delete(IntRange(startd, endd))) if startd >= start + b.size =>
+        doIt(start, b)
+      case _ => None
+    }
+  }
+
+
   private[model] def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {
     val maybeBad = u.foldLeft((a, false)) {
       (s, u) => u.transformRichMaybeBad(s)
@@ -76,6 +106,18 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+  def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
+    Rich(
+      Seq(
+        Unicode.Insert(start, b),
+        Unicode.Delete(start + b.size, end + b.size)
+      ),
+      Type.Structural
+    )
+  }
+
+
+  private[operation] val returnUnicodeOnNonText = data.Unicode("(DON'T MATCH THIS!)")
   def merge(op1: Rich, op2: Rich, ty: Type): Rich = {
     Rich(op1.u ++ op2.u, ty)
   }

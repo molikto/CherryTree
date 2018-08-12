@@ -105,7 +105,7 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         span(
           title := tt,
           cg("["),
-          span(`class` := "ct-link", rec(t), href := b.str),
+          span(`class` := "ct-link", rec(t)),
           cg("]")
         )
       case Text.Image(b, c) =>

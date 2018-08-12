@@ -38,9 +38,6 @@ class NodeFold extends CommandCategory("fold & zoom") {
     }
   }
 
-  // TODO fold-toggle	z
-  //fold-open
-  //fold-close
   new Command {
     override val description: String = "toggle node folding"
     override def defaultKeys: Seq[KeySeq] = Seq("z")
@@ -49,7 +46,11 @@ class NodeFold extends CommandCategory("fold & zoom") {
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
-      DocTransaction(Seq.empty, None, toggleBefore = Set(c))
+      if (c != a.zoom) {
+        DocTransaction(Seq.empty, None, toggleBefore = Set(c))
+      } else {
+        DocTransaction.empty
+      }
     }
   }
 }

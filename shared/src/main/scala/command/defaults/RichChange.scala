@@ -72,10 +72,7 @@ class RichChange extends CommandCategory("change text") {
         Some(a.copyContentMode(mode.Content.RichNormal(range)))
       }
       if (!rich.after(v.range.start).special) {
-        val ops = operation.Rich.merge(
-          operation.Rich.delete(v.range),
-          operation.Rich.insert(v.range.start, char
-          ), operation.Type.AddDelete)
+        val ops = operation.Rich.replacePlain(v.range.start, v.range.until, char)
         val focus = IntRange(v.range.start, v.range.start + char.size)
         DocTransaction(Seq(operation.Node.rich(cursor, ops)),
           Some(a.copyContentMode(mode.Content.RichNormal(focus))))
