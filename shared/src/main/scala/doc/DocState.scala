@@ -17,7 +17,8 @@ case class DocState(
 
   def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
 
-  assert(node.get(zoom).isDefined && mode0.inside(zoom))
+  assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
+  assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
 
   def folded(a: cursor.Node): Boolean = {
     val no = node(a)

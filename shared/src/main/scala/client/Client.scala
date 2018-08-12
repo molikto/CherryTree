@@ -107,6 +107,7 @@ class Client(
   def debug_committed = committed
   private var uncommitted = Seq.empty[transaction.Node]
   def version: Int = committedVersion + uncommitted.size
+  private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
 
   /**
     * document observable
@@ -131,7 +132,6 @@ class Client(
 
   private var disableStateUpdate_ : Boolean = false
 
-  private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
 
   private var flushing = false
   private var updatingState = false
@@ -432,6 +432,9 @@ class Client(
 
   def localChange(update0: DocTransaction): Unit = {
     var update: DocTransaction = update0
+    if (debug_view) {
+      println(update)
+    }
     if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
     // for a delete of a non empty node, we disable sync from server for sometime
     // during this time, if the next local change is an insert, we try to merge them as a move
@@ -457,12 +460,12 @@ class Client(
               cutOneLocalHistory(Seq(d))
               val os = state_
               val zz = d.r.transformBeforeDeleted(os.zoom)
-              state_ = disableUpdateBecauseLocalNodeDelete._4.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz)
-              val inverse = d.reverse(state.node)
+              val td = disableUpdateBecauseLocalNodeDelete._4
+              state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultNormalMode()))
               uncommitted = uncommitted.dropRight(1)
+              val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))
-              val before = d.r.transformBeforeDeleted(at)
-              update = update.copy(transaction = Seq(operation.Node.Move(d.r, before)))
+              update = update.copy(transaction = Seq(operation.Node.Move(d.r, d.r.transformBeforeDeleted(at))))
           }
         }
       }
@@ -471,22 +474,16 @@ class Client(
       }
     }
     val (last0, from) = operation.Node.apply(update.transaction, state)
-    var last = last0
-    update.mode.foreach(m => {
-      last = last.copy(mode0 = m, badMode = false)
-    })
-    update.zoomAfter.foreach(z => {
-      last = last.copy(zoom = z)
-    })
+    val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
+    val last = last0.copy(mode0 = update.mode.getOrElse(last0.mode0),
+      badMode = false,
+      zoom = update.zoomAfter.getOrElse(last0.zoom),
+      userFoldedNodes = res)
     for (m <- update.viewMessagesBefore) {
       viewMessages_.onNext(m)
     }
     if (!update.nonTransactional) {
-      if (debug_view) {
-        println(update)
-      }
-      val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
-      updateState(last.copy(userFoldedNodes = res),
+      updateState(last,
         from,
         viewAdd,
         update.undoType.getOrElse(Undoer.Local),

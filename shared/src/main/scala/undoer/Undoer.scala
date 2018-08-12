@@ -37,7 +37,6 @@ private[undoer] class HistoryItem(
   var reverse: transaction.Node,
   var docBefore: DocState,
   val ty: Type,
-  val modeBefore: mode.Node,
   var undoer: (Seq[transaction.Node], Int) = null
 ) {
 
@@ -108,7 +107,7 @@ trait Undoer extends UndoerInterface {
     }
   }
 
-  def convertBackMode(nodeNow: Node, modeNow: mode.Node, badMode: Boolean): mode.Node= {
+  def convertBackMode(nodeNow: Node, modeNow: mode.Node): mode.Node= {
     modeNow match {
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
         // LATER this is also hacky!!!
@@ -127,7 +126,7 @@ trait Undoer extends UndoerInterface {
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
       val reverse = transaction.Node.reverse(docBefore.node, trans)
-      val newItem = new HistoryItem(trans, reverse, docBefore, ty, convertMode(docBefore.node, docBefore.mode0))
+      val newItem = new HistoryItem(trans, reverse, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), ty)
       history_ = history_ :+ newItem
     }
     ty match {
@@ -164,11 +163,19 @@ trait Undoer extends UndoerInterface {
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
-    val (docNow, _) = operation.Node.apply(pp.flatten, applied)
-    val mm = convertBackMode(applied.node, docNow.mode0, docNow.badMode)
+    val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore)
+    var zz = cursor.Node.parent(oldDocAsNowForModes.mode0.focus)
+    var break = false
+    while (!break && zz.length > oldDocAsNowForModes.zoom.length) {
+      if (!applied.folded(zz)) {
+        zz = cursor.Node.parent(zz)
+      } else {
+        break = true
+      }
+    }
     DocTransaction(tt,
-      Some(mm),
-      zoomAfter = Some(docNow.zoom),
+      Some(convertBackMode(applied.node, oldDocAsNowForModes.mode0)),
+      zoomAfter = Some(zz),
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }
 

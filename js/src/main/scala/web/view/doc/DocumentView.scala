@@ -132,7 +132,7 @@ class DocumentView(
   private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && a.startsWith(currentZoom)
 
   private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    assert(inViewport(at))
+    if (rootFrame == this.rootFrame) assert(inViewport(at), s"not in viewport $at, current view port is $currentZoom")
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
       else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
@@ -385,7 +385,7 @@ class DocumentView(
       } else {
         for ((s, t, to) <- update.from) {
           currentZoom = s.zoom
-
+          currentZoomId = s.zoomId
           //              if (model.debug_view) {
           //                println(s"current zoom is $currentZoom")
           //                println(s"current trans is ${t._1}")
@@ -448,6 +448,7 @@ class DocumentView(
         }
       }
       currentZoom = update.to.zoom
+      currentZoomId = update.to.zoomId
       duringStateUpdate = false
       updateMode(update.to.mode, update.viewUpdated, fromUser = update.fromUser)
       refreshMounted()
