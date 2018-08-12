@@ -179,7 +179,9 @@ class Client(
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
     val vv = viewAdded ++ from
-    val res = DocUpdate(a, vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)), userFolds, fromUser, viewUpdated)
+    val res = DocUpdate(a,
+      if (vv.isEmpty) Seq.empty else vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)),
+      userFolds, fromUser, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debug_view) {
@@ -484,7 +486,7 @@ class Client(
         println(update)
       }
       val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
-      updateState(last,
+      updateState(last.copy(userFoldedNodes = res),
         from,
         viewAdd,
         update.undoType.getOrElse(Undoer.Local),

@@ -29,7 +29,7 @@ class NodeFold extends CommandCategory("node folding") {
       if (a.zoom == cursor.Node.root) {
         DocTransaction.empty
       } else {
-        val curZoom =a.node(a.zoom)
+        val curZoom = a.node(a.zoom)
         DocTransaction(Seq.empty,
           if (a.folded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultNormalMode()))
           else None,

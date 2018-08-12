@@ -374,7 +374,6 @@ class DocumentView(
       if (update.to.zoomId != currentZoomId) {
         currentZoomId = update.to.zoomId
         currentZoom = update.to.zoom
-        // TODO make zoom handling this simpler
         //          if (currentZoom.startsWith(a)) {
         //          } else {
         //            cleanFrame(rootFrame)
@@ -396,7 +395,7 @@ class DocumentView(
               if (inViewport(at)) {
                 contentAt(at).updateContent(to.node(at).content, c, update.viewUpdated)
               }
-            case model.operation.Node.AttributeChange(at, tag, tg) =>
+            case model.operation.Node.AttributeChange(at, _, _) =>
               if (inViewport(at)) {
                 val tt = classesFromNodeAttribute(to.node(at)).split(" ").filter(_.nonEmpty) :+ "ct-d-box"
                 val cl = boxAt(at).classList
@@ -404,6 +403,7 @@ class DocumentView(
                   cl.remove(cl.item(0))
                 }
                 tt.foreach(cl.add)
+                toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
                 updateMode(None, viewUpdated = false)
               }
             case model.operation.Node.Replace(at, c) =>

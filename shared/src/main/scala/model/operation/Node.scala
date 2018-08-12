@@ -62,7 +62,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
             val r = if (cursor.Node.contains(at, b)) at else b
             m = mode.Node.Visual(l, r)
           case mode.Node.Content(c, d) =>
-            if (cursor.Node.contains(at, c)) {
+            if (cursor.Node.contains(at, c) && at != c) {
               zoom = at
             }
         }
