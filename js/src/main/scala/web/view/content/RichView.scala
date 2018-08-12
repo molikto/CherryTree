@@ -81,7 +81,8 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
     sel.addRange(range)
   }
 
-  private def cg(a: String) = span(`class` := "ct-cg", contenteditable := "false", a)
+  private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
+    contenteditable := "false", a)
 
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
@@ -91,9 +92,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
         cg("*")
       )
       case Text.Strong(c) => span(
-        cg("**"),
+        cg("*", "ct-cg-shadow"),
         strong(`class` := "ct-strong", rec(c)),
-        cg("**")
+        cg("*", "ct-cg-shadow")
       )
       case Text.StrikeThrough(c) => span(
         cg("~"),

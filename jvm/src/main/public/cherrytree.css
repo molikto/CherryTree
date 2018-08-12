@@ -449,6 +449,7 @@ block selection
 
 .ct-strong {
 }
+
 .ct-em {
 }
 .ct-del {
@@ -460,6 +461,12 @@ block selection
     font-style: normal;
     color: #636e83;
     font-weight:normal;
+}
+
+
+
+.ct-cg-shadow {
+ text-shadow: 0px 0.5em #636e83;
 }
 
 

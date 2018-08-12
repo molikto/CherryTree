@@ -74,7 +74,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
-    val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer)
+    val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer, () => docView.dom)
     val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(client, overlayLayer)
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu

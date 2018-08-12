@@ -76,7 +76,7 @@ class SourceView(
       removeEditor()
     } else {
       editing = documentView.sourceEditor
-      editing.documentEdit(c.unicode.str, documentView.dom, src => {
+      editing.documentEdit(c.unicode.str, src => {
         controller.exitCodeEditMode(c.unicode.diff(Unicode(src)))
       })
     }

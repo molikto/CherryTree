@@ -13,7 +13,7 @@ import web.view._
 
 import scala.scalajs.js
 
-class SourceEditDialog(protected val layer: OverlayLayer) extends Overlay {
+class SourceEditDialog(protected val layer: OverlayLayer, covering: () => HTMLElement) extends CoveringOverlay(covering) {
 
   private val ta = textarea(
     flex := "1 1 auto",
@@ -94,13 +94,7 @@ class SourceEditDialog(protected val layer: OverlayLayer) extends Overlay {
   var nDismiss: String => Unit = null
   // codeMirror.getScrollerElement.asInstanceOf[HTMLElement].classList.add("ct-scroll")
 
-  def documentEdit(a: String, followElement: HTMLElement, onDismiss: String => Unit): Unit = {
-    val f = followElement.getBoundingClientRect()
-    val g = layer.parent.getBoundingClientRect()
-    dom.style.paddingLeft = (((f.left - g.left) max 0.0) + 48) + "px"
-    dom.style.paddingBottom = (((g.bottom - f.bottom) max 0.0) + 48) + "px"
-    dom.style.paddingTop = (((f.top - g.top) max 0.0) + 48) + "px"
-    dom.style.paddingRight = (((g.right - f.right) max 0.0) + 48) + "px"
+  def documentEdit(a: String, onDismiss: String => Unit): Unit = {
     this.nDismiss = onDismiss
     super.showOverlay()
     codeMirror.setValue(a)
