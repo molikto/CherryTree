@@ -20,12 +20,12 @@ package object transaction {
       }
     }
 
-    def mergeForUndoer(current: Node, before: Node): Option[Node] = {
+    def mergeForUndoer(current: Node, before: Node): Option[(Node, Boolean)] = {
       (current, before) match {
         case (Seq(c), Seq(b)) =>
           c.mergeForUndoer(b) match {
             case Some(a) =>
-              Some(Seq(a))
+              Some(Seq(a._1), a._2)
             case _ => None
           }
         case _ => None

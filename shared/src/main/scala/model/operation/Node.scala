@@ -100,8 +100,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = copy(content = content.reverse(d(at).content))
 
-    override def mergeForUndoer(before: Node): Option[Node] = before match {
-      case Content(at0, c0) if at0 == at => content.mergeForUndoer(c0).map(a => Content(at, a))
+    override def mergeForUndoer(before: Node): Option[(Node, Boolean)] = before match {
+      case Content(at0, c0) if at0 == at => content.mergeForUndoer(c0).map(a => (Content(at, a._1), a._2))
       case _ => None
     }
 

@@ -29,7 +29,7 @@ package object operation {
 
   trait Operation[DATA] {
     type This
-    def mergeForUndoer(before: This): Option[This] = None
+    def mergeForUndoer(before: This): Option[(This, Boolean)] = None
     def ty: Type
     def apply(data: DATA): DATA
 

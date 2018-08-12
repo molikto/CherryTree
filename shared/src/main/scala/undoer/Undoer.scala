@@ -140,7 +140,7 @@ trait Undoer extends UndoerInterface {
           case Some(a) if a.ty == Local =>
             if (a.ty == Local) {
               transaction.Node.mergeForUndoer(trans, a.trans) match {
-                case Some(merged) =>
+                case Some((merged, wait)) =>
                   a.trans = merged
                   a.reverse = transaction.Node.reverse(a.docBefore.node, a.trans)
                   return

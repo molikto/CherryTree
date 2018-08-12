@@ -74,8 +74,8 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))
 
-    override def mergeForUndoer(before: Content): Option[Content] = before match {
-      case Rich(be) => op.mergeForUndoer(be).map(Rich)
+    override def mergeForUndoer(before: Content): Option[(Content, Boolean)] = before match {
+      case Rich(be) => op.mergeForUndoer(be).map(a => (Rich(a._1), a._2))
       case _ => None
     }
 
