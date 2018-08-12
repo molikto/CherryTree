@@ -90,16 +90,10 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else {
           None
         }
-      case (Seq(Unicode.Insert(a0, u0, g0)), Seq(i1@Unicode.Insert(a1, u1, g1), Unicode.Delete(r))) if g0 == g1  =>
-        // insert 0 .
-        // insert 1 .
-
-        // insert 0 ..
-        // delete [2, 3)
-        if (a1 <= a0 && r.size >= u0.size && r.until == a0 + u1.size + u0.size) {
+      case (Seq(Unicode.Insert(a0, u0, g0)), Seq(i1@Unicode.Insert(a1, u1, g1), Unicode.Delete(r))) if g0 == g1 && (!breakOnWhitespace || !u1.containsSpace) =>
+        if (a1 <= a0 && r.start == a1 + u1.size && r.until == a0 + u0.size + u1.size) {
           Some((Rich(Seq(
-            i1,
-            Unicode.Delete(IntRange(r.start, r.until - u0.size))
+            Unicode.Insert(a0, u0.slice(IntRange(0, u0.size - r.size)) + u1,g0)
           ), Type.AddDelete), true))
         } else {
           None
