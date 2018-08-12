@@ -14,7 +14,20 @@ import scala.util.Random
 // LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
 case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
 
-  private[model] def transformRichMode(a: mode.Content.Rich): (mode.Content.Rich, Boolean) = u.foldLeft((a, false)) {(s, u) => u.transformRichMode(s) }
+  private[model] def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {
+    val maybeBad = u.foldLeft((a, false)) {
+      (s, u) => u.transformRichMaybeBad(s)
+    }
+    if (maybeBad._2) {
+      val m = maybeBad._1 match {
+        case mode.Content.RichInsert(i) => model.mode.Content.RichNormal(apply(d).rangeAfter(i))
+        case _ => maybeBad._1
+      }
+      (m, true)
+    } else {
+      maybeBad
+    }
+  }
 
   override def apply(d: data.Rich): data.Rich =
     data.Rich.parse(Unicode.apply(u, d.serialize()))

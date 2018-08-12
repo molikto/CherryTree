@@ -572,9 +572,9 @@ class RichView(documentView: DocumentView, val controller: EditorInterface,  var
 
         val range = attributeEditor._2
         val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
-        val res = c.transform(fakeMode)
+        val res = c.transform(data, fakeMode)._1
         res match {
-          case Some(model.mode.Content.RichVisual(a, b)) =>
+          case model.mode.Content.RichVisual(a, b) =>
             attributeEditor = (attributeEditor._1, IntRange(a.start, b.until))
           case _ => clearAttributeEditor()
         }

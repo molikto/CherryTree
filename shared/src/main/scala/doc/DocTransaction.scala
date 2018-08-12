@@ -7,7 +7,6 @@ import undoer.Undoer
 case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
-  handyAppliedResult: Option[model.data.Node] = None,
 
   unfoldBefore: Set[cursor.Node] = Set.empty,
   toggleBefore: Set[cursor.Node] = Set.empty,

@@ -22,7 +22,7 @@ package object operation {
     def reverse(a: Type): Type = a match {
       case Add => Delete
       case Delete => Add
-      case a => a
+      case k => k
     }
   }
   import Type.Type
@@ -39,26 +39,6 @@ package object operation {
 
     def isEmpty: Boolean
   }
-
-  trait OperationOnModal[DATA, M <: Mode[DATA]] extends Operation[DATA] {
-
-        type MM = M
-        type MODE = (M, Boolean)
-        def MODE(a: MM, b: Boolean = false): MODE = (a, b)
-
-    def transform(a: M): Option[M] = {
-      transformMaybeBad(a) match {
-        case (b, false) => Some(b)
-        case _ => None
-      }
-    }
-        private[model] def transformMaybeBad(a: M): MODE
-        private[model] def transformMaybeBad(a: MODE): MODE = {
-          val res = transformMaybeBad(a._1)
-          (res._1, res._2 || a._2)
-        }
-  }
-
 
 
   trait OperationObject[DATA, OPERATION <: Operation[DATA]] {

@@ -119,19 +119,13 @@ class Client(
       case _ => cursor.Node.root
     }
     case _ => cursor.Node.root
-  }, Some(initial.mode), localStorage.get(docId + ".folded0") match {
+  }, initial.mode, badMode = false, localStorage.get(docId + ".folded0") match {
     case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
       val c = a.split(" ")
       c(0) -> c(1).toBoolean
     }).toMap
     case _ => Map.empty
   })
-
-  /**
-    * in some case the current mode conflicts with other collaborator operation, what we do is render current
-    * mode as invalid, then reset to a default mode after some time,
-    */
-  private var modeTemp: mode.Node = null
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
@@ -177,17 +171,15 @@ class Client(
   private var scheduledUpdateTempMode: Cancelable = null
 
   private def updateState(a: DocState,
-    modeTemp: mode.Node,
-    from: Seq[(model.operation.Node, model.cursor.Node)],
-    viewAdded: Seq[(model.operation.Node, model.cursor.Node)],
+    from: Seq[(DocState, operation.Node)],
+    viewAdded: Seq[(DocState, operation.Node)],
     ty: Undoer.Type,
     viewUpdated: Boolean,
     fromUser: Boolean,
-    foldBefore: Map[cursor.Node, Boolean] = Map.empty
+    userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
-    assert(a.mode.isDefined || modeTemp != null)
-    val res = DocUpdate(a.node, if (a.node(a.zoom).uuid != state_.node(state_.zoom).uuid) Right(a.zoom) else Left(viewAdded ++ from),
-      a.mode, a.zoom, foldBefore, fromUser, viewUpdated)
+    val vv = viewAdded ++ from
+    val res = DocUpdate(a, vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)), userFolds, fromUser, viewUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debug_view) {
@@ -196,25 +188,22 @@ class Client(
 //      println("client update mode: " + a.mode)
     }
     updatingState = true
-    val modeBefore = state.mode.getOrElse(this.modeTemp)
-    val zoomBefore = state.zoom
-    val docBefore = state.node
+    val docBefore = state
     state_ = a
     if (scheduledUpdateTempMode != null) {
       scheduledUpdateTempMode.cancel()
     }
-    if (modeTemp != null) {
+    if (a.badMode) {
       scheduledUpdateTempMode = Observable.delay({
         println("updating temp mode")
-        updateState(state_.copy(mode = Some(modeTemp)), null, Seq.empty, Seq.empty, Undoer.Local, false, false, Map.empty)
+        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, Map.empty)
       }).delaySubscription(2.seconds).subscribe()
     }
-    this.modeTemp = modeTemp
-    if (foldBefore.nonEmpty) {
+    if (userFolds.nonEmpty) {
       localStorage.set(docId + ".folded0", state_.userFoldedNodes.toSeq.map(a => s"${a._1} ${a._2}").mkString(","))
     }
     onBeforeUpdateUpdateCommandState(state_)
-    trackUndoerChange(from.map(_._1), ty, model.mode.NodeWithZoom(modeBefore, zoomBefore), docBefore)
+    trackUndoerChange(docBefore, from.map(_._2), ty)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInsert) {
@@ -332,22 +321,10 @@ class Client(
         uncommitted = uc
         connection_.update(Some(success.serverStatus))
         if (wp0.nonEmpty) {
-          val nn = operation.Node.apply(wp0, state.node)
-          val (model.mode.NodeWithZoom(mmm, zz), isBad, zoomHistory) = operation.Node.transform(nn, wp0,
-            state.mode.map(a => (model.mode.NodeWithZoom(a, state.zoom), false)).getOrElse((
-              model.mode.NodeWithZoom(modeTemp, state.zoom), true)))
-          if (debug_view) {
-            println("after sever mode is: " + mmm)
-          }
+          val (last, from) = operation.Node.apply(wp0, state)
           updateState(
-            DocState(
-              nn,
-              zz,
-              if (isBad) None else Some(mmm),
-              state.userFoldedNodes
-            ),
-            if (isBad) mmm else null,
-            wp0.zip(zoomHistory),
+            last,
+            from,
             Seq.empty,
             Undoer.Remote,
             viewUpdated = false,
@@ -439,8 +416,8 @@ class Client(
     } else {
       val toggle = toggle0.map(c => (c, state.node(c)))
       val unfold = unfold0.map(c => (c, state.node(c)))
-      var toFold = toggle.filter(a => !folded0.userFolded(a._1))
-      val toUnfold = (toggle -- toFold) ++ unfold.filter(a => folded0.userFolded(a._1))
+      var toFold = toggle.filter(a => !folded0.folded(a._1))
+      val toUnfold = (toggle -- toFold) ++ unfold.filter(a => folded0.folded(a._1))
       toFold = toFold -- toUnfold
       (folded0.userFoldedNodes
         ++ toFold.filter(!_._2.isH1).map(_._2.uuid -> true).toMap
@@ -456,7 +433,7 @@ class Client(
     if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
     // for a delete of a non empty node, we disable sync from server for sometime
     // during this time, if the next local change is an insert, we try to merge them as a move
-    var viewAdd : Seq[(operation.Node, cursor.Node)] = Seq.empty
+    var viewAdd : Seq[(DocState, operation.Node)] = Seq.empty
     var justDisabled = false
     if (update.tryMergeDeletes) {
       update.transaction match {
@@ -476,12 +453,12 @@ class Client(
           update.transaction match {
             case Seq(i@operation.Node.Insert(at, childs)) if childs == disableUpdateBecauseLocalNodeDelete._3 =>
               cutOneLocalHistory(Seq(d))
-              val zoomBefore = state_.zoom
-              val zz = d.r.transformBeforeDeleted(zoomBefore)
+              val os = state_
+              val zz = d.r.transformBeforeDeleted(os.zoom)
               state_ = disableUpdateBecauseLocalNodeDelete._4.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz)
               val inverse = d.reverse(state.node)
               uncommitted = uncommitted.dropRight(1)
-              viewAdd = Seq((inverse, zoomBefore))
+              viewAdd = Seq((os, inverse))
               val before = d.r.transformBeforeDeleted(at)
               update = update.copy(transaction = Seq(operation.Node.Move(d.r, before)))
           }
@@ -491,30 +468,14 @@ class Client(
         disableUpdateBecauseLocalNodeDelete = null
       }
     }
-    val changes = update.transaction
-    val mode = update.mode
-    val d = if (changes.nonEmpty) {
-      if (update.handyAppliedResult.isDefined) {
-        update.handyAppliedResult.get
-      } else {
-        operation.Node.apply(changes, state.node)
-      }
-    } else {
-      state.node
-    }
-    val (model.mode.NodeWithZoom(m, zz), _, zoomHistory) = (mode, update.zoomAfter) match {
-      case (Some(k), Some(z)) =>
-        val pp = operation.Node.transform(d, changes, operation.Node.badModeWithZoom(state.zoom))
-        (k, z, pp._3)
-      case (Some(k), None) =>
-        val pp = operation.Node.transform(d, changes, operation.Node.badModeWithZoom(state.zoom))
-        (model.mode.NodeWithZoom(k, pp._1.zoom), false, pp._3)
-      case (None, Some(z)) =>
-        val pp = operation.Node.transform(d, changes, (model.mode.NodeWithZoom(state.mode.getOrElse(modeTemp), state.zoom), false))
-        (model.mode.NodeWithZoom(pp._1.a, z), false, pp._3)
-      case (None, None) =>
-        operation.Node.transform(d, changes, (model.mode.NodeWithZoom(state.mode.getOrElse(modeTemp), state.zoom), false))
-    }
+    val (last0, from) = operation.Node.apply(update.transaction, state)
+    var last = last0
+    update.mode.foreach(m => {
+      last = last.copy(mode0 = m, badMode = false)
+    })
+    update.zoomAfter.foreach(z => {
+      last = last.copy(zoom = z)
+    })
     for (m <- update.viewMessagesBefore) {
       viewMessages_.onNext(m)
     }
@@ -523,15 +484,14 @@ class Client(
         println(update)
       }
       val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
-      updateState(DocState(d, zz, Some(m), res),
-        null,
-        changes.zip(zoomHistory),
+      updateState(last,
+        from,
         viewAdd,
         update.undoType.getOrElse(Undoer.Local),
         viewUpdated = update.viewUpdated,
         fromUser = true,
-        foldBefore = ch)
-      if (changes.nonEmpty) uncommitted = uncommitted :+ changes
+        userFolds = ch)
+      if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
       self.sync()
     }
     for (m <- update.viewMessagesAfter) {

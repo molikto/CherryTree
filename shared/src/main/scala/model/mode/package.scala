@@ -53,10 +53,6 @@ package object mode {
     case object CodeInside extends Code // user's mode is currently taken over by code editor
   }
 
-  case class NodeWithZoom(a: Node, zoom: cursor.Node) extends Mode[data.Node] {
-    assert(a.inside(zoom))
-  }
-
   sealed trait Node extends Mode[data.Node] {
     def inside(a: cursor.Node): Boolean
     def focus: cursor.Node

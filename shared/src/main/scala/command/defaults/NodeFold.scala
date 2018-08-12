@@ -31,7 +31,7 @@ class NodeFold extends CommandCategory("node folding") {
       } else {
         val curZoom =a.node(a.zoom)
         DocTransaction(Seq.empty,
-          if (a.userFolded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultNormalMode()))
+          if (a.folded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultNormalMode()))
           else None,
           zoomAfter = Some(a.zoom.dropRight(1)))
       }

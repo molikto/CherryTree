@@ -1,6 +1,6 @@
 package doc
 
-import model.{cursor, data}
+import model.{cursor, data, mode}
 import model.cursor.Node
 import model.data.{Atom, Rich}
 
@@ -8,24 +8,35 @@ import model.data.{Atom, Rich}
 case class DocState(
   node: model.data.Node,
   zoom: cursor.Node,
-  mode: Option[model.mode.Node],
+  mode0: model.mode.Node,
+  badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
-  assert(node.get(zoom).isDefined)
 
+  def zoomId: String = node(zoom).uuid
 
-  def userFolded(a: cursor.Node) = {
+  def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
+
+  assert(node.get(zoom).isDefined && mode0.inside(zoom))
+
+  def folded(a: cursor.Node): Boolean = {
     val no = node(a)
     userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
-  def folded(a: cursor.Node): Boolean = {
+  def viewAsFolded(a: cursor.Node): Boolean = {
     assert(a.startsWith(zoom))
     val no = node(a)
     a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
-  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, zoom, folded)
+  def folded(a: cursor.Node, default: Boolean): Boolean = {
+    assert(a.startsWith(zoom))
+    val no = node(a)
+    a != zoom && userFoldedNodes.getOrElse(no.uuid, default)
+  }
+
+  def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, zoom, viewAsFolded)
 
 
   def rich(n: cursor.Node): Rich = node(n).content.asInstanceOf[model.data.Content.Rich].content
