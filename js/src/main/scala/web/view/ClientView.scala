@@ -32,7 +32,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     overflow := "hidden").render
   attachToNode(parent)
 
-  private val leftPanel = new CommandListView(client).attachTo(this)
+  private val leftPanel = new LeftPanelSwitcher(client).attachTo(this)
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
 
