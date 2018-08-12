@@ -5,7 +5,7 @@ import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.{cursor, mode}
 
-class NodeFold extends CommandCategory("node folding") {
+class NodeFold extends CommandCategory("fold & zoom") {
 
   new Command {
     override val description: String = "zoom into node"
