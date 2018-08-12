@@ -33,7 +33,8 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
       }
       None
     }
-    
+
+
     u match {
       case Seq(Unicode.Insert(at, unicode, _)) =>
         doIt(at, unicode)

@@ -22,7 +22,6 @@ class CommandCategory(val name: String) extends Settings {
     override def defaultKeys: Seq[KeySeq] = Seq.empty
   }
 
-
   trait NeedsCharCommand extends Command {
     override def needsChar: Boolean = true
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalArgumentException("Not need this method")
