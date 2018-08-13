@@ -20,7 +20,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
   val minWidthOpen = "150px"
 
 
-  def enabledAll(b: Boolean) = {
+  private def enabledAll(b: Boolean) = {
     if (b) {
       dom.style.width = widthBefore
       dom.style.minWidth = minWidthOpen
@@ -39,7 +39,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
   private val quickAccess = span(span(`class` := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
 
 
-  val childs = Seq(commands, quickAccess)
+  private val childs = Seq(commands, quickAccess)
   for (a <- childs) {
     event(a, "click", (c: MouseEvent) => {
       if (a != active) {
@@ -65,7 +65,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
 
   private var current: View = null
 
-  def create(): Unit = {
+  private def create(): Unit = {
     current = if (active == quickAccess) {
       new TocPanel().attachToNode(container)
     } else if (active == commands) {

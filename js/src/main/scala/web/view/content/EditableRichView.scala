@@ -337,6 +337,16 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   }
 
+  protected def initEmptyNormalMode(): Unit = {
+    initEmptyContent()
+    val range = document.createRange()
+    range.setStart(dom, 0)
+    range.setEnd(dom, 1)
+    val sel = window.getSelection
+    sel.removeAllRanges
+    sel.addRange(range)
+  }
+
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     if (previousMode < 0) initMode()
     aa match {

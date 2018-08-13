@@ -66,16 +66,6 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     dom.appendChild(span(EmptyStr, color := theme.disalbedInfo).render)
   }
 
-  protected def initEmptyNormalMode(): Unit = {
-    initEmptyContent()
-    val range = document.createRange()
-    range.setStart(dom, 0)
-    range.setEnd(dom, 1)
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
-  }
-
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
