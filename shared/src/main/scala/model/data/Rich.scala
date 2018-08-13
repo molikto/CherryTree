@@ -209,7 +209,7 @@ case class Rich(text: Seq[Text]) {
     if (pos >= 0 && before(pos).isAtomicWithAttribute(UrlAttribute)) {
       Some(before(pos))
     } else {
-      befores(pos).find(a => a.isStartWithAttribute(UrlAttribute))
+      befores(pos).find(a => a.isStartWithAttribute(UrlAttribute) && a.textRange.contains(pos))
     }
   }
   def insideCoded(pos: Int, deli: SpecialChar.Delimitation): Boolean = {
