@@ -23,10 +23,11 @@ class DocumentView(
 
   private val fpsDisplay = div(
     position := "absolute",
-    left := "0px",
-    top := "0px",
+    left := "16px",
+    top := "16px",
     color := "#FFFFFF",
-    backgroundColor := "#FFFFFF11"
+    padding := "8px",
+    backgroundColor := "#FFFFFF22"
   ).render
 
   override def onFps(duration: Long): Unit = {
