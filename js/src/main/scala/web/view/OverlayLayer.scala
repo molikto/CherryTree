@@ -70,7 +70,7 @@ abstract class Overlay extends View {
     layer.onDismissOverlay(this)
   }
 
-  private var dismissed = true
+  protected var dismissed = true
 
 
   /**

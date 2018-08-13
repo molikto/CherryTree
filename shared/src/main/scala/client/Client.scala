@@ -198,7 +198,7 @@ class Client(
     }
     if (a.badMode) {
       scheduledUpdateTempMode = Observable.delay({
-        println("updating temp mode")
+        if (model.debug_view) println("updating temp mode")
         updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, Map.empty)
       }).delaySubscription(2.seconds).subscribe()
     }

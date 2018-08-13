@@ -22,12 +22,23 @@ object GraphemeBreakTests extends TestSuite {
       }
     }
 
-    'graphemeBeforeAndAfter - {
-      val bigUnicode = Unicode("kldsjafkldsjk23jk4j2342")
+    def testGraphemes(a: String, except: Int) = {
+      val bigUnicode = Unicode(a)
       val res = bigUnicode.graphemes.toVector
       for (a <- 0 until bigUnicode.size) {
-        assert(bigUnicode.before(a).toVector.reverse ++ bigUnicode.after(a).toVector == res)
+        if (a != except) {
+          val aa = bigUnicode.before(a).toVector.reverse
+          val bb = bigUnicode.after(a).toVector
+          assert(aa ++ bb == res)
+        }
       }
+    }
+
+    'graphemeBeforeAndAfterAscii - {
+      testGraphemes("kldsjafkldsjk23jk4j2342", -1)
+    }
+    'graphemeBeforeAndAfterAscii2 - {
+      testGraphemes("what\u000d\u000awwhat", 5)
     }
   }
 }

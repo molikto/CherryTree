@@ -46,11 +46,13 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   private var term: String = ""
 
   observe(client.stateUpdates.doOnNext(u => {
-    if (u.to.mode.isEmpty) {
-      dismiss()
-    } else {
-      // update command list
-      updateMenuContent()
+    if (!dismissed) {
+      if (u.to.mode.isEmpty) {
+        dismiss()
+      } else {
+        // update command list
+        updateMenuContent()
+      }
     }
   }))
 

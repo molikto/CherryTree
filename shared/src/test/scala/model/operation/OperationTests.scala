@@ -16,7 +16,7 @@ object OperationTests extends TestSuite {
 
   val r = new Random()
   val tests = Tests {
-    def testOperationObject[T, M <: Mode[T], O <: Operation[T, M]](dobj: DataObject[T], obj: OperationObject[T, M, O]): Unit = {
+    def testOperationObject[T, O <: Operation[T]](dobj: DataObject[T], obj: OperationObject[T, O]): Unit = {
       for (i <- 0 until 200) {
         val a = dobj.random(r)
         for (_ <- 0 until 5) {
@@ -30,7 +30,7 @@ object OperationTests extends TestSuite {
           val b = Unpickle[O](obj.pickler).fromBytes(bytes)
           if (o.isEmpty) assert(a == res)
           assert(o == b)
-          assert(a == o.reverse(a).asInstanceOf[Operation[T, M]].apply(res))
+          assert(a == o.reverse(a).asInstanceOf[Operation[T]].apply(res))
 
         }
         for (_ <- 0 until 50) {
