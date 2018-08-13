@@ -11,7 +11,7 @@ import web.view.content.ContentView
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
   override protected val covering: () => HTMLElement
-) extends FilteringView[(model.cursor.Node, String)] with  CoveringOverlay  {
+) extends FilteringView[(model.cursor.Node, String)] with  CoveringOverlay with UnselectableView {
 
 
   override protected val search = input(
@@ -20,12 +20,13 @@ class QuickSearchDialog(val client: Client,
   ).render
 
   override protected val list = div(
-    overflowY := "scroll",
-    overflowX := "hidden",
     flex := "1 1 auto",
     color := "#cccccc",
+    width := "100%",
+    height := "100%",
     `class` := "ct-scroll ct-document-style"
   ).render
+  
 
   dom = div(
     `class` := "ct-card",
@@ -36,7 +37,7 @@ class QuickSearchDialog(val client: Client,
   ).render
 
   override def data(term: String): Seq[(model.cursor.Node, String)] = {
-    val tt = term.split("\\s").filter(_.length > 2)
+    val tt = term.split("\\s").filter(a => !util.isAscii(a) || a.length > 2)
     if (tt.isEmpty) {
       Seq.empty
     } else {

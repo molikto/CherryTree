@@ -1,5 +1,7 @@
 import java.nio.ByteBuffer
 
+import model.data.Unicode
+
 import scala.util.Random
 
 
@@ -7,6 +9,9 @@ package object util extends ObservablePropertyImplicits  {
 
   private val debugOn = false
 
+  def isAscii(c: String): Boolean = Unicode(c).forall(isAscii)
+
+  def isAscii(codepoint: Int): Boolean = codepoint >= 0 && codepoint <= 0x7f
 
   def matchCommandSearch(str: String, term: String) = str.contains(term)
 

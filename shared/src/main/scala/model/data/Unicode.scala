@@ -78,7 +78,7 @@ private[model] class UnicodeReader(a: Unicode) {
     var isASCII = true
     while (index < str.length && !isSpecialCodePoint({
       val codepoint = str.codePointAt(index)
-      if (codepoint >= 0 && codepoint <= 0x7f) {
+      if (util.isAscii(codepoint)) {
       } else {
         isASCII = false
       }
