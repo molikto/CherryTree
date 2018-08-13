@@ -8,6 +8,8 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
+import scala.scalajs.js
+
 trait FilteringView[T] extends Overlay {
 
   protected def search: HTMLInputElement
@@ -36,20 +38,32 @@ trait FilteringView[T] extends Overlay {
       removeAllChild(list)
       for (c <- available.zipWithIndex) {
         val child = renderItem(c._1, c._2)
+        child.addEventListener("click", onClick)
         child.classList.add(if (marked == c._2) "ct-selected" else "ct-not-selected")
         list.appendChild(child)
       }
     }
   }
 
+  private val onClick: js.Function1[MouseEvent, _] = e => {
+    val elm = e.target.asInstanceOf[HTMLElement]
+    marked = indexOf(elm)
+    if (marked >= 0) {
+      val m = available(marked)
+      dismiss()
+      onSelected(m)
+    }
+  }
 
   def destroyItem(a: HTMLElement): Unit = {
+    a.removeEventListener("click", onClick)
     a.parentNode.removeChild(a)
   }
 
   def data(term: String): Seq[T]
 
   def renderItem(t: T, index: Int): HTMLElement
+
 
   def onSelected(t: T)
 

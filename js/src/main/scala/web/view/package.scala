@@ -23,6 +23,19 @@ package object view {
     a.appendChild(b)
   }
 
+  def indexOf(c: Node): Int = indexOf(c.parentNode, c)
+
+  def indexOf(p: Node, c: Node): Int = {
+    var i = 0
+    while (i < p.childNodes.length) {
+      if (p.childNodes(i) == c) {
+        return i
+      }
+      i += 1
+    }
+    return -1
+  }
+
 
   // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
   val KeyMap: Map[String, Key.V] = {

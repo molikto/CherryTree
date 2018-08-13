@@ -111,6 +111,7 @@ class Client(
   def version: Int = committedVersion + uncommitted.size
   private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
 
+  
   /**
     * document observable
     *

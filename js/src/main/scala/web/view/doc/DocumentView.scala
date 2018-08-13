@@ -37,7 +37,7 @@ class DocumentView(
   }
 
   private val rootFrame = div(
-    `class` := "ct-root ct-d-frame",
+    `class` := "ct-document-style ct-d-frame",
     width := "100%"
   ).render
 

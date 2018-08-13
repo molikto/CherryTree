@@ -23,9 +23,8 @@ class QuickSearchDialog(val client: Client,
     overflowY := "scroll",
     overflowX := "hidden",
     flex := "1 1 auto",
-    width := "100%",
     color := "#cccccc",
-    `class` := "ct-scroll"
+    `class` := "ct-scroll ct-document-style"
   ).render
 
   dom = div(
