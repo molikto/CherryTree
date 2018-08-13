@@ -22,6 +22,12 @@ abstract class InputRule(val a: String) {
  }
 trait InputRuler { self: Client =>
 
+  /**
+    # single tick use cases
+    text = text.replace /([\s])'(?=(tis\b|twas\b))/g, ($0, $1) -> $1+close_single
+    text = text.replace /(\s)'(?=[0-9]+s*\b)/g, ($0, $1) -> $1+close_single
+    text = text.replace /([^\w]|^)'(?=\w)/g, ($0, $1, $2) -> $1+open_single
+    */
 
   private val inputRules = Seq(
     new ReplaceInputRule("--$", "–"),

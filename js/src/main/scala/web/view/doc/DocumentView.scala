@@ -21,12 +21,27 @@ class DocumentView(
 ) extends EditorView {
 
 
+  private val fpsDisplay = div(
+    position := "absolute",
+    left := "0px",
+    top := "0px",
+    color := "#FFFFFF",
+    backgroundColor := "#FFFFFF11"
+  ).render
+
+  override def onFps(duration: Long): Unit = {
+    if (model.debug_view) {
+      fpsDisplay.textContent = duration.toString
+    }
+  }
+
   private val rootFrame = div(
     `class` := "ct-root ct-d-frame",
     width := "100%"
   ).render
 
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
+
   dom = div(
     `class` := "ct-scroll",
     flex := "1 1 auto",
@@ -37,6 +52,7 @@ class DocumentView(
     rootFrame,
     div(height := "36px", display := "block"),
     noEditable,
+    fpsDisplay,
     color := theme.contentText
   ).render
 

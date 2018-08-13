@@ -15,9 +15,14 @@ trait EditorView extends View {
   def unmarkEditable(dom: HTMLElement): Unit
 
 
+  def onFps(duration: Long): Unit = {
+
+  }
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
+      val timeStart = System.currentTimeMillis()
       var key = KeyMap.get(event.key).orNull
       var isBiy = false
       var isZ = false
@@ -44,6 +49,8 @@ trait EditorView extends View {
       if (allow && !key.isInstanceOf[Key.Modifier]) {
         if (editor.onKeyDown(kk)) preventDefault(event)
       }
+      val duration = System.currentTimeMillis() - timeStart
+      onFps(duration)
     })
 
     event( "keyup", (event: KeyboardEvent) => {

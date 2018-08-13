@@ -87,6 +87,7 @@ abstract class View {
     if (des == null) throw new IllegalAccessException("Destroyed!")
     dom.addEventListener(ty, listener)
     defer(_ => dom.removeEventListener(ty, listener))
+
   }
 
   def event[T <: Event](node: EventTarget, ty: String,
