@@ -41,7 +41,7 @@ class DocumentView(
     width := "100%"
   ).render
 
-  private val noEditable = div(contenteditable := true, width := "0px", height := "0px").render
+  private val noEditable = div(contenteditable := true, width := "0px", height := "0px", readonly := "true").render
 
   dom = div(
     `class` := "ct-scroll",
