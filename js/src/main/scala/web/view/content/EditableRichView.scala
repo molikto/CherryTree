@@ -4,7 +4,7 @@ import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLDivElement, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
@@ -218,6 +218,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       flushSubscription.cancel()
       flushSubscription = null
     }
+    documentView.unmarkEditable(dom)
   }
 
   private def clearVisualMode(): Unit = {
@@ -225,6 +226,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
+    clearSelection()
     val (r1,_) = nonEmptySelectionToDomRange(fix)
     val (r2,_) = nonEmptySelectionToDomRange(move)
     val range = document.createRange()
@@ -241,10 +243,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     setSelection(range, fromUser)
   }
 
-  private def clearSelection(): Unit = {
-    val sel = window.getSelection
-    if (sel.rangeCount > 0) sel.removeAllRanges
-  }
 
   private def clearNormalMode(): Unit = {
     clearSelection()
@@ -270,17 +268,42 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
-  override def selectionRect: Rect = {
-    val range = window.getSelection().getRangeAt(0)
-    web.view.toRect(range.getBoundingClientRect())
-  }
-
 
   private def updateNormalMode(r: IntRange, fromUser: Boolean): Unit = {
+    clearSelection()
     val (range, light) = nonEmptySelectionToDomRange(r)
     setSelection(range, fromUser = fromUser)
     if (light != astHighlight) clearFormattedNodeHighlight()
     if (light != null) addFormattedNodeHighlight(light)
+  }
+
+
+  /**
+    *
+    * selection
+    */
+
+  var selectionRange: Range = null
+
+  override def selectionRect: Rect = {
+    web.view.toRect(if (selectionRange != null) {
+      selectionRange.getBoundingClientRect()
+    } else {
+      dom.getBoundingClientRect()
+    })
+  }
+
+
+  private def clearSelection(): Unit = {
+    if (selectionRange != null) {
+      if (selectionRange.collapsed) {
+        window.getSelection().removeRange(selectionRange)
+      }
+    }
+    while (dom.childNodes.length > 0 && dom.childNodes(dom.childNodes.length - 1).isInstanceOf[HTMLDivElement]) {
+      dom.removeChild(dom.childNodes(dom.childNodes.length - 1))
+    }
+    selectionRange = null
   }
 
   private def setSelection(range: Range, fromUser: Boolean): Unit = {
@@ -295,19 +318,39 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     //      web.view.scrollInToViewIfNotVisible(rect, documentView.dom)
     //    }
     //    val top = documentView.dom.scrollTop
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
+    selectionRange = range
+    if (range.collapsed) {
+      val sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(range)
+    } else {
+      clearSelection()
+      val p = dom.getBoundingClientRect()
+      val rects = range.getClientRects()
+      for (i <- 0 until rects.length) {
+        val rect = rects(i)
+        dom.appendChild(
+          div(
+            `class` := "ct-rich-selection",
+            left := rect.left - p.left,
+            top := rect.top - p.top,
+            width := rect.width,
+            height := rect.height
+          ).render)
+      }
+    }
     //    documentView.dom.scrollTop = top
   }
 
+  /**
+    * mode
+    */
+
   override def clearMode(): Unit = {
     initMode(if (isEmpty) -2 else -1)
-    documentView.unmarkEditable(dom)
   }
 
   override def initMode(): Unit = {
-    documentView.markEditable(dom)
   }
 
   private def isInserting = flushSubscription != null
@@ -332,6 +375,8 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         initEmptyNormalMode()
       } else if (i == -2) {
         initEmptyContent()
+      } else if (i == 0) {
+        documentView.markEditable(dom)
       }
       previousMode = i
     }
@@ -346,9 +391,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     val range = document.createRange()
     range.setStart(dom, 0)
     range.setEnd(dom, 1)
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
+    setSelection(range, false)
   }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
@@ -395,6 +438,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     val anchor = new UrlAttributeEditDialog.Anchor {
       override def rect: Rect = {
         val (_, pos) = attributeEditor
+        clearSelection()
         val (sel, span) = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))
         val rects = if (span == null) sel.getClientRects() else span.getClientRects()
         web.view.toRect(rects.item(0))

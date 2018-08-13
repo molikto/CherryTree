@@ -383,10 +383,18 @@
 }
 
 /**  rich view **/
+
+.ct-rich-selection {
+    position: absolute;
+    background: #d8617488;
+    z-index: -1;
+}
+
 .ct-rich {
     margin-bottom: 0rem;
     outline: 0px solid transparent;
     padding: 4px;
+    position: relative;
 }
 
 
