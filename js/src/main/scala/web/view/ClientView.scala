@@ -71,6 +71,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     o
   }
 
+  val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, () => dom)
 
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
@@ -90,6 +91,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
       docView.showCommandMenu()
+    case Client.ViewMessage.QuickSearch =>
+      quickSearch.show()
     case Client.ViewMessage.ScrollToTop =>
       docView.scrollToTop()
     case Client.ViewMessage.ScrollToBottom =>

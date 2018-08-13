@@ -1,21 +1,21 @@
 package web.view.content
 
-import model._
+import model.data
 import util.Rect
 import web.view.View
 
+
 object ContentView {
-  type General = ContentView[data.Content, model.operation.Content, model.mode.Content]
+  type General = ContentView[data.Content, model.operation.Content]
+
+  def create(a: data.Content): View = {
+    a match {
+      case data.Content.Rich(r) => new RichView(r)
+      case s: data.Content.Code => new SourceView(s)
+    }
+  }
 }
 
-trait ContentView[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content] extends View {
+trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
   def updateContent(c: T, trans: O, viewUpdated: Boolean)
-
-  def updateMode(aa: M, viewUpdated: Boolean, fromUser: Boolean)
-
-  def clearMode(): Unit
-
-  def initMode(): Unit
-
-  def selectionRect: Rect
 }

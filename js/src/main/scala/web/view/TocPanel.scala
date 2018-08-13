@@ -6,8 +6,7 @@ import command.Key
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 
-class QuickAccessView extends UnselectableView {
-
+class TocPanel extends UnselectableView {
 
   dom = div().render
 }

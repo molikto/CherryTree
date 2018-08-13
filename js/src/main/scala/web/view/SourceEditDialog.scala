@@ -13,7 +13,10 @@ import web.view._
 
 import scala.scalajs.js
 
-class SourceEditDialog(protected val layer: OverlayLayer, covering: () => HTMLElement) extends CoveringOverlay(covering) {
+class SourceEditDialog(
+  protected val layer: OverlayLayer,
+  override protected val covering: () => HTMLElement
+) extends CoveringOverlay {
 
   private val ta = textarea(
     flex := "1 1 auto",
@@ -22,22 +25,12 @@ class SourceEditDialog(protected val layer: OverlayLayer, covering: () => HTMLEl
     name := "code"
   ).render
 
-  private val dialog = form(
+  dom= form(
     display := "flex",
     flexDirection := "column-reverse",
-    flex := "1 1 auto",
-    height := "100%",
     padding := "8px",
     `class` := "ct-card",
     ta).render
-
-  dom = div(
-    position := "absolute",
-    width := "100%",
-    height := "100%",
-    display := "flex",
-    dialog
-  ).render
 
   val codeMirror = CodeMirror.fromTextArea(ta, jsObject(a => {
     a.lineNumbers = true
@@ -96,7 +89,7 @@ class SourceEditDialog(protected val layer: OverlayLayer, covering: () => HTMLEl
 
   def documentEdit(a: String, onDismiss: String => Unit): Unit = {
     this.nDismiss = onDismiss
-    super.showOverlay()
+    super.show()
     codeMirror.setValue(a)
   }
 }

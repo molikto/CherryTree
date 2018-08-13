@@ -12,6 +12,17 @@ case class DocState(
   badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
+  def quickSearch(tt: Array[String]): Seq[cursor.Node] = {
+    node.filter {
+      case data.Content.Code(_, _) => false
+      case data.Content.Rich(a) =>
+        a.quickSearch(tt)
+    }.sortBy(cur => {
+      val n = node(cur)
+      (!n.isH1, !n.isHeading)
+    })
+  }
+
 
   def zoomId: String = node(zoom).uuid
 

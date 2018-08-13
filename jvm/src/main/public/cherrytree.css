@@ -61,6 +61,10 @@
   color: #cccccc;
 }
 
+.ct-input-large {
+  font-size: 18px;
+}
+
 .ct-input:focus {
     border: 1px solid #528bff;
 }

@@ -9,6 +9,8 @@ import model.cursor
 
 class NodeMotion extends CommandCategory("move among notes") {
 
+
+
   /**
     * CTRL-M and <CR>)
     * _     N  _            down N-1 lines, on the first non-blank character
@@ -86,6 +88,7 @@ class NodeMotion extends CommandCategory("move among notes") {
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = Some(data.mover().visualBottom(data.zoom))
     override def message: Option[ViewMessage] = Some(ViewMessage.ScrollToBottom)
   }
+
 
   // not implemented for not understand what should it behave
   // * N%    N  %            goto line N percentage down in the file; N must be

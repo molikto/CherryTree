@@ -16,10 +16,8 @@ import web.view._
 import scala.scalajs.js
 
 class SourceView(
-  documentView: DocumentView,
-  controller: EditorInterface,
   var c: model.data.Content.Code
-) extends ContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+) extends ContentView[model.data.Content.Code, model.operation.Content.Code]  {
 
   // background := "#304148",
   private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next").render
@@ -35,9 +33,8 @@ class SourceView(
   dom = div(preCode, remainingView).render
 
 
-
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
-    this.c= c
+    this.c = c
     removeAllChild(preCode)
     updateCodeMirror()
   }
@@ -59,49 +56,5 @@ class SourceView(
 
   updateCodeMirror()
 
-  private var editing: SourceEditDialog = null
 
-  def removeEditor(): Unit = {
-    if (editing != null) {
-      editing.dismiss()
-      editing = null
-    }
-  }
-
-  override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
-    if (fromUser) {
-      web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
-    }
-    if (aa == model.mode.Content.CodeNormal) {
-      removeEditor()
-    } else {
-      editing = documentView.sourceEditor
-      editing.documentEdit(c.unicode.str, src => {
-        controller.exitCodeEditMode(c.unicode.diff(Unicode(src)))
-      })
-    }
-  }
-
-  override def clearMode(): Unit = {
-    removeEditor()
-    dom.classList.remove("ct-selection")
-  }
-
-
-  /**
-    * will also remove from parent
-    * ALSO make sure you destroy child dom attachments!!!
-    */
-  override def destroy(): Unit = {
-    clearMode()
-    super.destroy()
-  }
-
-  override def initMode(): Unit = {
-    dom.classList.add("ct-selection")
-  }
-
-  override def selectionRect: Rect = {
-    toRect(dom.getBoundingClientRect())
-  }
 }

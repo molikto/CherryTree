@@ -11,11 +11,36 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
+trait CoveringOverlay extends Overlay {
+
+  protected val covering: () => HTMLElement
+
+  override def show(): Unit = {
+    val f = covering().getBoundingClientRect()
+    val g = layer.parent.getBoundingClientRect()
+    dom.style.position = "absolute"
+    val paddingLeft = (((f.left - g.left) max 0.0) + 48) + "px"
+    val paddingBottom = (((g.bottom - f.bottom) max 0.0) + 48) + "px"
+    val paddingTop = (((f.top - g.top) max 0.0) + 48) + "px"
+    val paddingRight = (((g.right - f.right) max 0.0) + 48) + "px"
+    dom.style.width = s"calc(100% - $paddingLeft - $paddingRight)"
+    dom.style.height = s"calc(100% - $paddingTop - $paddingBottom)"
+    dom.style.top = paddingTop
+    dom.style.left = paddingLeft
+    super.show()
+  }
+
+  override protected def onDismiss(): Unit = {
+    super.onDismiss()
+  }
+}
+
 trait OverlayAnchor {
   def rect: Rect
   def onDismiss()
 }
-abstract class MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
+
+trait MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
 
 
   protected var anchor: ANCHOR = null.asInstanceOf[ANCHOR]
@@ -23,7 +48,7 @@ abstract class MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
   def show(anchor: ANCHOR): Unit = {
     this.anchor = anchor
     setDomAttributeBy(anchor.rect)
-    showOverlay()
+    show()
   }
 
   override protected def onDismiss(): Unit = {
@@ -36,13 +61,13 @@ abstract class MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
     if (anchor != null) setDomAttributeBy(anchor.rect)
   }
 }
-abstract class Overlay extends View {
+trait Overlay extends View {
 
   protected def layer: OverlayLayer
 
   private var attached = false
 
-  def showOverlay(): Unit = {
+  def show(): Unit = {
     if (!attached) {
       attached = true
       attachTo(layer)

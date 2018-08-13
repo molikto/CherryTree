@@ -10,7 +10,7 @@ import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.view.content.{ContentView, RichView, SourceView}
+import web.view.content.{EditableContentView, EditableRichView, EditableSourceView}
 import web.view._
 
 import scala.collection.mutable.ArrayBuffer
@@ -121,7 +121,7 @@ class DocumentView(
     }
   }
 
-  private var focusContent: ContentView.General = null
+  private var focusContent: EditableContentView.General = null
 
   private def removeFocusContent(): Unit = {
     if (focusContent != null) {
@@ -172,12 +172,12 @@ class DocumentView(
     frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
-  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
+  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): EditableContentView.General = {
     val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
-    View.fromDom[ContentView.General](v)
+    View.fromDom[EditableContentView.General](v)
   }
 
-  def cursorOf[T <: model.data.Content, O <: model.operation.Content, M <: model.mode.Content](a: ContentView[T, O, M]): model.cursor.Node = {
+  def cursorOf[T <: model.data.Content, O <: model.operation.Content, M <: model.mode.Content](a: EditableContentView[T, O, M]): model.cursor.Node = {
     def rec(a: Node): Seq[Int] = {
       val frame = a.parentNode.parentNode
       if (frame == rootFrame) {
@@ -323,12 +323,12 @@ class DocumentView(
   }
 
 
-  private def createContent(c: Content): ContentView.General = {
+  private def createContent(c: Content): EditableContentView.General = {
     c match {
       case model.data.Content.Rich(cs) =>
-        new RichView(this, editor, cs).asInstanceOf[ContentView.General]
+        new EditableRichView(this, editor, cs).asInstanceOf[EditableContentView.General]
       case c@model.data.Content.Code(_, _) =>
-        new SourceView(this, editor, c).asInstanceOf[ContentView.General]
+        new EditableSourceView(this, editor, c).asInstanceOf[EditableContentView.General]
     }
   }
 
@@ -361,9 +361,9 @@ class DocumentView(
           }
           aa match {
             case r: model.mode.Content.Rich =>
-              current.asInstanceOf[RichView].updateMode(r, viewUpdated, fromUser)
+              current.asInstanceOf[EditableRichView].updateMode(r, viewUpdated, fromUser)
             case c: model.mode.Content.Code =>
-              current.asInstanceOf[SourceView].updateMode(c, viewUpdated, fromUser)
+              current.asInstanceOf[EditableSourceView].updateMode(c, viewUpdated, fromUser)
           }
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
@@ -504,7 +504,7 @@ class DocumentView(
 
 
   def showAttributeEditor(cur: model.cursor.Node, pos: range.IntRange, text: model.data.Text.Delimited): Unit = {
-    contentAt(cur).asInstanceOf[RichView].showAttributeEditor(pos, text)
+    contentAt(cur).asInstanceOf[EditableRichView].showAttributeEditor(pos, text)
   }
 
 

@@ -5,8 +5,7 @@ import command.Key
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.HTMLElement
 
-class CommandListView(val client: Client) extends UnselectableView  {
-
+class CommandListPanel(val client: Client) extends UnselectableView  {
 
 
   dom = div(

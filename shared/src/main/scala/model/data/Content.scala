@@ -8,6 +8,7 @@ import scala.util.Random
 
 
 abstract sealed class Content {
+
   def isEmpty: Boolean
   def nonEmpty: Boolean = !isEmpty
 
@@ -46,6 +47,7 @@ object Content extends DataObject[Content] {
     }
 
     override def isEmpty: Boolean = unicode.isEmpty
+
   }
 
   object Code {

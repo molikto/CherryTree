@@ -29,7 +29,7 @@ import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 
 object Client {
@@ -48,6 +48,7 @@ object Client {
     //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
+    case object QuickSearch extends ViewMessage
   }
 }
 
@@ -260,6 +261,7 @@ class Client(
     }
   }
 
+  private var lastRequestTime = 0L
 
   private def tryTopRequest(): Unit = {
     if (disableUpdateBecauseLocalNodeDelete != null) {
@@ -275,9 +277,12 @@ class Client(
         case head :: tail =>
           requests = tail
           val submit = uncommitted
-          request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
-            updateFromServer(succsss)
-          })
+          if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
+            lastRequestTime = System.currentTimeMillis()
+            request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
+              updateFromServer(succsss)
+            })
+          }
         case _ =>
       }
     }

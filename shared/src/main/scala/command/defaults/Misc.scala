@@ -61,6 +61,18 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
   }
 
+  new Command {
+    override val description: String = "quick search"
+
+    override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
+
+    override protected def available(a: DocState): Boolean = true
+
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      DocTransaction.message(Client.ViewMessage.QuickSearch)
+    }
+  }
+
 
   val commandMenu = new Command {
     override protected def available(a: DocState): Boolean = a.mode.nonEmpty
@@ -110,6 +122,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
   new Command {
     override val description: String = "edit source code"
+    override def priority: Int = 1
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

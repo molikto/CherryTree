@@ -7,6 +7,7 @@ import model._
 import model.data.Node.ContentType
 import model.range.IntRange
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 trait NodeTag[T] {
@@ -21,6 +22,21 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+
+  private def filter0(cur: cursor.Node, a: Content => Boolean, bf: ArrayBuffer[cursor.Node]): Unit = {
+    if (a(content)) bf.append(cur)
+    childs.zipWithIndex.foreach(pair => {
+      pair._1.filter0(cur :+ pair._2, a, bf)
+    })
+  }
+
+  def filter(a: Content => Boolean): Seq[cursor.Node] = {
+    val bf = new ArrayBuffer[cursor.Node]()
+    filter0(cursor.Node.root, a, bf)
+    bf
+  }
+
+
   def lastDefined(a: cursor.Node): cursor.Node = {
     var len = a.length
     while (len >= 0) {
@@ -34,6 +50,7 @@ case class Node (
   }
 
   def isH1: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
+  def isHeading: Boolean = attribute(ContentType).exists(_.isInstanceOf[ContentType.Heading])
 
 
   def allChildrenUuids(cur: cursor.Node, in: Map[String, Boolean]): Seq[cursor.Node] = {

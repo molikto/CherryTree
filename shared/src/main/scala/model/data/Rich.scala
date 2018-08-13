@@ -12,6 +12,10 @@ import scala.util.Random
   */
 case class Rich(text: Seq[Text]) {
 
+  def quickSearch(tt: Array[String]) = {
+    tt.forall(p => Text.quickSearch(text, p))
+  }
+
 
   lazy val size: Int = Text.size(text)
 

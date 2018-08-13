@@ -35,7 +35,6 @@ class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLay
     top := "0px",
     `class` := "ct-card unselectable",
     padding := "6px",
-    display := "none",
     span("URL", `class` := "ct-input-label"),
     div(width := "100%", urlInput),
     span("title", `class` := "ct-input-label", paddingTop := "12px"),

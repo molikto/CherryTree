@@ -24,11 +24,12 @@ trait EditorView extends View {
     event( "keydown", (event: KeyboardEvent) => {
       val timeStart = System.currentTimeMillis()
       var key = KeyMap.get(event.key).orNull
-      var isBiy = false
+      // TODO better handling this
+      var isBiyo = false
       var isZ = false
       if (key == null && Key.isUnicodeKey(event.key)) {
         key = Key.Grapheme(model.data.Unicode(event.key))
-        isBiy = "biy".contains(event.key)
+        isBiyo = "biyo".contains(event.key)
         isZ = "z".contains(event.key)
       }
       if (key == null) key = Key.Unknown(event.key)
@@ -38,7 +39,7 @@ trait EditorView extends View {
       val allow = if (!kk.meta) {
         true
       } else {
-        if (isBiy) {
+        if (isBiyo) {
           !kk.shift
         } else if (isZ) {
           true

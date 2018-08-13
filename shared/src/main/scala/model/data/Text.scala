@@ -8,6 +8,8 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
+  def quickSearch(p: String): Boolean = false
+
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
@@ -31,6 +33,10 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+  def quickSearch(text: Seq[Text], p: String): Boolean = {
+    text.exists(_.quickSearch(p))
+  }
+
   private[model] def serialize(text: Seq[Text]): Unicode = {
     val buffer = new UnicodeWriter()
     text.foreach(_.serialize(buffer))
@@ -117,6 +123,8 @@ object Text {
       else Iterator.empty
     }
 
+    override def quickSearch(p: String): Boolean = false
+
     final override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i == size)
         Iterator.single(Atom.Marked(myCursor, myIndex, this))
@@ -185,7 +193,6 @@ object Text {
       buffer.put(delimitation.end)
     }
 
-
     def delimitation: SpecialChar.Delimitation
 
     def attributes: Seq[SpecialChar] = delimitation.attributes
@@ -210,6 +217,8 @@ object Text {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
+
+    override def quickSearch(p: String): Boolean = Text.quickSearch(content, p)
 
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
       content.foreach(_.serialize(buffer))
@@ -284,6 +293,8 @@ object Text {
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
       buffer.put(content)
     }
+
+    override def quickSearch(p: String): Boolean = content.str.contains(p)
 
     override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
@@ -363,6 +374,8 @@ object Text {
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)
     }
+
+    override def quickSearch(p: String): Boolean = unicode.str.contains(p)
 
     override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
     override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))

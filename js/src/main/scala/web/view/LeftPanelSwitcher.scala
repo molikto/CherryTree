@@ -56,9 +56,9 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
 
     def create(): Unit = {
       current = if (active == quickAccess) {
-        new QuickAccessView().attachToNode(container)
+        new TocPanel().attachToNode(container)
       } else {
-        new CommandListView(client).attachToNode(container)
+        new CommandListPanel(client).attachToNode(container)
       }
     }
   }
