@@ -42,7 +42,10 @@ trait FilteringView[T] extends Overlay {
     }
   }
 
-  def destroyItem(a: HTMLElement)
+
+  def destroyItem(a: HTMLElement): Unit = {
+    a.parentNode.removeChild(a)
+  }
 
   def data(term: String): Seq[T]
 
@@ -86,6 +89,8 @@ trait FilteringView[T] extends Overlay {
     }
   }
 
+  var focusOutDismiss = false
+
 
   override def onAttach(): Unit = {
 
@@ -96,7 +101,9 @@ trait FilteringView[T] extends Overlay {
     })
 
     event(dom, "focusout", (ev: FocusEvent) => {
-      dismiss()
+      if (focusOutDismiss) {
+        dismiss()
+      }
     })
 
     event(search, "keydown", (ev: KeyboardEvent) => {

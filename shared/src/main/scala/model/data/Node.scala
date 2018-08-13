@@ -22,6 +22,20 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+  def lookup(_2: String, currentCur: cursor.Node = cursor.Node.root): Option[cursor.Node] = {
+    if (uuid == _2) {
+      Some(currentCur)
+    } else {
+      childs.zipWithIndex.foreach(a =>  {
+        val res = a._1.lookup(_2, currentCur :+ a._2)
+        if (res.isDefined) {
+          return res
+        }
+      })
+      None
+    }
+  }
+
 
   private def filter0(cur: cursor.Node, a: Content => Boolean, bf: ArrayBuffer[cursor.Node]): Unit = {
     if (a(content)) bf.append(cur)

@@ -10,6 +10,8 @@ import web.view.doc.DocumentView
 
 class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends  FilteringView[command.Command]  with MountedOverlay[OverlayAnchor] {
 
+  focusOutDismiss = true
+
   override protected val search = input(
     width := "100%",
     `class` := "ct-input"
@@ -53,9 +55,6 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
 
-  override def destroyItem(a: HTMLElement): Unit = {
-    a.parentNode.removeChild(a)
-  }
 
   override def renderItem(t: Command, index: Int): HTMLElement = {
     div(

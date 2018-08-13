@@ -116,19 +116,23 @@ class Client(
     *
     * editor queue
     */
-  private var state_ = DocState(committed, localStorage.get(docId + ".zoom") match {
-    case Some(s) => Try { s.split(",").map(_.toInt).toSeq } match {
-      case Success(a) => committed.lastDefined(a)
+  private var state_ = {
+    val zoom = localStorage.get(docId + ".zoom1") match {
+      case Some(uuid) =>
+        committed.lookup(uuid).getOrElse(model.cursor.Node.root)
       case _ => cursor.Node.root
     }
-    case _ => cursor.Node.root
-  }, initial.mode, badMode = false, localStorage.get(docId + ".folded0") match {
-    case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
-      val c = a.split(" ")
-      c(0) -> c(1).toBoolean
-    }).toMap
-    case _ => Map.empty
-  })
+    DocState(committed,
+      zoom,
+      model.mode.Node.Content(zoom, committed(zoom).content.defaultNormalMode()),
+      badMode = false, localStorage.get(docId + ".folded0") match {
+      case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
+        val c = a.split(" ")
+        c(0) -> c(1).toBoolean
+      }).toMap
+      case _ => Map.empty
+    })
+  }
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
@@ -191,6 +195,7 @@ class Client(
 //      println("client update view transactions: " + viewFrom)
 //      println("client update mode: " + a.mode)
     }
+    val zoomPrev = state.zoomId
     updatingState = true
     val docBefore = state
     state_ = a
@@ -206,6 +211,11 @@ class Client(
     if (userFolds.nonEmpty) {
       localStorage.set(docId + ".folded0", state_.userFoldedNodes.toSeq.map(a => s"${a._1} ${a._2}").mkString(","))
     }
+    val zoomNow = state.zoomId
+    if (zoomPrev != zoomNow) {
+      localStorage.set(docId + ".zoom1", zoomNow)
+    }
+
     onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(docBefore, from.map(_._2), ty)
     stateUpdates_.onNext(res)

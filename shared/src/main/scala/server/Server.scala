@@ -38,7 +38,6 @@ trait Server extends Api {
   override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
     val state = ClientInit(
       document,
-      model.data.Node.defaultNormalMode(document, cursor.Node.root),
       version,
       ServerStatus(onlineCount + 1)
     )

@@ -103,7 +103,7 @@ object DataTests extends TestSuite {
 
     'implicitlyGenerated - {
       for (i <- 0 until 10) {
-        val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(r), model.mode.Node.Visual(Seq.empty, Seq.empty), i, ServerStatus(1)))
+        val a: ErrorT[ClientInit] = Right(ClientInit(data.Node.random(r), i, ServerStatus(1)))
         val bytes = Pickle.intoBytes(a)
         val b = Unpickle[Either[ApiError, ClientInit]](implicitly).fromBytes(bytes)
         assert(a == b)
