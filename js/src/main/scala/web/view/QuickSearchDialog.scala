@@ -37,7 +37,7 @@ class QuickSearchDialog(val client: Client,
   ).render
 
   override def data(term: String): Seq[(model.cursor.Node, String)] = {
-    val tt = term.split("\\s").filter(a => !util.isAscii(a) || a.length > 2)
+    val tt = term.split("\\s").filter(a => !util.isAscii(a) || a.length > 2).map(_.toLowerCase())
     if (tt.isEmpty) {
       Seq.empty
     } else {

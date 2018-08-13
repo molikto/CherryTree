@@ -54,9 +54,6 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     removeAllChild(dom)
   }
 
-  protected def clearEmptyNormalMode(): Unit = {
-    removeEmptyContent()
-  }
 
   protected def removeEmptyContent(): Unit = {
     removeAllChild(dom)

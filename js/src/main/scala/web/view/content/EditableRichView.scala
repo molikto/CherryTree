@@ -337,6 +337,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   }
 
+  protected def clearEmptyNormalMode(): Unit = {
+    removeEmptyContent()
+  }
+
   protected def initEmptyNormalMode(): Unit = {
     initEmptyContent()
     val range = document.createRange()

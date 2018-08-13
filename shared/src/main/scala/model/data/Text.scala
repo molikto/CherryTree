@@ -294,7 +294,7 @@ object Text {
       buffer.put(content)
     }
 
-    override def quickSearch(p: String): Boolean = content.str.contains(p)
+    override def quickSearch(p: String): Boolean = content.str.toLowerCase.contains(p)
 
     override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
@@ -375,7 +375,9 @@ object Text {
       buffer.put(unicode)
     }
 
-    override def quickSearch(p: String): Boolean = unicode.str.contains(p)
+    override def quickSearch(p: String): Boolean = {
+      unicode.str.toLowerCase.contains(p)
+    }
 
     override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
     override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
