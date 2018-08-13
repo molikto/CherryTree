@@ -26,7 +26,7 @@ class QuickSearchDialog(val client: Client,
     height := "100%",
     `class` := "ct-scroll ct-document-style"
   ).render
-  
+
 
   dom = div(
     `class` := "ct-card",

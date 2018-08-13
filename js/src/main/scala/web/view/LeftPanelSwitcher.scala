@@ -10,7 +10,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
 
 
   private val container = div(
-    display :="flex",
+    display := "flex",
     marginLeft := "22px",
     width := "calc(100% - 22px)",
     height := "100%"
@@ -19,47 +19,69 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
   var widthBefore = "350px"
   val minWidthOpen = "150px"
 
-  object tab {
-    val commands =
-      span(span(`class` := "ct-tab-icon ct-tab-keyboard"), a("Commands")).render
 
-    val quickAccess = span(`class` := "ct-tab-selected", span(`class` := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
+  def enabledAll(b: Boolean) = {
+    if (b) {
+      dom.style.width = widthBefore
+      dom.style.minWidth = minWidthOpen
+      enable(true)
+    } else {
+      widthBefore = dom.style.width
+      dom.style.minWidth = "22px"
+      dom.style.width = "22px"
+      enable(false)
+    }
+  }
 
-    for (a <- Seq(commands, quickAccess)) {
-      event(a, "click", (c: MouseEvent) => {
-        if (a != active) {
-          a.classList.add("ct-tab-selected")
-          if (active != null) {
-            active.classList.remove("ct-tab-selected")
-            current.destroy()
-          } else {
-            dom.style.width = widthBefore
-            dom.style.minWidth = minWidthOpen
-            enable(true)
-          }
-          active = a
-          create()
-        } else if (active != null) {
+  private val commands =
+    span(span(`class` := "ct-tab-icon ct-tab-keyboard"), a("Commands")).render
+
+  private val quickAccess = span(span(`class` := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
+
+
+  val childs = Seq(commands, quickAccess)
+  for (a <- childs) {
+    event(a, "click", (c: MouseEvent) => {
+      if (a != active) {
+        if (active != null) {
           active.classList.remove("ct-tab-selected")
           current.destroy()
-          active = null
-          widthBefore = dom.style.width
-          dom.style.minWidth = "22px"
-          dom.style.width = "22px"
-          enable(false)
+        } else {
+          enabledAll(true)
         }
-      })
-    }
-    private var active = quickAccess
-
-    private var current: View = null
-
-    def create(): Unit = {
-      current = if (active == quickAccess) {
-        new TocPanel().attachToNode(container)
-      } else {
-        new CommandListPanel(client).attachToNode(container)
+        active = a
+        model.localStorage.set(".left-panel", indexOf(active).toString)
+        create()
+      } else if (active != null) {
+        active.classList.remove("ct-tab-selected")
+        current.destroy()
+        active = null
+        model.localStorage.set(".left-panel", "")
+        enabledAll(false)
       }
+    })
+  }
+
+
+  private var current: View = null
+
+  def create(): Unit = {
+    current = if (active == quickAccess) {
+      new TocPanel().attachToNode(container)
+    } else if (active == commands) {
+      new CommandListPanel(client).attachToNode(container)
+    } else {
+      null
+    }
+    if (active != null) {
+      active.classList.add("ct-tab-selected")
+    }
+  }
+
+  private var active = {
+    model.localStorage.get(".left-panel") match {
+      case Some(a) if a.nonEmpty => childs(a.toInt)
+      case _ => null
     }
   }
 
@@ -71,12 +93,15 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
     width := "350px",
     height := "100%",
     div(position := "absolute", width := "22px", height := "100%", background := "#333842"),
-    div( `class` := "ct-tabs",
-      tab.commands,
-      tab.quickAccess
+    div(`class` := "ct-tabs",
+      childs,
     ),
     container
   ).render
 
-  tab.create()
+  create()
+
+  if (active == null) {
+    enabledAll(false)
+  }
 }
