@@ -62,6 +62,18 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
+    override val description: String = "quick search in current viewport"
+
+    override def defaultKeys: Seq[KeySeq] = Seq(Key("o").copyWithMod.copy(shift = true))
+
+    override protected def available(a: DocState): Boolean = true
+
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      DocTransaction.message(Client.ViewMessage.QuickSearch(true))
+    }
+  }
+
+  new Command {
     override val description: String = "quick search"
 
     override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
@@ -69,7 +81,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override protected def available(a: DocState): Boolean = true
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      DocTransaction.message(Client.ViewMessage.QuickSearch)
+      DocTransaction.message(Client.ViewMessage.QuickSearch(false))
     }
   }
 

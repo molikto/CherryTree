@@ -1,7 +1,7 @@
 package command
 
 import doc.{DocState, DocTransaction}
-import model.{cursor, mode, operation}
+import model.{cursor, data, mode, operation}
 import model.range.IntRange
 import register.Registerable
 
@@ -28,12 +28,13 @@ package object defaults {
   }
 
 
-  private[defaults] def insertPointAfter(a: DocState, pos: cursor.Node): cursor.Node = {
+  private[defaults] def insertPointAfter(a: DocState, pos: cursor.Node): (cursor.Node, Option[data.Node.ContentType]) = {
     val mover = a.mover()
-    if (pos == a.zoom || a.node(pos).isHeading) {
-      pos :+ 0
+    val node = a.node(pos)
+    if (pos == a.zoom || (node.isHeading && !a.viewAsFolded(pos))) {
+      (pos :+ 0, None)
     } else {
-      mover.firstChild(pos).getOrElse(mover.nextOver(pos))
+      (mover.firstChild(pos).getOrElse(mover.nextOver(pos)), if (node.isHeading) node.attribute(data.Node.ContentType) else None)
     }
   }
 

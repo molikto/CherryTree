@@ -25,12 +25,12 @@ trait EditorView extends View {
       val timeStart = System.currentTimeMillis()
       var key = KeyMap.get(event.key).orNull
       // TODO better handling this
-      var isBiyo = false
-      var isZ = false
+      var isBiy = false
+      var isZo = false
       if (key == null && Key.isUnicodeKey(event.key)) {
         key = Key.Grapheme(model.data.Unicode(event.key))
-        isBiyo = "biyo".contains(event.key)
-        isZ = "z".contains(event.key)
+        isBiy = "biy".contains(event.key)
+        isZo = "zo".contains(event.key)
       }
       if (key == null) key = Key.Unknown(event.key)
       val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
@@ -39,9 +39,9 @@ trait EditorView extends View {
       val allow = if (!kk.meta) {
         true
       } else {
-        if (isBiyo) {
+        if (isBiy) {
           !kk.shift
-        } else if (isZ) {
+        } else if (isZo) {
           true
         } else {
           false

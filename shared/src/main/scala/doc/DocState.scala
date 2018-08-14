@@ -12,12 +12,14 @@ case class DocState(
   badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
-  def quickSearch(tt: Array[String]): Seq[cursor.Node] = {
-    node.filter {
+
+  def quickSearch(tt: Seq[data.Unicode], deli: settings.SpecialKeySettings, viewport: Boolean): Seq[cursor.Node] = {
+    val (n, cur) = if (viewport) (node(zoom), zoom) else (node, cursor.Node.root)
+    n.filter(cur, {
       case data.Content.Code(_, _) => false
       case data.Content.Rich(a) =>
-        a.quickSearch(tt)
-    }.sortBy(cur => {
+        a.quickSearch(tt, deli)
+    }).sortBy(cur => {
       val n = node(cur)
       (!n.isH1, !n.isHeading)
     })
@@ -40,6 +42,18 @@ case class DocState(
     assert(a.startsWith(zoom))
     val no = node(a)
     a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
+  }
+
+
+  def hidden(k: Node): Boolean = {
+    var n = k
+    while (n.size > zoom.size) {
+      n = cursor.Node.parent(n)
+      if (viewAsFolded(n)) {
+        return true
+      }
+    }
+    false
   }
 
   def folded(a: cursor.Node, default: Boolean): Boolean = {

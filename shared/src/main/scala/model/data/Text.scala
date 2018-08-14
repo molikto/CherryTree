@@ -3,12 +3,13 @@ package model.data
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
+import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
-  def quickSearch(p: String): Boolean = false
+  def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
@@ -33,8 +34,8 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
-  def quickSearch(text: Seq[Text], p: String): Boolean = {
-    text.exists(_.quickSearch(p))
+  def quickSearch(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
+    text.exists(_.quickSearch(p, deli))
   }
 
   private[model] def serialize(text: Seq[Text]): Unicode = {
@@ -123,7 +124,7 @@ object Text {
       else Iterator.empty
     }
 
-    override def quickSearch(p: String): Boolean = false
+    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
     final override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i == size)
@@ -211,6 +212,9 @@ object Text {
 
   sealed trait DelimitedT[T] extends Delimited {
     def content: T
+
+    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
+      p == deli(delimitation.start) || p == deli(delimitation.end)
   }
 
   sealed trait Formatted extends DelimitedT[Seq[Text]] {
@@ -218,7 +222,9 @@ object Text {
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
 
-    override def quickSearch(p: String): Boolean = Text.quickSearch(content, p)
+    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
+      super.quickSearch(p, deli) ||
+      Text.quickSearch(content, p, deli)
 
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
       content.foreach(_.serialize(buffer))
@@ -294,7 +300,8 @@ object Text {
       buffer.put(content)
     }
 
-    override def quickSearch(p: String): Boolean = content.str.toLowerCase.contains(p)
+    override def quickSearch(p: Unicode, deli: settings.SpecialKeySettings): Boolean =
+      super.quickSearch(p, deli) || content.containsLowerCase(p)
 
     override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
@@ -375,8 +382,8 @@ object Text {
       buffer.put(unicode)
     }
 
-    override def quickSearch(p: String): Boolean = {
-      unicode.str.toLowerCase.contains(p)
+    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = {
+      unicode.containsLowerCase(p)
     }
 
     override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))

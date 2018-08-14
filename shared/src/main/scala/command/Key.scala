@@ -21,7 +21,7 @@ case class Key(
     case _ => false
   }
 
-  def modKey(a: Boolean): Key = if (model.isMac) this.copy(meta = true) else this.copy(control = true)
+  def copyWithMod: Key = if (model.isMac) this.copy(meta = true) else this.copy(control = true)
 
   override def toString: String = {
     val sb = new ArrayBuffer[String]()
@@ -55,6 +55,7 @@ object Key {
       k.mkString(" ")
     }
   }
+
 
   sealed trait Modifier extends V {
     def +(key: Key): Key
@@ -103,6 +104,9 @@ object Key {
   case class Grapheme(a: Unicode) extends V {
     override def toString: String = a.str
   }
+
+  def apply(a: String): Key = Key(Grapheme(a))
+
   object Grapheme {
     def apply(a: String): Grapheme = Grapheme(Unicode(a))
   }
@@ -121,6 +125,8 @@ object Key {
     case Grapheme(u) if u.size == 1 => Seq(Key(s, shift = shifted.contains(u.head)))
     case _ => Seq(Key(s))
   }
+
+  implicit def keyToKeySeq(k: Key): KeySeq = Seq(k)
 
 
 }

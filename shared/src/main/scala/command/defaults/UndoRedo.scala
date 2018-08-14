@@ -26,7 +26,7 @@ class UndoRedo extends CommandCategory("undo & redo") {
 
   new Command {
     override val description: String = "redo"
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Seq(Key(Grapheme("z"), shift = true).modKey(true)))
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Seq(Key(Grapheme("z"), shift = true).copyWithMod))
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "r")
     override def emptyAsFalseInInsertMode: Boolean = true
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true

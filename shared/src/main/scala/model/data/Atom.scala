@@ -3,6 +3,7 @@ package model.data
 import model.cursor
 import model.data.Text.{Atomic, Delimited, DelimitedT}
 import model.range.IntRange
+import settings.SpecialKeySettings
 
 sealed trait Atom {
   def text: Text
@@ -12,7 +13,7 @@ sealed trait Atom {
   def textRange = IntRange(textTotalIndex, textTotalIndex + text.size)
   def size: Int
   def skipSize: Int = 0
-  def matches(a: Unicode, delimitationCodePoints:  Map[SpecialChar, Unicode]): Boolean = false
+  def matches(a: Unicode, delimitationCodePoints:  SpecialKeySettings): Boolean = false
 
   def whitespace: Boolean = false
   def letterLike: Boolean = false
@@ -70,7 +71,7 @@ object Atom {
     override def text: Delimited
     override def skipSize: Int = if (a == text.asDelimited.delimitation.end) text.asDelimited.skipSize else 0
     override def toString: String = a.toString
-    override def matches(u: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Boolean = delimitationCodePoints.get(a).exists(_.startsWith(u))
+    override def matches(u: Unicode, delimitationCodePoints: SpecialKeySettings): Boolean = delimitationCodePoints.get(a).exists(_.startsWith(u))
     override def subIndex: Int = if (a == text.asDelimited.delimitation.start) 0 else text.size - 1
     def delimitation: SpecialChar.Delimitation = text.delimitation
     def another: Atom
@@ -106,7 +107,7 @@ object Atom {
   }
   sealed trait Grapheme extends Atom {
     def a: Unicode
-    override def matches(u: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Boolean = a == u
+    override def matches(u: Unicode, delimitationCodePoints: SpecialKeySettings): Boolean = a == u
     override def size: Int = a.size
     override def toString: String = a.toString
     def unicodeIndex: Int

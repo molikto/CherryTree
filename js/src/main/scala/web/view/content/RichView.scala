@@ -60,6 +60,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   }
 
   protected def initEmptyContent(): Unit = {
+    removeAllChild(dom)
     dom.appendChild(span(EmptyStr, color := theme.disalbedInfo).render)
   }
 

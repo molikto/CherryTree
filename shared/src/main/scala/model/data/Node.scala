@@ -44,9 +44,9 @@ case class Node (
     })
   }
 
-  def filter(a: Content => Boolean): Seq[cursor.Node] = {
+  def filter(cur: cursor.Node, a: Content => Boolean): Seq[cursor.Node] = {
     val bf = new ArrayBuffer[cursor.Node]()
-    filter0(cursor.Node.root, a, bf)
+    filter0(cur, a, bf)
     bf
   }
 
@@ -82,6 +82,12 @@ case class Node (
 
   def clear[T](a: NodeTag[T]) : Node = copy(attributes = attributes - a.name)
   def clear(a: String) : Node = copy(attributes = attributes - a)
+
+
+  def attribute[T](t: NodeTag[T], a: Option[T]): Node = a match {
+    case Some(a) => attribute(t, a)
+    case None => clear(t)
+  }
 
   def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.updated(t.name, t.serialize(a)))
   def attribute(t: String, a: String): Node = copy(attributes = attributes.updated(t, a))

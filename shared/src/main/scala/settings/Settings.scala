@@ -20,7 +20,7 @@ trait Settings {
     (SpecialChar.Emphasis, Unicode("*"), Unicode("*"))
   )
 
-  val delimitationGraphemes: Map[SpecialChar, Unicode] = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._3)).toMap
+  val delimitationGraphemes: SpecialKeySettings = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._3)).toMap
 
   def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 

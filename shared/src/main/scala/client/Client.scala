@@ -48,7 +48,7 @@ object Client {
     //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
-    case object QuickSearch extends ViewMessage
+    case class QuickSearch(currentDoc: Boolean) extends ViewMessage
   }
 }
 

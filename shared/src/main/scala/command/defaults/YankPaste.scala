@@ -144,7 +144,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
-      val insertionPoint = insertPointAfter(a, at)
+      val (insertionPoint, _) = insertPointAfter(a, at)
       (Seq(operation.Node.Insert(insertionPoint, node)), mode.Node.Content(insertionPoint, node.head.content.defaultNormalMode()))
     }
 

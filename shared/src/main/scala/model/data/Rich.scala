@@ -4,6 +4,7 @@ import boopickle._
 import model.range.IntRange
 import model.cursor
 import model.data.Text.Delimited
+import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -12,8 +13,8 @@ import scala.util.Random
   */
 case class Rich(text: Seq[Text]) {
 
-  def quickSearch(tt: Array[String]) = {
-    tt.forall(p => Text.quickSearch(text, p))
+  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings) = {
+    tt.forall(p => Text.quickSearch(text, p, deli))
   }
 
 
@@ -256,11 +257,11 @@ case class Rich(text: Seq[Text]) {
   }
 
 
-  def findCharAfter(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[Atom] = {
+  def findCharAfter(start: IntRange, grapheme: Unicode, delimitationCodePoints: SpecialKeySettings): Option[Atom] = {
     afters(start.until).find(_.matches(grapheme, delimitationCodePoints))
   }
 
-  def findCharBefore(start: IntRange, grapheme: Unicode, delimitationCodePoints: Map[SpecialChar, Unicode]): Option[Atom] = {
+  def findCharBefore(start: IntRange, grapheme: Unicode, delimitationCodePoints: SpecialKeySettings): Option[Atom] = {
     befores(start.start).find(_.matches(grapheme, delimitationCodePoints))
   }
 

@@ -11,6 +11,12 @@ package object util extends ObservablePropertyImplicits  {
 
   def isAscii(c: String): Boolean = Unicode(c).forall(isAscii)
 
+  def isEnglishLetter(c: Int): Boolean =
+    ('a' <= c && c <= 'z') ||
+      ('A' <= c && c <= 'Z')
+
+  def isEnglishLetter(a: String): Boolean = Unicode(a).forall(isEnglishLetter)
+
   def isAscii(codepoint: Int): Boolean = codepoint >= 0 && codepoint <= 0x7f
 
   def matchCommandSearch(str: String, term: String) = str.contains(term)

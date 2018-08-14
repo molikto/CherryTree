@@ -241,10 +241,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     setSelection(range, fromUser)
   }
 
-  private def clearSelection(): Unit = {
-    val sel = window.getSelection
-    if (sel.rangeCount > 0) sel.removeAllRanges
-  }
 
   private def clearNormalMode(): Unit = {
     clearSelection()
@@ -283,20 +279,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     if (light != null) addFormattedNodeHighlight(light)
   }
 
-  private def setSelection(range: Range, fromUser: Boolean): Unit = {
-    //    if (fromUser) {
-    //      val r1 = dom.getBoundingClientRect()
-    //      val r2 = documentView.dom.getBoundingClientRect()
-    //      val rect = if (r1.height < r2.height) {
-    //        r1
-    //      } else {
-    //        range.getBoundingClientRect()
-    //      }
-    //      web.view.scrollInToViewIfNotVisible(rect, documentView.dom)
-    //    }
-    //    val top = documentView.dom.scrollTop
+  private def clearSelection(): Unit = {
     val sel = window.getSelection
-    sel.removeAllRanges
+    sel.removeAllRanges()
+  }
+
+  private def setSelection(range: Range, fromUser: Boolean): Unit = {
+    val sel = window.getSelection
+    sel.removeAllRanges()
     sel.addRange(range)
     //    documentView.dom.scrollTop = top
   }
@@ -315,7 +305,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
       if (debug_view) {
-        //println(s"mode change from  $previousMode to $i")
+      //  println(s"mode change from  $previousMode to $i")
       }
       if (previousMode == 0) {
         clearInsertionMode()
@@ -346,9 +336,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     val range = document.createRange()
     range.setStart(dom, 0)
     range.setEnd(dom, 1)
-    val sel = window.getSelection
-    sel.removeAllRanges
-    sel.addRange(range)
+    setSelection(range, false)
   }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
@@ -413,11 +401,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
-    if (!viewUpdated) {
-      clearMode()
-    }
     super.updateContent(data, c, viewUpdated)
     if (!viewUpdated) {
+      clearMode()
       // val cs = c.asInstanceOf[operation.Content.Rich]
       // TODO incrementally update dom remember to clear the empty range when needed
       if (attributeEditor != null) {
