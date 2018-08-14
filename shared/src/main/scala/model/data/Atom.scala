@@ -74,7 +74,7 @@ object Atom {
     override def matches(u: Unicode, delimitationCodePoints: SpecialKeySettings): Boolean = delimitationCodePoints.get(a).exists(_.startsWith(u))
     override def subIndex: Int = if (a == text.asDelimited.delimitation.start) 0 else text.size - 1
     def delimitation: SpecialChar.Delimitation = text.delimitation
-    def another: Atom
+    def another: Special
     override def whitespace: Boolean = true
 
     override private[data] def serialize(buffer: UnicodeWriter): Unit = {
@@ -85,23 +85,31 @@ object Atom {
         buffer.put(a)
       }
     }
+
+    def rangeWithSkip: IntRange = if (delimitationStart) range else {
+      val r = range
+      IntRange(r.start - text.skipSize, r.until)
+    }
   }
+
   sealed trait SpecialT[T] extends Special {
     override def text: DelimitedT[T]
+
   }
   case class FormattedSpecial(override val nodeCursor: cursor.Node,
     override val totalIndex: Int,
     override val a: SpecialChar,
     override val text: Text.Formatted) extends SpecialT[Seq[Text]] {
-    def another: Atom =
+    def another: Special =
       if (delimitationStart) FormattedSpecial(nodeCursor, textTotalIndex + text.size - 1, text.delimitation.end, text)
       else FormattedSpecial(nodeCursor, textTotalIndex, text.delimitation.start, text)
+
   }
   case class CodedSpecial(override val nodeCursor: cursor.Node,
     override val totalIndex: Int,
     override val a: SpecialChar,
     override val text: Text.Coded) extends SpecialT[Unicode] {
-    def another: Atom =
+    def another: Special =
       if (delimitationStart) CodedSpecial(nodeCursor, textTotalIndex + text.size - 1, text.delimitation.end, text)
       else CodedSpecial(nodeCursor, textTotalIndex, text.delimitation.start, text)
   }

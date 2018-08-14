@@ -167,8 +167,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
     }).map(_.range.until).getOrElse(r0.until)
     val r = IntRange(ssss, uuuu)
     val singleSpecials = rich.singleSpecials(r)
-    val reverses = singleSpecials.map(_.another.range).sortBy(_.start)
-    val ds = r.minusOrderedInside(singleSpecials.map(_.range))
+    val reverses = singleSpecials.map(_.another)
+    val ds = r.minusOrderedInside(singleSpecials.map(_.rangeWithSkip))
     def deleteRanges(i: Seq[IntRange]) = {
       val remaining = IntRange(0, rich.size).minusOrderedInside(i)
       val posTo = if (remaining.isEmpty) {
@@ -185,10 +185,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
         posTo._1, posTo._2))
     }
     if (ds.isEmpty) {
-      if (singleSpecials.forall(_.delimitationStart)) {
-        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
-      } else if (singleSpecials.forall(_.delimitationEnd)) {
-        deleteRanges((reverses ++ Seq(r)).sortBy(_.start))
+      if (singleSpecials.forall(_.delimitationStart) || singleSpecials.forall(_.delimitationEnd)) {
+        deleteRanges((reverses ++ singleSpecials).map(_.rangeWithSkip).sortBy(_.start))
       } else {
         None
       }
@@ -226,7 +224,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
 
-  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)), Type.Delete)
+  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)).toVector, Type.Delete)
 
   def delete(range: IntRange): Rich = deleteNoneOverlappingOrderedRanges(Seq(range))
 

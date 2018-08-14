@@ -183,6 +183,7 @@ class Client(
     ty: Undoer.Type,
     viewUpdated: Boolean,
     fromUser: Boolean,
+    isSmartInsert: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
     val vv = viewAdded ++ from
@@ -206,7 +207,7 @@ class Client(
     if (a.badMode) {
       scheduledUpdateTempMode = Observable.delay({
         if (model.debug_view) println("updating temp mode")
-        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, Map.empty)
+        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false)
       }).delaySubscription(2.seconds).subscribe()
     }
     if (userFolds.nonEmpty) {
@@ -218,7 +219,7 @@ class Client(
     }
 
     onBeforeUpdateUpdateCommandState(state_)
-    trackUndoerChange(docBefore, from.map(_._2), ty)
+    trackUndoerChange(docBefore, from.map(_._2), ty, isSmartInsert)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInsert) {
@@ -447,7 +448,7 @@ class Client(
     }
   }
 
-  def localChange(update0: DocTransaction): Unit = {
+  def localChange(update0: DocTransaction, isSmartInsert: Boolean = false): Unit = {
     var update: DocTransaction = update0
     if (debug_view) {
       println(update)
@@ -505,6 +506,7 @@ class Client(
         from,
         viewAdd,
         update.undoType.getOrElse(Undoer.Local),
+        isSmartInsert = isSmartInsert,
         viewUpdated = update.viewUpdated,
         fromUser = true,
         userFolds = ch)
@@ -515,7 +517,7 @@ class Client(
       viewMessages_.onNext(m)
     }
     extra match {
-      case Some(a) => localChange(a)
+      case Some(a) => localChange(a, isSmartInsert = true)
       case None =>
     }
   }

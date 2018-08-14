@@ -80,7 +80,10 @@ class RichSpecial extends CommandCategory("text format") {
           Seq(
             operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
           ),
-          Some(a.mode.get)
+          Some(
+            if (in.delimitationStart) a.mode.get
+            else a.copyContentMode(mode.Content.RichNormal(in.range.moveBy(deli.newSkipSize - in.text.asDelimited.skipSize)))
+          )
         )
       }
 

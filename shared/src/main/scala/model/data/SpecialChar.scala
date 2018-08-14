@@ -98,7 +98,8 @@ object SpecialChar {
     private[model] def startUnicode = Unicode(start)
     private[model] def endUnicode = Unicode(end)
 
-    def wrapSizeOffset = 2 + attributes.size
+    def newSkipSize = attributes.size
+    def wrapSizeOffset = 2 + newSkipSize
   }
 
 }

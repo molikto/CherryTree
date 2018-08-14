@@ -305,7 +305,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def initMode(i: Int): Unit = {
     if (previousMode != i) {
       if (debug_view) {
-      //  println(s"mode change from  $previousMode to $i")
+        println(s"mode change from  $previousMode to $i")
       }
       if (previousMode == 0) {
         clearInsertionMode()
@@ -401,9 +401,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
-    super.updateContent(data, c, viewUpdated)
+    rich = data.content
+    clearMode()
+    updateContent(c, viewUpdated)
     if (!viewUpdated) {
-      clearMode()
       // val cs = c.asInstanceOf[operation.Content.Rich]
       // TODO incrementally update dom remember to clear the empty range when needed
       if (attributeEditor != null) {

@@ -121,7 +121,7 @@ trait Undoer extends UndoerInterface {
   }
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(docBefore: DocState, trans: transaction.Node, ty: Type): Unit = {
+  def trackUndoerChange(docBefore: DocState, trans: transaction.Node, ty: Type, isSmartInsert: Boolean): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
@@ -135,7 +135,7 @@ trait Undoer extends UndoerInterface {
         putIn()
       case Redo(a, items) =>
         replaceUndoRedoPair(a, items)
-      case _ =>
+      case _ if !isSmartInsert =>
         lastOption match {
           case Some(a) if a.ty == Local =>
             if (a.ty == Local) {

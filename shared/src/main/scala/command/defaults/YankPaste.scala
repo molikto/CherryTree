@@ -125,16 +125,20 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             DocTransaction.empty
           }
         case Some(Registerable.Text(n)) =>
-          if (n.nonEmpty && a.isRichNormal) {
-            val (cursor, rich, normal) = a.asRichNormal
-            val (op, mode) = putText(rich, normal.range, n)
-            DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
+          if (n.nonEmpty) {
+            if (a.isRichNormal) {
+              val (cursor, rich, normal) = a.asRichNormal
+              val (op, mode) = putText(rich, normal.range, n)
+              DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
+            } else {
+              ???
+            }
           } else {
             DocTransaction.empty
           }
         case Some(Registerable.Unicode(n)) =>
           ???
-        case _ => DocTransaction.empty
+        case None => DocTransaction.empty
       }
     }
   }

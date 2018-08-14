@@ -1,3 +1,7 @@
+## fixes
+
+* enter on visual link
+
 ## bugs
 
 * when use j/k the cursor jumps too much scroll

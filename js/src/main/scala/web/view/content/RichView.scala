@@ -218,12 +218,16 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     */
 
 
-  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
-    rich = data.content
+  def updateContent(op: operation.Content.Rich, viewUpdated: Boolean): Unit = {
     if (!viewUpdated) {
       clearDom()
       initDom()
     }
+  }
+
+  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
+    rich = data.content
+    updateContent(c, viewUpdated)
   }
 
 }
