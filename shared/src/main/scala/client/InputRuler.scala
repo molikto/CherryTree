@@ -58,11 +58,7 @@ trait InputRuler { self: Client =>
                 val start = mm.start(g) - before.size + pos
                 val end = mm.end(g) - before.size + pos
                 val res = i.create(at, pos, start, end)
-                if (res == DocTransaction.empty) {
-                  None
-                } else {
-                  Some(res)
-                }
+                Some(res)
               }
             })
           case None => None
