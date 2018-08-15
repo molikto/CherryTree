@@ -491,7 +491,7 @@ class Client(
         disableUpdateBecauseLocalNodeDelete = null
       }
     }
-    val extra = extraInputRuleOperation(state_, update.transaction)
+    val extra = update.extra.orElse(extraInputRuleOperation(state_, update.transaction))
     val (last0, from) = operation.Node.apply(update.transaction, state)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
     val last = last0.copy(mode0 = update.mode.getOrElse(last0.mode0),

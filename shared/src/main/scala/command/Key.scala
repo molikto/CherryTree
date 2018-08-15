@@ -16,6 +16,8 @@ case class Key(
   control: Boolean = false,
   meta: Boolean = false) {
 
+  def isSimpleGrapheme: Boolean = !control && !meta && a.isInstanceOf[Key.Grapheme]
+
   def isModifier: Boolean = a match {
     case m: Key.Modifier => true
     case _ => false
@@ -49,7 +51,7 @@ object Key {
   type KeySeq = Seq[Key]
 
   def toString(k: KeySeq): String = {
-    if (k.forall(a => !a.control && !a.meta && a.a.isInstanceOf[Key.Grapheme])) {
+    if (k.forall(_.isSimpleGrapheme)) {
       k.map(_.a.asInstanceOf[Key.Grapheme]).mkString("")
     } else {
       k.mkString(" ")

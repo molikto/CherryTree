@@ -16,11 +16,13 @@ case class DocTransaction(
   tryMergeDeletes: Boolean = false,
   tryMergeInsertOfDeleteRange: Option[range.Node] = None,
 
+  extra: Option[DocTransaction] = None, // this is used to add an undo item in the undo tree
+
   viewUpdated: Boolean = false,
   viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {
   def nonTransactional: Boolean = {
-    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoomAfter.isEmpty
+    transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoomAfter.isEmpty && extra.isEmpty
   }
 }
 

@@ -135,9 +135,9 @@ trait Undoer extends UndoerInterface {
         putIn()
       case Redo(a, items) =>
         replaceUndoRedoPair(a, items)
-      case _ if !isSmartInsert =>
+      case _ =>
         lastOption match {
-          case Some(a) if a.ty == Local =>
+          case Some(a) if a.ty == Local && !isSmartInsert  =>
             if (a.ty == Local) {
               transaction.Node.mergeForUndoer(trans, a.trans) match {
                 case Some((merged, wait)) =>

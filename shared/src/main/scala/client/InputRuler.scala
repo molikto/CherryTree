@@ -3,6 +3,8 @@ package client
 import java.util.regex.Pattern
 
 import doc.{DocState, DocTransaction}
+import model.cursor.Node
+import model.data.SpecialChar
 import model.operation
 
 
@@ -20,6 +22,7 @@ abstract class InputRule(val a: String) {
      )
    }
  }
+
 trait InputRuler { self: Client =>
 
   /**
@@ -54,7 +57,12 @@ trait InputRuler { self: Client =>
                 val g = mm.groupCount()
                 val start = mm.start(g) - before.size + pos
                 val end = mm.end(g) - before.size + pos
-                return Some(i.create(at, pos, start, end))
+                val res = i.create(at, pos, start, end)
+                if (res == DocTransaction.empty) {
+                  None
+                } else {
+                  Some(res)
+                }
               }
             })
           case None => None

@@ -39,19 +39,30 @@ class RichSpecial extends CommandCategory("text format") {
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert, until) = a.asRichNormalOrInsert
-      val keyU = Unicode(key.map(a => Key.toString(a)).getOrElse(""))
+      val keyU = Unicode(key.map(a => if (a.forall(_.isSimpleGrapheme)) Key.toString(a) else "").getOrElse(""))
       def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
       if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
         DocTransaction(Seq.empty, moveSomeInsertMode(1))
       } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
+        val extraInsert =
+        if (key.isEmpty || keyU.isEmpty) {
+          None
+        } else {
+          Some(keyU)
+        }
         val wrap = deli.wrap()
         val k = operation.Rich.insert(insert, wrap)
-        val trans = Seq(model.operation.Node.rich(n, k))
-        if (deli.atomic) {
-          DocTransaction(trans, moveSomeInsertMode(wrap.size),
-            viewMessagesAfter = Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty))))
+        val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
+        val vms = if (deli == SpecialChar.Image) {
+          Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty)))
         } else {
-          DocTransaction(trans, moveSomeInsertMode(1))
+          Seq.empty
+        }
+        val ret = DocTransaction(trans, moveSomeInsertMode(if (deli.atomic) wrap.size else 1),
+          viewMessagesAfter = vms)
+        extraInsert match {
+          case Some(extra) => DocTransaction(Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))), a.mode, extra = Some(ret))
+          case None => ret
         }
       } else {
         DocTransaction.empty
