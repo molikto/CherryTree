@@ -69,7 +69,25 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   for (i <- 1 to 6) {
-    new ContentStyleCommand(s"heading $i (h$i)", Some(data.Node.ContentType.Heading(i)))
+    new ContentStyleCommand(s"heading $i (h$i)", Some(data.Node.ContentType.Heading(i))) {
+      override protected def available(a: DocState): Boolean = if (a.isNormal) {
+        if (i == 1) {
+          true
+        } else {
+          val cur = a.asNormal._1
+          if (cur == cursor.Node.root) {
+            false
+          } else {
+            a.node(cursor.Node.parent(cur)).heading match {
+              case Some(j) =>  i == j + 1
+              case None => true
+            }
+          }
+        }
+      } else {
+        false
+      }
+    }
   }
 
   new ContentStyleCommand("cite", Some(data.Node.ContentType.Cite))
