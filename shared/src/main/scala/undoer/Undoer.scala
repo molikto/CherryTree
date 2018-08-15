@@ -173,9 +173,14 @@ trait Undoer extends UndoerInterface {
         break = true
       }
     }
+    val zzz = if (cursor.Node.contains(currentDoc.zoom, zz) && !currentDoc.hidden(zz) && !currentDoc.viewAsFolded(zz)) {
+      None
+    } else {
+      Some(zz)
+    }
     DocTransaction(tt,
       Some(convertBackMode(applied.node, oldDocAsNowForModes.mode0)),
-      zoomAfter = Some(zz),
+      zoomAfter = zzz,
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }
 

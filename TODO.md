@@ -1,7 +1,3 @@
-## fixes
-
-* undo delete goes to wired place, in the unicode case
-
 ## bugs
 
 * when use j/k the cursor jumps too much scroll
