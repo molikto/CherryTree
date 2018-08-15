@@ -52,7 +52,7 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
   }
 
   override protected def onDismiss(): Unit = {
-    anchor.onDismiss()
+    if (anchor != null) anchor.onDismiss()
     anchor = null.asInstanceOf[ANCHOR]
     super.onDismiss()
   }

@@ -11,6 +11,28 @@
     user-select: none;
 }
 
+
+.ct-warning-inline {
+    padding: .2rem .4rem;
+    font-size: 60%;
+    color: #856404;
+    background-color: #FFF2CF;
+    border-radius: .2rem;
+    vertical-align: middle;
+    display: inline-block;
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+}
+
+.ct-error-inline {
+    padding: .2rem .4rem;
+    font-size: 60%;
+    color: #721c24;
+    background-color: #EDCED1;
+    vertical-align: middle;
+    border-radius: .2rem;
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+}
+
 .text-selectable {
     -webkit-touch-callout: text;
     -webkit-user-select: text;
@@ -22,6 +44,7 @@
 
 .ct-scroll {
   overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 .ct-scroll::-webkit-scrollbar {

@@ -364,39 +364,48 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     */
   override def destroy(): Unit = {
     clearMode()
-    clearAttributeEditor()
+    clearEditor()
     super.destroy()
   }
 
-  private var attributeEditor: (UrlAttributeEditDialog, IntRange) = null
+  private var editor: (Overlay, IntRange) = null
 
-  def clearAttributeEditor(): Unit = {
-    if (attributeEditor != null) {
-      attributeEditor._1.dismiss()
-      attributeEditor = null
+  def clearEditor(): Unit = {
+    if (editor != null) {
+      editor._1.dismiss()
+      editor = null
     }
   }
 
+  private def editorRect: Rect = {
+    val (_, pos) = editor
+    val (sel, span) = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))
+    val rects = if (span == null) sel.getClientRects() else span.getClientRects()
+    web.view.toRect(rects.item(0))
+  }
 
-  def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
-    attributeEditor = (documentView.attributeEditor, pos)
-    val anchor = new UrlAttributeEditDialog.Anchor {
-      override def rect: Rect = {
-        val (_, pos) = attributeEditor
-        val (sel, span) = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))
-        val rects = if (span == null) sel.getClientRects() else span.getClientRects()
-        web.view.toRect(rects.item(0))
-      }
 
-      override def onDismiss(): Unit = {
-        attributeEditor = null
-      }
-
-      override def update(url: Unicode, title: Unicode): Unit = {
-        controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), attributeEditor._2, url, title)
+  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode): Unit = {
+    editor = (documentView.latexEditor, pos)
+    val anchor = new LaTeXDialog.Anchor {
+      override def rect: Rect = editorRect
+      override def onDismiss(): Unit = editor = null
+      override def update(url: Unicode): Unit = {
+        controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, url)
       }
     }
-    attributeEditor._1.show(anchor, text.urlAttr.str, text.titleAttr.str)
+  }
+
+  def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
+    editor = (documentView.attributeEditor, pos)
+    val anchor = new UrlAttributeEditDialog.Anchor {
+      override def rect: Rect = editorRect
+      override def onDismiss(): Unit = editor = null
+      override def update(url: Unicode, title: Unicode): Unit = {
+        controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), editor._2, url, title)
+      }
+    }
+    documentView.attributeEditor.show(anchor, text.urlAttr.str, text.titleAttr.str)
   }
 
 
@@ -407,15 +416,15 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     if (!viewUpdated) {
       // val cs = c.asInstanceOf[operation.Content.Rich]
       // TODO incrementally update dom remember to clear the empty range when needed
-      if (attributeEditor != null) {
+      if (editor != null) {
 
-        val range = attributeEditor._2
+        val range = editor._2
         val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
         val res = c.transform(data, fakeMode)._1
         res match {
           case model.mode.Content.RichVisual(a, b) =>
-            attributeEditor = (attributeEditor._1, IntRange(a.start, b.until))
-          case _ => clearAttributeEditor()
+            editor = (editor._1, IntRange(a.start, b.until))
+          case _ => clearEditor()
         }
       }
     }

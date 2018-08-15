@@ -4,6 +4,7 @@ import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
+import org.scalajs.dom.html.Span
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
@@ -67,6 +68,14 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
+  def warningInline(str: String): Span = {
+    span(`class` := "ct-warning-inline", contenteditable := "false", str).render
+  }
+
+  def errorInline(str: String): Span = {
+    span(`class` := "ct-error-inline", contenteditable := "false", str).render
+  }
+
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
@@ -96,10 +105,16 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         img(`class` := "ct-image", src := b.str, title := c.str)
       case Text.LaTeX(c) =>
         val a = span().render
-        try {
-          KaTeX.render(c.str, a)
-        } catch {
-          case a: Throwable => a.printStackTrace()
+        if (c.isBlank) {
+          a.appendChild(warningInline("empty LaTeX"))
+        } else {
+          try {
+            KaTeX.render(c.str, a)
+          } catch {
+            case err: Throwable =>
+              a.appendChild(warningInline("LaTeX error"))
+              err.printStackTrace()
+          }
         }
         span(`class` := "ct-latex",
           contenteditable := false,

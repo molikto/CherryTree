@@ -55,6 +55,8 @@ class RichSpecial extends CommandCategory("text format") {
         val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
         val vms = if (deli == SpecialChar.Image) {
           Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty)))
+        } else if (deli == SpecialChar.LaTeX) {
+          Seq(ViewMessage.ShowLaTeXEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty))
         } else {
           Seq.empty
         }

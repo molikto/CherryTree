@@ -3,7 +3,7 @@ package web.view.doc
 import command.Key
 import doc.{DocInterface, DocState}
 import model.{cursor, data, range}
-import model.data.Content
+import model.data.{Content, Unicode}
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
@@ -54,6 +54,7 @@ class DocumentView(
     div(height := "36px", display := "block"),
     noEditable,
     fpsDisplay,
+    backgroundColor := theme.contentBackground,
     color := theme.contentText
   ).render
 
@@ -474,6 +475,7 @@ class DocumentView(
   var sourceEditor: SourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
   var attributeEditor: UrlAttributeEditDialog = null
+  var latexEditor : LaTeXDialog = null
 
 
 
@@ -493,6 +495,10 @@ class DocumentView(
     contentAt(cur).asInstanceOf[EditableRichView].showAttributeEditor(pos, text)
   }
 
+
+  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode): Unit = {
+    contentAt(cur).asInstanceOf[EditableRichView].showLaTeXEditor(cur, pos, text)
+  }
 
 
 

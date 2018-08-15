@@ -14,6 +14,7 @@ trait EditorInterface {
   def flush(): Unit
   def onInsertRichTextAndViewUpdated(unicode: Unicode)
   def onAttributeModified(cur: cursor.Node, range: IntRange, url: Unicode, title: Unicode)
+  def onLaTeXModified(cur: cursor.Node, range: IntRange, uni: Unicode)
   def onExternalPastePlain(a: Unicode)
   def onKeyDown(k: Key): Boolean
 }

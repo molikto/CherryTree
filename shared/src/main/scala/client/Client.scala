@@ -45,6 +45,7 @@ object Client {
     case class ShowUrlAndTitleAttributeEditor(node: cursor.Node,
       range: IntRange,
       text: data.Text.Delimited) extends ViewMessage
+    case class ShowLaTeXEditor(node: cursor.Node, range: IntRange, prev: Unicode) extends ViewMessage
     //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
@@ -384,6 +385,13 @@ class Client(
     val rich = state.node(cur).rich
     localChange(DocTransaction(Seq(
       operation.Node.rich(cur, operation.Rich.changeAttributeAt(rich, range, url, title))
+    ), state.mode))
+  }
+
+  override def onLaTeXModified(cur: Node, range: IntRange, uni: data.Unicode): Unit = {
+    // LATER collab this?
+    localChange(DocTransaction(Seq(
+      operation.Node.rich(cur, operation.Rich.replacePlain(range.start + 1, range.until - 1, uni))
     ), state.mode))
   }
 

@@ -12,7 +12,7 @@ object UrlAttributeEditDialog {
     def update(url: Unicode, title: Unicode): Unit
   }
 }
-class UrlAttributeEditDialog(val client: Client, protected val layer: OverlayLayer) extends MountedOverlay[UrlAttributeEditDialog.Anchor] {
+class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedOverlay[UrlAttributeEditDialog.Anchor] {
 
   private val urlInput = input(
     width := "100%",

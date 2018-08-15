@@ -27,7 +27,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     height := "100%",
     display :="flex",
     position := "relative",
-    backgroundColor := theme.contentBackground,
     flexDirection := "row",
     overflow := "hidden").render
   attachToNode(parent)
@@ -77,11 +76,13 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
     val sourceEditor: SourceEditDialog = new SourceEditDialog(overlayLayer, () => docView.dom)
-    val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(client, overlayLayer)
+    val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
+    val latexEditor: LaTeXDialog = new LaTeXDialog(overlayLayer)
 
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu
     docView.attributeEditor = attributeEditor
+    docView.latexEditor = latexEditor
   }
 
 
@@ -100,6 +101,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       docView.scrollToBottom()
     case Client.ViewMessage.ShowUrlAndTitleAttributeEditor(cur, pos, text) =>
       docView.showAttributeEditor(cur, pos, text)
+    case Client.ViewMessage.ShowLaTeXEditor(cur, pos, init) =>
+      docView.showLaTeXEditor(cur, pos, init)
   })
 
 }
