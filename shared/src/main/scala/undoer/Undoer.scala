@@ -164,18 +164,19 @@ trait Undoer extends UndoerInterface {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
     val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore)
-    var zz = cursor.Node.parent(oldDocAsNowForModes.mode0.coverage)
-    var break = false
-    while (!break && zz.length > oldDocAsNowForModes.zoom.length) {
-      if (!applied.folded(zz)) {
-        zz = cursor.Node.parent(zz)
-      } else {
-        break = true
-      }
-    }
-    val zzz = if (cursor.Node.contains(currentDoc.zoom, zz) && !currentDoc.hidden(zz) && !currentDoc.viewAsFolded(zz)) {
+    val coverage = oldDocAsNowForModes.mode0.coverage // can only be normal
+    val zzz = if (cursor.Node.contains(currentDoc.zoom, coverage) && !currentDoc.hidden(coverage)) {
       None
     } else {
+      var break = false
+      var zz = cursor.Node.parent(coverage)
+      while (!break && zz.length > oldDocAsNowForModes.zoom.length) {
+        if (!applied.folded(zz)) {
+          zz = cursor.Node.parent(zz)
+        } else {
+          break = true
+        }
+      }
       Some(zz)
     }
     DocTransaction(tt,
