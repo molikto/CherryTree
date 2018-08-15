@@ -168,7 +168,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val r = IntRange(ssss, uuuu)
     val singleSpecials = rich.singleSpecials(r)
     val reverses = singleSpecials.map(_.another)
-    val ds = r.minusOrderedInside(singleSpecials.map(_.rangeWithSkip))
+    val ds = r.minusOrderedInside(singleSpecials.map(_.range))
     def deleteRanges(i: Seq[IntRange]) = {
       val remaining = IntRange(0, rich.size).minusOrderedInside(i)
       val posTo = if (remaining.isEmpty) {
@@ -186,7 +186,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
     }
     if (ds.isEmpty) {
       if (singleSpecials.forall(_.delimitationStart) || singleSpecials.forall(_.delimitationEnd)) {
-        deleteRanges((reverses ++ singleSpecials).map(_.rangeWithSkip).sortBy(_.start))
+        deleteRanges((reverses ++ singleSpecials).map(_.range).sortBy(_.start))
       } else {
         None
       }

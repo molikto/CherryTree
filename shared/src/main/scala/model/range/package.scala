@@ -7,7 +7,7 @@ package object range {
 
 
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
-    assert(start >= 0 && until >= start)
+    assert(start >= 0 && until >= start, s"wrong IntRange($start, $until)")
 
     override def toString(): String = s"[$start, $until)"
 
@@ -117,6 +117,9 @@ package object range {
   object IntRange {
 
     def apply(a: Int): IntRange = IntRange(a, a + 1)
+
+    def len(a: Int, b: Int) = IntRange(a, a + b)
+    def endLen(a: Int, len: Int)=  IntRange(a - len, a)
 
     val pickler: Pickler[IntRange] = new Pickler[IntRange] {
       override def pickle(obj: IntRange)(implicit state: PickleState): Unit = {

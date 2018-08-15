@@ -205,6 +205,7 @@ object Text {
       IntRange(skip, skip + attribute(i).size)
     }
 
+    def deliEndSize = skipSize + 1
     def skipSize: Int = attributes.map(a => attribute(a).size + 1).sum
 
     final override lazy val size: Int = 2 + contentSize + skipSize
@@ -244,7 +245,7 @@ object Text {
           it.next()
         } else {
           i = 2
-          Atom.FormattedSpecial(myCursor, myIndex + Formatted.this.size - 1, delimitation.end, Formatted.this)
+          Atom.FormattedSpecial(myCursor, myIndex + 1 + contentSize, delimitation.end, Formatted.this)
         }
       } else {
         throw new IllegalArgumentException("No more")
@@ -258,7 +259,7 @@ object Text {
 
       override def next(): Atom = if (i == 2) {
         i -= 1
-        Atom.FormattedSpecial(myCursor, myIndex + Formatted.this.size - 1, delimitation.end, Formatted.this)
+        Atom.FormattedSpecial(myCursor, myIndex + 1 + contentSize, delimitation.end, Formatted.this)
       } else if (i == 1) {
         if (it == null) it = Text.before(myCursor, myIndex + 1, ((b - 1) max 0) min contentSize, content)
         if (it.hasNext) {
@@ -317,7 +318,7 @@ object Text {
           it.next()
         } else {
           i = 2
-          Atom.CodedSpecial(myCursor, myIndex + Coded.this.size - 1, delimitation.end, Coded.this)
+          Atom.CodedSpecial(myCursor, myIndex + 1 + contentSize, delimitation.end, Coded.this)
         }
       } else {
         throw new IllegalArgumentException("No more")
@@ -332,7 +333,7 @@ object Text {
 
       override def next(): Atom = if (i == 2) {
         i -= 1
-        Atom.CodedSpecial(myCursor, myIndex + Coded.this.size - 1, delimitation.end, Coded.this)
+        Atom.CodedSpecial(myCursor, myIndex + 1 + contentSize, delimitation.end, Coded.this)
       } else if (i == 1) {
         if (it == null) it = content.before(((b - 1) max 0) min contentSize).map(a => Atom.CodedGrapheme(myCursor, a._1 + myIndex + 1, a._1, a._2, Coded.this))
         if (it.hasNext) {

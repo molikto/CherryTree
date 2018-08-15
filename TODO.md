@@ -1,6 +1,6 @@
 ## fixes
 
-* enter on visual link
+* undo delete goes to wired place, in the unicode case
 
 ## bugs
 

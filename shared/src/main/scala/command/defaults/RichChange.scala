@@ -127,7 +127,7 @@ class RichChange extends CommandCategory("change text") {
   //            }
   //            Some(a.copyContentMode(mode.Content.RichNormal(range)))
   //          }
-  //          if (v.merged.size == 1 && char.a.size == 1 && count == 1) {
+  //          if (v.merged.si== 1 && char.a.si == 1 && count == 1) {
   //            val point = v.merged.start
   //            val in = rich.info(point)
   //            if (in.isStartOrEnd) {
@@ -148,7 +148,7 @@ class RichChange extends CommandCategory("change text") {
   //                    )
   //                  }
   //                  if (SpecialChar.coded.contains(deli)) {
-  //                    if (in.text.asInstanceOf[Text.Formatted].content.size == 1 &&  in.text.asInstanceOf[Text.Formatted].content.head.isPlain) {
+  //                    if (in.text.asInstanceOf[Text.Formatted].content.sie == 1 &&  in.text.asInstanceOf[Text.Formatted].content.head.isPlain) {
   //                      val unicode = in.text.asInstanceOf[Text.Formatted].content.head.asInstanceOf[Text.Plain].unicode
   //                      val op1 = operation.Rich.unwrap(in.nodeStart, in.text.asInstanceOf[Text.Delimited[Any]])
   //                      val op2 = operation.Rich.wrapAsCoded(unicode, IntRange(in.nodeStart, in.nodeStart + unicode.size), deli._1)

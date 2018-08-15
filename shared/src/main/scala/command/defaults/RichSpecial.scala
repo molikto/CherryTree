@@ -73,17 +73,20 @@ class RichSpecial extends CommandCategory("text format") {
       if (key.isEmpty) return DocTransaction.empty
       if (in.asInstanceOf[Atom.Special].delimitation == deli) return DocTransaction.empty
 
+
+      def resMode(): Option[mode.Node] = {
+        Some(
+          if (in.delimitationStart) a.mode.get
+          else a.copyContentMode(mode.Content.RichNormal(IntRange.len(in.range.start, deli.newDeliEndSize)))
+        )
+      }
       def wrapUnwrap(): DocTransaction = {
         val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
         val op2 = operation.Rich.wrap(IntRange(in.textTotalIndex, in.textTotalIndex + in.text.asDelimited.contentSize), deli)
         DocTransaction(
           Seq(
             operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
-          ),
-          Some(
-            if (in.delimitationStart) a.mode.get
-            else a.copyContentMode(mode.Content.RichNormal(in.range.moveBy(deli.newSkipSize - in.text.asDelimited.skipSize)))
-          )
+          ), resMode()
         )
       }
 
@@ -97,7 +100,7 @@ class RichSpecial extends CommandCategory("text format") {
               Seq(
                 operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
               ),
-              Some(a.mode.get)
+              resMode()
             )
           case _ => if (in.text.isCoded) {
             return wrapUnwrap()
@@ -139,9 +142,11 @@ class RichSpecial extends CommandCategory("text format") {
             val after = rich.after(r.start)
             if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
               val ret = if (visual.fix.start > visual.move.start) {
-                mode.Content.RichVisual(visual.fix.moveBy(after.text.asDelimited.contentSize - after.text.size), visual.move)
+                mode.Content.RichVisual(rich.before(visual.fix.start).range.moveBy(-deli.newDeliStartSize),
+                  rich.after(visual.move).range.moveBy(-deli.newDeliStartSize))
               } else {
-                mode.Content.RichVisual(visual.fix, visual.move.moveBy(after.text.asDelimited.contentSize - after.text.size))
+                mode.Content.RichVisual(rich.after(visual.fix).range.moveBy(-deli.newDeliStartSize),
+                  rich.before(visual.move.start).range.moveBy(-deli.newDeliStartSize))
               }
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.unwrap(r.start, after.text.asDelimited))),
@@ -151,9 +156,9 @@ class RichSpecial extends CommandCategory("text format") {
               val remaining = r.minusOrderedInside(soc)
               val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
               val fakePoints = if (visual.fix.start <= visual.move.start) {
-                mode.Content.RichVisual(IntRange(range._1), IntRange(range._2))
+                mode.Content.RichVisual(IntRange.len(range._1, deli.newDeliStartSize), IntRange.endLen(range._2 + deli.newDeliStartSize, deli.newDeliEndSize))
               } else {
-                mode.Content.RichVisual(IntRange(range._2), IntRange(range._1))
+                mode.Content.RichVisual(IntRange.endLen(range._2 + deli.newDeliStartSize, deli.newDeliEndSize), IntRange.len(range._1, deli.newDeliStartSize))
               }
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
@@ -188,14 +193,14 @@ class RichSpecial extends CommandCategory("text format") {
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
         val r = visual.merged
+        val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
         val fakeMode =
           if (deli.atomic) {
-            val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
             mode.Content.RichVisual(p, p)
           } else if (visual.fix.start <= visual.move.start) {
-            mode.Content.RichVisual(IntRange(r.start), IntRange(r.until + deli.wrapSizeOffset - 1))
+            mode.Content.RichVisual(IntRange.len(p.start, deli.newDeliStartSize), IntRange.endLen(p.until, deli.newDeliEndSize))
           } else {
-            mode.Content.RichVisual(IntRange(r.until + deli.wrapSizeOffset - 1), IntRange(r.start))
+            mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, deli.newDeliStartSize))
           }
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
@@ -218,11 +223,12 @@ class RichSpecial extends CommandCategory("text format") {
         val g = rich.isSubRich(r)
         if (g.isDefined) r = g.get
         if (g.isDefined) {
+          val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
           val fakeMode =
             if (visual.fix.start <= visual.move.start) {
-              mode.Content.RichVisual(IntRange(r.start), IntRange(r.until - 1 + deli.wrapSizeOffset))
+              mode.Content.RichVisual(IntRange.len(p.start, deli.newDeliStartSize), IntRange.endLen(p.until, deli.newDeliEndSize))
             } else {
-              mode.Content.RichVisual(IntRange(r.until - 1 + deli.wrapSizeOffset), IntRange(r.start))
+              mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, deli.newDeliStartSize))
             }
           DocTransaction(Seq(
             operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),

@@ -158,7 +158,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
 
 
   protected def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
-    assert(!range.isEmpty)
+    assert(!range.isEmpty, "range is empty")
     def createRange(a: Node, b: Int, c: Node, d: Int): Range = {
       val rr = document.createRange()
       rr.setStart(a, b)
@@ -176,7 +176,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
       val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)
       val eee = ast.content.toStringPosition(ee.asInstanceOf[Atom.CodedGrapheme].unicodeIndex + ee.asInstanceOf[Atom.CodedGrapheme].size)
       (createRange(codeText, sss, codeText, eee), null)
-    } else if (range.size == 1 &&
+    } else if (ss.totalIndex == ee.totalIndex &&
       ss.special) {
       val isStart = ss.delimitationStart
       val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
@@ -189,18 +189,18 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
           val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex)
           (text, s)
         case aa =>
-          assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked])
+          assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked], s"expecting a deli start $aa")
           val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
           (node, aa.nodeCursor.last)
       }
 
-      val end = ss match {
+      val end = ee match {
         case grapheme: Atom.PlainGrapheme =>
           val text = domAt(grapheme.nodeCursor)
           val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex + grapheme.size)
           (text, s)
         case aa =>
-          assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked])
+          assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked], s"expecting a deli end, $aa")
           val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
           (node, aa.nodeCursor.last + 1)
       }
