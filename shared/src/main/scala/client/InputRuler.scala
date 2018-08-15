@@ -57,8 +57,7 @@ trait InputRuler { self: Client =>
                 val g = mm.groupCount()
                 val start = mm.start(g) - before.size + pos
                 val end = mm.end(g) - before.size + pos
-                val res = i.create(at, pos, start, end)
-                Some(res)
+                Some(i.create(at, pos, start, end))
               }
             })
           case None => None
