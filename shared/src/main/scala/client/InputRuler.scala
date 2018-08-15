@@ -25,13 +25,6 @@ abstract class InputRule(val a: String) {
 
 trait InputRuler { self: Client =>
 
-  /**
-    # single tick use cases
-    text = text.replace /([\s])'(?=(tis\b|twas\b))/g, ($0, $1) -> $1+close_single
-    text = text.replace /(\s)'(?=[0-9]+s*\b)/g, ($0, $1) -> $1+close_single
-    text = text.replace /([^\w]|^)'(?=\w)/g, ($0, $1, $2) -> $1+open_single
-    */
-
   private val inputRules = Seq(
     new ReplaceInputRule("--$", "–"),
     new ReplaceInputRule("–-$", "—"),
@@ -43,6 +36,8 @@ trait InputRuler { self: Client =>
     new ReplaceInputRule("""(?:^|[\s\{\[\(\<'"\u2018\u201C])(")$""", "“"),
     new ReplaceInputRule("\"$", "”"),
     new ReplaceInputRule("""(?:^|[\s\{\[\(\<'"\u2018\u201C])(')$""", "‘"),
+    new ReplaceInputRule("""(?:[\s])(['‘])(?:tis\b|twas\b)$""", "’"),
+    new ReplaceInputRule("""(?:\s)(['‘])(?:[0-9]+s*\b)$""", "’"),
     new ReplaceInputRule("'$", "’"),
   )
 
@@ -57,7 +52,7 @@ trait InputRuler { self: Client =>
                 val g = mm.groupCount()
                 val start = mm.start(g) - before.size + pos
                 val end = mm.end(g) - before.size + pos
-                Some(i.create(at, pos, start, end))
+                return Some(i.create(at, pos, start, end))
               }
             })
           case None => None
