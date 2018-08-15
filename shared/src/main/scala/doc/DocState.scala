@@ -13,12 +13,22 @@ case class DocState(
   userFoldedNodes: Map[String, Boolean]
 ) {
 
-  def quickSearch(tt: Seq[data.Unicode], deli: settings.SpecialKeySettings, viewport: Boolean): Seq[cursor.Node] = {
+  def quickSearch(tt: Seq[data.Unicode],
+    heading: Boolean,
+    headingLevel: Int,
+    code: Boolean,
+    deli: settings.SpecialKeySettings, viewport: Boolean): Seq[cursor.Node] = {
     val (n, cur) = if (viewport) (node(zoom), zoom) else (node, cursor.Node.root)
-    n.filter(cur, {
-      case data.Content.Code(_, _) => false
-      case data.Content.Rich(a) =>
-        a.quickSearch(tt, deli)
+    n.filter(cur, a => {
+      (!heading || a.isHeading) &&
+        (headingLevel <= 0 || a.heading.contains(headingLevel)) &&
+        (
+          a.content match {
+            case data.Content.Code(_, _) => code
+            case data.Content.Rich(j) =>
+              !code && j.quickSearch(tt, deli)
+          }
+        )
     }).sortBy(cur => {
       val n = node(cur)
       (!n.isH1, !n.isHeading)

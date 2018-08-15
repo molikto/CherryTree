@@ -12,8 +12,10 @@ import scala.scalajs.js
 
 trait FilteringView[T] extends Overlay {
 
+
   protected def search: HTMLInputElement
 
+  protected def headerSize: Int = 0
   protected def list: HTMLElement
 
   private var term: String = ""
@@ -32,10 +34,9 @@ trait FilteringView[T] extends Overlay {
       marked = 0
     }
     if (n != oldA) {
-      while (list.childNodes.length > 0) {
-        destroyItem(list.childNodes(0).asInstanceOf[HTMLElement])
+      while (list.childNodes.length > headerSize) {
+        destroyItem(list.childNodes(headerSize).asInstanceOf[HTMLElement])
       }
-      removeAllChild(list)
       for (c <- available.zipWithIndex) {
         val child = renderItem(c._1, c._2)
         child.addEventListener("click", onClick)
@@ -81,7 +82,9 @@ trait FilteringView[T] extends Overlay {
     super.onDismiss()
     available = Seq.empty
     marked = -1
-    removeAllChild(list)
+    while (list.childNodes.length > headerSize) {
+      list.removeChild(list.childNodes(headerSize))
+    }
     term = ""
     search.value = ""
   }
@@ -92,8 +95,8 @@ trait FilteringView[T] extends Overlay {
       val newIndex = ((oldIndex + i) min (available.size - 1)) max 0
       if (oldIndex != newIndex) {
         marked = newIndex
-        val old = list.childNodes(oldIndex).asInstanceOf[HTMLElement]
-        val n = list.childNodes(newIndex).asInstanceOf[HTMLElement]
+        val old = list.childNodes(oldIndex + headerSize).asInstanceOf[HTMLElement]
+        val n = list.childNodes(newIndex + headerSize).asInstanceOf[HTMLElement]
         old.classList.remove("ct-selected")
         old.classList.add("ct-not-selected")
         n.classList.add("ct-selected")

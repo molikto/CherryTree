@@ -29,14 +29,21 @@ class QuickSearchDialog(val client: Client,
     `class` := "ct-input ct-input-large"
   ).render
 
+
+  private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code")
+  private val specialDesc = s"Special commands: ${special.mkString(" ")}"
+
+
+  override protected def headerSize: Int = 1
+
   override protected val list = div(
     flex := "1 1 auto",
     color := "#cccccc",
     width := "100%",
     height := "calc(100% - 57px)",
-    `class` := "ct-scroll ct-document-style"
+    `class` := "ct-scroll ct-document-style",
+    div(`class` := "ct-sans", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc, color := theme.disalbedInfo)
   ).render
-
 
   dom = div(
     `class` := "ct-card",
@@ -57,12 +64,32 @@ class QuickSearchDialog(val client: Client,
     }
   }
 
+
   override def data(term: String): Seq[(model.cursor.Node, String)] = {
-    val tt = term.split("\\s").toSeq.filter(complexTerm).map(a => model.data.Unicode(a.toLowerCase()))
+    val tt = term.split("\\s").toSeq.filter(complexTerm)
     if (tt.isEmpty) {
       Seq.empty
     } else {
-      client.state.quickSearch(tt, delimitationGraphemes, currentViewport).map(a => (a, client.state.node(a).uuid))
+      val raw = (tt.toSet -- special).map(a => model.data.Unicode(a.toLowerCase())).toSeq
+      val isHeading = tt.contains("!heading")
+      val reqireHeadingLevel =
+        if (tt.contains("!h1")) {
+          1
+        } else if (tt.contains("!h2")) {
+          2
+        } else if (tt.contains("!h3")) {
+          3
+        } else if (tt.contains("!h4")) {
+          4
+        } else if (tt.contains("!h5")) {
+          5
+        } else if (tt.contains("!h6")) {
+          6
+        } else {
+          -1
+        }
+      val requireCode = tt.contains("!code")
+      client.state.quickSearch(raw, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, currentViewport).map(a => (a, client.state.node(a).uuid))
     }
   }
 

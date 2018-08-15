@@ -37,14 +37,14 @@ case class Node (
   }
 
 
-  private def filter0(cur: cursor.Node, a: Content => Boolean, bf: ArrayBuffer[cursor.Node]): Unit = {
-    if (a(content)) bf.append(cur)
+  private def filter0(cur: cursor.Node, a: Node => Boolean, bf: ArrayBuffer[cursor.Node]): Unit = {
+    if (a(this)) bf.append(cur)
     childs.zipWithIndex.foreach(pair => {
       pair._1.filter0(cur :+ pair._2, a, bf)
     })
   }
 
-  def filter(cur: cursor.Node, a: Content => Boolean): Seq[cursor.Node] = {
+  def filter(cur: cursor.Node, a: Node => Boolean): Seq[cursor.Node] = {
     val bf = new ArrayBuffer[cursor.Node]()
     filter0(cur, a, bf)
     bf
