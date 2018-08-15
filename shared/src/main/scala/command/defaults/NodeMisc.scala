@@ -68,8 +68,8 @@ class NodeMisc extends CommandCategory("node: misc") {
     }
   }
 
-  for (i <- 1 to 6) {
-    new ContentStyleCommand(s"heading $i (h$i)", Some(data.Node.ContentType.Heading(i))) {
+  for (i <- 2 to 6) {
+    new ContentStyleCommand(s"heading $i ,h$i", Some(data.Node.ContentType.Heading(i))) {
       override protected def available(a: DocState): Boolean = if (a.isNormal) {
         if (i == 1) {
           true
@@ -89,6 +89,8 @@ class NodeMisc extends CommandCategory("node: misc") {
       }
     }
   }
+
+  new ContentStyleCommand(s"article, heading 1, h1", Some(data.Node.ContentType.Heading(1)))
 
   new ContentStyleCommand("cite", Some(data.Node.ContentType.Cite))
 
