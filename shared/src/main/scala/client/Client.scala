@@ -365,11 +365,6 @@ class Client(
     }
   }
 
-
-  override def refreshMode(): Unit = {
-    localChange(DocTransaction(state.mode0))
-  }
-
   override def codeEdit(op: Seq[operation.Unicode]): Unit = {
     if (state.isCodeInside) {
       val at = state.asCodeInside

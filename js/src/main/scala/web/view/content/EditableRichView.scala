@@ -340,7 +340,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
-    if (editor != null) return // LATER a hack!
     if (previousMode < 0) initMode()
     aa match {
       case mode.Content.RichInsert(pos) =>
@@ -397,7 +396,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
       override def onDismiss(): Unit = {
         editor = null
-        controller.refreshMode()
       }
     }
     documentView.latexEditor.show(anchor)
@@ -409,7 +407,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       override def rect: Rect = editorRect
       override def onDismiss(): Unit = {
         editor = null
-        controller.refreshMode()
       }
       override def update(url: Unicode, title: Unicode): Unit = {
         controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), editor._2, url, title)

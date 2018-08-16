@@ -17,6 +17,5 @@ trait EditorInterface {
   def onAttributeModified(cur: cursor.Node, range: IntRange, url: Unicode, title: Unicode)
   def onLaTeXModified(cur: cursor.Node, range: IntRange, uni: Seq[operation.Unicode])
   def onExternalPastePlain(a: Unicode)
-  def refreshMode()
   def onKeyDown(k: Key): Boolean
 }

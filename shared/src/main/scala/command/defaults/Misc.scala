@@ -141,7 +141,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, _, t) => {
-        return DocTransaction.message(ViewMessage.ShowLaTeXEditor(cur, t.range, t.text.asCoded.content))
+        return DocTransaction.message(ViewMessage.ShowLaTeXEditor(cur, t.textRange, t.text.asCoded.content))
       })
       DocTransaction.empty
     }
