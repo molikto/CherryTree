@@ -4,29 +4,15 @@ package web.view
 import model.data.Unicode
 
 object LaTeXDialog {
-  trait Anchor extends OverlayAnchor {
-    def update(url: Unicode): Unit
+  abstract class Anchor(str: Unicode, insert: Boolean) extends SourceEditOption(str, insert, "stex") with OverlayAnchor {
   }
 }
 
-class LaTeXDialog(override val layer: OverlayLayer) extends MountedOverlay[LaTeXDialog.Anchor] with SourceEditOverlay { // order is important!
-
-  var uni: Unicode = Unicode.empty
-
+class LaTeXDialog(override val layer: OverlayLayer) extends SourceEditOverlay[LaTeXDialog.Anchor] with MountedOverlay[LaTeXDialog.Anchor]  { // order is important!
 
   override def onAttach(): Unit = {
+    super.onAttach()
     dom.style.width = "560px"
     dom.style.height = "280px"
-  }
-
-  def show(anchor: LaTeXDialog.Anchor, insert: Boolean, uni: Unicode): Unit = {
-    this.uni = uni
-    beforeShowMounted(anchor)
-    show(uni, insert, "stex", str => anchor.update(str))
-  }
-
-
-  override def show(anchor: LaTeXDialog.Anchor): Unit = {
-    throw new IllegalStateException("Call another one!")
   }
 }

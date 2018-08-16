@@ -11,12 +11,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-trait CoveringOverlay extends Overlay {
+object CoveringOverlay {
 
-  protected val covering: () => HTMLElement
-
-  override def show(): Unit = {
-    val f = covering().getBoundingClientRect()
+  def show(layer: OverlayLayer, dom: HTMLElement, coveringElement: HTMLElement): Unit = {
+    val f = coveringElement.getBoundingClientRect()
     val g = layer.parent.getBoundingClientRect()
     dom.style.position = "absolute"
     val paddingLeft = (((f.left - g.left) max 0.0) + 48) + "px"
@@ -27,32 +25,23 @@ trait CoveringOverlay extends Overlay {
     dom.style.height = s"calc(100% - $paddingTop - $paddingBottom)"
     dom.style.top = paddingTop
     dom.style.left = paddingLeft
-    super.show()
-  }
-
-  override protected def onDismiss(): Unit = {
-    super.onDismiss()
   }
 }
 
 trait OverlayAnchor {
   def rect: Rect
-  def onDismiss()
+  def onDismiss(): Unit = {}
 }
 
-trait MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
+trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
 
 
   protected var anchor: ANCHOR = null.asInstanceOf[ANCHOR]
 
-  protected def beforeShowMounted(anchor: ANCHOR): Unit = {
+  override def show(anchor: ANCHOR): Unit = {
     this.anchor = anchor
     setDomAttributeBy(anchor.rect)
-  }
-
-  def show(anchor: ANCHOR): Unit = {
-    beforeShowMounted(anchor)
-    show()
+    super.show(anchor)
   }
 
   override protected def onDismiss(): Unit = {
@@ -65,13 +54,21 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
     if (anchor != null) setDomAttributeBy(anchor.rect)
   }
 }
+
 trait Overlay extends View {
+  def dismiss()
+}
+
+trait OverlayT[T <: Any] extends Overlay {
 
   protected def layer: OverlayLayer
 
   private var attached = false
 
-  def show(): Unit = {
+  protected var opt: T = null.asInstanceOf[T]
+
+  def show(t: T): Unit = {
+    opt = t
     if (!attached) {
       attached = true
       attachTo(layer)
@@ -95,6 +92,7 @@ trait Overlay extends View {
   }
 
   protected def onDismiss(): Unit = {
+    opt = null.asInstanceOf[T]
     dom.style.display = "none"
     layer.onDismissOverlay(this)
   }
@@ -120,6 +118,7 @@ trait Overlay extends View {
     dom.style.top = rec.bottom.toString + "px"
   }
 }
+
 class OverlayLayer(val parent: HTMLElement, base: View) extends View {
 
   private val showingOverlay = ArrayBuffer[Overlay]()

@@ -39,8 +39,8 @@ class EditableSourceView(
       removeEditor()
     } else {
       editing = documentView.sourceEditor
-      editing.show(c.unicode, false, c0.asSourceMime, src => {
-        controller.exitCodeEditMode(c.unicode.diff(src))
+      editing.show(new SourceEditOption(c.unicode, false, c0.asSourceMime) {
+        override def onDismiss(src: Unicode): Unit = controller.exitCodeEditMode(c.unicode.diff(src))
       })
     }
   }

@@ -201,7 +201,7 @@ case class Unicode(var str: String) extends Seq[Int] {
   }
 
   private def noSurrogatePairBeforeAndAtCodePointIndex(pos: Int): Boolean = {
-    if (size == -2) {
+    if (size0 == -2) {
       true
     } else {
       if (size0 != -1) {

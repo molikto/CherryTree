@@ -11,18 +11,15 @@ import web.view.content.ContentView
 
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
-  override protected val covering: () => HTMLElement
-) extends FilteringView[(model.cursor.Node, String)]
-  with  CoveringOverlay
+  val coveringElement: HTMLElement
+) extends FilteringView[Boolean, (model.cursor.Node, String)]
   with UnselectableView with Settings {
 
 
-  var currentViewport = false
-  def show(viewport: Boolean): Unit = {
-    currentViewport = viewport
-    super.show()
+  override def show(t: Boolean): Unit = {
+    CoveringOverlay.show(layer, dom, coveringElement)
+    super.show(t)
   }
-
 
   override protected val search = input(
     width := "100%",
@@ -89,7 +86,7 @@ class QuickSearchDialog(val client: Client,
           -1
         }
       val requireCode = tt.contains("!code")
-      client.state.quickSearch(raw, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, currentViewport).map(a => (a, client.state.node(a).uuid))
+      client.state.quickSearch(raw, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
     }
   }
 

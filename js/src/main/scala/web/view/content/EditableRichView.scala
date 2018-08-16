@@ -387,14 +387,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, insert: Boolean, text: Unicode): Unit = {
     editor = (documentView.latexEditor, pos)
-    val anchor = new LaTeXDialog.Anchor {
+    val anchor = new LaTeXDialog.Anchor(text, insert) {
       override def rect: Rect = editorRect
-      override def onDismiss(): Unit = editor = null
-      override def update(url: Unicode): Unit = {
+      override def onDismiss(url: Unicode): Unit = {
         controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, url)
+        editor = null
       }
     }
-    documentView.latexEditor.show(anchor, insert, text)
+    documentView.latexEditor.show(anchor)
   }
 
   def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
@@ -411,6 +411,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
+    val dataBefore = rich
     rich = data.content
     clearMode()
     updateContent(c, viewUpdated)
@@ -421,7 +422,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
         val range = editor._2
         val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
-        val res = c.transform(data, fakeMode)._1
+        val res = c.op.transformRich(dataBefore, fakeMode)._1
         res match {
           case model.mode.Content.RichVisual(a, b) =>
             editor = (editor._1, IntRange(a.start, b.until))

@@ -45,7 +45,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
   }
 
 
-  private[model] def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {
+  def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {
     val maybeBad = u.foldLeft((a, false)) {
       (s, u) => u.transformRichMaybeBad(s)
     }

@@ -71,11 +71,11 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     o
   }
 
-  val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, () => dom)
+  val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, dom)
 
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
-    val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(overlayLayer, () => docView.dom)
+    val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(overlayLayer, docView.dom)
     val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
     val latexEditor: LaTeXDialog = new LaTeXDialog(overlayLayer)
 

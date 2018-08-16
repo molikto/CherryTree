@@ -10,7 +10,7 @@ import web.view.doc.DocumentView
 
 import scala.scalajs.js
 
-trait FilteringView[T] extends Overlay {
+trait FilteringView[P <: Any, T] extends OverlayT[P] {
 
 
   protected def search: HTMLInputElement
@@ -71,11 +71,11 @@ trait FilteringView[T] extends Overlay {
   private var available: Seq[T] = Seq.empty
 
 
-  override def show(): Unit = {
+  override def show(t: P): Unit = {
     marked = -1
     search.value = ""
     update()
-    super.show()
+    super.show(t)
   }
 
   override protected def onDismiss(): Unit = {

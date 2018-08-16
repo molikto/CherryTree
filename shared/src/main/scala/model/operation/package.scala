@@ -88,7 +88,11 @@ package object operation {
     }
 
     def apply(cs: TRANSACTION, model: DATA): DATA = {
-      cs.foldLeft(model) { (model, c) => c.apply(model) }
+      try {
+        cs.foldLeft(model) { (model, c) => c.apply(model) }
+      } catch {
+        case e: Throwable => throw new Exception("apply failed", e)
+      }
     }
 
     def applyT(cs: Seq[TRANSACTION], model: DATA): DATA = {
