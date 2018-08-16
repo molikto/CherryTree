@@ -23,14 +23,12 @@ abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeM
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   def showLineNumber: Boolean = true
+  def exitOnInputDollarSign: Boolean = false
 
   private val ta = textarea(
-    flex := "1 1 auto",
-    width := "100%",
     height := "100%",
     name := "code"
   ).render
-
 
   dom= form(
     display := "flex",
@@ -99,7 +97,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       if (!updating && !dismissed) {
         val oldVal = str.str
         val newVal = codeMirror.getValue().asInstanceOf[String]
-        window.console.log(newVal)
         var start = 0
         var oldEnd = oldVal.length
         var newEnd = newVal.length
@@ -115,13 +112,17 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
         val text = newVal.substring(start, newEnd)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
-        if (text.isEmpty) {
-          newOp(operation.Unicode.Delete(fromCp, toCp))
-        } else if (fromCp == toCp) {
-          newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+        if (exitOnInputDollarSign && from == to && text == "$" && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
+          dismiss()
         } else {
-          newOp(operation.Unicode.Delete(fromCp, toCp))
-          newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+          if (text.isEmpty) {
+            newOp(operation.Unicode.Delete(fromCp, toCp))
+          } else if (fromCp == toCp) {
+            newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+          } else {
+            newOp(operation.Unicode.Delete(fromCp, toCp))
+            newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+          }
         }
       }
     })

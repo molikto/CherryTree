@@ -416,10 +416,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
 
+  override protected def clearDom(): Unit = {
+    super.clearDom()
+    previousMode = if (isEmpty) -2 else -1
+  }
+
   override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
     val dataBefore = rich
     rich = data.content
-    clearMode()
     updateContent(c, viewUpdated)
     if (!viewUpdated) {
       // val cs = c.asInstanceOf[operation.Content.Rich]

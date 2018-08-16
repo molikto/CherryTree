@@ -68,6 +68,8 @@ class DocumentView(
     */
   private var currentEditable: HTMLElement = noEditable
   private var isFocusedOut: Boolean = false
+  // LATER fix tihs. this is because we are rendering rich modes by window.setSelection, stupid stuff
+  private var updateModeOnFocusIn: Boolean = false
   private var duringStateUpdate: Boolean = false
 
 
@@ -101,6 +103,10 @@ class DocumentView(
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
+      if (updateModeOnFocusIn) {
+        updateModeOnFocusIn = false
+        updateMode(client.state.mode, false, false)
+      }
     }
   })
 
@@ -332,6 +338,10 @@ class DocumentView(
 
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
+    if (isFocusedOut) {
+      updateModeOnFocusIn = true
+      return
+    }
     duringStateUpdate = true
     m match {
       case None =>
