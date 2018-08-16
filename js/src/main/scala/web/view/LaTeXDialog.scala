@@ -10,9 +10,11 @@ object LaTeXDialog {
 
 class LaTeXDialog(override val layer: OverlayLayer) extends SourceEditOverlay[LaTeXDialog.Anchor] with MountedOverlay[LaTeXDialog.Anchor]  { // order is important!
 
+  override def showLineNumber = false
+
   override def onAttach(): Unit = {
     super.onAttach()
     dom.style.width = "560px"
-    dom.style.height = "280px"
+    dom.style.height = "140px"
   }
 }

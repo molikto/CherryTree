@@ -22,6 +22,8 @@ abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeM
 
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
+  def showLineNumber: Boolean = true
+
   private val ta = textarea(
     flex := "1 1 auto",
     width := "100%",
@@ -60,7 +62,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   override def onAttach(): Unit = {
     super.onAttach()
     codeMirror = CodeMirror.fromTextArea(ta, jsObject(a => {
-      a.lineNumbers = true
+      a.lineNumbers = showLineNumber
       a.styleActiveLine = true
       a.matchBrackets = true
       a.keyMap = "vim"
