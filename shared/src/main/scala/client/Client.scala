@@ -385,7 +385,7 @@ class Client(
     val rich = state.node(cur).rich
     localChange(DocTransaction(Seq(
       operation.Node.rich(cur, operation.Rich.changeAttributeAt(rich, range, url, title))
-    ), state.mode))
+    ), None))
   }
 
   override def onLaTeXModified(cur: Node, range: IntRange, uni: data.Unicode): Unit = {
