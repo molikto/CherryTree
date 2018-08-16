@@ -22,6 +22,10 @@ case class Node (
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+
+  def count: Int = 1 + childs.map(_.count).sum
+  def size: Int = content.size + childs.map(_.size).sum
+
   def lookup(_2: String, currentCur: cursor.Node = cursor.Node.root): Option[cursor.Node] = {
     if (uuid == _2) {
       Some(currentCur)

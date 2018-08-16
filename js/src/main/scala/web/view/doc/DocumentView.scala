@@ -14,6 +14,7 @@ import web.view.content.{EditableContentView, EditableRichView, EditableSourceVi
 import web.view._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.scalajs.js
 
 class DocumentView(
   private val client: DocInterface,
@@ -310,9 +311,27 @@ class DocumentView(
     val list = div(`class` := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
+    hold.addEventListener("mouseover", handleHoverEvent)
     toggleHoldRendering(parent, hold, cur != currentZoom && client.state.userFoldedNodes.getOrElse(root.uuid, root.isH1))
     box.appendChild(list)
     insertNodes(cur, list, 0, root.childs)
+  }
+
+
+  private val handleHoverEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
+    val hold = e.target.asInstanceOf[HTMLElement]
+    val ee = View.fromDom[EditableContentView.General](hold.previousSibling.firstChild)
+    val cur = cursorOf(ee)
+    val node = client.state.node(cur)
+    hold.title =
+      Seq(s"items: ${node.count}",
+        s"text size: ${node.content.size}",
+        s"total text size: ${node.size}",
+        node.attribute(model.data.Node.ContentType) match {
+          case Some(model.data.Node.ContentType.Heading(i)) => s"heading $i"
+          case _ => ""
+        }
+      ).filter(_.nonEmpty).mkString("\n")
   }
 
 

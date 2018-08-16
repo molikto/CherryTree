@@ -10,6 +10,7 @@ import scala.util.Random
 abstract sealed class Content {
 
   def isEmpty: Boolean
+  def size: Int
   def nonEmpty: Boolean = !isEmpty
 
   def defaultNormalMode(): mode.Content.Normal
@@ -48,6 +49,7 @@ object Content extends DataObject[Content] {
 
     override def isEmpty: Boolean = unicode.isEmpty
 
+    override def size: Int = unicode.size
   }
 
   object Code {
@@ -55,7 +57,7 @@ object Content extends DataObject[Content] {
   }
 
   case class Rich(content: data.Rich) extends Content {
-    def size: Int = content.size
+    override def size: Int = content.size
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(content.rangeBeginning)
 
