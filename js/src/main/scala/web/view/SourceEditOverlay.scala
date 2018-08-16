@@ -86,7 +86,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
 
     CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-      val isNormal = e.mode.asInstanceOf[String] == "normal"
+      val mm = e.mode.asInstanceOf[String]
+      val isNormal = mm == "normal"
+      isInnerInsert = mm == "insert"
       if (!isNormal) isInnerNormal = false
       else window.setTimeout(() => {
         isInnerNormal = true
@@ -112,7 +114,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
         val text = newVal.substring(start, newEnd)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
-        if (exitOnInputDollarSign && from == to && text == "$" && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
+        if (isInnerInsert && exitOnInputDollarSign && from == to && text == "$" && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
           dismiss()
         } else {
           if (text.isEmpty) {
@@ -135,6 +137,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   }
 
   private var isInnerNormal = true
+  private var isInnerInsert = false
 
 
 

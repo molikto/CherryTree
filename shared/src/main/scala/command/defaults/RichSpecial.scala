@@ -182,7 +182,7 @@ class RichSpecial extends CommandCategory("text format") {
         val v = a.asNodeVisual
         if (v.fix == v.move) {
           val node = a.node(v.fix)
-          if (node.content.isRich && node.childs.isEmpty) {
+          if (node.content.isRich) {
             val rich = node.content.asInstanceOf[data.Content.Rich].content
             if (rich.text.size == 1 && rich.text.head.isDelimited && rich.text.head.asDelimited.delimitation == deli) {
               return DocTransaction(Seq(operation.Node.rich(v.fix, operation.Rich.deleteOrUnwrapAt(rich, 0))), None)
