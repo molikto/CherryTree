@@ -115,6 +115,10 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
+  def fromCode(range: IntRange, uni: Seq[Unicode]): Rich = {
+    Rich(uni.map(_.translate(range.start + 1)), Type.AddDelete)
+  }
+
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
     Rich(
       Seq(

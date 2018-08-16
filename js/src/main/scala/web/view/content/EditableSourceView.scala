@@ -2,6 +2,7 @@ package web.view.content
 
 import model._
 import model.data._
+import model.operation.Content
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
@@ -31,6 +32,22 @@ class EditableSourceView(
     }
   }
 
+
+  override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
+    this.c = c
+    if (editing == null) {
+      super.updateContent(c, trans, viewUpdated)
+    } else {
+      if (!viewUpdated) {
+        trans match {
+          case model.operation.Content.CodeLang(lang) =>
+          case model.operation.Content.CodeContent(c) =>
+            editing.sync(c)
+        }
+      }
+    }
+  }
+
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
@@ -38,10 +55,21 @@ class EditableSourceView(
     if (aa == model.mode.Content.CodeNormal) {
       removeEditor()
     } else {
-      editing = documentView.sourceEditor
-      editing.show(new SourceEditOption(c.unicode, false, c0.asSourceMime) {
-        override def onDismiss(src: Unicode): Unit = controller.exitCodeEditMode(c.unicode.diff(src))
-      })
+      if (editing == null) {
+        editing = documentView.sourceEditor
+        editing.show(new SourceEditOption(c.unicode, false, c0.asSourceMime) {
+
+          override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
+            controller.codeEdit(unicode)
+          }
+
+          override def onDismiss(): Unit = {
+            editing = null
+            controller.exitCodeEdit()
+            updateContent()
+          }
+        })
+      }
     }
   }
 

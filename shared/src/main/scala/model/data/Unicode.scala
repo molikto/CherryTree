@@ -14,7 +14,6 @@ import scala.util.Random
 
 
 class UnicodeParseException(msg: String) extends IllegalStateException(msg) {
-
 }
 
 
@@ -152,6 +151,14 @@ case class Unicode(var str: String) extends Seq[Int] {
     true
   }
 
+  def guessProp: Unicode = {
+    if (size0 != -2) {
+      if (util.isAscii(str)) {
+        size0 = -2
+      }
+    }
+    this
+  }
 
 
   override def length: Int = size
@@ -172,6 +179,21 @@ case class Unicode(var str: String) extends Seq[Int] {
   override def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
 
   override def head: Int = apply(0)
+
+  def fromStringPosition(i: Int): Int = {
+    if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
+      i
+    } else {
+      val index = if (lastCodePointIndex == -1 || i < lastCharIndex) {
+        str.codePointCount(0, i)
+      } else {
+        str.codePointCount(lastCharIndex, i) + lastCodePointIndex
+      }
+      lastCharIndex = i
+      lastCodePointIndex = index
+      index
+    }
+  }
 
   def toStringPosition(i: Int): Int = {
     if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {

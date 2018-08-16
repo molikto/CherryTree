@@ -11,11 +11,13 @@ import scalatags.JsDom.all._
 import web.view.doc.DocumentView
 import web.view._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
 abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeMirrorMode: String) {
-  def onDismiss(unicode: Unicode): Unit
+  def onTransaction(unicode: Seq[operation.Unicode]): Unit
+  def onDismiss(): Unit
 }
 
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
@@ -27,6 +29,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     name := "code"
   ).render
 
+
   dom= form(
     display := "flex",
     flexDirection := "column-reverse",
@@ -34,64 +37,130 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     `class` := "ct-card unselectable",
     ta).render
 
-  val codeMirror = CodeMirror.fromTextArea(ta, jsObject(a => {
-    a.lineNumbers = true
-    a.styleActiveLine = true
-    a.matchBrackets = true
-    a.keyMap = "vim"
-    a.lineWrapping = true
-    a.showCursorWhenSelecting = true
-    a.inputStyle = "contenteditable"
-    a.theme = "oceanic-next"
-  }))
+  private var codeMirror: js.Dynamic = null
+  private var pendingChanges = new ArrayBuffer[operation.Unicode]()
 
-  codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = "100%"
+  def newOp(a: operation.Unicode): Unit = {
+    str = a(str)
+    pendingChanges.append(a)
+    window.setTimeout(() => flush(), 100)
+  }
+
+  def flush(): Unit = {
+    if (!dismissed) {
+      if (pendingChanges.nonEmpty) {
+        opt.onTransaction(pendingChanges)
+        pendingChanges.clear()
+      }
+    }
+  }
+
+  private var updating = false
+
+  override def onAttach(): Unit = {
+    super.onAttach()
+    codeMirror = CodeMirror.fromTextArea(ta, jsObject(a => {
+      a.lineNumbers = true
+      a.styleActiveLine = true
+      a.matchBrackets = true
+      a.keyMap = "vim"
+      a.lineWrapping = true
+      a.showCursorWhenSelecting = true
+      a.inputStyle = "contenteditable"
+      a.theme = "oceanic-next"
+    }))
+
+    codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = "100%"
 
 
-  {
     val vs = codeMirror.getWrapperElement().asInstanceOf[HTMLElement].getElementsByClassName("CodeMirror-vscrollbar")
     for (i <- 0 until vs.length) {
       vs.item(i).classList.add("ct-scroll")
     }
+
+    CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
+      if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
+        dismiss()
+      }
+    })
+
+
+    CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
+      val isNormal = e.mode.asInstanceOf[String] == "normal"
+      if (!isNormal) isInnerNormal = false
+      else window.setTimeout(() => {
+        isInnerNormal = true
+      }, 0)
+    })
+
+    CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
+      if (!updating && !dismissed) {
+        val oldVal = str.str
+        val newVal = codeMirror.getValue().asInstanceOf[String]
+        window.console.log(newVal)
+        var start = 0
+        var oldEnd = oldVal.length
+        var newEnd = newVal.length
+        while (start < newEnd && start < oldEnd && oldVal.codePointAt(start) == newVal.codePointAt(start)) {
+          start += 1
+        }
+        while (oldEnd > start && newEnd > start && oldVal.codePointAt(oldEnd - 1) == newVal.codePointAt(newEnd - 1)) {
+          oldEnd -= 1
+          newEnd -= 1
+        }
+        val from = start
+        val to = oldEnd
+        val text = newVal.substring(start, newEnd)
+        val fromCp = str.fromStringPosition(from)
+        val toCp = str.fromStringPosition(to)
+        if (text.isEmpty) {
+          newOp(operation.Unicode.Delete(fromCp, toCp))
+        } else if (fromCp == toCp) {
+          newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+        } else {
+          newOp(operation.Unicode.Delete(fromCp, toCp))
+          newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
+        }
+      }
+    })
+
+    window.setTimeout(() => codeMirror.refresh(), 20)
   }
-
-  var isInnerNormal = true
-
-  CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
-    if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
-      dismiss()
-    }
-  })
-
-
-  CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-    val isNormal = e.mode.asInstanceOf[String] == "normal"
-    if (!isNormal) isInnerNormal = false
-    else window.setTimeout(() => {
-      isInnerNormal = true
-    }, 0)
-  })
-
 
   override def focus(): Unit = {
     codeMirror.focus()
   }
 
+  private var isInnerNormal = true
+
+
 
   override protected def onDismiss(): Unit = {
     val opt = this.opt
     super.onDismiss()
-    opt.onDismiss(model.data.Unicode(codeMirror.getValue().asInstanceOf[String]))
+    opt.onDismiss()
     codeMirror.setValue("")
   }
 
+  private var str: Unicode = Unicode.empty
+
+  def sync(a: operation.Unicode): Unit = {
+    flush()
+    updating = true
+    str = a(str)
+    codeMirror.setValue(str.str)
+    updating = false
+  }
+
   override def show(opt: T): Unit = {
-    codeMirror.setValue(opt.str.str)
+    super.show(opt)
+    str = opt.str
+    updating = true
+    codeMirror.setValue(str.str)
     codeMirror.setOption("mode", opt.codeMirrorMode)
     if (opt.insert) {
-      window.asInstanceOf[js.Dynamic].cm = codeMirror
-      //codeMirror.enterInsertMode()
+      CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
     }
-    super.show(opt)
+    updating = false
   }
 }

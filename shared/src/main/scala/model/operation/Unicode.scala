@@ -13,6 +13,8 @@ import scala.util.Random
 
 
 sealed trait Unicode extends Operation[data.Unicode] {
+  def translate(start: Int): Unicode
+
   override type This = Unicode
 
   private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean)
@@ -28,6 +30,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
 
+
+    override def translate(start: Int): Unicode = copy(at = at + start)
 
     def transformRange(r: IntRange): IntRange = r match {
       case IntRange(start, until) =>
@@ -73,6 +77,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Delete(r: IntRange) extends Unicode {
     override def ty: Type = Type.Delete
     override def apply(d: data.Unicode): data.Unicode = d.delete(r)
+
+    override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
 
     def transformRange(range: IntRange): Option[IntRange] =
       r.transformDeletingRangeAfterDeleted(range)
@@ -131,6 +137,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def apply(d: data.Unicode): data.Unicode = d.replace(r, unicode)
     def sizeDiff: Int =  unicode.size - r.size
 
+    override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
+
     def transformRange(range: IntRange): IntRange = {
       if (range.contains(r)) {
         IntRange(range.start, range.until + sizeDiff)
@@ -173,6 +181,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Surround(r: IntRange, left: data.Unicode, right: data.Unicode, idempotent: Boolean = true) extends Unicode {
     override def ty: Type = Type.Add
     override def apply(d: data.Unicode): data.Unicode = d.surround(r, left, right)
+
+    override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
 
     def transformRange(range: IntRange): Option[IntRange] = {
       if (range == r) {
@@ -222,6 +232,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
   case class Move(r: IntRange, at: Int) extends Unicode {
     override def ty: Type = Type.Structural
     override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
+
+    override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
 
     override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = throw new IllegalAccessError("We don't have unicode move yet")
 

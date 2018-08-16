@@ -359,13 +359,23 @@ class Client(
   }
 
 
-  override def exitCodeEditMode(ps: Seq[model.operation.Unicode]): Unit = {
+  override def exitCodeEdit(): Unit = {
+    if (state.isCodeInside) {
+      localChange(DocTransaction(state.copyContentMode(mode.Content.CodeNormal)))
+    }
+  }
+
+
+  override def refreshMode(): Unit = {
+    localChange(DocTransaction(state.mode0))
+  }
+
+  override def codeEdit(op: Seq[operation.Unicode]): Unit = {
     if (state.isCodeInside) {
       val at = state.asCodeInside
       localChange(DocTransaction(
-        ps.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
-        , Some(state.copyContentMode(mode.Content.CodeNormal))))
-
+        op.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
+        , None, viewUpdated = true))
     }
   }
 
@@ -388,10 +398,10 @@ class Client(
     ), None))
   }
 
-  override def onLaTeXModified(cur: Node, range: IntRange, uni: data.Unicode): Unit = {
+  override def onLaTeXModified(cur: Node, range: IntRange, uni: Seq[operation.Unicode]): Unit = {
     // LATER collab this?
     localChange(DocTransaction(Seq(
-      operation.Node.rich(cur, operation.Rich.replacePlain(range.start + 1, range.until - 1, uni))
+      operation.Node.rich(cur, operation.Rich.fromCode(range, uni))
     ), None))
   }
 

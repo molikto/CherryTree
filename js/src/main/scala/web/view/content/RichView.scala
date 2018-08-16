@@ -72,7 +72,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     span(`class` := "ct-warning-inline", contenteditable := "false", str).render
   }
 
-  def errorInline(str: String): Span = {
+  def errorInline(str: String, th: Throwable): Span = {
     span(`class` := "ct-error-inline", contenteditable := "false", str).render
   }
 
@@ -112,8 +112,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
             KaTeX.render(c.str, a)
           } catch {
             case err: Throwable =>
-              a.appendChild(errorInline("LaTeX error"))
-              err.printStackTrace()
+              a.appendChild(errorInline("LaTeX error", err))
           }
         }
         span(`class` := "ct-latex",

@@ -340,6 +340,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
+    if (editor != null) return // LATER a hack!
     if (previousMode < 0) initMode()
     aa match {
       case mode.Content.RichInsert(pos) =>
@@ -389,9 +390,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     editor = (documentView.latexEditor, pos)
     val anchor = new LaTeXDialog.Anchor(text, insert) {
       override def rect: Rect = editorRect
-      override def onDismiss(url: Unicode): Unit = {
-        controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, url)
+
+      override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
+        controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, unicode)
+      }
+
+      override def onDismiss(): Unit = {
         editor = null
+        controller.refreshMode()
       }
     }
     documentView.latexEditor.show(anchor)
@@ -401,7 +407,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     editor = (documentView.attributeEditor, pos)
     val anchor = new UrlAttributeEditDialog.Anchor {
       override def rect: Rect = editorRect
-      override def onDismiss(): Unit = editor = null
+      override def onDismiss(): Unit = {
+        editor = null
+        controller.refreshMode()
+      }
       override def update(url: Unicode, title: Unicode): Unit = {
         controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), editor._2, url, title)
       }
