@@ -42,7 +42,7 @@ class RichSpecial extends CommandCategory("text format") {
       val keyU = Unicode(key.map(a => if (a.forall(_.isSimpleGrapheme)) Key.toString(a) else "").getOrElse(""))
       def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
       if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
-        DocTransaction(Seq.empty, moveSomeInsertMode(1))
+        DocTransaction(Seq.empty, moveSomeInsertMode(content.after(insert).size))
       } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
         val extraInsert =
         if (key.isEmpty || keyU.isEmpty) {
