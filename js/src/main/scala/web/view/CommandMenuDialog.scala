@@ -28,9 +28,6 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   ).render
 
   dom = div(
-    position := "absolute",
-    left := "0px",
-    top := "0px",
     `class` := "ct-card",
     div(width := "100%", padding := "6px", search),
     list

@@ -392,7 +392,7 @@ class Client(
     // LATER collab this?
     localChange(DocTransaction(Seq(
       operation.Node.rich(cur, operation.Rich.replacePlain(range.start + 1, range.until - 1, uni))
-    ), state.mode))
+    ), None))
   }
 
   override def onExternalPastePlain(unicode: Unicode): Unit = {
@@ -504,7 +504,6 @@ class Client(
       case _ if !isSmartInsert => extraInputRuleOperation(state_, update.transaction)
       case _ => None
     }
-    println("has extra" + extra.isDefined)
     val (last0, from) = operation.Node.apply(update.transaction, state)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
     val last = last0.copy(mode0 = update.mode.getOrElse(last0.mode0),

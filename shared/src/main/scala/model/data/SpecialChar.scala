@@ -94,6 +94,7 @@ object SpecialChar {
     def atomic: Boolean = ty == DelimitationType.CodedAtomic || ty == DelimitationType.Empty
     def coded: Boolean =  ty == DelimitationType.CodedAtomic || ty == DelimitationType.CodedNonAtomic
     def codedNonAtomic = ty == DelimitationType.CodedNonAtomic
+    def codedAtomic = ty == DelimitationType.CodedAtomic
 
     private[model] def startUnicode = Unicode(start)
     private[model] def endUnicode = Unicode(end)

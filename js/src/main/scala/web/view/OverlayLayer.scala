@@ -45,9 +45,13 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends Overlay {
 
   protected var anchor: ANCHOR = null.asInstanceOf[ANCHOR]
 
-  def show(anchor: ANCHOR): Unit = {
+  protected def beforeShowMounted(anchor: ANCHOR): Unit = {
     this.anchor = anchor
     setDomAttributeBy(anchor.rect)
+  }
+
+  def show(anchor: ANCHOR): Unit = {
+    beforeShowMounted(anchor)
     show()
   }
 
@@ -111,6 +115,7 @@ trait Overlay extends View {
     val bounding = toRect(layer.dom.getBoundingClientRect())
     val rec = rect.moveBy(-bounding.left, -bounding.top)
     //whereToShow(bounding, rec)
+    dom.style.position = "absolute"
     dom.style.left = rec.left.toString + "px"
     dom.style.top = rec.bottom.toString + "px"
   }

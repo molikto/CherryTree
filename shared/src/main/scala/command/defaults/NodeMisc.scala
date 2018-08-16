@@ -7,6 +7,8 @@ import model._
 import model.data.{Content, Text}
 import model.range.IntRange
 
+import scala.collection.mutable.ArrayBuffer
+
 class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {

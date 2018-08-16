@@ -30,9 +30,6 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
   }
 
   dom = div(
-    position := "absolute",
-    left := "0px",
-    top := "0px",
     `class` := "ct-card unselectable",
     padding := "6px",
     span("URL", `class` := "ct-input-label"),
@@ -44,11 +41,11 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
   private var urlStart: String = null
   private var titleStart: String = null
 
-  def show(anchor: UrlAttributeEditDialog.Anchor, url: String, title: String): Unit = {
-    urlStart = url
-    titleStart = title
-    urlInput.value = url
-    titleInput.value = title
+  def show(anchor: UrlAttributeEditDialog.Anchor, url: Unicode, title: Unicode): Unit = {
+    urlStart = url.str
+    titleStart = title.str
+    urlInput.value = url.str
+    titleInput.value = title.str
     super.show(anchor)
   }
 

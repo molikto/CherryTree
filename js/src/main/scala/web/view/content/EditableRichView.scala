@@ -385,7 +385,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
 
-  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode): Unit = {
+  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, insert: Boolean, text: Unicode): Unit = {
     editor = (documentView.latexEditor, pos)
     val anchor = new LaTeXDialog.Anchor {
       override def rect: Rect = editorRect
@@ -394,6 +394,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, url)
       }
     }
+    documentView.latexEditor.show(anchor, insert, text)
   }
 
   def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
@@ -405,7 +406,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), editor._2, url, title)
       }
     }
-    documentView.attributeEditor.show(anchor, text.urlAttr.str, text.titleAttr.str)
+    documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
   }
 
 

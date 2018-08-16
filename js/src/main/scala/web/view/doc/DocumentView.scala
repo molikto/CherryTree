@@ -472,7 +472,7 @@ class DocumentView(
 
 
 
-  var sourceEditor: SourceEditDialog = null
+  var sourceEditor: CoveringSourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
   var attributeEditor: UrlAttributeEditDialog = null
   var latexEditor : LaTeXDialog = null
@@ -497,7 +497,7 @@ class DocumentView(
 
 
   def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode): Unit = {
-    contentAt(cur).asInstanceOf[EditableRichView].showLaTeXEditor(cur, pos, text)
+    contentAt(cur).asInstanceOf[EditableRichView].showLaTeXEditor(cur, pos, client.state.isRichInsert, text)
   }
 
 

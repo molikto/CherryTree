@@ -133,6 +133,21 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
+    override val description: String = "edit code"
+    override def defaultKeys: Seq[KeySeq] = Seq(Enter)
+    override def priority: Int = 1
+    override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
+      t.text.isCodedAtomic
+    })
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      a.isRich((cur, _, t) => {
+        return DocTransaction.message(ViewMessage.ShowLaTeXEditor(cur, t.range, t.text.asCoded.content))
+      })
+      DocTransaction.empty
+    }
+  }
+
+  new Command {
     override val description: String = "edit source code"
     override def priority: Int = 1
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)

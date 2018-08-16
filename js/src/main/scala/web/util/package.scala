@@ -36,7 +36,27 @@ package object util {
         c.`type` match {
           case "text" =>
             assert(c.firstChild == null)
-            appendPlain(c.literal)
+            var a = c.literal
+            while (c.next != null && c.next.`type` == "text") {
+              c = c.next
+              a = a + c.literal
+            }
+            var j = 0
+            var i = 0
+            while (i >= 0 && j >= 0) {
+              i = a.indexOf('$')
+              if (i >= 0) {
+                j = a.indexOf('$', i + 1)
+                if (j >= 0) {
+                  if (i > 0) {
+                    buffer.append(Text.Plain(Unicode(a.substring(0, i))))
+                  }
+                  buffer.append(Text.LaTeX(Unicode(a.substring(i + 1, j))))
+                  a = a.substring(j + 1)
+                }
+              }
+            }
+            if (a.nonEmpty) buffer.append(Text.Plain(Unicode(a)))
           case "softbreak" =>
             assert(c.firstChild == null)
             appendPlain(" ")

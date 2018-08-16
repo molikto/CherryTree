@@ -13,10 +13,14 @@ import web.view._
 
 import scala.scalajs.js
 
-class SourceEditDialog(
+
+class CoveringSourceEditDialog(
   protected val layer: OverlayLayer,
   override protected val covering: () => HTMLElement
-) extends CoveringOverlay {
+) extends CoveringOverlay with SourceEditOverlay { // ordering is important
+}
+
+trait SourceEditOverlay extends Overlay {
 
   private val ta = textarea(
     flex := "1 1 auto",
@@ -79,17 +83,21 @@ class SourceEditDialog(
   override protected def onDismiss(): Unit = {
     super.onDismiss()
     if(nDismiss != null) {
-      nDismiss(codeMirror.getValue().asInstanceOf[String])
+      nDismiss(model.data.Unicode(codeMirror.getValue().asInstanceOf[String]))
       nDismiss = null
     }
   }
 
-  var nDismiss: String => Unit = null
+  var nDismiss: Unicode => Unit = null
   // codeMirror.getScrollerElement.asInstanceOf[HTMLElement].classList.add("ct-scroll")
 
-  def documentEdit(a: String, onDismiss: String => Unit): Unit = {
+  def show(a: Unicode, insert: Boolean, codeMirrorMode: String, onDismiss: Unicode => Unit): Unit = {
     this.nDismiss = onDismiss
-    super.show()
-    codeMirror.setValue(a)
+    show()
+    codeMirror.setValue(a.str)
+    codeMirror.setOption("mode", codeMirrorMode)
+    if (insert) {
+      codeMirror.enterInsertMode()
+    }
   }
 }

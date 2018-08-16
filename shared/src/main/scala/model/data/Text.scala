@@ -15,6 +15,7 @@ abstract sealed class Text {
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
   def asCoded: Text.Coded = this.asInstanceOf[Text.Coded]
   def isCodedNonAtomic: Boolean = this.isInstanceOf[Text.Coded] && asCoded.delimitation.codedNonAtomic
+  def isCodedAtomic: Boolean = this.isInstanceOf[Text.Coded] && asCoded.delimitation.codedAtomic
   def isPlain: Boolean = this.isInstanceOf[Text.Plain]
   def isDelimited: Boolean = this.isInstanceOf[Text.Delimited]
   def asDelimited: Text.Delimited = this.asInstanceOf[Text.Delimited]

@@ -112,7 +112,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
             KaTeX.render(c.str, a)
           } catch {
             case err: Throwable =>
-              a.appendChild(warningInline("LaTeX error"))
+              a.appendChild(errorInline("LaTeX error"))
               err.printStackTrace()
           }
         }

@@ -307,6 +307,9 @@ case class Unicode(var str: String) extends Seq[Int] {
   }
 
   def diff(to: Unicode): Seq[operation.Unicode] = {
+    if (this.isBlank) {
+      return Seq(operation.Unicode.Insert(0, to))
+    }
     val time = System.currentTimeMillis()
     val diff = util.diff.Diff.create(toStrList, to.toStrList).diffs
     var olen = 0

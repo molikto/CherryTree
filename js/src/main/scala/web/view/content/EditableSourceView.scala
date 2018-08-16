@@ -22,7 +22,7 @@ class EditableSourceView(
 ) extends SourceView(c0)
   with EditableContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
-  private var editing: SourceEditDialog = null
+  private var editing: CoveringSourceEditDialog = null
 
   def removeEditor(): Unit = {
     if (editing != null) {
@@ -39,8 +39,8 @@ class EditableSourceView(
       removeEditor()
     } else {
       editing = documentView.sourceEditor
-      editing.documentEdit(c.unicode.str, src => {
-        controller.exitCodeEditMode(c.unicode.diff(Unicode(src)))
+      editing.show(c.unicode, false, c0.asSourceMime, src => {
+        controller.exitCodeEditMode(c.unicode.diff(src))
       })
     }
   }
