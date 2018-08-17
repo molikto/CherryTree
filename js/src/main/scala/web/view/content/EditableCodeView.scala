@@ -62,6 +62,9 @@ class EditableCodeView(
     }
   }
 
+
+  var changedInsideEditor = false
+
   override def updateContent(): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
       codeView.updateContent()
@@ -84,16 +87,21 @@ class EditableCodeView(
         editing.show(new SourceEditOption(contentData.unicode, false, contentData.ty) {
 
           override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
+            changedInsideEditor = true
             controller.codeEdit(unicode)
           }
 
           override def onDismiss(): Unit = {
             editing = null
             controller.exitCodeEdit()
-            updateContent()
+            if (changedInsideEditor) {
+              updateContent()
+              changedInsideEditor = false
+            }
           }
 
           override def onCodeTypeChange(to: CodeType): Unit = {
+            changedInsideEditor = true
             controller.codeTypeChange(to)
           }
         })

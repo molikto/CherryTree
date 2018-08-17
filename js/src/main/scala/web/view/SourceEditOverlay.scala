@@ -29,6 +29,7 @@ object SourceEditOverlay {
   val all = (Vector(
     ("Source: JavaScript", SourceCode("javascript")),
     ("Source: Markdown", SourceCode("markdown")),
+    ("Source: Kotlin", SourceCode("kotlin")),
     ("Embedded: HTML", Embedded("html")),
     ("LaTeX Macro", LaTeXMacro),
     ("Plain Text", PlainCodeType)) ++ SourceEditOverlay.inlineOnly).sortBy(_._1) ++
