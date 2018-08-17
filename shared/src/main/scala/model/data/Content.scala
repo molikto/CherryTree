@@ -34,6 +34,8 @@ object CodeType {
       SourceCode(a.substring("source/".length))
     } else if (a == "latex-macro") {
       LaTeXMacro
+    } else if (a == "latex") {
+      LaTeXEmbedded
     } else if (a == "plain") {
       PlainCodeType
     } else if (a == "") {

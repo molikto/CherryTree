@@ -10,7 +10,7 @@ import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.view.content.{EditableCodeView, EditableContentView, EditableRichView, EditableSourceView}
+import web.view.content._
 import web.view._
 
 import scala.collection.mutable.ArrayBuffer
@@ -338,22 +338,7 @@ class DocumentView(
       case model.data.Content.Rich(cs) =>
         new EditableRichView(this, editor, cs).asInstanceOf[EditableContentView.General]
       case c@model.data.Content.Code(_, _) =>
-        def sourceView() =
-          new EditableSourceView(this, editor, c).asInstanceOf[EditableContentView.General]
-        c.ty match {
-          case SourceCode(_) =>
-            sourceView()
-          case LaTeXMacro =>
-            sourceView()
-          case Embedded(_) =>
-            ???
-          case OtherCodeType(_) =>
-            sourceView()
-          case PlainCodeType =>
-            sourceView()
-          case EmptyCodeType =>
-            sourceView()
-        }
+        new EditableCodeView(this, editor, c).asInstanceOf[EditableContentView.General]
     }
   }
 

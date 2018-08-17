@@ -117,7 +117,7 @@ package object util {
             c = c.next
           case "html_block" =>
             assert(c.firstChild == null, "html_block has child")
-            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), "html")))
+            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), "embedded/html")))
             c = c.next
           case "thematic_break" =>
             assert(c.firstChild == null)

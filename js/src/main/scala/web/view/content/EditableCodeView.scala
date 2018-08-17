@@ -1,7 +1,7 @@
 package web.view.content
 
 import model._
-import model.data._
+import model.data.{Content, _}
 import model.operation.Content
 import model.range.IntRange
 import monix.execution.Cancelable
@@ -17,11 +17,18 @@ import web.view._
 import scala.scalajs.js
 
 
-trait EditableCodeView extends
-  EditableContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+class EditableCodeView(
+  val documentView: DocumentView,
+  val controller: EditorInterface,
+  override var contentData: model.data.Content.Code)
+  extends EditableContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
 
-  def documentView: DocumentView
-  def controller: EditorInterface
+  var codeView: ContentView.Code = ContentView.createFromCode(contentData)
+
+  dom = div(
+  ).render
+
+  codeView.attachToNode(dom)
 
   private var editing: CoveringSourceEditDialog = null
 
@@ -34,13 +41,20 @@ trait EditableCodeView extends
 
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
     this.contentData = c
+    codeView.contentData = c
     if (editing == null) {
-      updateContent()
+      if (ContentView.matches(c.ty, codeView)) {
+        codeView.updateContent(c, trans, viewUpdated)
+      } else {
+        codeView.destroy()
+        codeView = ContentView.createFromCode(c)
+        codeView.attachToNode(dom)
+      }
     } else {
-
       if (!viewUpdated) {
         trans match {
           case model.operation.Content.CodeLang(lang) =>
+            editing.sync(c.ty)
           case model.operation.Content.CodeContent(c) =>
             editing.sync(c)
         }
@@ -48,7 +62,15 @@ trait EditableCodeView extends
     }
   }
 
-  def updateContent()
+  override def updateContent(): Unit = {
+    if (ContentView.matches(contentData.ty, codeView)) {
+      codeView.updateContent()
+    } else {
+      codeView.destroy()
+      codeView = ContentView.createFromCode(contentData)
+      codeView.attachToNode(dom)
+    }
+  }
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
     if (fromUser) {
@@ -71,7 +93,9 @@ trait EditableCodeView extends
             updateContent()
           }
 
-          override def onCodeTypeChange(to: CodeType): Unit = ???
+          override def onCodeTypeChange(to: CodeType): Unit = {
+            controller.codeTypeChange(to)
+          }
         })
       }
     }
@@ -89,7 +113,13 @@ trait EditableCodeView extends
     */
   override def destroy(): Unit = {
     clearMode()
+    codeView.destroy()
     super.destroy()
+  }
+
+
+  override def focus(): Unit = {
+    codeView.focus()
   }
 
   override def initMode(): Unit = {
@@ -99,4 +129,5 @@ trait EditableCodeView extends
   override def selectionRect: Rect = {
     toRect(dom.getBoundingClientRect())
   }
+
 }

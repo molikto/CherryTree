@@ -37,7 +37,7 @@ class SourceView(
     updateContent()
   }
 
-  def updateContent() {
+  override def updateContent() {
     removeAllChild(preCode)
     updateCodeMirror()
   }

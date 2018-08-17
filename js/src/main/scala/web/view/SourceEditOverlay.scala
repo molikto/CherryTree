@@ -1,5 +1,6 @@
 package web.view
 
+import command.Key
 import web._
 import model._
 import model.data._
@@ -23,14 +24,14 @@ abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeT
 }
 object SourceEditOverlay {
   val inlineOnly: Seq[(String, CodeType)] = Vector(
-    ("LaTeX", LaTeXEmbedded)
+    ("Embedded: LaTeX", LaTeXEmbedded)
   )
-  val all = Vector(
+  val all = (Vector(
     ("Source: JavaScript", SourceCode("javascript")),
     ("Source: Markdown", SourceCode("markdown")),
+    ("Embedded: HTML", Embedded("html")),
     ("LaTeX Macro", LaTeXMacro),
-    ("Plain Text", PlainCodeType)
-  ) ++ SourceEditOverlay.inlineOnly ++
+    ("Plain Text", PlainCodeType)) ++ SourceEditOverlay.inlineOnly).sortBy(_._1) ++
     Vector(("Undefined", EmptyCodeType))
 }
 
@@ -52,14 +53,17 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   protected def predefined: Seq[(String, CodeType)]  = SourceEditOverlay.all
 
-  private val selectView = select(
+  private val selectView: HTMLSelectElement = select(
       height := "24px",
       `class` := "ct-select",
       flex := "0 1 auto",
       alignSelf := "right",
       onchange := { e: Event => {
         if (!updating) {
-          opt.onCodeTypeChange(predefined(indexOf(e.target.asInstanceOf[HTMLElement]))._2)
+          val ee = e.target.asInstanceOf[HTMLSelectElement].value
+          val ct = predefined.find(_._2.str == ee).get._2
+          opt.onCodeTypeChange(ct)
+          setCodeType(ct)
         }
       }},
       predefined.map(a => option(a._1, value := a._2.str))
@@ -82,9 +86,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     )).render
 
   selectView.addEventListener("keydown", (k: KeyboardEvent) => {
-    if (k.keyCode == 9 && !k.shiftKey) {
+    val kk = KeyMap.get(k.key)
+    if (kk.contains(Key.Tab) && !k.shiftKey) {
       k.preventDefault()
       focus()
+//    } else if (kk.contains(Key.Escape) && !k.shiftKey) {
+//      k.preventDefault()
+//      dismiss()
     }
   })
 
@@ -200,6 +208,20 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   private var str: Unicode = Unicode.empty
 
+  private def setCodeType(a: CodeType) = {
+    codeMirror.setOption("mode", a.codeMirror)
+    val index = predefined.indexWhere(_._2 == a)
+    val ii = if (index >= 0) index else 0
+    selectView.selectedIndex = ii
+  }
+
+  def sync(a: CodeType): Unit = {
+    flush()
+    updating = true
+    setCodeType(a)
+    updating = false
+  }
+
   def sync(a: operation.Unicode): Unit = {
     flush()
     updating = true
@@ -213,10 +235,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     str = opt.str
     updating = true
     codeMirror.setValue(str.str)
-    codeMirror.setOption("mode", opt.codeType.codeMirror)
-    val index = predefined.indexWhere(_._2 == opt.codeType)
-    val ii = if (index >= 0) index else 0
-    selectView.selectedIndex = ii
+    setCodeType(opt.codeType)
     if (opt.insert) {
       CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
     }

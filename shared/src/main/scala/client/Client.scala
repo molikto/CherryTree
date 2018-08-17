@@ -17,7 +17,7 @@ import command.Key.KeySeq
 import model.ot.Rebased
 import util._
 import model._
-import model.data.{SpecialChar, Unicode}
+import model.data.{CodeType, SpecialChar, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import model.cursor.Node
@@ -362,6 +362,16 @@ class Client(
   override def exitCodeEdit(): Unit = {
     if (state.isCodeInside) {
       localChange(DocTransaction(state.copyContentMode(mode.Content.CodeNormal)))
+    }
+  }
+
+
+  override def codeTypeChange(to: CodeType): Unit = {
+    if (state.isCodeInside) {
+      val at = state.asCodeInside
+      localChange(DocTransaction(
+        Seq(model.operation.Node.Content(at, model.operation.Content.CodeLang(to.str)))
+        , None, viewUpdated = true))
     }
   }
 
