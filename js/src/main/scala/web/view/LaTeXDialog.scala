@@ -16,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 object LaTeXDialog {
-  abstract class Anchor(str: Unicode, insert: Boolean) extends SourceEditOption(str, insert, "stex") with OverlayAnchor {
+  abstract class Anchor(str: Unicode, insert: Boolean) extends SourceEditOption(str, insert, LaTeXEmbedded) with OverlayAnchor {
   }
 }
 
@@ -26,9 +26,13 @@ class LaTeXDialog(override val layer: OverlayLayer) extends SourceEditOverlay[La
   override def exitOnInputDollarSign: Boolean = true
 
 
-  override protected def desc: HTMLElement = p(
+  override protected def predefined: Seq[(String, CodeType)] = SourceEditOverlay.inlineOnly
+
+  override protected def desc: HTMLElement = div(
+    display := "flex",
+    flexDirection := "column",
+    justifyContent := "center",
     `class` := "ct-desc",
-    marginTop := "6px",
     "insert $ to exit").render
 
   override def onAttach(): Unit = {

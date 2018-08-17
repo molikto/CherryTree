@@ -32,12 +32,12 @@ trait EditableCodeView extends
     }
   }
 
-
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
     this.contentData = c
     if (editing == null) {
       updateContent()
     } else {
+
       if (!viewUpdated) {
         trans match {
           case model.operation.Content.CodeLang(lang) =>
@@ -59,7 +59,7 @@ trait EditableCodeView extends
     } else {
       if (editing == null) {
         editing = documentView.sourceEditor
-        editing.show(new SourceEditOption(contentData.unicode, false, contentData.ty.source) {
+        editing.show(new SourceEditOption(contentData.unicode, false, contentData.ty) {
 
           override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
             controller.codeEdit(unicode)
@@ -70,6 +70,8 @@ trait EditableCodeView extends
             controller.exitCodeEdit()
             updateContent()
           }
+
+          override def onCodeTypeChange(to: CodeType): Unit = ???
         })
       }
     }

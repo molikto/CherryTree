@@ -47,7 +47,7 @@ class SourceView(
     val look = lines.take(5).toVector
     val remaining = lines.size
     val totalSize = remaining + look.size
-    CodeMirror.runMode(look.mkString("\n"), contentData.ty.source, preCode)
+    CodeMirror.runMode(look.mkString("\n"), contentData.ty.codeMirror, preCode)
     if (remaining > 0) {
       remainingView.textContent = s"$totalSize lines"
     } else if (contentData.unicode.isBlank) {

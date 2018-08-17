@@ -7,14 +7,26 @@ import model.{data, mode}
 import scala.util.Random
 
 
-sealed abstract class CodeType(str: String) {
-  def source: String = this.asInstanceOf[SourceCode].name
+sealed abstract class CodeType(val str: String) {
+  def codeMirror: String = str
 }
 
-case class SourceCode(name: String) extends CodeType(s"source/$name")
-case object LaTeXMacro extends CodeType("latex-macro")
-case class Embedded(name: String) extends CodeType(s"embedded/$name")
-case class Other(name: String) extends CodeType(name)
+case class SourceCode(name: String) extends CodeType(s"source/$name") {
+  override def codeMirror: String = name
+}
+
+case object LaTeXMacro extends CodeType("latex-macro") {
+  override def codeMirror: String = "stex"
+}
+case class Embedded(name: String) extends CodeType(s"embedded/$name") {
+  override def codeMirror: String = name
+}
+object LaTeXEmbedded extends CodeType("latex") {
+  override def codeMirror: String = "stex"
+}
+case class OtherCodeType(name: String) extends CodeType(name)
+case object PlainCodeType extends CodeType("plain")
+case object EmptyCodeType extends CodeType("")
 
 object CodeType {
   def parse(a: String): CodeType = {
@@ -22,10 +34,14 @@ object CodeType {
       SourceCode(a.substring("source/".length))
     } else if (a == "latex-macro") {
       LaTeXMacro
+    } else if (a == "plain") {
+      PlainCodeType
+    } else if (a == "") {
+      EmptyCodeType
     } else if (a.startsWith("embedded/")) {
       Embedded(a.substring("embedded/".length))
     } else {
-      Other(a)
+      OtherCodeType(a)
     }
   }
 }

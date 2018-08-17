@@ -5,7 +5,8 @@ import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.html.Input
+import org.scalajs.dom.raw._
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import web.view.doc.DocumentView
@@ -15,17 +16,33 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeMirrorMode: String) {
+abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeType: CodeType) {
+  def onCodeTypeChange(to: CodeType): Unit
   def onTransaction(unicode: Seq[operation.Unicode]): Unit
   def onDismiss(): Unit
+}
+object SourceEditOverlay {
+  val inlineOnly: Seq[(String, CodeType)] = Vector(
+    ("LaTeX", LaTeXEmbedded)
+  )
+  val all = Vector(
+    ("Source: JavaScript", SourceCode("javascript")),
+    ("Source: Markdown", SourceCode("markdown")),
+    ("LaTeX Macro", LaTeXMacro),
+    ("Plain Text", PlainCodeType)
+  ) ++ SourceEditOverlay.inlineOnly ++
+    Vector(("Undefined", EmptyCodeType))
 }
 
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
+
+  private var updating = false
+
   def showLineNumber: Boolean = true
   def exitOnInputDollarSign: Boolean = false
 
-  private val codeHeight = "calc(100% - 24px)"
+  private val codeHeight = "calc(100% - 32px)"
   private val ta = textarea(
     height := codeHeight,
     name := "code"
@@ -33,11 +50,20 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   protected def desc: HTMLElement = div().render
 
-  private val predefined = Seq(
-    ("Source: JavaScript", SourceCode("javascript")),
-    ("Source: Markdown", SourceCode("markdown")),
-    ("LaTeX macro", LaTeXMacro),
-  )
+  protected def predefined: Seq[(String, CodeType)]  = SourceEditOverlay.all
+
+  private val selectView = select(
+      height := "24px",
+      `class` := "ct-select",
+      flex := "0 1 auto",
+      alignSelf := "right",
+      onchange := { e: Event => {
+        if (!updating) {
+          opt.onCodeTypeChange(predefined(indexOf(e.target.asInstanceOf[HTMLElement]))._2)
+        }
+      }},
+      predefined.map(a => option(a._1, value := a._2.str))
+    ).render
 
   dom = form(
     display := "flex",
@@ -46,13 +72,21 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     `class` := "ct-card unselectable",
     ta,
     div(height := "24px",
+      marginTop := "8px",
+      alignContent := "middle",
+      display := "flex",
+      justifyContent := "space-between",
+      flexDirection := "row",
       desc,
-      select(
-        onchange := "",
-        option(predefined.head._1, selected),
-        predefined.tail.map(a => option(a._1))
-      )
+      selectView
     )).render
+
+  selectView.addEventListener("keydown", (k: KeyboardEvent) => {
+    if (k.keyCode == 9 && !k.shiftKey) {
+      k.preventDefault()
+      focus()
+    }
+  })
 
   private var codeMirror: js.Dynamic = null
   private var pendingChanges = new ArrayBuffer[operation.Unicode]()
@@ -72,7 +106,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     }
   }
 
-  private var updating = false
 
   override def onAttach(): Unit = {
     super.onAttach()
@@ -180,7 +213,10 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     str = opt.str
     updating = true
     codeMirror.setValue(str.str)
-    codeMirror.setOption("mode", opt.codeMirrorMode)
+    codeMirror.setOption("mode", opt.codeType.codeMirror)
+    val index = predefined.indexWhere(_._2 == opt.codeType)
+    val ii = if (index >= 0) index else 0
+    selectView.selectedIndex = ii
     if (opt.insert) {
       CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
     }

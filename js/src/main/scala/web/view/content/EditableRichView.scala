@@ -397,9 +397,12 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       override def onDismiss(): Unit = {
         editor = null
       }
+
+      override def onCodeTypeChange(to: CodeType): Unit = ???
     }
     documentView.latexEditor.show(anchor)
   }
+
 
   def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
     editor = (documentView.attributeEditor, pos)

@@ -84,6 +84,10 @@
   color: #ccccccaa;
 }
 
+.ct-select {
+  font-size: 13px;
+}
+
 .ct-input {
   outline: 0px solid transparent;
   background: #1b1d23;

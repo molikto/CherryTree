@@ -22,6 +22,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   }
 
 
+
   protected val evilChar = "\u200B"
   /**
     *

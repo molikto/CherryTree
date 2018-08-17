@@ -347,7 +347,11 @@ class DocumentView(
             sourceView()
           case Embedded(_) =>
             ???
-          case Other(_) =>
+          case OtherCodeType(_) =>
+            sourceView()
+          case PlainCodeType =>
+            sourceView()
+          case EmptyCodeType =>
             sourceView()
         }
     }
@@ -384,7 +388,7 @@ class DocumentView(
             current.initMode()
             focusContent = current
           }
-          current.asInstanceOf[js.Dynamic].updateMode(aa.asInstanceOf[js.Dynamic], viewUpdated, fromUser)
+          current.updateMode(aa, viewUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
           updateNodeVisual(v)

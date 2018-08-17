@@ -94,13 +94,10 @@ class RichSpecial extends CommandCategory("text format") {
         )
       }
       def wrapUnwrap(): DocTransaction = {
-        val op1 = operation.Rich.unwrap(in.textTotalIndex, in.text.asDelimited)
-        val op2 = operation.Rich.wrap(IntRange(in.textTotalIndex, in.textTotalIndex + in.text.asDelimited.contentSize), deli)
         DocTransaction(
           Seq(
-            operation.Node.rich(cursor, operation.Rich.merge(op1, op2, operation.Type.AddDelete))
-          ), resMode()
-        )
+            operation.Node.rich(cursor, operation.Rich.wrapUnwrap(in.textTotalIndex, in.text.asDelimited, deli))
+          ), resMode())
       }
 
       if (SpecialChar.coded.contains(deli)) {
