@@ -19,6 +19,8 @@ class EmbeddedHtmlView(var contentData: model.data.Content.Code
 
   dom = div().render
 
+  updateContent()
+
   override def updateContent(): Unit = {
     dom.innerHTML = contentData.unicode.str
   }

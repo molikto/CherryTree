@@ -9,6 +9,7 @@ import scalatags.JsDom.all.{tag, _}
 import settings.Settings
 import web.view.content.ContentView
 
+
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
   val coveringElement: HTMLElement

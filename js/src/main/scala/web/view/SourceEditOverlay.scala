@@ -211,7 +211,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   private def setCodeType(a: CodeType) = {
     codeMirror.setOption("mode", a.codeMirror)
     val index = predefined.indexWhere(_._2 == a)
-    val ii = if (index >= 0) index else 0
+    val ii = if (index >= 0) index else predefined.size - 1
     selectView.selectedIndex = ii
   }
 
