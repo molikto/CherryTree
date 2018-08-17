@@ -17,5 +17,6 @@ object ContentView {
 }
 
 trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
+  var contentData: T
   def updateContent(c: T, trans: O, viewUpdated: Boolean)
 }

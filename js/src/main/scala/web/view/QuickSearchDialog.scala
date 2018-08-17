@@ -35,11 +35,10 @@ class QuickSearchDialog(val client: Client,
 
   override protected val list = div(
     flex := "1 1 auto",
-    color := "#cccccc",
     width := "100%",
     height := "calc(100% - 57px)",
-    `class` := "ct-scroll ct-document-style",
-    div(`class` := "ct-sans", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc, color := theme.disalbedInfo)
+    `class` := "ct-scroll ct-document-style ct-panel",
+    div(`class` := "ct-desc", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc)
   ).render
 
   dom = div(

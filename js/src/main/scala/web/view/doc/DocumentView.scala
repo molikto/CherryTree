@@ -3,14 +3,14 @@ package web.view.doc
 import command.Key
 import doc.{DocInterface, DocState}
 import model.{cursor, data, range}
-import model.data.{Content, Unicode}
+import model.data.{Node => _, _}
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.view.content.{EditableContentView, EditableRichView, EditableSourceView}
+import web.view.content.{EditableCodeView, EditableContentView, EditableRichView, EditableSourceView}
 import web.view._
 
 import scala.collection.mutable.ArrayBuffer
@@ -45,7 +45,7 @@ class DocumentView(
   private val noEditable = div(contenteditable := true, width := "0px", height := "0px", readonly := "true").render
 
   dom = div(
-    `class` := "ct-scroll",
+    `class` := "ct-scroll ct-document-view-color",
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
@@ -54,9 +54,7 @@ class DocumentView(
     rootFrame,
     div(height := "36px", display := "block"),
     noEditable,
-    fpsDisplay,
-    backgroundColor := theme.contentBackground,
-    color := theme.contentText
+    fpsDisplay
   ).render
 
   /**
@@ -340,7 +338,18 @@ class DocumentView(
       case model.data.Content.Rich(cs) =>
         new EditableRichView(this, editor, cs).asInstanceOf[EditableContentView.General]
       case c@model.data.Content.Code(_, _) =>
-        new EditableSourceView(this, editor, c).asInstanceOf[EditableContentView.General]
+        def sourceView() =
+          new EditableSourceView(this, editor, c).asInstanceOf[EditableContentView.General]
+        c.ty match {
+          case SourceCode(_) =>
+            sourceView()
+          case LaTeXMacro =>
+            sourceView()
+          case Embedded(_) =>
+            ???
+          case Other(_) =>
+            sourceView()
+        }
     }
   }
 
@@ -375,12 +384,7 @@ class DocumentView(
             current.initMode()
             focusContent = current
           }
-          aa match {
-            case r: model.mode.Content.Rich =>
-              current.asInstanceOf[EditableRichView].updateMode(r, viewUpdated, fromUser)
-            case c: model.mode.Content.Code =>
-              current.asInstanceOf[EditableSourceView].updateMode(c, viewUpdated, fromUser)
-          }
+          current.asInstanceOf[js.Dynamic].updateMode(aa.asInstanceOf[js.Dynamic], viewUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
           updateNodeVisual(v)

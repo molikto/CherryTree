@@ -37,6 +37,13 @@ package object view {
   }
 
 
+  def removeAllClass(cs: HTMLElement) ={
+    while (cs.classList.length > 0) {
+      cs.classList.remove(cs.classList.item(cs.classList.length - 1))
+    }
+  }
+
+
   // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
   val KeyMap: Map[String, Key.V] = {
     import Key._

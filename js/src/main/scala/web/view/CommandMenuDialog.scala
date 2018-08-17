@@ -23,8 +23,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     minHeight := "0px",
     overflowY := "scroll",
     overflowX := "hidden",
-    color := "#cccccc",
-    `class` := "ct-scroll"
+    `class` := "ct-scroll ct-panel"
   ).render
 
   dom = div(

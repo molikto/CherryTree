@@ -34,7 +34,7 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
   private var leftPanel: View = null
 
 
-  private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter", flex := "0 0 auto", width := "4px", background := theme.bottomBarBackground).render
+  private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
   leftPanel = new LeftPanelSwitcher(client, enableResizePanel).attachTo(this)
 

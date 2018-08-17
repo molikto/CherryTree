@@ -16,25 +16,24 @@ import web.view._
 import scala.scalajs.js
 
 class SourceView(
-  var c: model.data.Content.Code
+  var contentData: model.data.Content.Code
 ) extends ContentView[model.data.Content.Code, model.operation.Content.Code]  {
 
   // background := "#304148",
   private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next").render
 
   private val remainingView = p(
-    `class` := "ct-sans",
+    `class` := "ct-sans ct-hint-color",
     marginTop := "0px",
     marginLeft := "4px",
     marginBottom := "4px",
     fontSize := "70%",
-    color := theme.disalbedInfo,
     "").render
   dom = div(preCode, remainingView).render
 
 
   override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
-    this.c = c
+    this.contentData = c
     updateContent()
   }
 
@@ -44,14 +43,14 @@ class SourceView(
   }
 
   def updateCodeMirror(): Unit = {
-    val lines = c.unicode.str.lines
+    val lines = contentData.unicode.str.lines
     val look = lines.take(5).toVector
     val remaining = lines.size
     val totalSize = remaining + look.size
-    CodeMirror.runMode(look.mkString("\n"), c.asSourceMime, preCode)
+    CodeMirror.runMode(look.mkString("\n"), contentData.ty.source, preCode)
     if (remaining > 0) {
       remainingView.textContent = s"$totalSize lines"
-    } else if (c.unicode.isBlank) {
+    } else if (contentData.unicode.isBlank) {
       remainingView.textContent = "empty code block"
     } else {
       remainingView.textContent = ""

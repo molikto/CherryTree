@@ -12,7 +12,6 @@ import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
 import view.EditorInterface
-import web.view.content.{EditableContentView, EditableRichView, EditableSourceView}
 import web.view._
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}

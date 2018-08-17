@@ -1,6 +1,14 @@
 /** LATER how to apply them as a theme? */
 
-/** general classes **/
+/**
+
+
+
+ general classes
+
+
+
+ **/
 
 .unselectable {
     -webkit-touch-callout: none;
@@ -9,28 +17,6 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-}
-
-
-.ct-warning-inline {
-    padding: .2rem .4rem;
-    font-size: 60%;
-    color: #856404;
-    background-color: #FFF2CF;
-    border-radius: .2rem;
-    vertical-align: middle;
-    display: inline-block;
-    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-}
-
-.ct-error-inline {
-    padding: .2rem .4rem;
-    font-size: 60%;
-    color: #721c24;
-    background-color: #EDCED1;
-    vertical-align: middle;
-    border-radius: .2rem;
-    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 
 .text-selectable {
@@ -70,6 +56,26 @@
 .ct-sans {
   font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
   font-size: 95%;
+}
+
+
+.ct-desc {
+  font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
+  font-size: 95%;
+  color: #7f858e;
+}
+
+.ct-hint-color {
+  color: #636e83;
+}
+
+.ct-error-color {
+  color: #7d4c5c;
+}
+
+.ct-panel {
+  background: #1f2328;
+  color: #969ca5;
 }
 
 .ct-input-label {
@@ -123,22 +129,20 @@
 }
 
 
-.ct-selected {
+.ct-menuitem-selected {
   background: #90a2b922;
 }
 
-.ct-not-selected {
+.ct-menuitem-not-selected {
 }
 
-.ct-not-selected:hover {
+.ct-menuitem-not-selected:hover {
   background: #90a2b911;
 }
 
 
-.ct-not-selected {
+.ct-menuitem-not-selected {
 }
-
-/** command keys **/
 
 .ct-kbd {
     padding: .2rem .4rem;
@@ -230,6 +234,12 @@
 }
 
 /* document view */
+
+.ct-document-view-color {
+  background: #282c34;
+  color: #abb2bf;
+}
+
 .ct-document-style {
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -501,6 +511,33 @@ block selection
  text-shadow: 0px 0.5em #636e83;
 }
 
+
+.ct-ast-highlight {
+  background: #FFFFFF00;
+}
+
+
+
+.ct-warning-inline {
+    padding: .2rem .4rem;
+    font-size: 60%;
+    color: #856404;
+    background-color: #FFF2CF;
+    border-radius: .2rem;
+    vertical-align: middle;
+    display: inline-block;
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+}
+
+.ct-error-inline {
+    padding: .2rem .4rem;
+    font-size: 60%;
+    color: #721c24;
+    background-color: #EDCED1;
+    vertical-align: middle;
+    border-radius: .2rem;
+    font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+}
 
 /** source view **/
 

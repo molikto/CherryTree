@@ -2,7 +2,7 @@ package web.view
 
 import client.Client
 import command.Key.KeySeq
-import command.{Key}
+import command.Key
 import model.data.{Content, Unicode}
 import model.{cursor, data, mode}
 import monix.execution.{Ack, Scheduler}
@@ -11,7 +11,7 @@ import org.scalajs.dom.window
 import org.scalajs.dom.document
 import org.scalajs.dom
 import org.scalajs.dom.html
-import org.scalajs.dom.html.Div
+import org.scalajs.dom.html.{Div, Span}
 import org.scalajs.dom.raw._
 
 import scala.collection.mutable.ArrayBuffer
@@ -33,24 +33,23 @@ class BottomBarView(val client: Client) extends UnselectableView  {
 
   private val debugVersionInfo = span(marginLeft := "12px", "0").render
 
-  private val debugErrorInfo = span(color := "red", marginLeft := "12px", "").render
+  private val debugErrorInfo = span(`class` := "ct-error-color", marginLeft := "12px", "").render
 
   private val connection = span(alignSelf.flexEnd).render
 
-  private def divider() = span(" | ", color := theme.disalbedInfo)
+  private def divider() = span(" | ", `class` := "ct-hint-color")
 
 
   dom = div(
     width := "100%",
+    `class` := "ct-panel",
     paddingTop := "1px",
     paddingLeft := "8px",
     paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
     height := size,
-    backgroundColor := theme.bottomBarBackground,
     flexDirection := "row",
-    color := theme.bottomBarText,
     connection,
     divider(),
     mode,
@@ -59,6 +58,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     divider(),
     debugErrorInfo
   ).render
+
 
   observe(client.commandBufferUpdates.doOnNext(c => {
     var isCompleted = false
@@ -87,10 +87,16 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     val cs = ts.filter(!_.isEmpty).mkString(" ")
     if (cs.isEmpty) {
       commandStatus.textContent = EmptyStr
-      commandStatus.style.color = theme.disalbedInfo
+      commandStatus.className = "ct-hint-color"
     } else {
       commandStatus.textContent = cs
-      commandStatus.style.color = if (isCompleted) theme.disalbedInfo else if (isError) theme.littleError else null
+      if (isCompleted) {
+        commandStatus.className = "ct-hint-color"
+      } else if (isError) {
+        commandStatus.className = "ct-error-color"
+      } else {
+        commandStatus.className = ""
+      }
     }
   }))
 
@@ -118,10 +124,10 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     }
     if (text == "") {
       mode.textContent = EmptyStr
-      mode.style.color = theme.disalbedInfo
+      mode.className = "ct-hint-color"
     } else {
       mode.textContent = text
-      mode.style.color = null
+      mode.className = ""
     }
   }
 
@@ -139,9 +145,9 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   observe(client.connection.doOnNext {
     case Some(e) =>
       connection.textContent = s"${e.online} user${if (e.online == 1) "" else "s"} online"
-      connection.style.color = theme.disalbedInfo
+      connection.className = "ct-hint-color"
     case _ =>
       connection.textContent = "offline"
-      connection.style.color = theme.littleError
+      connection.className = "ct-error-color"
   })
 }

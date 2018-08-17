@@ -12,9 +12,8 @@ class CommandListPanel(val client: Client) extends UnselectableView  {
     minWidth := "150px",
     width := "100%",
     height := "100%",
-    color := "#cccccc",
     overflowY := "scroll",
-    `class` := "ct-scroll",
+    `class` := "ct-scroll ct-panel",
     padding := "24px",
   ).render
 

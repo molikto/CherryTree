@@ -21,9 +21,9 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   // i_CTRL-C      CTRL-C            like <Esc>, but do not use an abbreviation
   // i_CTRL-O      CTRL-O {command}  execute {command} and return to Insert mode
 
-  val exit: Command = new Command {
+  val exit: Command = new Command  with NonConfigurableCommand {
     override val description: String = "exit current mode"
-    override val defaultKeys: Seq[KeySeq] = Seq(Escape)
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Escape)
 
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
 
@@ -74,7 +74,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
-    override val description: String = "quick search"
+    override val description: String = "quick search in whole document"
 
     override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
 
@@ -90,7 +90,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override protected def available(a: DocState): Boolean = a.mode.nonEmpty
     override def emptyAsFalseInInsertMode: Boolean = true
 
-    override val description: String = "show dropdown command menu"
+    override val description: String = "show contextual command menu. these commands is extra commands not bounded to any keys"
     override def defaultKeys: Seq[KeySeq] = Seq(":", Key.Ctrl + ";")
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
@@ -133,7 +133,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
-    override val description: String = "edit code"
+    override val description: String = "edit LaTeX code"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {

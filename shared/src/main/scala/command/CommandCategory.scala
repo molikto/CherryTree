@@ -9,6 +9,7 @@ import Key._
 
 import scala.collection.mutable.ArrayBuffer
 
+
 class CommandCategory(val name: String) extends Settings {
 
   val commands = new ArrayBuffer[command.Command]()
@@ -40,8 +41,7 @@ class CommandCategory(val name: String) extends Settings {
       Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct.map(a => a.str : KeySeq) ++ systemKeys
   }
 
-  trait OverrideCommand extends Command {
-    def defaultKeys: Seq[KeySeq] = Seq.empty
+  trait OverrideCommand extends Command with NonConfigurableCommand {
   }
 
 }

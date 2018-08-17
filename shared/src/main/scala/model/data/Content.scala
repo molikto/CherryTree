@@ -7,6 +7,29 @@ import model.{data, mode}
 import scala.util.Random
 
 
+sealed abstract class CodeType(str: String) {
+  def source: String = this.asInstanceOf[SourceCode].name
+}
+
+case class SourceCode(name: String) extends CodeType(s"source/$name")
+case object LaTeXMacro extends CodeType("latex-macro")
+case class Embedded(name: String) extends CodeType(s"embedded/$name")
+case class Other(name: String) extends CodeType(name)
+
+object CodeType {
+  def parse(a: String): CodeType = {
+    if (a.startsWith("source/")) {
+      SourceCode(a.substring("source/".length))
+    } else if (a == "latex-macro") {
+      LaTeXMacro
+    } else if (a.startsWith("embedded/")) {
+      Embedded(a.substring("embedded/".length))
+    } else {
+      Other(a)
+    }
+  }
+}
+
 abstract sealed class Content {
 
   def isEmpty: Boolean
@@ -39,13 +62,7 @@ object Content extends DataObject[Content] {
 
     override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
 
-    def isSource: Boolean = lang.startsWith("source/")
-    def asSourceMime: String = {
-      if (isSource)
-        lang.substring("source/".length)
-      else
-        ""
-    }
+    val ty = CodeType.parse(lang)
 
     override def isEmpty: Boolean = unicode.isEmpty
 

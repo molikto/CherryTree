@@ -25,17 +25,34 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   def showLineNumber: Boolean = true
   def exitOnInputDollarSign: Boolean = false
 
+  private val codeHeight = "calc(100% - 24px)"
   private val ta = textarea(
-    height := "100%",
+    height := codeHeight,
     name := "code"
   ).render
 
-  dom= form(
+  protected def desc: HTMLElement = div().render
+
+  private val predefined = Seq(
+    ("Source: JavaScript", SourceCode("javascript")),
+    ("Source: Markdown", SourceCode("markdown")),
+    ("LaTeX macro", LaTeXMacro),
+  )
+
+  dom = form(
     display := "flex",
-    flexDirection := "column-reverse",
+    flexDirection := "column",
     padding := "8px",
     `class` := "ct-card unselectable",
-    ta).render
+    ta,
+    div(height := "24px",
+      desc,
+      select(
+        onchange := "",
+        option(predefined.head._1, selected),
+        predefined.tail.map(a => option(a._1))
+      )
+    )).render
 
   private var codeMirror: js.Dynamic = null
   private var pendingChanges = new ArrayBuffer[operation.Unicode]()
@@ -70,7 +87,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       a.theme = "oceanic-next"
     }))
 
-    codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = "100%"
+    codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = codeHeight
 
 
     val vs = codeMirror.getWrapperElement().asInstanceOf[HTMLElement].getElementsByClassName("CodeMirror-vscrollbar")

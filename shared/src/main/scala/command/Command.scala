@@ -6,9 +6,15 @@ import doc.{DocState, DocTransaction}
 import model.data.Unicode
 import model.range.IntRange
 
+trait NonConfigurableCommand extends Command {
+  override def keyConfigurable: Boolean = false
+  override def defaultKeys: Seq[KeySeq] = Seq.empty
+}
+
 abstract class Command {
   def category: String
   def strong: Boolean = false
+  def keyConfigurable: Boolean = true
   val description: String
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]

@@ -109,14 +109,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   private def clearFormattedNodeHighlight(): Unit = {
     if (astHighlight != null) {
-      astHighlight.style.backgroundColor = "#FFFFFF00"
+      astHighlight.classList.add("ct-ast-highlight")
       astHighlight = null
     }
   }
 
   private def addFormattedNodeHighlight(_5: HTMLSpanElement): Unit = {
     astHighlight = _5
-    _5.style.backgroundColor = theme.astHighlight
+    _5.classList.remove("ct-ast-highlight")
   }
 
   event("compositionstart", (a: CompositionEvent) => {

@@ -16,6 +16,10 @@ import web.view._
 import scala.scalajs.js
 
 class RichView(protected var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
+  override def contentData = model.data.Content.Rich(rich)
+  override def contentData_=(c: model.data.Content.Rich): Unit = {
+    rich = c.content
+  }
 
 
   protected val evilChar = "\u200B"
@@ -62,7 +66,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
 
   protected def initEmptyContent(): Unit = {
     removeAllChild(dom)
-    dom.appendChild(span(EmptyStr, color := theme.disalbedInfo).render)
+    dom.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
   }
 
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,

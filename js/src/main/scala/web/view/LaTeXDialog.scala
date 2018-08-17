@@ -25,6 +25,12 @@ class LaTeXDialog(override val layer: OverlayLayer) extends SourceEditOverlay[La
   override def showLineNumber = false
   override def exitOnInputDollarSign: Boolean = true
 
+
+  override protected def desc: HTMLElement = p(
+    `class` := "ct-desc",
+    marginTop := "6px",
+    "insert $ to exit").render
+
   override def onAttach(): Unit = {
     super.onAttach()
     dom.style.width = "560px"
