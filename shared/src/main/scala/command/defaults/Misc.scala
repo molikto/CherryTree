@@ -46,7 +46,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
                   }
                 case model.data.Content.Code(_, _) =>
                   c match {
-                    case model.mode.Content.CodeInside =>
+                    case i:model.mode.Content.CodeInside =>
                       DocTransaction(a.copyContentMode(model.mode.Content.CodeNormal))
                     case _ => DocTransaction.empty
                   }
@@ -156,7 +156,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction(a.copyContentMode(mode.Content.CodeInside))
+      DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
     }
   }
 

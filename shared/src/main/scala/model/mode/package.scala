@@ -50,7 +50,8 @@ package object mode {
 
     case object CodeNormal extends Code with Normal //
 
-    case object CodeInside extends Code // user's mode is currently taken over by code editor
+    // insert, normal, visual, visual-line??
+    case class CodeInside(mode: String, pos: Int) extends Code // user's mode is currently taken over by code editor
   }
 
   sealed trait Node extends Mode[data.Node] {
@@ -104,9 +105,11 @@ package object mode {
           case Content(node, mode.Content.CodeNormal) =>
             writeInt(4)
             writeIntArray(node.toArray)
-          case Content(node, mode.Content.CodeInside) =>
+          case Content(node, mode.Content.CodeInside(a, b)) =>
             writeInt(5)
             writeIntArray(node.toArray)
+            writeString(a)
+            writeInt(b)
         }
       }
 
@@ -118,7 +121,7 @@ package object mode {
           case 2 => Content(readIntArray, mode.Content.RichVisual(IntRange.pickler.unpickle, IntRange.pickler.unpickle))
           case 3 => Visual(readIntArray, readIntArray)
           case 4 => Content(readIntArray, mode.Content.CodeNormal)
-          case 5 => Content(readIntArray, mode.Content.CodeInside)
+          case 5 => Content(readIntArray, mode.Content.CodeInside(readString, readInt))
         }
       }
     }

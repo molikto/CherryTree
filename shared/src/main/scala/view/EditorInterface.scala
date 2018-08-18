@@ -8,6 +8,7 @@ import monix.reactive.Observable
 
 trait EditorInterface {
 
+  def onCodeSubModeAndEditorUpdated(str: String, a: Int): Unit
   def onCodeEditAndEditorUpdated(op: Seq[operation.Unicode]): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
   def exitCodeEdit(): Unit
@@ -19,6 +20,7 @@ trait EditorInterface {
   def onAttributeModified(cur: cursor.Node, range: IntRange, url: Unicode, title: Unicode)
   def onInlineModifiedAndEditorUpdated(cur: cursor.Node, range: IntRange, uni: Seq[operation.Unicode])
   def onInlineCodeTypeChangedAndEditorUpdated(cur: cursor.Node, range: IntRange, ty: CodeType)
+  def onInlineSubModeAndEditorUpdated(str: String, a: Int): Unit
   def onExternalPastePlain(a: Unicode)
   def onKeyDown(k: Key): Boolean
 }

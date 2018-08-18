@@ -24,7 +24,7 @@ class NodeMove extends CommandCategory("move nodes around") {
   abstract class IndentCommand extends  Command {
     override def available(a: DocState): Boolean = a.mode match {
       case None => false
-      case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside)) => false
+      case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside(_, _))) => false
       case _ => true
     }
     def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]

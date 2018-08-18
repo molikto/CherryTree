@@ -71,7 +71,7 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   for (i <- 2 to 6) {
-    new ContentStyleCommand(s"heading $i ,h$i", Some(data.Node.ContentType.Heading(i))) {
+    new ContentStyleCommand(s"heading $i, h$i", Some(data.Node.ContentType.Heading(i))) {
       override protected def available(a: DocState): Boolean = if (a.isNormal) {
         if (i == 1) {
           true

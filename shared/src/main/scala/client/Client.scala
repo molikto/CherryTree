@@ -386,6 +386,25 @@ class Client(
     }
   }
 
+
+  override def onCodeSubModeAndEditorUpdated(str: String, a: Int): Unit = {
+    if (state.isCodeInside) {
+      localChange(DocTransaction(
+        Seq.empty,
+        Some(state.copyContentMode(model.mode.Content.CodeInside(str, a))),
+        editorUpdated = true
+      ))
+    }
+  }
+
+  override def onInlineSubModeAndEditorUpdated(str: String, a: Int): Unit = {
+    localChange(DocTransaction(
+      Seq.empty,
+      Some(state.copyContentMode(model.mode.Content.CodeInside(str, a))),
+      editorUpdated = true
+    ))
+  }
+
   /**
     * view calls this method to insert text at current insertion point,
     */
@@ -451,7 +470,7 @@ class Client(
             case model.mode.Content.CodeNormal =>
               DocTransaction.empty
               // LATER paste in code normal
-            case model.mode.Content.CodeInside =>
+            case model.mode.Content.CodeInside(_, int) =>
               DocTransaction.empty
               // LATER  paste in code inside
           }

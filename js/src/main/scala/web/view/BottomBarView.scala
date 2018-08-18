@@ -115,8 +115,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
               "NORMAL"
             case model.mode.Content.CodeNormal =>
               "CODE"
-            case model.mode.Content.CodeInside =>
-              "CODE EDIT"
+            case model.mode.Content.CodeInside(mode, int) =>
+              s"CODE EDIT $mode"
           }
         case v@model.mode.Node.Visual(_, _) =>
           "NODE VISUAL"

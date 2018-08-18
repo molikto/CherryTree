@@ -100,8 +100,6 @@ trait Undoer extends UndoerInterface {
         case model.mode.Content.RichVisual(fix, move) =>
           val node = docBefore(n).rich
           model.mode.Content.RichInsert(fix.start)
-        case model.mode.Content.CodeInside =>
-          model.mode.Content.CodeNormal
         case a => a
       })
     }
