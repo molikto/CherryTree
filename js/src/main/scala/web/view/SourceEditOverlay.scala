@@ -22,7 +22,7 @@ import scala.scalajs.js
 abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeType: CodeType) {
   def onCodeTypeChange(to: CodeType): Unit
   def onTransaction(unicode: Seq[operation.Unicode]): Unit
-  def onSubMode(a: Int)
+  //def onSubMode(a: Int)
   def onDismiss(): Unit
 }
 
@@ -257,6 +257,8 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           val strS =  codeMirror.posFromIndex(str.toStringPosition(r.start))
           val strE =  codeMirror.posFromIndex(str.toStringPosition(r.until))
           codeMirror.replaceRange("", strS, strE)
+        case _ =>
+          throw new IllegalArgumentException("Not supported")
       }
       if (aa.size > 1 || assertEqual == null || model.debug_view) {
         str = Unicode(codeMirror.getValue().asInstanceOf[String]).guessProp
