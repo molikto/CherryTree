@@ -154,6 +154,8 @@ object Text {
           Code(reader.eatUntilAndDrop(CodeEnd))
         case LaTeXStart =>
           LaTeX(reader.eatUntilAndDrop(LaTeXEnd))
+        case HTMLStart =>
+          HTML(reader.eatUntilAndDrop(HTMLEnd))
         case kk =>
           throw new UnicodeParseException(s"Expecting a non-special char or a special start char, but found $kk")
       }
@@ -358,6 +360,10 @@ object Text {
   }
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
+  }
+
+  case class HTML(content: Unicode) extends Coded with Atomic {
+    override def delimitation: SpecialChar.Delimitation = SpecialChar.HTML
   }
 
 

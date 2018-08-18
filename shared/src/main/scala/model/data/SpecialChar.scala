@@ -17,7 +17,9 @@ trait SpecialCharTrait extends Enumeration {
     ImageStart, ImageEnd,
     CodeStart, CodeEnd,
     LaTeXStart, LaTeXEnd,
-    UrlAttribute, TitleAttribute:
+    UrlAttribute, TitleAttribute,
+    HTMLStart, HTMLEnd
+  :
     SpecialChar = Value
 }
 
@@ -56,9 +58,12 @@ object SpecialChar {
   val Code =
     Delimitation("code", CodeStart, CodeEnd, DelimitationType.CodedNonAtomic)
   val LaTeX =
-    Delimitation("LaTeX", LaTeXStart, LaTeXEnd, DelimitationType.CodedAtomic)
+    Delimitation("LaTeX", LaTeXStart, LaTeXEnd, DelimitationType.CodedAtomic, codeType = Embedded.LaTeX)
 
-  val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, LaTeX, Image)
+  val HTML =
+    Delimitation("html", HTMLStart, HTMLEnd, DelimitationType.CodedAtomic, codeType = Embedded.HTML)
+
+  val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, LaTeX, Image, HTML)
 
   val formattedSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedSplittable)
   val formattedNonSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedNonSplittable)
@@ -87,7 +92,8 @@ object SpecialChar {
     start: SpecialChar,
     end: SpecialChar,
     ty: Int,
-    attributes: Seq[SpecialChar] = Seq.empty
+    attributes: Seq[SpecialChar] = Seq.empty,
+    codeType: CodeType = null
   ) {
     def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode.specials(attributes :+ end)
 

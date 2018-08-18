@@ -70,6 +70,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
 
     override def isEmpty: Boolean = unicode.isEmpty
+
   }
   object Delete {
     def apply(l: Int, r: Int): Delete = Delete(IntRange(l, r))

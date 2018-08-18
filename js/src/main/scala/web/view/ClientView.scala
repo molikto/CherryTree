@@ -77,12 +77,12 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
     val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(overlayLayer, docView.dom)
     val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
-    val latexEditor: LaTeXDialog = new LaTeXDialog(overlayLayer)
+    val latexEditor: InlineCodeDialog = new InlineCodeDialog(overlayLayer)
 
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu
     docView.attributeEditor = attributeEditor
-    docView.latexEditor = latexEditor
+    docView.inlineEditor = latexEditor
   }
 
 
@@ -101,8 +101,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       docView.scrollToBottom()
     case Client.ViewMessage.ShowUrlAndTitleAttributeEditor(cur, pos, text) =>
       docView.showAttributeEditor(cur, pos, text)
-    case Client.ViewMessage.ShowLaTeXEditor(cur, pos, init) =>
-      docView.showLaTeXEditor(cur, pos, init)
+    case Client.ViewMessage.ShowInlineEditor(cur, pos, init, ty) =>
+      docView.showInlineEditor(cur, pos, init, ty)
   })
 
 }

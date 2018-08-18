@@ -69,7 +69,7 @@ package object util {
             buffer.append(data.Text.Strong(collectTexts(c.firstChild)))
           case "html_inline" =>
             assert(c.firstChild == null)
-            buffer.append(data.Text.Code(Unicode(c.literal))) // TODO
+            buffer.append(data.Text.HTML(Unicode(c.literal)))
           case "link" =>
             buffer.append(data.Text.Link(collectTexts(c.firstChild), Unicode(c.destination), Unicode(c.title)))
           case "image" =>

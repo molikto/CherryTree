@@ -5,8 +5,9 @@ import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
+import scalatags.JsDom
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
@@ -73,12 +74,11 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
-  def warningInline(str: String): Span = {
-    span(`class` := "ct-warning-inline", contenteditable := "false", str).render
-  }
-
-  def errorInline(str: String, th: Throwable): Span = {
-    span(`class` := "ct-error-inline", contenteditable := "false", str).render
+  val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
+    val el = e.target.asInstanceOf[HTMLElement]
+    window.console.log("image loading error")
+    el.style.width = "12px"
+    el.style.height= "12px"
   }
 
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
@@ -107,17 +107,42 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
           cg("]")
         )
       case Text.Image(b, c) =>
-        img(`class` := "ct-image", src := b.str, title := c.str)
+        val sp = span().render
+        if (b.isEmpty) {
+          sp.appendChild(warningInline("empty image").render)
+        } else {
+          sp.appendChild(img(`class` := "ct-image", title := c.str, src := b.str, onerror := {e: Event => {
+            removeAllChild(sp)
+            sp.appendChild(errorInline("image error").render)
+          }}).render)
+        }
+        sp: Frag
+      case Text.HTML(c) =>
+        val a = span(contenteditable := "false").render
+        if (c.isBlank) {
+          a.className = ""
+          a.appendChild(warningInline("empty inline HTML").render)
+        } else {
+          try {
+            a.className = "ct-inline-html"
+            a.innerHTML = c.str
+          } catch {
+            case err: Throwable =>
+              a.className = ""
+              a.appendChild(errorInline("inline HTML error", err).render)
+          }
+        }
+        a: Frag
       case Text.LaTeX(c) =>
         val a = span().render
         if (c.isBlank) {
-          a.appendChild(warningInline("empty LaTeX"))
+          a.appendChild(warningInline("empty LaTeX").render)
         } else {
           try {
             KaTeX.render(c.str, a)
           } catch {
             case err: Throwable =>
-              a.appendChild(errorInline("LaTeX error", err))
+              a.appendChild(errorInline("LaTeX error", err).render)
           }
         }
         span(`class` := "ct-latex",
@@ -241,7 +266,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     }
   }
 
-  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
+  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     rich = data.content
     updateContent(c, viewUpdated)
   }

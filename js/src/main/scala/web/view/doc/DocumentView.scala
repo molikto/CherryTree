@@ -419,7 +419,7 @@ class DocumentView(
           t match {
             case model.operation.Node.Content(at, c) =>
               if (inViewport(at)) {
-                contentAt(at).updateContent(to.node(at).content, c, update.viewUpdated)
+                contentAt(at).updateContent(to.node(at).content, c, update.viewUpdated, update.editorUpdated)
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
               if (inViewport(at)) {
@@ -497,7 +497,7 @@ class DocumentView(
   var sourceEditor: CoveringSourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
   var attributeEditor: UrlAttributeEditDialog = null
-  var latexEditor : LaTeXDialog = null
+  var inlineEditor : InlineCodeDialog = null
 
 
 
@@ -518,8 +518,8 @@ class DocumentView(
   }
 
 
-  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode): Unit = {
-    contentAt(cur).asInstanceOf[EditableRichView].showLaTeXEditor(cur, pos, client.state.isRichInsert, text)
+  def showInlineEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode, ty: CodeType): Unit = {
+    contentAt(cur).asInstanceOf[EditableRichView].showInlineEditor(cur, pos, client.state.isRichInsert, text, ty)
   }
 
 

@@ -22,6 +22,12 @@ class EmbeddedHtmlView(var contentData: model.data.Content.Code
   updateContent()
 
   override def updateContent(): Unit = {
-    dom.innerHTML = contentData.unicode.str
+    try {
+      dom.innerHTML = contentData.unicode.str
+    } catch {
+      case error: Throwable =>
+        removeAllChild(dom)
+        dom.appendChild(errorInline("embedded HTML error", error).render)
+    }
   }
 }

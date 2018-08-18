@@ -56,7 +56,9 @@ class RichSpecial extends CommandCategory("text format") {
         val vms = if (deli == SpecialChar.Image) {
           Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty)))
         } else if (deli == SpecialChar.LaTeX) {
-          Seq(ViewMessage.ShowLaTeXEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty))
+          Seq(ViewMessage.ShowInlineEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty, Embedded.LaTeX))
+        } else if (deli == SpecialChar.HTML) {
+          Seq(ViewMessage.ShowInlineEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty, Embedded.HTML))
         } else {
           Seq.empty
         }

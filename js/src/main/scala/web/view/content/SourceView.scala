@@ -31,12 +31,6 @@ class SourceView(
     "").render
   dom = div(preCode, remainingView).render
 
-
-  override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
-    this.contentData = c
-    updateContent()
-  }
-
   override def updateContent() {
     removeAllChild(preCode)
     updateCodeMirror()

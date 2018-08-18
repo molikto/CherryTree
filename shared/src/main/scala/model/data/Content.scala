@@ -7,8 +7,30 @@ import model.{data, mode}
 import scala.util.Random
 
 
+case class SourceEditType(name: String, ct: CodeType, desc: String = "")
+object SourceEditOverlay {
+  val inlineOnly: Seq[SourceEditType] = Vector(
+    SourceEditType("Embedded: LaTeX", Embedded.LaTeX),
+    SourceEditType("Embedded: HTML", Embedded.HTML)
+  )
+  val all = (Vector(
+    SourceEditType("Source: JavaScript", SourceCode("javascript")),
+    SourceEditType("Source: Markdown", SourceCode("markdown")),
+    SourceEditType("Source: Kotlin", SourceCode("kotlin")),
+    SourceEditType("LaTeX Macro", LaTeXMacro),
+    SourceEditType("Plain Text", PlainCodeType)) ++ SourceEditOverlay.inlineOnly).sortBy(_.name) ++
+    Vector(SourceEditType("Undefined", EmptyCodeType))
+}
+
 sealed abstract class CodeType(val str: String) {
   def codeMirror: String = str
+  def delimitation: SpecialChar.Delimitation = if (this == Embedded.LaTeX) {
+    SpecialChar.LaTeX
+  } else if (this == Embedded.HTML) {
+    SpecialChar.HTML
+  } else {
+    null
+  }
 }
 
 case class SourceCode(name: String) extends CodeType(s"source/$name") {
@@ -21,8 +43,9 @@ case object LaTeXMacro extends CodeType("latex-macro") {
 case class Embedded(name: String) extends CodeType(s"embedded/$name") {
   override def codeMirror: String = name
 }
-object LaTeXEmbedded extends CodeType("latex") {
-  override def codeMirror: String = "stex"
+object Embedded {
+  val LaTeX = Embedded("latex")
+  val HTML = Embedded("html")
 }
 case class OtherCodeType(name: String) extends CodeType(name)
 case object PlainCodeType extends CodeType("plain")
@@ -34,8 +57,6 @@ object CodeType {
       SourceCode(a.substring("source/".length))
     } else if (a == "latex-macro") {
       LaTeXMacro
-    } else if (a == "latex") {
-      LaTeXEmbedded
     } else if (a == "plain") {
       PlainCodeType
     } else if (a == "") {

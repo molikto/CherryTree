@@ -19,6 +19,7 @@ case class DocTransaction(
   extra: Option[DocTransaction] = None, // this is used to add an undo item in the undo tree
 
   viewUpdated: Boolean = false,
+  editorUpdated: Boolean = false,
   viewMessagesAfter: Seq[ViewMessage] = Seq.empty,
   viewMessagesBefore: Seq[ViewMessage] = Seq.empty) {
   def nonTransactional: Boolean = {

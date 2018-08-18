@@ -39,24 +39,24 @@ class EditableCodeView(
     }
   }
 
-  override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean): Unit = {
+  override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     this.contentData = c
     codeView.contentData = c
     if (editing == null) {
       if (ContentView.matches(c.ty, codeView)) {
-        codeView.updateContent(c, trans, viewUpdated)
+        codeView.updateContent(c, trans, viewUpdated, editorUpdated)
       } else {
         codeView.destroy()
         codeView = ContentView.createFromCode(c)
         codeView.attachToNode(dom)
       }
     } else {
-      if (!viewUpdated) {
+      if (!editorUpdated) {
         trans match {
           case model.operation.Content.CodeLang(lang) =>
             editing.sync(c.ty)
-          case model.operation.Content.CodeContent(c) =>
-            editing.sync(c)
+          case model.operation.Content.CodeContent(op) =>
+            editing.sync(Seq(op), c.unicode)
         }
       }
     }
@@ -88,7 +88,7 @@ class EditableCodeView(
 
           override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
             changedInsideEditor = true
-            controller.codeEdit(unicode)
+            controller.onCodeEditAndEditorUpdated(unicode)
           }
 
           override def onDismiss(): Unit = {
@@ -102,7 +102,7 @@ class EditableCodeView(
 
           override def onCodeTypeChange(to: CodeType): Unit = {
             changedInsideEditor = true
-            controller.codeTypeChange(to)
+            controller.onCodeTypeChangeAndEditorUpdated(to)
           }
         })
       }

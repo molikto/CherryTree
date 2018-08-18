@@ -431,6 +431,11 @@
   vertical-align: baseline;
 }
 
+.ct-image-error {
+  min-width: 12px;
+  min-height: 12px;
+}
+
 
 /**
 selection
@@ -491,6 +496,11 @@ block selection
 
 .ct-latex {
    color: #abb2bf;
+}
+
+.ct-inline-html {
+ border: 1px solid #399dc6;
+ padding: 8px;
 }
 
 .ct-strong {

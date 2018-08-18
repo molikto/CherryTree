@@ -3,6 +3,7 @@ package web.view
 import command.Key
 import web._
 import model._
+import model.data.SpecialChar.Delimitation
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
@@ -10,6 +11,7 @@ import org.scalajs.dom.html.Input
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
+import settings.Settings
 import web.view.doc.DocumentView
 import web.view._
 
@@ -22,27 +24,17 @@ abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeT
   def onTransaction(unicode: Seq[operation.Unicode]): Unit
   def onDismiss(): Unit
 }
-object SourceEditOverlay {
-  val inlineOnly: Seq[(String, CodeType)] = Vector(
-    ("Embedded: LaTeX", LaTeXEmbedded)
-  )
-  val all = (Vector(
-    ("Source: JavaScript", SourceCode("javascript")),
-    ("Source: Markdown", SourceCode("markdown")),
-    ("Source: Kotlin", SourceCode("kotlin")),
-    ("Embedded: HTML", Embedded("html")),
-    ("LaTeX Macro", LaTeXMacro),
-    ("Plain Text", PlainCodeType)) ++ SourceEditOverlay.inlineOnly).sortBy(_._1) ++
-    Vector(("Undefined", EmptyCodeType))
-}
 
-trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
+
+trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings {
 
 
   private var updating = false
+  private val dollarSign = Unicode("$")
 
   def showLineNumber: Boolean = true
-  def exitOnInputDollarSign: Boolean = false
+  private def exitOnInputDollarSign: Boolean = codeType == Embedded.LaTeX &&
+    delimitationSettings.exists(a => a._1 == SpecialChar.LaTeX && a._3 == dollarSign && a._2 == dollarSign)
 
   private val codeHeight = "calc(100% - 32px)"
   private val ta = textarea(
@@ -50,9 +42,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     name := "code"
   ).render
 
-  protected def desc: HTMLElement = div().render
+  private val desc: HTMLElement = div(
+    display := "flex",
+    flexDirection := "column",
+    justifyContent := "center",
+    `class` := "ct-desc").render
 
-  protected def predefined: Seq[(String, CodeType)]  = SourceEditOverlay.all
+  protected def predefined: Seq[SourceEditType]  = SourceEditOverlay.all
 
   private val selectView: HTMLSelectElement = select(
       height := "24px",
@@ -62,12 +58,12 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       onchange := { e: Event => {
         if (!updating) {
           val ee = e.target.asInstanceOf[HTMLSelectElement].value
-          val ct = predefined.find(_._2.str == ee).get._2
-          opt.onCodeTypeChange(ct)
+          val ct = predefined.find(_.ct.str == ee).get.ct
           setCodeType(ct)
+          opt.onCodeTypeChange(ct)
         }
       }},
-      predefined.map(a => option(a._1, value := a._2.str))
+      predefined.map(a => option(a.name, value := a.ct.str))
     ).render
 
   dom = form(
@@ -127,6 +123,12 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       a.showCursorWhenSelecting = true
       a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
+      a.extraKeys = CodeMirror.normalizeKeyMap(
+        jsObject(a => {
+          val mod = if (model.isMac) "Cmd" else "Ctrl"
+          a.updateDynamic("")
+        })
+      )
     }))
 
     codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = codeHeight
@@ -145,6 +147,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
 
     CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
+      window.console.log(e)
       val mm = e.mode.asInstanceOf[String]
       val isNormal = mm == "normal"
       isInnerInsert = mm == "insert"
@@ -156,6 +159,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
     CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
       if (!updating && !dismissed) {
+        // LATER change to a line based diff this should be more efficient with code mirror
         val oldVal = str.str
         val newVal = codeMirror.getValue().asInstanceOf[String]
         var start = 0
@@ -173,7 +177,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
         val text = newVal.substring(start, newEnd)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
-        if (isInnerInsert && exitOnInputDollarSign && from == to && text == "$" && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
+        if (isInnerInsert && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
           dismiss()
         } else {
           if (text.isEmpty) {
@@ -209,11 +213,22 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   private var str: Unicode = Unicode.empty
 
+  private var codeType_ : CodeType = null
+
+  def codeType: CodeType = codeType_
+
   private def setCodeType(a: CodeType) = {
+    codeType_ = a
     codeMirror.setOption("mode", a.codeMirror)
-    val index = predefined.indexWhere(_._2 == a)
+    val index = predefined.indexWhere(_.ct == a)
     val ii = if (index >= 0) index else predefined.size - 1
     selectView.selectedIndex = ii
+
+    if (exitOnInputDollarSign) {
+      desc.textContent = "insert $ to exit"
+    } else {
+      desc.textContent = ""
+    }
   }
 
   def sync(a: CodeType): Unit = {
@@ -223,17 +238,37 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     updating = false
   }
 
-  def sync(a: operation.Unicode): Unit = {
+  def sync(aa: Seq[operation.Unicode], assertEqual: model.data.Unicode = null): Unit = {
     flush()
     updating = true
-    str = a(str)
-    codeMirror.setValue(str.str)
+    for (a <- aa) {
+      a match {
+        case operation.Unicode.Insert(at, u, _) =>
+          val strAt =  codeMirror.posFromIndex(str.toStringPosition(at))
+          codeMirror.replaceRange(u.str, strAt, strAt)
+        case operation.Unicode.Delete(r) =>
+          val strS =  codeMirror.posFromIndex(str.toStringPosition(r.start))
+          val strE =  codeMirror.posFromIndex(str.toStringPosition(r.until))
+          codeMirror.replaceRange("", strS, strE)
+      }
+      if (aa.size > 1 || assertEqual == null) {
+        str = Unicode(codeMirror.getValue().asInstanceOf[String]).guessProp
+      }
+    }
+    if (assertEqual != null) {
+      if (model.debug_view) {
+        assert(str == assertEqual)
+      }
+      str = assertEqual
+    }
     updating = false
   }
 
   override def show(opt: T): Unit = {
     super.show(opt)
+    window.asInstanceOf[js.Dynamic].cm = codeMirror
     str = opt.str
+    codeType_ = opt.codeType
     updating = true
     codeMirror.setValue(str.str)
     setCodeType(opt.codeType)

@@ -5,9 +5,8 @@ import client.Client.ViewMessage
 import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.{Atom, SpecialChar, Unicode}
+import model.data.{apply => _, _}
 import model.mode
-import model.data.UrlAttribute
 import model.range.IntRange
 
 import scala.util.{Success, Try}
@@ -133,7 +132,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
-    override val description: String = "edit LaTeX code"
+    override val description: String = "edit code"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
@@ -141,7 +140,11 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, _, t) => {
-        return DocTransaction.message(ViewMessage.ShowLaTeXEditor(cur, t.textRange, t.text.asCoded.content))
+        return DocTransaction.message(ViewMessage.ShowInlineEditor(
+          cur,
+          t.textRange,
+          t.text.asCoded.content,
+          t.text.asDelimited.delimitation.codeType))
       })
       DocTransaction.empty
     }

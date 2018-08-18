@@ -1,6 +1,7 @@
 package model.operation
 
 import model.data.Atom.CodedSpecial
+import model.data.SpecialChar.Delimitation
 import model.data._
 import model.{data, _}
 import model.operation.Type.Type
@@ -43,6 +44,51 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
       case _ => None
     }
   }
+
+  def transformToCodeChange(range: IntRange): Seq[Unicode] = u.foldLeft((range, Seq.empty[Unicode])) { (res, to) =>
+    val range = res._1
+    val se = res._2
+    to match {
+      case Unicode.Delete(r) =>
+        if (r.until < range.start) {
+          (range.moveBy(-r.size), se)
+        } else if (r.start > range.until) {
+          res
+        } else if (r.start >= range.start && r.until <= range.until) {
+          (IntRange(range.start, range.until - r.size), se :+ Unicode.Delete(r.moveBy(-range.start)))
+        } else {
+          throw new Exception("Not handled case")
+        }
+      case Unicode.Insert(at, a, gl) =>
+        if (at < range.start) {
+          (range.moveBy(a.size), se)
+        } else if (at >= range.start && at <= range.until) {
+          (IntRange(range.start, range.until + a.size), se :+ Unicode.Insert(at - range.start, a, gl))
+        } else if (at > range.until) {
+          res
+        } else {
+          throw new Exception("Not handled case")
+        }
+      case Unicode.Surround(r, left, right, _) =>
+        if (r.until < range.start) {
+          (range.moveBy(left.size), se)
+        } else if (r.start > range.until) {
+          res
+        } else {
+          throw new Exception("Not handled case")
+        }
+      case a@Unicode.ReplaceAtomic(r, unicode) =>
+        if (r.until < range.start) {
+          (range.moveBy(a.sizeDiff), se)
+        } else if (r.start > range.until) {
+          res
+        } else {
+          throw new Exception("Not handled case")
+        }
+      case Unicode.Move(_, _) =>
+        ???
+    }
+  }._2
 
 
   def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {

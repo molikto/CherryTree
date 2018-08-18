@@ -45,7 +45,7 @@ object Client {
     case class ShowUrlAndTitleAttributeEditor(node: cursor.Node,
       range: IntRange,
       text: data.Text.Delimited) extends ViewMessage
-    case class ShowLaTeXEditor(node: cursor.Node, range: IntRange, prev: Unicode) extends ViewMessage
+    case class ShowInlineEditor(node: cursor.Node, at: IntRange, prev: Unicode, ty: CodeType) extends ViewMessage
     //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
@@ -183,6 +183,7 @@ class Client(
     viewAdded: Seq[(DocState, operation.Node)],
     ty: Undoer.Type,
     viewUpdated: Boolean,
+    editorUpdated: Boolean,
     fromUser: Boolean,
     isSmartInsert: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
@@ -190,7 +191,7 @@ class Client(
     val vv = viewAdded ++ from
     val res = DocUpdate(a,
       if (vv.isEmpty) Seq.empty else vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)),
-      userFolds, fromUser, viewUpdated)
+      userFolds, fromUser, viewUpdated, editorUpdated)
     // the queued updates is NOT applied in this method, instead they are applied after any flush!!!
     if (updatingState) throw new IllegalStateException("You should not update state during a state update!!!")
     if (debug_view) {
@@ -208,7 +209,7 @@ class Client(
     if (a.badMode) {
       scheduledUpdateTempMode = Observable.delay({
         if (model.debug_view) println("updating temp mode")
-        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false)
+        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, false)
       }).delaySubscription(2.seconds).subscribe()
     }
     if (userFolds.nonEmpty) {
@@ -349,6 +350,7 @@ class Client(
             Seq.empty,
             Undoer.Remote,
             viewUpdated = false,
+            false,
             fromUser = false)
       }
       } catch {
@@ -366,21 +368,21 @@ class Client(
   }
 
 
-  override def codeTypeChange(to: CodeType): Unit = {
+  override def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit = {
     if (state.isCodeInside) {
       val at = state.asCodeInside
       localChange(DocTransaction(
         Seq(model.operation.Node.Content(at, model.operation.Content.CodeLang(to.str)))
-        , None, viewUpdated = true))
+        , None, editorUpdated = true))
     }
   }
 
-  override def codeEdit(op: Seq[operation.Unicode]): Unit = {
+  override def onCodeEditAndEditorUpdated(op: Seq[operation.Unicode]): Unit = {
     if (state.isCodeInside) {
       val at = state.asCodeInside
       localChange(DocTransaction(
         op.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
-        , None, viewUpdated = true))
+        , None, editorUpdated = true))
     }
   }
 
@@ -403,11 +405,22 @@ class Client(
     ), None))
   }
 
-  override def onLaTeXModified(cur: Node, range: IntRange, uni: Seq[operation.Unicode]): Unit = {
+
+  override def onInlineCodeTypeChangedAndEditorUpdated(cur: Node, range: IntRange, ty: CodeType): Unit = {
+    val aft = state.rich(cur).after(range.start)
+    println(aft)
+    val deli = aft.text.asDelimited
+    localChange(DocTransaction(Seq(
+      operation.Node.rich(cur, operation.Rich.wrapUnwrap(range.start, deli, ty.delimitation))
+    ), None, editorUpdated = true))
+  }
+
+
+  override def onInlineModifiedAndEditorUpdated(cur: Node, range: IntRange, uni: Seq[operation.Unicode]): Unit = {
     // LATER collab this?
     localChange(DocTransaction(Seq(
       operation.Node.rich(cur, operation.Rich.fromCode(range, uni))
-    ), None))
+    ), None, editorUpdated = true))
   }
 
   override def onExternalPastePlain(unicode: Unicode): Unit = {
@@ -535,6 +548,7 @@ class Client(
         update.undoType.getOrElse(Undoer.Local),
         isSmartInsert = isSmartInsert,
         viewUpdated = update.viewUpdated,
+        editorUpdated = update.editorUpdated,
         fromUser = true,
         userFolds = ch)
       if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction

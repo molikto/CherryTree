@@ -9,6 +9,7 @@ case class DocUpdate(
   from: Seq[(DocState, model.operation.Node, DocState)],
   foldsBefore: Map[cursor.Node, Boolean],
   fromUser: Boolean, // if this is true, then when mode is updated, we perform scroll to mode etc.
-  viewUpdated: Boolean) {
+  viewUpdated: Boolean,
+  editorUpdated: Boolean) {
 }
 

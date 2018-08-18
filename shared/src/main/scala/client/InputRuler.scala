@@ -43,7 +43,7 @@ trait InputRuler { self: Client =>
 
   def extraInputRuleOperation(d: DocState, op: model.transaction.Node): Option[DocTransaction] = {
     op match {
-      case Seq(operation.Node.Content(at, operation.Content.Rich(a)))  =>
+      case Seq(operation.Node.Content(at, operation.Content.Rich(a))) =>
         a.canBeSmartInsert(d.node(at).rich) match {
           case Some((before, pos, ins)) =>
             inputRules.foreach(i => {

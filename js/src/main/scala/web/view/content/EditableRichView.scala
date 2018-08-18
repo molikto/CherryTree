@@ -385,22 +385,23 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
 
-  def showLaTeXEditor(cur: model.cursor.Node, pos: range.IntRange, insert: Boolean, text: Unicode): Unit = {
-    editor = (documentView.latexEditor, pos)
-    val anchor = new LaTeXDialog.Anchor(text, insert) {
+  def showInlineEditor(cur: model.cursor.Node, pos: range.IntRange, insert: Boolean, text: Unicode, ty: CodeType): Unit = {
+    editor = (documentView.inlineEditor, pos)
+    val anchor = new InlineCodeDialog.Anchor(text, insert, ty) {
       override def rect: Rect = editorRect
 
       override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
-        controller.onLaTeXModified(documentView.cursorOf(EditableRichView.this), editor._2, unicode)
+        controller.onInlineModifiedAndEditorUpdated(documentView.cursorOf(EditableRichView.this), editor._2, unicode)
       }
 
       override def onDismiss(): Unit = {
         editor = null
       }
 
-      override def onCodeTypeChange(to: CodeType): Unit = ???
+      override def onCodeTypeChange(to: CodeType): Unit =
+        controller.onInlineCodeTypeChangedAndEditorUpdated(documentView.cursorOf(EditableRichView.this), editor._2, to)
     }
-    documentView.latexEditor.show(anchor)
+    documentView.inlineEditor.show(anchor)
   }
 
 
@@ -424,22 +425,36 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     previousMode = if (isEmpty) -2 else -1
   }
 
-  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
+  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     val dataBefore = rich
     rich = data.content
     updateContent(c, viewUpdated)
     if (!viewUpdated) {
       // val cs = c.asInstanceOf[operation.Content.Rich]
       // TODO incrementally update dom remember to clear the empty range when needed
-      if (editor != null) {
+      if (!editorUpdated) {
+        if (editor != null) {
+          val range = editor._2
+          val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
+          val res = c.op.transformRich(dataBefore, fakeMode)._1
+          res match {
+            case model.mode.Content.RichVisual(a, b) =>
+              val rangeNow = IntRange(a.start, b.until)
+              editor._1 match {
+                case dialog: InlineCodeDialog =>
+                  val nowText = rich.after(rangeNow.start).text.asCoded
+                  if (nowText.delimitation.codeType != dialog.codeType) {
+                    dialog.sync(nowText.delimitation.codeType)
+                  }
+                  // LATER now we assume that inline editor edits atomic codes without attributes and attribute editor edits rich/empty with attributes
+                  dialog.sync(c.op.transformToCodeChange(IntRange(range.start + 1, range.until - 1)))
 
-        val range = editor._2
-        val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
-        val res = c.op.transformRich(dataBefore, fakeMode)._1
-        res match {
-          case model.mode.Content.RichVisual(a, b) =>
-            editor = (editor._1, IntRange(a.start, b.until))
-          case _ => clearEditor()
+                  // transform the opeartions!
+                case _ =>
+              }
+              editor = (editor._1, rangeNow)
+            case _ => clearEditor()
+          }
         }
       }
     }
