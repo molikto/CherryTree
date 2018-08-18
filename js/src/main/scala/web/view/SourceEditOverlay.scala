@@ -125,8 +125,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.theme = "oceanic-next"
       a.extraKeys = CodeMirror.normalizeKeyMap(
         jsObject(a => {
-          val mod = if (model.isMac) "Cmd" else "Ctrl"
-          a.updateDynamic("")
         })
       )
     }))
@@ -147,7 +145,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
 
     CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-      window.console.log(e)
       val mm = e.mode.asInstanceOf[String]
       val isNormal = mm == "normal"
       isInnerInsert = mm == "insert"
@@ -155,6 +152,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       else window.setTimeout(() => {
         isInnerNormal = true
       }, 0)
+    })
+
+    CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
+      window.console.log(e)
+      if (!updating && !dismissed) {
+        // forward mode to client!
+      }
     })
 
     CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
@@ -209,6 +213,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     super.onDismiss()
     opt.onDismiss()
     codeMirror.setValue("")
+    if (isInnerInsert) {
+      CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
+    }
   }
 
   private var str: Unicode = Unicode.empty
