@@ -22,6 +22,7 @@ import scala.scalajs.js
 abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeType: CodeType) {
   def onCodeTypeChange(to: CodeType): Unit
   def onTransaction(unicode: Seq[operation.Unicode]): Unit
+  def onSubMode(a: Int)
   def onDismiss(): Unit
 }
 
@@ -156,8 +157,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
     CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
       window.console.log(e)
-      if (!updating && !dismissed) {
-        // forward mode to client!
+      if (!dismissed) {
       }
     })
 
@@ -258,13 +258,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           val strE =  codeMirror.posFromIndex(str.toStringPosition(r.until))
           codeMirror.replaceRange("", strS, strE)
       }
-      if (aa.size > 1 || assertEqual == null) {
+      if (aa.size > 1 || assertEqual == null || model.debug_view) {
         str = Unicode(codeMirror.getValue().asInstanceOf[String]).guessProp
       }
     }
     if (assertEqual != null) {
       if (model.debug_view) {
-        assert(str == assertEqual)
+        assert(str == assertEqual, s"not equal $str, $assertEqual")
       }
       str = assertEqual
     }

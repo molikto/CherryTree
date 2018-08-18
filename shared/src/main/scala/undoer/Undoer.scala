@@ -85,7 +85,7 @@ trait Undoer extends UndoerInterface {
   private def base: Int = discarded
 
   // all mode is changed to insert mode, then converted back to normal upon redo
-  def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node= {
+  def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node = {
     modeBefore match {
       case v: model.mode.Node.Visual =>
         model.mode.Node.Content(v.fix, docBefore(v.fix).content match {
