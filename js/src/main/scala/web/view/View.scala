@@ -17,14 +17,16 @@ object View {
 
   private val views = new ArrayBuffer[View]()
 
-  window.setInterval(() => {
-    for (v <- views) {
-      if (v.dom_ != null && v.attached && !document.body.contains(v.dom_) && !v.destroyed) {
-        window.console.log(v.dom)
-        throw new IllegalStateException("View detached but not destroyed")
+  if (model.debug_view) {
+    window.setInterval(() => {
+      for (v <- views) {
+        if (v.dom_ != null && v.attached && !document.body.contains(v.dom_) && !v.destroyed) {
+          window.console.log(v.dom)
+          throw new IllegalStateException("View detached but not destroyed")
+        }
       }
-    }
-  }, 3000)
+    }, 3000)
+  }
 }
 
 abstract class View {
