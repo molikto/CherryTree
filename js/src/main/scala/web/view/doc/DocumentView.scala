@@ -87,7 +87,7 @@ class DocumentView(
     if (document.activeElement != currentEditable) {
       if (currentEditable != noEditable) {
         currentEditable = null
-        updateMode(client.state.mode, viewUpdated = false)
+        updateMode(client.state.mode)
       } else {
         noEditable.focus()
       }
@@ -347,10 +347,7 @@ class DocumentView(
   }
 
 
-  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
-    if (isFocusedOut) {
-      return
-    }
+  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true
     m match {
       case None =>
@@ -365,7 +362,7 @@ class DocumentView(
             current.initMode()
             focusContent = current
           }
-          current.updateMode(aa, viewUpdated, fromUser)
+          current.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
           removeFocusContent()
           updateNodeVisual(v)
@@ -382,7 +379,7 @@ class DocumentView(
     currentZoomId = client.state.zoomId
     insertNodesRec(zoom, node(zoom), rootFrame)
 
-    updateMode(client.state.mode, viewUpdated = false)
+    updateMode(client.state.mode)
 
     observe(client.stateUpdates.doOnNext(update => {
       update.foldsBefore.foreach(f => {
@@ -409,8 +406,12 @@ class DocumentView(
           //              }
           t match {
             case model.operation.Node.Content(at, c) =>
+              val m: Option[model.mode.Content] = s.mode match {
+                case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
+                case _ => None
+              }
               if (inViewport(at)) {
-                contentAt(at).updateContent(to.node(at).content, c, update.viewUpdated, update.editorUpdated)
+                contentAt(at).updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
               if (inViewport(at)) {
@@ -464,13 +465,14 @@ class DocumentView(
       currentZoom = update.to.zoom
       currentZoomId = update.to.zoomId
       duringStateUpdate = false
-      updateMode(update.to.mode, update.viewUpdated, fromUser = update.fromUser)
+      updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
     }))
   }
 
   def refreshMounted(): Unit = {
     attributeEditor.refresh()
+    inlineEditor.refresh()
     commandMenu.refresh()
   }
 

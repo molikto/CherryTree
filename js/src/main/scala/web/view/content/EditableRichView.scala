@@ -2,6 +2,7 @@ package web.view.content
 
 import model._
 import model.data._
+import model.mode.Content
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
@@ -291,6 +292,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   override def clearMode(): Unit = {
+    clearEditor()
     initMode(if (isEmpty) -2 else -1)
     documentView.unmarkEditable(dom)
   }
@@ -338,22 +340,56 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     setSelection(range, false)
   }
 
-  override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, fromUser: Boolean): Unit = {
-    if (previousMode < 0) initMode()
+  var pmode: mode.Content.Rich = null
+
+  override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
+    pmode = aa
     aa match {
-      case mode.Content.RichInsert(pos) =>
-        initMode(0)
-        updateInsertMode(pos, fromUser)
-      case mode.Content.RichVisual(fix, move) =>
-        initMode(1)
-        updateVisualMode(fix, move, fromUser)
-      case mode.Content.RichNormal(range) =>
-        if (isEmpty) {
-          initMode(3)
-        } else {
-          initMode(2)
-          updateNormalMode(range, fromUser)
+      case sub: mode.Content.RichSubMode =>
+        setPreviousModeToEmpty()
+        sub match {
+          case mode.Content.RichAttributeSubMode(range, mode) =>
+            if (editor == null) {
+              val text = sub.getText(rich)
+              editor = documentView.attributeEditor
+              val anchor = new UrlAttributeEditDialog.Anchor {
+                override def rect: Rect = editorRect
+                override def update(url: Unicode, title: Unicode): Unit = {
+                  controller.onAttributeModified(url, title)
+                }
+              }
+              documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
+           }
+          case mode.Content.RichCodeSubMode(range, code, mode) =>
+            if (editor == null) {
+              editor = documentView.inlineEditor
+              val text = sub.getText(rich)
+              val anchor = new InlineCodeDialog.Anchor(controller, text.asCoded.content, code, text.asDelimited.delimitation.codeType) {
+                override def rect: Rect = editorRect
+              }
+              documentView.inlineEditor.show(anchor)
+            } else if (!editorUpdated) {
+              documentView.inlineEditor.sync(code)
+            }
         }
+      case _ =>
+        clearEditor()
+        if (previousMode < 0) initMode()
+        aa match {
+          case mode.Content.RichInsert(pos) =>
+            initMode(0)
+            updateInsertMode(pos, fromUser)
+          case mode.Content.RichVisual(fix, move) =>
+            initMode(1)
+            updateVisualMode(fix, move, fromUser)
+          case mode.Content.RichNormal(range) =>
+            if (isEmpty) {
+              initMode(3)
+            } else {
+              initMode(2)
+              updateNormalMode(range, fromUser)
+            }
+    }
     }
   }
 
@@ -367,91 +403,51 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     super.destroy()
   }
 
-  private var editor: (Overlay, IntRange) = null
+  private var editor: Overlay = null
 
   def clearEditor(): Unit = {
     if (editor != null) {
-      editor._1.dismiss()
+      editor.dismiss()
       editor = null
     }
   }
 
   private def editorRect: Rect = {
-    val (_, pos) = editor
-    val (sel, span) = nonEmptySelectionToDomRange(IntRange(pos.start, pos.start + 1))
-    val rects = if (span == null) sel.getClientRects() else span.getClientRects()
-    web.view.toRect(rects.item(0))
-  }
-
-
-  def showInlineEditor(cur: model.cursor.Node, pos: range.IntRange, insert: Boolean, text: Unicode, ty: CodeType): Unit = {
-    editor = (documentView.inlineEditor, pos)
-    val anchor = new InlineCodeDialog.Anchor(text, insert, ty) {
-      override def rect: Rect = editorRect
-
-      override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
-        controller.onInlineModifiedAndEditorUpdated(documentView.cursorOf(EditableRichView.this), editor._2, unicode)
-      }
-
-      override def onDismiss(): Unit = {
-        editor = null
-      }
-
-      override def onCodeTypeChange(to: CodeType): Unit =
-        controller.onInlineCodeTypeChangedAndEditorUpdated(documentView.cursorOf(EditableRichView.this), editor._2, to)
+    pmode match {
+      case sub: mode.Content.RichSubMode =>
+        val (sel, span) = nonEmptySelectionToDomRange(IntRange(sub.range.start - 1, sub.range.start))
+        val rects = if (span == null) sel.getClientRects() else span.getClientRects()
+        web.view.toRect(rects.item(0))
+      case _ =>
+        throw new IllegalStateException("Not possible!!!")
     }
-    documentView.inlineEditor.show(anchor)
   }
-
-
-  def showAttributeEditor(pos: IntRange, text: model.data.Text.Delimited): Unit = {
-    editor = (documentView.attributeEditor, pos)
-    val anchor = new UrlAttributeEditDialog.Anchor {
-      override def rect: Rect = editorRect
-      override def onDismiss(): Unit = {
-        editor = null
-      }
-      override def update(url: Unicode, title: Unicode): Unit = {
-        controller.onAttributeModified(documentView.cursorOf(EditableRichView.this), editor._2, url, title)
-      }
-    }
-    documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
-  }
-
 
   override protected def clearDom(): Unit = {
     super.clearDom()
+    setPreviousModeToEmpty()
+  }
+
+  private def setPreviousModeToEmpty(): Unit = {
     previousMode = if (isEmpty) -2 else -1
   }
 
-  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
+  override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     val dataBefore = rich
     rich = data.content
     updateContent(c, viewUpdated)
     if (!viewUpdated) {
-      // val cs = c.asInstanceOf[operation.Content.Rich]
       if (!editorUpdated) {
         if (editor != null) {
-          val range = editor._2
-          val fakeMode = model.mode.Content.RichVisual(IntRange(range.start), IntRange(range.until - 1))
-          val res = c.op.transformRich(dataBefore, fakeMode)._1
-          res match {
-            case model.mode.Content.RichVisual(a, b) =>
-              val rangeNow = IntRange(a.start, b.until)
-              editor._1 match {
-                case dialog: InlineCodeDialog =>
-                  val nowText = rich.after(rangeNow.start).text.asCoded
-                  if (nowText.delimitation.codeType != dialog.codeType) {
-                    dialog.sync(nowText.delimitation.codeType)
-                  }
-                  // LATER now we assume that inline editor edits atomic codes without attributes and attribute editor edits rich/empty with attributes
-                  dialog.sync(c.op.transformToCodeChange(IntRange(range.start + 1, range.until - 1)))
-
-                  // transform the opeartions!
+          editor match {
+            case dialog: InlineCodeDialog =>
+              mode match {
+                case Some(model.mode.Content.RichCodeSubMode(range, code, modeBefore)) =>
+                  dialog.sync(c.op.transformToCodeChange(IntRange(range.start, range.until)))
+                  // no need to sync type change, this will dismiss the dialog instead
                 case _ =>
               }
-              editor = (editor._1, rangeNow)
-            case _ => clearEditor()
+            case _ =>
           }
         }
       }

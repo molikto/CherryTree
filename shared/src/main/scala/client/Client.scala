@@ -21,6 +21,7 @@ import model.data.{CodeType, SpecialChar, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import model.cursor.Node
+import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
 import register.RegisterHandler
@@ -359,48 +360,52 @@ class Client(
 
 
   override def exitCodeEdit(): Unit = {
-    if (state.isCodeInside) {
-      localChange(DocTransaction(state.copyContentMode(mode.Content.CodeNormal)))
+    state.mode match {
+      case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode)) =>
+        localChange(DocTransaction(state.copyContentMode(sub.modeBefore)))
+      case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
+        localChange(DocTransaction(state.copyContentMode(model.mode.Content.CodeNormal)))
+      case _ =>
     }
   }
 
 
   override def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit = {
-    if (state.isCodeInside) {
-      val at = state.asCodeInside
-      localChange(DocTransaction(
-        Seq(model.operation.Node.Content(at, model.operation.Content.CodeLang(to.str)))
-        , None, editorUpdated = true))
+    state.mode match {
+      case Some(model.mode.Node.Content(cur, model.mode.Content.RichCodeSubMode(range, code, modeBefore))) =>
+        val aft = state.rich(cur).after(range.start - 1)
+        assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
+        val deli = aft.text.asDelimited
+        localChange(DocTransaction(Seq(
+          operation.Node.rich(cur, operation.Rich.wrapUnwrap(aft.textRange.start, deli, to.delimitation))
+        ), state.mode,
+          editorUpdated = true))
+      case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
+        localChange(DocTransaction(
+          Seq(model.operation.Node.Content(cur, model.operation.Content.CodeLang(to.str)))
+          , None, editorUpdated = true))
+      case _ => throw new IllegalStateException("What??")
     }
   }
 
-  override def onCodeEditAndEditorUpdated(op: Seq[operation.Unicode]): Unit = {
-    if (state.isCodeInside) {
-      val at = state.asCodeInside
-      localChange(DocTransaction(
-        op.map(o => model.operation.Node.Content(at, model.operation.Content.CodeContent(o)))
-        , None, editorUpdated = true))
+  override def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit = {
+    state.mode match {
+      case Some(model.mode.Node.Content(cur, model.mode.Content.RichCodeSubMode(range, code, modeBefore))) =>
+        val aft = state.rich(cur).after(range.start - 1)
+        assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
+        val deli = aft.text.asDelimited
+        localChange(DocTransaction(Seq(
+          operation.Node.rich(cur, operation.Rich.fromCode(range.start, op))
+        ), Some(state.copyContentMode(model.mode.Content.RichCodeSubMode(range, inside, modeBefore))),
+          editorUpdated = true))
+      case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
+        localChange(DocTransaction(
+          op.map(o => model.operation.Node.Content(cur, model.operation.Content.CodeContent(o)))
+          , Some(state.copyContentMode(inside)), editorUpdated = true))
+      case _ => throw new IllegalStateException("What??")
     }
   }
 
-
-  override def onCodeSubModeAndEditorUpdated(str: String, a: Int): Unit = {
-    if (state.isCodeInside) {
-      localChange(DocTransaction(
-        Seq.empty,
-        Some(state.copyContentMode(model.mode.Content.CodeInside(str, a))),
-        editorUpdated = true
-      ))
-    }
-  }
-
-  override def onInlineSubModeAndEditorUpdated(str: String, a: Int): Unit = {
-    localChange(DocTransaction(
-      Seq.empty,
-      Some(state.copyContentMode(model.mode.Content.CodeInside(str, a))),
-      editorUpdated = true
-    ))
-  }
 
   /**
     * view calls this method to insert text at current insertion point,
@@ -414,32 +419,19 @@ class Client(
       viewUpdated = true))
   }
 
-  override def onAttributeModified(cur: Node, range: IntRange, url: data.Unicode, title: data.Unicode): Unit = {
-    val rich = state.node(cur).rich
-    localChange(DocTransaction(Seq(
-      operation.Node.rich(cur, operation.Rich.changeAttributeAt(rich, range, url, title))
-    ), None))
+
+  override def onAttributeModified(url: data.Unicode, title: data.Unicode): Unit = {
+    state.mode match {
+      case Some(model.mode.Node.Content(node, model.mode.Content.RichAttributeSubMode(range, modeBefore))) =>
+        val rich = state.node(node).rich
+        localChange(DocTransaction(Seq(
+          operation.Node.rich(node, operation.Rich.changeAttributeAt(rich, range.start - 1, url, title))
+        ), None))
+      case _ => throw new IllegalStateException("What??")
+    }
   }
 
 
-  override def onInlineCodeTypeChangedAndEditorUpdated(cur: Node, range: IntRange, ty: CodeType): Unit = {
-    val aft = state.rich(cur).after(range.start)
-    assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
-    println(aft)
-    val deli = aft.text.asDelimited
-    localChange(DocTransaction(Seq(
-      operation.Node.rich(cur, operation.Rich.wrapUnwrap(range.start, deli, ty.delimitation))
-    ), state.mode,
-      editorUpdated = true))
-  }
-
-
-  override def onInlineModifiedAndEditorUpdated(cur: Node, range: IntRange, uni: Seq[operation.Unicode]): Unit = {
-    // LATER collab this?
-    localChange(DocTransaction(Seq(
-      operation.Node.rich(cur, operation.Rich.fromCode(range, uni))
-    ), None, editorUpdated = true))
-  }
 
   /**
     * currently code editors system copy/paste is not handled by this

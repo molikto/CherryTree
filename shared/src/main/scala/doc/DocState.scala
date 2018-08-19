@@ -142,18 +142,21 @@ case class DocState(
     editCode(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
   }
 
-  def editCode(range: IntRange): DocTransaction = {
-    val cur = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich]
+  def editCode(range: IntRange,
+    modeBefore: model.mode.Content.Rich = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich]
+  ): DocTransaction = {
     DocTransaction(
       copyContentMode(model.mode.Content.RichCodeSubMode(range,
-        CodeInside(if (cur.isInstanceOf[model.mode.Content.RichInsert]) "insert" else "normal", 0),
-        cur)))
+        CodeInside(if (modeBefore.isInstanceOf[model.mode.Content.RichInsert]) "insert" else "normal", 0),
+        modeBefore)))
   }
 
-  def editAttribute(range: IntRange): DocTransaction = {
+  def editAttribute(range: IntRange,
+    modeBefore: model.mode.Content.Rich = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich]
+  ): DocTransaction = {
     DocTransaction(
       copyContentMode(model.mode.Content.RichAttributeSubMode(range,
-        mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich])))
+        modeBefore)))
   }
 
   def editAttribute(text: Atom): DocTransaction = {

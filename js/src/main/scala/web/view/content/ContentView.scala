@@ -36,11 +36,12 @@ object ContentView {
 
 trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
   var contentData: T
-  def updateContent(c: T, trans: O, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
+  def updateContent(c: T, trans: O, viewUpdated: Boolean): Unit = {
     contentData = c
     if (!viewUpdated) {
       updateContent()
     }
   }
+
   def updateContent()
 }

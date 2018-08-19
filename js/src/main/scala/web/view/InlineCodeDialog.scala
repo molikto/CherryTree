@@ -4,19 +4,19 @@ package web.view
 import web._
 import model._
 import model.data._
+import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import web.view.doc.DocumentView
-import web.view._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 object InlineCodeDialog {
-  abstract class Anchor(str: Unicode, insert: Boolean, ty: CodeType) extends SourceEditOption(str, insert, ty) with OverlayAnchor {
+  abstract class Anchor(editor: _root_.view.SourceEditInterface, str: Unicode, mode: CodeInside, ty: CodeType) extends SourceEditOption(editor, str, mode, ty) with OverlayAnchor {
   }
 }
 

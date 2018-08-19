@@ -106,18 +106,25 @@ class BottomBarView(val client: Client) extends UnselectableView  {
         ""
       case Some(mm) => mm match {
         case model.mode.Node.Content(at, aa) =>
-          aa match {
-            case model.mode.Content.RichInsert(_) =>
-              "INSERT"
-            case model.mode.Content.RichVisual(_, _) =>
-              "VISUAL"
-            case model.mode.Content.RichNormal(_) =>
-              "NORMAL"
-            case model.mode.Content.CodeNormal =>
-              "CODE"
-            case model.mode.Content.CodeInside(mode, int) =>
-              s"CODE EDIT $mode"
+          def oneLevel(a: model.mode.Content): String = {
+            a match {
+              case model.mode.Content.RichInsert(_) =>
+                "INSERT"
+              case model.mode.Content.RichVisual(_, _) =>
+                "VISUAL"
+              case model.mode.Content.RichNormal(_) =>
+                "NORMAL"
+              case model.mode.Content.CodeNormal =>
+                "CODE"
+              case model.mode.Content.CodeInside(mode, int) =>
+                s"CODE : ${mode.toUpperCase}"
+              case model.mode.Content.RichCodeSubMode(range, code, before) =>
+                s"${oneLevel(before)}: ${code.mode.toUpperCase()}"
+              case model.mode.Content.RichAttributeSubMode(range, before) =>
+                oneLevel(before)
+            }
           }
+          oneLevel(aa)
         case v@model.mode.Node.Visual(_, _) =>
           "NODE VISUAL"
       }

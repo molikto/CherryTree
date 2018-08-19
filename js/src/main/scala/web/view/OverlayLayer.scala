@@ -51,7 +51,7 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
   }
 
   def refresh(): Unit = {
-    if (anchor != null) setDomAttributeBy(anchor.rect)
+    if (!dismissed && anchor != null) setDomAttributeBy(anchor.rect)
   }
 }
 

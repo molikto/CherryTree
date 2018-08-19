@@ -40,9 +40,9 @@ class RichSpecial extends CommandCategory("text format") {
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (n, content, insert, until) = a.asRichNormalOrInsert
       val keyU = Unicode(key.map(a => if (a.forall(_.isSimpleGrapheme)) Key.toString(a) else "").getOrElse(""))
-      def moveSomeInsertMode(some: Int) = Some(a.copyContentMode(mode.Content.RichInsert(insert + some)))
+      def moveSomeInsertMode(some: Int) = mode.Content.RichInsert(insert + some)
       if (insert < content.size && content.after(insert).special(deli.end) && key.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
-        DocTransaction(Seq.empty, moveSomeInsertMode(content.after(insert).size))
+        DocTransaction(a.copyContentMode(moveSomeInsertMode(content.after(insert).size)))
       } else if (!content.insideCoded(insert) && (key.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
         val extraInsert =
         if (key.isEmpty || keyU.isEmpty) {
@@ -53,16 +53,17 @@ class RichSpecial extends CommandCategory("text format") {
         val wrap = deli.wrap()
         val k = operation.Rich.insert(insert, wrap)
         val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
+        val modeBefore = moveSomeInsertMode(if (deli.atomic) wrap.size else 1)
         val vms = if (deli == SpecialChar.Image) {
-          a.editAttribute(IntRange.len(insert + 1, 0))
+          a.editAttribute(IntRange.len(insert + 1, 0), modeBefore)
         } else if (deli == SpecialChar.LaTeX) {
-          a.editCode(IntRange.len(insert + 1, 0))
+          a.editCode(IntRange.len(insert + 1, 0), modeBefore)
         } else if (deli == SpecialChar.HTML) {
-          a.editCode(IntRange.len(insert + 1, 0))
+          a.editCode(IntRange.len(insert + 1, 0), modeBefore)
         } else {
-          DocTransaction.empty
+          DocTransaction(a.copyContentMode(modeBefore))
         }
-        val ret = vms.copy(trans, moveSomeInsertMode(if (deli.atomic) wrap.size else 1))
+        val ret = vms.copy(trans)
         extraInsert match {
           case Some(extra) => DocTransaction(Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))), a.mode, extra = Some(ret))
           case None => ret
@@ -132,7 +133,7 @@ class RichSpecial extends CommandCategory("text format") {
       if (a.isRichVisual) {
         val (node, rich, visual) = a.asRichVisual
         val merge = visual.merged
-        !rich.insideCoded(merge.start) && rich.insideCoded(merge.until)
+        !rich.insideCoded(merge.start) && !rich.insideCoded(merge.until)
       } else {
         false
       }

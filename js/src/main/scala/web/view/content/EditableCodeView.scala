@@ -2,6 +2,7 @@ package web.view.content
 
 import model._
 import model.data.{Content, _}
+import model.mode.Content.CodeInside
 import model.operation.Content
 import model.range.IntRange
 import monix.execution.Cancelable
@@ -35,22 +36,27 @@ class EditableCodeView(
   def removeEditor(): Unit = {
     if (editing != null) {
       editing.dismiss()
+      if (changedInsideEditor) {
+        updateContent()
+        changedInsideEditor = false
+      }
       editing = null
     }
   }
 
-  override def updateContent(c: model.data.Content.Code, trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
+  override def updateContent(c: model.data.Content.Code, m: Option[model.mode.Content.Code], trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     this.contentData = c
     codeView.contentData = c
     if (editing == null) {
       if (ContentView.matches(c.ty, codeView)) {
-        codeView.updateContent(c, trans, viewUpdated, editorUpdated)
+        codeView.updateContent(c, trans, viewUpdated)
       } else {
         codeView.destroy()
         codeView = ContentView.createFromCode(c)
         codeView.attachToNode(dom)
       }
     } else {
+      changedInsideEditor = true
       if (!editorUpdated) {
         trans match {
           case model.operation.Content.CodeLang(lang) =>
@@ -65,6 +71,7 @@ class EditableCodeView(
 
   var changedInsideEditor = false
 
+  // this will only be called when editor is null
   override def updateContent(): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
       codeView.updateContent()
@@ -75,41 +82,20 @@ class EditableCodeView(
     }
   }
 
-  override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, fromUser: Boolean): Unit = {
+  override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
-    if (aa == model.mode.Content.CodeNormal) {
-      removeEditor()
-    } else {
-      if (editing == null) {
-        editing = documentView.sourceEditor
-        editing.show(new SourceEditOption(contentData.unicode, false, contentData.ty) {
-
-          override def onTransaction(unicode: Seq[operation.Unicode]): Unit = {
-            changedInsideEditor = true
-            controller.onCodeEditAndEditorUpdated(unicode)
-          }
-
-          override def onDismiss(): Unit = {
-            editing = null
-            controller.exitCodeEdit()
-            if (changedInsideEditor) {
-              updateContent()
-              changedInsideEditor = false
-            }
-          }
-
-          override def onCodeTypeChange(to: CodeType): Unit = {
-            changedInsideEditor = true
-            controller.onCodeTypeChangeAndEditorUpdated(to)
-          }
-
-//          override def onSubMode(str: String, a: Int): Unit = {
-//            controller.onCodeSubModeAndEditorUpdated(str, a)
-//          }
-        })
-      }
+    aa match {
+      case model.mode.Content.CodeNormal =>
+        removeEditor()
+      case inside: model.mode.Content.CodeInside =>
+        if (editing == null) {
+          editing = documentView.sourceEditor
+          editing.show(new SourceEditOption(controller, contentData.unicode, CodeInside.empty, contentData.ty))
+        } else if (!editorUpdated) {
+          editing.sync(inside)
+        }
     }
   }
 

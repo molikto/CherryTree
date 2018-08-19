@@ -12,7 +12,12 @@ object EditableContentView {
 
 trait EditableContentView[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content] extends ContentView[T, O] {
 
-  def updateMode(aa: M, viewUpdated: Boolean, fromUser: Boolean)
+
+  def updateContent(c: T, m: Option[M], trans: O, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
+    updateContent(c, trans, viewUpdated)
+  }
+
+  def updateMode(aa: M, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean)
 
   def clearMode(): Unit
 

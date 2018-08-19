@@ -50,11 +50,11 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     val se = res._2
     to match {
       case Unicode.Delete(r) =>
-        if (r.until < range.start) {
+        if (r.until <= range.start) {
           (range.moveBy(-r.size), se)
-        } else if (r.start > range.until) {
+        } else if (r.start >= range.until) {
           res
-        } else if (r.start >= range.start && r.until <= range.until) {
+        } else if (range.contains(r)) {
           (IntRange(range.start, range.until - r.size), se :+ Unicode.Delete(r.moveBy(-range.start)))
         } else {
           throw new Exception("Not handled case")
@@ -74,6 +74,8 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
           (range.moveBy(left.size), se)
         } else if (r.start > range.until) {
           res
+        } else if (r.start < range.start && r.until > range.until) {
+          (range.moveBy(left.size), se)
         } else {
           throw new Exception("Not handled case")
         }
@@ -95,8 +97,12 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }
     if (maybeBad._2) {
       val m = maybeBad._1 match {
-        case mode.Content.RichInsert(i) => model.mode.Content.RichNormal(apply(d).rangeAfter(i))
+        case mode.Content.RichInsert(i) =>
+          model.mode.Content.RichNormal(apply(d).rangeAfter(i))
         case _ => maybeBad._1
+      }
+      if (model.debug_view) {
+        println(s"bad mode to $m")
       }
       (m, true)
     } else {
@@ -159,8 +165,8 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
-  def fromCode(range: IntRange, uni: Seq[Unicode]): Rich = {
-    Rich(uni.map(_.translate(range.start + 1)), Type.AddDelete)
+  def fromCode(insideStart: Int, uni: Seq[Unicode]): Rich = {
+    Rich(uni.map(_.translate(insideStart)), Type.AddDelete)
   }
 
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
@@ -183,13 +189,13 @@ object Rich extends OperationObject[data.Rich, Rich] {
     Rich(op1.flatMap(_.u), ty)
   }
 
-  def changeAttributeAt(rich: data.Rich, range: IntRange, url: data.Unicode, title: data.Unicode): Rich = {
-    val atom = rich.after(range.start)
+  def changeAttributeAt(rich: data.Rich, textStart: Int, url: data.Unicode, title: data.Unicode): Rich = {
+    val atom = rich.after(textStart)
     val text = atom.text.asDelimited
     Rich(
       Seq(
-        Unicode.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(range.start), title),
-        Unicode.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(range.start), url)
+        Unicode.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(textStart), title),
+        Unicode.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(textStart), url)
       ),
       Type.AddDelete)
   }

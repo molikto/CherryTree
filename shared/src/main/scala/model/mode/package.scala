@@ -49,6 +49,7 @@ package object mode {
     }
 
     sealed abstract class RichSubMode extends Rich {
+      def getTextRange(rich: data.Rich): IntRange = rich.after(range.start - 1).textRange
       def getText(rich: data.Rich): Text.Delimited = rich.after(range.start - 1).text.asDelimited
       // range inside!
       def range: IntRange
@@ -69,6 +70,10 @@ package object mode {
 
     // insert, normal, visual, visual-line??
     case class CodeInside(mode: String, pos: Int) extends Code // user's mode is currently taken over by code editor
+
+    object CodeInside {
+      val empty = CodeInside("normal", 0)
+    }
   }
 
   sealed trait Node extends Mode[data.Node] {

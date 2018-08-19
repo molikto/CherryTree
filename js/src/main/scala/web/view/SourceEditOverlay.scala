@@ -5,6 +5,7 @@ import web._
 import model._
 import model.data.SpecialChar.Delimitation
 import model.data._
+import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Input
@@ -13,17 +14,12 @@ import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import settings.Settings
 import web.view.doc.DocumentView
-import web.view._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeType: CodeType) {
-  def onCodeTypeChange(to: CodeType): Unit
-  def onTransaction(unicode: Seq[operation.Unicode]): Unit
-  //def onSubMode(str: String, a: Int)
-  def onDismiss(): Unit
+class SourceEditOption(val editor: _root_.view.SourceEditInterface, val str: Unicode, val mode: CodeInside, val codeType: CodeType) {
 }
 
 
@@ -61,7 +57,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           val ee = e.target.asInstanceOf[HTMLSelectElement].value
           val ct = predefined.find(_.ct.str == ee).get.ct
           setCodeType(ct)
-          opt.onCodeTypeChange(ct)
+          opt.editor.onCodeTypeChangeAndEditorUpdated(ct)
         }
       }},
       predefined.map(a => option(a.name, value := a.ct.str))
@@ -95,19 +91,27 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   })
 
   private var codeMirror: js.Dynamic = null
+  private var modeChanged = false
+  private var modeStr: String = ""
+  private var modePos: Int = 0
   private var pendingChanges = new ArrayBuffer[operation.Unicode]()
 
   def newOp(a: operation.Unicode): Unit = {
     str = a(str)
     pendingChanges.append(a)
-    window.setTimeout(() => flush(), 100)
   }
 
   def flush(): Unit = {
     if (!dismissed) {
-      if (pendingChanges.nonEmpty) {
-        opt.onTransaction(pendingChanges)
-        pendingChanges.clear()
+      if (updating) {
+        window.setTimeout(() => {
+          flush()
+        }, 0)
+      } else {
+        opt.editor.onChangeAndEditorUpdated(pendingChanges, CodeInside(modeStr, modePos))
+        if (pendingChanges.nonEmpty) {
+          pendingChanges.clear()
+        }
       }
     }
   }
@@ -151,14 +155,14 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       isInnerInsert = mm == "insert"
       if (!isNormal) isInnerNormal = false
       else window.setTimeout(() => {
-        isInnerNormal = true
+        if (!dismissed) isInnerNormal = true
       }, 0)
+      modeStr = mm
+      flush()
     })
 
     CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
-      window.console.log(e)
-      if (!dismissed) {
-      }
+      modePos = codeMirror.indexFromPos(codeMirror.getCursor("head")).asInstanceOf[Int]
     })
 
     CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
@@ -192,6 +196,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
             newOp(operation.Unicode.Delete(fromCp, toCp))
             newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
           }
+          flush()
         }
       }
     })
@@ -211,7 +216,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override protected def onDismiss(): Unit = {
     val opt = this.opt
     super.onDismiss()
-    opt.onDismiss()
+    opt.editor.exitCodeEdit()
     codeMirror.setValue("")
     if (isInnerInsert) {
       CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
@@ -238,15 +243,17 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     }
   }
 
+  def sync(a: CodeInside): Unit = {
+
+  }
+
   def sync(a: CodeType): Unit = {
-    flush()
     updating = true
     setCodeType(a)
     updating = false
   }
 
   def sync(aa: Seq[operation.Unicode], assertEqual: model.data.Unicode = null): Unit = {
-    flush()
     updating = true
     for (a <- aa) {
       a match {
@@ -281,9 +288,16 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     updating = true
     codeMirror.setValue(str.str)
     setCodeType(opt.codeType)
-    if (opt.insert) {
-      CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+    isInnerNormal = true
+    isInnerInsert = false
+    if (opt.mode.mode == "insert") {
+      window.setTimeout(() => {
+        if (!dismissed) CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+      }, 0)
     }
+    modeChanged = false
+    modeStr = opt.mode.mode
+    modePos = opt.mode.pos
     updating = false
   }
 }
