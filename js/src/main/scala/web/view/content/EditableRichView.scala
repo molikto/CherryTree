@@ -354,11 +354,8 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
             if (editor == null) {
               val text = sub.getText(rich)
               editor = documentView.attributeEditor
-              val anchor = new UrlAttributeEditDialog.Anchor {
+              val anchor = new UrlAttributeEditDialog.Anchor(controller) {
                 override def rect: Rect = editorRect
-                override def update(url: Unicode, title: Unicode): Unit = {
-                  controller.onAttributeModified(url, title)
-                }
               }
               documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
            }

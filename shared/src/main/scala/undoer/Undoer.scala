@@ -36,6 +36,7 @@ private[undoer] class HistoryItem(
   var trans: transaction.Node,
   var reverse: transaction.Node,
   var docBefore: DocState,
+  val docAfter: DocState,
   val ty: Type,
   var undoer: (Seq[transaction.Node], Int) = null
 ) {
@@ -73,7 +74,7 @@ trait Undoer extends UndoerInterface {
     history_ = history_.take(a - discarded)
     // it is ok to discard all history with remote
     if (items.nonEmpty) {
-      history_ = history_ :+ new HistoryItem(items.flatten, null, null, Remote, null)
+      history_ = history_ :+ new HistoryItem(items.flatten, null, null, null, Remote, null)
     }
   }
 
@@ -92,15 +93,18 @@ trait Undoer extends UndoerInterface {
           case _: data.Content.Code => model.mode.Content.CodeNormal
           case _: data.Content.Rich => model.mode.Content.RichInsert(0)
         })
-      case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
+      case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, {
+        def rec(c: model.mode.Content): model.mode.Content = c match {
           // LATER this is also hacky!!!
-        case model.mode.Content.RichNormal(pos) =>
-          val node = docBefore(n).rich
-          model.mode.Content.RichInsert(pos.start)
-        case model.mode.Content.RichVisual(fix, move) =>
-          val node = docBefore(n).rich
-          model.mode.Content.RichInsert(fix.start)
-        case a => a
+          case model.mode.Content.RichNormal(pos) =>
+            model.mode.Content.RichInsert(pos.start)
+          case model.mode.Content.RichVisual(fix, move) =>
+            model.mode.Content.RichInsert(fix.start)
+          case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
+            rec(modeBefore)
+          case a => a
+        }
+        rec(a)
       })
     }
   }
@@ -119,12 +123,14 @@ trait Undoer extends UndoerInterface {
   }
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(docBefore: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean): Unit = {
+  def trackUndoerChange(docBefore: DocState, docAfter: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
       val reverse = transaction.Node.reverse(docBefore.node, trans)
-      val newItem = new HistoryItem(trans, reverse, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), ty)
+      val newItem = new HistoryItem(trans, reverse,
+        docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)),
+        docAfter.copy(mode0 = convertMode(docAfter.node, docAfter.mode0)), ty)
       history_ = history_ :+ newItem
     }
     ty match {
@@ -137,8 +143,8 @@ trait Undoer extends UndoerInterface {
         lastOption match {
           case Some(a) if a.ty == Local && !isExtra  =>
             if (a.ty == Local) {
-              transaction.Node.mergeForUndoer(trans, a.trans) match {
-                case Some((merged, wait)) =>
+              transaction.Node.merge(trans, a.trans, docBefore.mode.exists(_.breakWhiteSpaceInserts)) match {
+                case Some(merged) =>
                   a.trans = merged
                   a.reverse = transaction.Node.reverse(a.docBefore.node, a.trans)
                   return

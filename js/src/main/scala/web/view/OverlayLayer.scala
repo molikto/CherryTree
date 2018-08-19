@@ -30,7 +30,6 @@ object CoveringOverlay {
 
 trait OverlayAnchor {
   def rect: Rect
-  def onDismiss(): Unit = {}
 }
 
 trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
@@ -45,7 +44,6 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
   }
 
   override protected def onDismiss(): Unit = {
-    if (anchor != null) anchor.onDismiss()
     anchor = null.asInstanceOf[ANCHOR]
     super.onDismiss()
   }

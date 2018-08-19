@@ -507,8 +507,6 @@ class DocumentView(
 
   private val commandMenuAnchor = new OverlayAnchor {
     override def rect: Rect = selectionRect
-    override def onDismiss(): Unit = {
-    }
   }
 
   def showCommandMenu(): Unit = {

@@ -5,6 +5,7 @@ import model.range.IntRange
 
 package object mode {
   trait Mode[T] {
+    def breakWhiteSpaceInserts: Boolean = false
   }
 
   sealed abstract class Content extends Mode[data.Content] {
@@ -24,6 +25,7 @@ package object mode {
       def merged: IntRange
     }
     case class RichInsert(pos: Int) extends Rich {
+      override def breakWhiteSpaceInserts: Boolean = true
     }
     /**
       * second parameter is a range because selection is not just one codepoint
@@ -60,6 +62,7 @@ package object mode {
     // we assume that code will always have delimitation 1
     case class RichCodeSubMode(override val range: IntRange, code: CodeInside, override val modeBefore: Rich) extends RichSubMode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
+      override def breakWhiteSpaceInserts: Boolean = code.breakWhiteSpaceInserts
     }
 
     case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {
@@ -69,7 +72,9 @@ package object mode {
     case object CodeNormal extends Code with Normal //
 
     // insert, normal, visual, visual-line??
-    case class CodeInside(mode: String, pos: Int) extends Code // user's mode is currently taken over by code editor
+    case class CodeInside(mode: String, pos: Int) extends Code {
+      override def breakWhiteSpaceInserts: Boolean = mode == "insert"
+    }// user's mode is currently taken over by code editor
 
     object CodeInside {
       val empty = CodeInside("normal", 0)
@@ -77,6 +82,7 @@ package object mode {
   }
 
   sealed trait Node extends Mode[data.Node] {
+
     def inside(a: cursor.Node): Boolean
     def focus: cursor.Node
     def coverage: cursor.Node
@@ -88,6 +94,7 @@ package object mode {
       override def focus: cursor.Node = node
       override def coverage: cursor.Node = node
       def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, node)
+      override def breakWhiteSpaceInserts: Boolean = a.breakWhiteSpaceInserts
     }
     case class Visual(fix: cursor.Node, move: cursor.Node) extends Node {
       override def coverage: cursor.Node = minimalRange match {

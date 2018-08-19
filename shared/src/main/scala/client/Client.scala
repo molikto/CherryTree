@@ -219,7 +219,7 @@ class Client(
     }
 
     onBeforeUpdateUpdateCommandState(state_)
-    trackUndoerChange(docBefore, from.map(_._2), ty, isSmartInsert)
+    trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert)
     stateUpdates_.onNext(res)
     updatingState = false
     if (state_.isRichInsert) {
@@ -359,10 +359,10 @@ class Client(
   }
 
 
-  override def exitCodeEdit(): Unit = {
+  override def exitSubMode(): Unit = {
     sourceEditorCommandBuffer.update("")
     state.mode match {
-      case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode)) =>
+      case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichSubMode)) =>
         localChange(DocTransaction(state.copyContentMode(sub.modeBefore)))
       case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
         localChange(DocTransaction(state.copyContentMode(model.mode.Content.CodeNormal)))

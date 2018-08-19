@@ -128,23 +128,23 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }._2, Type.reverse(ty))
   }
 
-  private def mergeIfSingle(u: Seq[Unicode], before: Seq[Unicode], breakOnWhitespace: Boolean): Option[(Rich, Boolean)] = {
+  private def mergeIfSingle(u: Seq[Unicode], before: Seq[Unicode], breakOnWhitespace: Boolean): Option[Rich] = {
     (before, u) match {
       case (Seq(Unicode.Insert(a0, u0, g0)), Seq(Unicode.Insert(a1, u1, g1))) if a1 == a0 + u0.size && (!breakOnWhitespace || !u1.containsSpace) && g0 == g1 =>
-        Some((Rich(Seq(Unicode.Insert(a0, u0 + u1, g0)), ty), false))
+        Some(Rich(Seq(Unicode.Insert(a0, u0 + u1, g0)), ty))
       case (Seq(Unicode.Delete(r0)), Seq(Unicode.Delete(r1))) =>
         if (r1.until == r0.start) {
-          Some((Rich(Seq(Unicode.Delete(r1.start, r0.until)), ty), false))
+          Some(Rich(Seq(Unicode.Delete(r1.start, r0.until)), ty))
         } else if (r0.start == r1.start) {
-          Some((Rich(Seq(Unicode.Delete(r1.start, r1.until + r0.size)), ty), false))
+          Some(Rich(Seq(Unicode.Delete(r1.start, r1.until + r0.size)), ty))
         } else {
           None
         }
       case (Seq(Unicode.Insert(a0, u0, g0)), Seq(Unicode.Insert(a1, u1, g1), Unicode.Delete(r))) if g0 == g1 && (!breakOnWhitespace || !u1.containsSpace) =>
         if (a1 >= a0 && a1 < a0 + u0.size && r.start == a1 + u1.size && r.until == a0 + u0.size + u1.size) {
-          Some((Rich(Seq(
+          Some(Rich(Seq(
             Unicode.Insert(a0, u0.slice(IntRange(0, u0.size - r.size)) + u1,g0)
-          ), Type.AddDelete), true))
+          ), Type.AddDelete))
         } else {
           None
         }
@@ -154,12 +154,9 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }
   }
 
-  override def mergeForUndoer(before: Rich): Option[(Rich, Boolean)] = {
-    mergeIfSingle(u, before.u, breakOnWhitespace = true)
-  }
 
-  override def merge(before: Any): Option[Rich] =
-    mergeIfSingle(Unicode.merge(u), Unicode.merge(before.asInstanceOf[Rich].u), breakOnWhitespace = false).map(_._1)
+  override def merge(before: Any, whitespace: Boolean): Option[Rich] =
+    mergeIfSingle(Unicode.merge(u), Unicode.merge(before.asInstanceOf[Rich].u), breakOnWhitespace = whitespace)
 
   override def isEmpty: Boolean = u.forall(_.isEmpty)
 }

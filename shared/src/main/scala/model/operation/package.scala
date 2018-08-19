@@ -29,13 +29,12 @@ package object operation {
 
   trait Operation[DATA] {
     type This
-    def mergeForUndoer(before: This): Option[(This, Boolean)] = None
     def ty: Type
     def apply(data: DATA): DATA
 
     def reverse(d: DATA): This
 
-    def merge(before: Any): Option[This]
+    def merge(before: Any, whiteSpace: Boolean): Option[This]
 
     def isEmpty: Boolean
   }
@@ -64,11 +63,11 @@ package object operation {
       cs
     }
 
-    def merge(a0: Seq[OPERATION]): Seq[OPERATION] = {
+    def merge(a0: Seq[OPERATION], whiteSpace: Boolean = false): Seq[OPERATION] = {
       def rec(a0: Seq[OPERATION]): Seq[OPERATION] = {
         val a = a0.filter(!_.isEmpty)
         val res = if (a.isEmpty) a else a.dropRight(1).foldRight(Seq(a.last)) { (before, seq) =>
-          seq.head.merge(before) match {
+          seq.head.merge(before, whiteSpace) match {
             case Some(h) => h.asInstanceOf[OPERATION] +: seq.tail
             case None => before +: seq
           }

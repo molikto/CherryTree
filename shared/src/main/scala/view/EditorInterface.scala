@@ -12,7 +12,7 @@ import monix.reactive.Observable
 trait SourceEditInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
-  def exitCodeEdit(): Unit
+  def exitSubMode(): Unit
   def onSourceEditorCommandBuffer(a: String): Unit
   def onSourceEditorUndo(): Unit
   def onSourceEditorRedo(): Unit

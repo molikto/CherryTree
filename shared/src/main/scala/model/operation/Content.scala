@@ -30,13 +30,8 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
 
-    override def merge(before: Any): Option[Content] = before match {
-      case CodeContent(o) => op.merge(o).map(CodeContent)
-      case _ => None
-    }
-
-    override def mergeForUndoer(before: Content): Option[(Content, Boolean)] = before match {
-      case Rich(be) => op.mergeForUndoer(be).map(a => (Rich(a._1), a._2))
+    override def merge(before: Any, whiteSpace: Boolean): Option[Content] = before match {
+      case CodeContent(o) => op.merge(o, whiteSpace).map(CodeContent)
       case _ => None
     }
 
@@ -55,7 +50,7 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
 
-    override def merge(before: Any): Option[Content] = before match {
+    override def merge(before: Any, whiteSpace: Boolean): Option[Content] = before match {
       case CodeLang(b) => Some(this)
       case _ => None
     }
@@ -79,13 +74,8 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Rich].content))
 
-    override def mergeForUndoer(before: Content): Option[(Content, Boolean)] = before match {
-      case Rich(be) => op.mergeForUndoer(be).map(a => (Rich(a._1), a._2))
-      case _ => None
-    }
-
-    override def merge(before: Any): Option[Content] = before match {
-      case Rich(o) => op.merge(o).map(Rich)
+    override def merge(before: Any, whiteSpace: Boolean): Option[Content] = before match {
+      case Rich(o) => op.merge(o, whiteSpace).map(Rich)
       case _ => None
     }
 

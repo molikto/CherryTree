@@ -86,7 +86,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def reverse(d: data.Unicode): Unicode = Delete(at, at + unicode.size)
 
-    override def merge(before: Any): Option[Unicode] = before match {
+    override def merge(before: Any, whitespace: Boolean): Option[Unicode] = before match {
       case Insert(a, u2, _) if IntRange(a, a + u2.size).containsInsertion(at) =>
         if (a == at) {
           Some(Insert(a, unicode + u2))
@@ -169,7 +169,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def reverse(d: data.Unicode): Unicode = Insert(r.start, d.slice(r))
 
-    override def merge(before: Any): Option[Unicode] = before match {
+    override def merge(before: Any, whitespace: Boolean): Option[Unicode] = before match {
       case Delete(r2) if r.containsInsertion(r2.start) =>
         Some(Delete(IntRange(r.start, r.start + r2.size + r.size)))
 //      case Insert(at, u, _) =>
@@ -240,7 +240,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def reverse(d: data.Unicode): Unicode = ReplaceAtomic(IntRange(r.start, r.start + unicode.size), d.slice(r))
 
-    override def merge(before: Any): Option[Unicode] = before match {
+    override def merge(before: Any, whitespace: Boolean): Option[Unicode] = before match {
       case ReplaceAtomic(rr, uu) if r.start == rr.start =>
         assert(r == IntRange(r.start, r.start +  uu.length))
         Some(ReplaceAtomic(rr, unicode))
@@ -308,7 +308,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def reverse(d: data.Unicode): Unicode = throw new NotImplementedError("This is ugly!!!!")
 
-    override def merge(before: Any): Option[Unicode] = None
+    override def merge(before: Any, whitespace: Boolean): Option[Unicode] = None
 
     override def isEmpty: Boolean = false
   }

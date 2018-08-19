@@ -6,10 +6,10 @@ import scalatags.JsDom.all._
 import util.Rect
 import client.Client
 import model.data.Unicode
+import view.EditorInterface
 
 object UrlAttributeEditDialog {
-  trait Anchor extends OverlayAnchor {
-    def update(url: Unicode, title: Unicode): Unit
+  abstract class Anchor(val editor: EditorInterface) extends OverlayAnchor {
   }
 }
 class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedOverlay[UrlAttributeEditDialog.Anchor] {
@@ -59,8 +59,9 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
     if (url.isEmpty) url = urlStart
     val title = titleInput.value
     if (url != urlStart || title != titleStart) {
-      anchor.update(Unicode(urlInput.value), Unicode(titleInput.value))
+      anchor.editor.onAttributeModified(Unicode(urlInput.value), Unicode(titleInput.value))
     }
+    anchor.editor.exitSubMode()
     super.onDismiss()
   }
 

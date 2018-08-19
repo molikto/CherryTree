@@ -76,7 +76,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = AttributeChange(at, tag, d(at).attribute(tag))
 
-    override def merge(before: Any): Option[Node] = None
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = None
 
     override def isEmpty: Boolean = false
 
@@ -101,13 +101,9 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = copy(content = content.reverse(d(at).content))
 
-    override def mergeForUndoer(before: Node): Option[(Node, Boolean)] = before match {
-      case Content(at0, c0) if at0 == at => content.mergeForUndoer(c0).map(a => (Content(at, a._1), a._2))
-      case _ => None
-    }
 
-    override def merge(before: Any): Option[Node] = before match {
-      case Content(at0, c0) if at0 == at => content.merge(c0).map(a => Content(at, a))
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = before match {
+      case Content(at0, c0) if at0 == at => content.merge(c0, whiteSpace).map(a => Content(at, a))
       case _ => None
     }
 
@@ -134,7 +130,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = Replace(at, d(at).content)
 
-    override def merge(before: Any): Option[Node] = before match {
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = before match {
       case Replace(a, _) if a == at => Some(this)
       case Content(a, _) if a == at => Some(this)
       case _ => None
@@ -169,7 +165,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     }
     override def reverse(d: data.Node): Node = Delete(range.Node(at, len = childs.size))
 
-    override def merge(before: Any): Option[Node] = before match {
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = before match {
       case Insert(aa, css) =>
         val newRange = range.Node(aa, len = css.length)
         if (newRange.sameParent(at) && (newRange.contains(at) || newRange.until == at)) {
@@ -213,7 +209,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = Insert(r.start, d(r.parent).apply(r.childs))
 
-    override def merge(before: Any): Option[Node] = before match {
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = before match {
       case Node.Content(at, _) if r.contains(at) => Some(this)
       case Node.Replace(at, _) if r.contains(at) => Some(this)
       case Node.Insert(at, childs) if r.contains(model.cursor.Node.parent(at)) => Some(this)
@@ -225,7 +221,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
         } else {
           None
         }
-      case m@Node.Move(rr, to) if r.contains(model.cursor.Node.parent(rr.transformNodeAfterMoved(to, to))) => merge(Delete(rr))
+      case m@Node.Move(rr, to) if r.contains(model.cursor.Node.parent(rr.transformNodeAfterMoved(to, to))) => merge(Delete(rr), whiteSpace)
       case _ => None
     }
 
@@ -274,7 +270,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def reverse(d: data.Node): Node = reverse
 
-    override def merge(before: Any): Option[Node] = None
+    override def merge(before: Any, whiteSpace: Boolean): Option[Node] = None
 
     override def isEmpty: Boolean = r.isEmpty || r.until == to
   }

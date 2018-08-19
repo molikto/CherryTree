@@ -235,7 +235,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           dismiss()
         } else {
           if (text.isEmpty) {
-            newOp(operation.Unicode.Delete(fromCp, toCp))
+            if (fromCp != toCp) {
+              newOp(operation.Unicode.Delete(fromCp, toCp))
+            }
           } else if (fromCp == toCp) {
             newOp(operation.Unicode.Insert(fromCp, model.data.Unicode(text).guessProp))
           } else {
@@ -262,7 +264,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override protected def onDismiss(): Unit = {
     val opt = this.opt
     super.onDismiss()
-    opt.editor.exitCodeEdit()
+    opt.editor.exitSubMode()
     codeMirror.setValue("")
     if (isInnerInsert) {
       CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
