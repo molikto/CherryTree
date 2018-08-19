@@ -55,6 +55,18 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           mode.Content.RichNormal(transformRange(r))
         }
+      case mode.Content.RichAttributeSubMode(range, rich) =>
+        val ran = if (at < range.start) {
+          range.moveBy(unicode.size)
+        } else if (at >= range.start && at <= range.until) {
+          IntRange(range.start, range.until + unicode.size)
+        } else if (at > range.until) {
+          range
+        } else {
+          throw new Exception("Not handled case")
+        }
+        val (ri, _) = transformRichMaybeBad(i)
+        mode.Content.RichAttributeSubMode(ran, ri)
       case mode.Content.RichCodeSubMode(range, code, rich) =>
         var insertInside = Int.MaxValue
         val ran = if (at < range.start) {
@@ -119,9 +131,27 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         transformRange(range).map(r => (mode.Content.RichNormal(r) : mode.Content.Rich, false)).getOrElse(
           (mode.Content.RichInsert(r.start), true)
         )
+      case mode.Content.RichAttributeSubMode(range, rich) =>
+        val (ri, bad) = transformRichMaybeBad(i)
+        // if range is deleted we dismiss current one... what ever
+        if (bad || transformRange(IntRange(range.start - 1, range.start)).isEmpty) {
+          (ri, bad)
+        } else {
+          val ran = if (r.until < range.start) {
+            range.moveBy(-r.size)
+          } else if (r.start > range.until) {
+            range
+          } else if (range.contains(r)) {
+            IntRange(range.start, range.until - r.size)
+          } else {
+            throw new Exception("Not handled case")
+          }
+          (mode.Content.RichAttributeSubMode(ran, ri), false)
+        }
       case mode.Content.RichCodeSubMode(range, code, rich) =>
         val (ri, bad) = transformRichMaybeBad(i)
-        if (bad) {
+        // if range is deleted we dismiss current one... what ever
+        if (bad || transformRange(IntRange(range.start - 1, range.start)).isEmpty) {
           (ri, bad)
         } else {
           var deleteInside: IntRange = null
@@ -199,7 +229,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         mode.Content.RichVisual(transformRange(a), transformRange(b))
       case mode.Content.RichNormal(range) =>
         mode.Content.RichNormal(transformRange(range))
-      case mode.Content.RichCodeSubMode(range, code, rich) =>
+      case sub: mode.Content.RichSubMode =>
+        val range = sub.range
         val ran = if (r.until < range.start) {
           range.moveBy(sizeDiff)
         } else if (r.start > range.until) {
@@ -207,7 +238,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           throw new Exception("Not handled case")
         }
-        mode.Content.RichCodeSubMode(ran, code, transformRichMaybeBad(rich)._1)
+        sub.copyWithRange(ran, transformRichMaybeBad(sub.modeBefore)._1)
     }, false)
 
     override def reverse(d: data.Unicode): Unicode = ReplaceAtomic(IntRange(r.start, r.start + unicode.size), d.slice(r))
@@ -258,7 +289,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           transformRange(range).map(a => mode.Content.RichNormal(a)).get
         }
-      case mode.Content.RichCodeSubMode(range, code, rich) =>
+      case sub: mode.Content.RichCodeSubMode =>
+        val range = sub.range
         val ran = if (r.until < range.start) {
           range.moveBy(left.size)
         } else if (r.start > range.until) {
@@ -266,7 +298,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           throw new Exception("Not handled case")
         }
-        mode.Content.RichCodeSubMode(ran, code, transformRichMaybeBad(rich)._1)
+        sub.copyWithRange(ran, transformRichMaybeBad(sub.modeBefore)._1)
     }, false)
 
     def reverse2: Seq[operation.Unicode] = {

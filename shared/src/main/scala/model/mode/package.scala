@@ -47,10 +47,20 @@ package object mode {
       override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
     }
 
-    case class RichCodeSubMode(range: IntRange, code: CodeInside, modeBefore: Rich) extends Rich {
+    sealed trait RichSubMode extends Rich {
+      def range: IntRange
+      def modeBefore: Rich
+      def copyWithRange(range: IntRange, rich: Rich): RichSubMode
     }
 
-    case class RichAttributeSubMode()
+    // we assume that code will always have delimitation 1
+    case class RichCodeSubMode(override val range: IntRange, code: CodeInside, override val modeBefore: Rich) extends RichSubMode {
+      override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
+    }
+
+    case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {
+      override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
+    }
 
     case object CodeNormal extends Code with Normal //
 
@@ -114,6 +124,15 @@ package object mode {
             writeIntArray(node.toArray)
             writeString(a)
             writeInt(b)
+          case Content(node, mode.Content.RichCodeSubMode(range, code, mode)) =>
+            writeInt(6)
+            pickler.pickle(Content(node, mode))
+            pickler.pickle(Content(node, code))
+            IntRange.pickler.pickle(range)
+          case Content(node, mode.Content.RichAttributeSubMode(range, mode)) =>
+            writeInt(7)
+            pickler.pickle(Content(node, mode))
+            IntRange.pickler.pickle(range)
         }
       }
 
@@ -126,6 +145,15 @@ package object mode {
           case 3 => Visual(readIntArray, readIntArray)
           case 4 => Content(readIntArray, mode.Content.CodeNormal)
           case 5 => Content(readIntArray, mode.Content.CodeInside(readString, readInt))
+          case 6 =>
+            val r = unpickle(implicitly).asInstanceOf[mode.Node.Content]
+            val j = unpickle(implicitly).asInstanceOf[mode.Node.Content].a.asInstanceOf[mode.Content.CodeInside]
+            val ran = IntRange.pickler.unpickle
+            Content(r.node, mode.Content.RichCodeSubMode(ran, j, r.a.asInstanceOf[mode.Content.Rich]))
+          case 7 =>
+            val r = unpickle(implicitly).asInstanceOf[mode.Node.Content]
+            val ran = IntRange.pickler.unpickle
+            Content(r.node, mode.Content.RichAttributeSubMode(ran, r.a.asInstanceOf[mode.Content.Rich]))
         }
       }
     }

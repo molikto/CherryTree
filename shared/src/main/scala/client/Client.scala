@@ -429,11 +429,13 @@ class Client(
 
   override def onInlineCodeTypeChangedAndEditorUpdated(cur: Node, range: IntRange, ty: CodeType): Unit = {
     val aft = state.rich(cur).after(range.start)
+    assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
     println(aft)
     val deli = aft.text.asDelimited
     localChange(DocTransaction(Seq(
       operation.Node.rich(cur, operation.Rich.wrapUnwrap(range.start, deli, ty.delimitation))
-    ), None, editorUpdated = true))
+    ), state.mode,
+      editorUpdated = true))
   }
 
 
@@ -474,9 +476,7 @@ class Client(
           case model.mode.Content.CodeNormal =>
             // LATER paste in code normal
             DocTransaction.empty
-          case model.mode.Content.CodeInside(_, int) =>
-            throw new IllegalStateException("not handled by me")
-          case model.mode.Content.RichCodeSubMode(_, _, _) =>
+          case _ =>
             throw new IllegalStateException("not handled by me")
         }
       case model.mode.Node.Visual(fix, move) =>
