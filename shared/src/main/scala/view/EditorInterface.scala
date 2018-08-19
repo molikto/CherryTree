@@ -13,6 +13,7 @@ trait SourceEditInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
   def exitCodeEdit(): Unit
+  def onSourceEditorCommandBuffer(a: String): Unit
 }
 
 trait EditorInterface extends SourceEditInterface {

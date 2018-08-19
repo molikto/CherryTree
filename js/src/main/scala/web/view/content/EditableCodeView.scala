@@ -88,6 +88,7 @@ class EditableCodeView(
   }
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
+    dom.classList.add("ct-selection")
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
@@ -123,10 +124,6 @@ class EditableCodeView(
 
   override def focus(): Unit = {
     codeView.focus()
-  }
-
-  override def initMode(): Unit = {
-    dom.classList.add("ct-selection")
   }
 
   override def selectionRect: Rect = {

@@ -360,6 +360,7 @@ class Client(
 
 
   override def exitCodeEdit(): Unit = {
+    sourceEditorCommandBuffer.update("")
     state.mode match {
       case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode)) =>
         localChange(DocTransaction(state.copyContentMode(sub.modeBefore)))
@@ -416,6 +417,14 @@ class Client(
       DocTransaction(Seq(operation.Node.rich(n, operation.Rich.insert(insert.pos, unicode))),
       Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
       viewUpdated = true))
+  }
+
+
+  val sourceEditorCommandBuffer = ObservableProperty("")
+  def sourceEditorCommands: Observable[String] = sourceEditorCommandBuffer
+
+  def onSourceEditorCommandBuffer(a: String): Unit = {
+    sourceEditorCommandBuffer.update(a)
   }
 
 

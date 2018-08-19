@@ -99,22 +99,23 @@ class DocumentView(
   event("focusin", (a: FocusEvent) => {
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
+      dom.classList.remove("ct-window-inactive")
       if (window.document.activeElement != currentEditable) {
         updateMode(client.state.mode)
       }
-      dom.classList.remove("ct-window-inactive")
     }
   })
 
 
-  override def markEditable(dom: HTMLElement): Unit = {
-    if (currentEditable == dom) return
+  override def markEditableIfInactive(dom: HTMLElement): Boolean = {
+    if (currentEditable == dom && window.document.activeElement == dom) return false
     dom.contentEditable = "true"
     noEditable.contentEditable = "false"
     currentEditable = dom
     if (!isFocusedOut) {
       currentEditable.focus()
     }
+    true
   }
 
   override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
@@ -371,7 +372,6 @@ class DocumentView(
           val current = contentAt(at)
           if (current != focusContent) {
             removeFocusContent()
-            current.initMode()
             focusContent = current
           }
           current.updateMode(aa, viewUpdated, editorUpdated, fromUser)
@@ -435,7 +435,6 @@ class DocumentView(
                 }
                 tt.foreach(cl.add)
                 toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
-                updateMode(None)
               }
             case model.operation.Node.Replace(at, c) =>
               if (inViewport(at)) {
@@ -465,7 +464,6 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
-                updateMode(None)
               } else if (inViewport(range.parent)) {
                 removeNodes(range)
               } else if (inViewport(to)) {

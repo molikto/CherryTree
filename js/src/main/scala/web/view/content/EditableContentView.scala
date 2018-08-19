@@ -21,7 +21,5 @@ trait EditableContentView[T <: data.Content, O <: model.operation.Content, M <: 
 
   def clearMode(): Unit
 
-  def initMode(): Unit
-
   def selectionRect: Rect
 }

@@ -116,6 +116,8 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     }
   }
 
+  var keys: String = ""
+
 
   override def onAttach(): Unit = {
     super.onAttach()
@@ -150,20 +152,40 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
 
     CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-      val mm = e.mode.asInstanceOf[String]
-      val isNormal = mm == "normal"
-      isInnerInsert = mm == "insert"
-      if (!isNormal) isInnerNormal = false
-      else window.setTimeout(() => {
-        if (!dismissed) isInnerNormal = true
-      }, 0)
-      modeStr = mm
-      flush()
+      if (!dismissed) {
+        val mm = e.mode.asInstanceOf[String]
+        val isNormal = mm == "normal"
+        isInnerInsert = mm == "insert"
+        if (!isNormal) isInnerNormal = false
+        else window.setTimeout(() => {
+          if (!dismissed) isInnerNormal = true
+        }, 0)
+        modeStr = mm
+        flush()
+      }
     })
 
     CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
-      modePos = codeMirror.indexFromPos(codeMirror.getCursor("head")).asInstanceOf[Int]
+      if (!dismissed) {
+        modePos = codeMirror.indexFromPos(codeMirror.getCursor("head")).asInstanceOf[Int]
+      }
     })
+
+
+    CodeMirror.on(codeMirror, "vim-keypress", (key: js.Dynamic)  => {
+      if (!dismissed) {
+        if (key.asInstanceOf[String] == "<Esc>") {
+          keys = ""
+        } else {
+          keys = keys + key
+        }
+        opt.editor.onSourceEditorCommandBuffer(keys)
+      }
+    })
+    CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
+      keys = ""
+    })
+
 
     CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
       if (!updating && !dismissed) {

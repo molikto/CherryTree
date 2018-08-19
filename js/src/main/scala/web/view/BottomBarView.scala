@@ -59,6 +59,10 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     debugErrorInfo
   ).render
 
+  observe(client.sourceEditorCommandBuffer.doOnNext(str => {
+//    commandStatus.textContent = if (str.isEmpty) EmptyStr else str
+//    commandStatus.className = "ct-hint-color"
+  }))
 
   observe(client.commandBufferUpdates.doOnNext(c => {
     var isCompleted = false

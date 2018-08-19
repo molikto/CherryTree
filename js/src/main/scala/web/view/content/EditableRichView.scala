@@ -297,14 +297,16 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     documentView.unmarkEditableIfActive(dom)
   }
 
-  override def initMode(): Unit = {
-    documentView.markEditable(dom)
-  }
-
   private def isInserting = flushSubscription != null
 
   private def initMode(i: Int): Unit = {
-    if (previousMode != i) {
+    var forceUpdate = false
+    if (i >= 0) {
+      if (documentView.markEditableIfInactive(dom)) {
+        forceUpdate = true
+      }
+    }
+    if (previousMode != i || forceUpdate) {
       if (debug_view) {
         println(s"mode change from  $previousMode to $i")
       }
@@ -374,7 +376,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         }
       case _ =>
         clearEditor()
-        if (previousMode < 0) initMode()
         aa match {
           case mode.Content.RichInsert(pos) =>
             initMode(0)
@@ -434,8 +435,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     val dataBefore = rich
-    rich = data.content
-    updateContent(c, viewUpdated)
+    updateContent(data, c, viewUpdated)
     if (!viewUpdated) {
       if (!editorUpdated) {
         if (editor != null) {
