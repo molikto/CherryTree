@@ -4,6 +4,7 @@ import command.Key
 import doc.{DocInterface, DocState}
 import model.{cursor, data, range}
 import model.data.{Node => _, _}
+import model.range.IntRange
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
@@ -98,6 +99,9 @@ class DocumentView(
   event("focusin", (a: FocusEvent) => {
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
+      if (window.document.activeElement != currentEditable) {
+        updateMode(client.state.mode)
+      }
       dom.classList.remove("ct-window-inactive")
     }
   })
@@ -108,7 +112,9 @@ class DocumentView(
     dom.contentEditable = "true"
     noEditable.contentEditable = "false"
     currentEditable = dom
-    currentEditable.focus()
+    if (!isFocusedOut) {
+      currentEditable.focus()
+    }
   }
 
   override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
@@ -116,7 +122,9 @@ class DocumentView(
       dom.contentEditable = "false"
       currentEditable = noEditable
       noEditable.contentEditable = "true"
-      noEditable.focus()
+      if (!isFocusedOut) {
+        noEditable.focus()
+      }
     }
   }
 
@@ -236,6 +244,14 @@ class DocumentView(
 
 
 
+  private def removeAllNodes(): Unit = {
+    val a = rootFrame
+    removeNodes(model.range.Node(currentZoom, IntRange(0, childListAt(currentZoom).childNodes.length)))
+    contentAt(currentZoom).destroy()
+    a.removeChild(a.childNodes(0))
+    a.removeChild(a.childNodes(0))
+  }
+
   private def removeNodes(range: model.range.Node): Unit = {
     def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
       for (i <- start until u) {
@@ -283,10 +299,6 @@ class DocumentView(
 
 
 
-  private def cleanFrame(a: html.Element): Unit = {
-    a.removeChild(a.childNodes(0))
-    a.removeChild(a.childNodes(0))
-  }
 
   // this can temp be null during state update
   private var currentZoom: model.cursor.Node = null
@@ -387,14 +399,15 @@ class DocumentView(
       })
       duringStateUpdate = true
       if (update.to.zoomId != currentZoomId) {
-        currentZoomId = update.to.zoomId
-        currentZoom = update.to.zoom
         //          if (cursor.Node.contains(currentZoom, a)) {
         //          } else {
         //            cleanFrame(rootFrame)
         //            insertNodesRec(update.root(a), rootFrame)
         //          }
-        cleanFrame(rootFrame)
+        updateMode(None)
+        removeAllNodes()
+        currentZoomId = update.to.zoomId
+        currentZoom = update.to.zoom
         insertNodesRec(currentZoom, update.to.node(currentZoom), rootFrame)
       } else {
         for ((s, t, to) <- update.from) {
@@ -422,6 +435,7 @@ class DocumentView(
                 }
                 tt.foreach(cl.add)
                 toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
+                updateMode(None)
               }
             case model.operation.Node.Replace(at, c) =>
               if (inViewport(at)) {
@@ -451,6 +465,7 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
+                updateMode(None)
               } else if (inViewport(range.parent)) {
                 removeNodes(range)
               } else if (inViewport(to)) {

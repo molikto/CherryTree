@@ -14,11 +14,26 @@ import scala.scalajs.js
 object View {
 
   def fromDom[T <: View](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
+
+  private val views = new ArrayBuffer[View]()
+
+  window.setInterval(() => {
+    for (v <- views) {
+      if (v.dom_ != null && v.attached && !document.body.contains(v.dom_) && !v.destroyed) {
+        window.console.log(v.dom)
+        throw new IllegalStateException("View detached but not destroyed")
+      }
+    }
+  }, 3000)
 }
 
 abstract class View {
 
   private var dom_ : HTMLElement = null
+
+  if (model.debug_view) {
+    View.views.append(this)
+  }
 
   def dom: HTMLElement = {
     if (destroyed) throw new IllegalArgumentException("Already destroyed")
@@ -36,11 +51,15 @@ abstract class View {
 
 
   def attachToNode(a: Node, before: HTMLElement = null) : View = {
+    if (destroyed) throw new IllegalStateException("Not supported")
+    attached = true
     a.insertBefore(dom, before)
     onAttach()
     this
   }
   def attachTo(a: View, before: HTMLElement = null): View = {
+    if (destroyed) throw new IllegalStateException("Not supported")
+    attached = true
     a.dom.insertBefore(dom, before)
     onAttach()
     this
@@ -51,6 +70,7 @@ abstract class View {
   }
 
 
+  private var attached = false
   private var des = ArrayBuffer[Unit => Unit]()
 
 

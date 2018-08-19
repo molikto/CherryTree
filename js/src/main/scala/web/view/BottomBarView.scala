@@ -144,6 +144,12 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     updateModeIndicator()
   }))
 
+
+  event(window, "error", (e: Event) => {
+    window.console.log(e)
+    debugErrorInfo.textContent = e.asInstanceOf[js.Dynamic].message.asInstanceOf[String]
+  })
+
   observe(client.errors.doOnNext {
     case Some(e) => debugErrorInfo.textContent = e.getMessage
     case _ =>

@@ -29,7 +29,12 @@ class EditableCodeView(
   dom = div(
   ).render
 
-  codeView.attachToNode(dom)
+
+
+  override def onAttach(): Unit = {
+    super.onAttach()
+    codeView.attachToNode(dom)
+  }
 
   private var editing: CoveringSourceEditDialog = null
 
