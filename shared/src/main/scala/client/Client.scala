@@ -209,7 +209,9 @@ class Client(
     if (a.badMode) {
       scheduledUpdateTempMode = Observable.delay({
         if (model.debug_view) println("updating temp mode")
-        updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, false)
+        lockObject.synchronized {
+          updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, false)
+        }
       }).delaySubscription(2.seconds).subscribe()
     }
     if (userFolds.nonEmpty) {
