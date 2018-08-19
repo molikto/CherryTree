@@ -1,4 +1,5 @@
 import boopickle._
+import client.LocalStorage
 
 package object model extends Picklers {
 
@@ -17,14 +18,4 @@ package object model extends Picklers {
 
   var isMac: Boolean = false
 
-  var localStorage: LocalStorage = new LocalStorage {
-    override def set(key: String, str: String): Unit = {
-    }
-
-    override def remove(key: String): Unit = {
-    }
-    override def get(key: String): Option[String] = {
-      None
-    }
-  }
 }

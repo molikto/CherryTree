@@ -1,4 +1,4 @@
-package model
+package client
 
 trait LocalStorage {
   def set(key: String, str: String)

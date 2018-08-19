@@ -36,7 +36,7 @@ class NodeMove extends CommandCategory("move nodes around") {
           a.asNodeVisual.minimalRange.flatMap(k => act(k))
         case c@model.mode.Node.Content(at, _) => if (at == a.zoom) None else act(range.Node(at))
       }
-      DocTransaction(res.toSeq, None, unfoldBefore = res.map(_.to.dropRight(1)).toSet)
+      DocTransaction(res.toSeq, None, unfoldBefore = res.map(a => model.cursor.Node.parent(a.to)).toSet)
     }
   }
   new IndentCommand {

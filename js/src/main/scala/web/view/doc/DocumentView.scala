@@ -67,8 +67,6 @@ class DocumentView(
     */
   private var currentEditable: HTMLElement = noEditable
   private var isFocusedOut: Boolean = false
-  // LATER fix tihs. this is because we are rendering rich modes by window.setSelection, stupid stuff
-  private var updateModeOnFocusIn: Boolean = false
   private var duringStateUpdate: Boolean = false
 
 
@@ -102,10 +100,6 @@ class DocumentView(
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
-      if (updateModeOnFocusIn) {
-        updateModeOnFocusIn = false
-        updateMode(client.state.mode, false, false)
-      }
     }
   })
 
@@ -152,7 +146,7 @@ class DocumentView(
   //         frame...
   //    nonEditable...
 
-  private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && a.startsWith(currentZoom)
+  private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && model.cursor.Node.contains(currentZoom, a)
 
   private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     if (rootFrame == this.rootFrame) assert(inViewport(at), s"not in viewport $at, current view port is $currentZoom")
@@ -356,7 +350,6 @@ class DocumentView(
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean, fromUser: Boolean = false): Unit = {
     if (isFocusedOut) {
-      updateModeOnFocusIn = true
       return
     }
     duringStateUpdate = true
@@ -400,7 +393,7 @@ class DocumentView(
       if (update.to.zoomId != currentZoomId) {
         currentZoomId = update.to.zoomId
         currentZoom = update.to.zoom
-        //          if (currentZoom.startsWith(a)) {
+        //          if (cursor.Node.contains(currentZoom, a)) {
         //          } else {
         //            cleanFrame(rootFrame)
         //            insertNodesRec(update.root(a), rootFrame)
@@ -430,7 +423,6 @@ class DocumentView(
                 }
                 tt.foreach(cl.add)
                 toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
-                updateMode(None, viewUpdated = false)
               }
             case model.operation.Node.Replace(at, c) =>
               if (inViewport(at)) {
@@ -445,13 +437,13 @@ class DocumentView(
                 removeNodes(r)
               }
             case model.operation.Node.Insert(at, childs) =>
-              val pCur = at.dropRight(1)
+              val pCur = model.cursor.Node.parent(at)
               if (inViewport(pCur)) {
                 val root = childListAt(pCur)
                 insertNodes(pCur, root, at.last, childs)
               }
             case model.operation.Node.Move(range, to) =>
-              val toP = to.dropRight(1)
+              val toP = model.cursor.Node.parent(to)
               if (inViewport(range.parent) && inViewport(toP)) {
                 val parent = childListAt(range.parent)
                 val toParent = childListAt(toP)
@@ -460,8 +452,6 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
-                // might lost focus due to implementation, so we force a update!
-                updateMode(None, viewUpdated = false)
               } else if (inViewport(range.parent)) {
                 removeNodes(range)
               } else if (inViewport(to)) {
@@ -543,17 +533,17 @@ class DocumentView(
 
   event("click", (a: MouseEvent) => {
     preventDefault(a)
-    focus() // TODO mark correct selection
+    focus()
   })
 
   event("dblclick", (a: MouseEvent) => {
     preventDefault(a)
-    focus() // TODO mark correct selection
+    focus()
   })
 
   event("contextmenu", (a: MouseEvent) => {
   //  preventDefault(a)
-    focus() // TODO mark correct selection
+    focus()
     //commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
   })
 

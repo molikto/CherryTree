@@ -4,7 +4,7 @@ package client
 import api.{Api, Authentication}
 import doc.DocTransaction
 import model._
-import model.data.Node
+import model.data.{Node, Unicode}
 import model.ot.NodeOps
 import server.Server
 import utest._
@@ -15,6 +15,7 @@ import scala.util.{Random, Try}
 
 
 object ClientTests extends TestSuite  {
+
 
   val tests = Tests {
     val s = new server.Server() {
@@ -42,7 +43,7 @@ object ClientTests extends TestSuite  {
     }
 
     'client - {
-      val clients = (0 until 24).map(i => Await.result(cl("controller" + i), 1.seconds))
+      val clients = (0 until 5).map(i => Await.result(cl("controller" + i), 1.seconds))
       val client = clients.head
 
       def insertTop: transaction.Node =
@@ -56,23 +57,27 @@ object ClientTests extends TestSuite  {
           println("waiting for clients to commit")
         }
         while (clients.exists(a => a.hasUncommited)) {
+          println("not finished")
           Thread.sleep(100)
         }
         if (debug) {
-          println("clients updates finished")
+          println("clients changes finished")
         }
-        clients.foreach(_.sync())
-        while (clients.exists(a => a.updating)) {
+        while (clients.exists(a => a.debug_committedVersion != serverChanges.size)) {
+          println("not updated")
+          clients.foreach(_.sync())
           Thread.sleep(100)
         }
         if (debug) {
           println("Server doc " + serverDoc)
           clients.foreach(c => {
-            println(c.debug_authentication + " " + c.debug_committed)
+            println(c.debug_authentication + " " + c.debug_committedVersion  + " " + c.debug_committed)
           })
         }
         clients.foreach(c => {
-          assert(c.debug_committed == serverDoc)
+          val client = c.debug_committed
+          val sd = serverDoc
+          assert(client == sd)
         })
       }
 
@@ -105,9 +110,7 @@ object ClientTests extends TestSuite  {
         val count = 1000
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
-          clients(j).synchronized {
-            clients(j).localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
-          }
+          clients(j).localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
         }
         waitAssertStateSyncBetweenClientsAndServer()
       }
@@ -116,8 +119,52 @@ object ClientTests extends TestSuite  {
         val count = 1000
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
-          clients(j).synchronized {
-            clients(j).localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+          clients(j).localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+        }
+        waitAssertStateSyncBetweenClientsAndServer()
+      }
+
+      'humanLikeTest - {
+
+        /**
+          * current limitation: only commands with out needs
+          */
+        def performAHumanAction(c: Client) = {
+          if (c.state.isRichInsert) {
+            c.onInsertRichTextAndViewUpdated(Unicode(Random.nextInt().toString))
+          }
+          val avs = c.commands.filter(a => a.available(c.state, c) && !a.needsStuff)
+          if (avs.nonEmpty) {
+            val ccc = avs(Random.nextInt(avs.size - 1))
+            try {
+              val trans = ccc.action(
+                c.state,
+                Random.nextInt(10),
+                c,
+                if (Random.nextBoolean()) None else ccc.keys.headOption, None, None)
+              try {
+                c.localChange(trans)
+              } catch {
+                case e: Throwable =>
+                  println(c.state)
+                  println(ccc.description)
+                  println(trans)
+                  throw e
+              }
+            } catch {
+              case e: Throwable =>
+                println(c.state)
+                println(ccc.description)
+                throw e
+            }
+          }
+        }
+
+        for (_ <- 0 until 1000) {
+          for (c <- clients) {
+            for (i <- 0 until Random.nextInt(5)) {
+              performAHumanAction(c)
+            }
           }
         }
         waitAssertStateSyncBetweenClientsAndServer()

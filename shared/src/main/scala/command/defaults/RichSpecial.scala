@@ -129,12 +129,20 @@ class RichSpecial extends CommandCategory("text format") {
 
 
   abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
-    override def available(a: DocState): Boolean = a.isRichVisual || {
+    override def available(a: DocState): Boolean = {
+      if (a.isRichVisual) {
+        val (node, rich, visual) = a.asRichVisual
+        val merge = visual.merged
+        !rich.insideCoded(merge.start) && rich.insideCoded(merge.until)
+      } else {
+        false
+      }
+    } || {
       if (a.isNodeVisual) {
         val v = a.asNodeVisual
         if (v.fix == v.move) {
           val node = a.node(v.fix)
-          node.content.isRich && node.childs.isEmpty
+          node.content.isRich
         } else {
           false
         }
@@ -154,11 +162,11 @@ class RichSpecial extends CommandCategory("text format") {
             val after = rich.after(r.start)
             if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
               val ret = if (visual.fix.start > visual.move.start) {
-                mode.Content.RichVisual(rich.before(visual.fix.start).range.moveBy(-deli.newDeliStartSize),
-                  rich.after(visual.move).range.moveBy(-deli.newDeliStartSize))
+                mode.Content.RichVisual(rich.before(visual.fix.start).range.moveBy(-1),
+                  rich.after(visual.move).range.moveBy(-1))
               } else {
-                mode.Content.RichVisual(rich.after(visual.fix).range.moveBy(-deli.newDeliStartSize),
-                  rich.before(visual.move.start).range.moveBy(-deli.newDeliStartSize))
+                mode.Content.RichVisual(rich.after(visual.fix).range.moveBy(-1),
+                  rich.before(visual.move.start).range.moveBy(-1))
               }
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.unwrap(r.start, after.text.asDelimited))),
@@ -168,9 +176,9 @@ class RichSpecial extends CommandCategory("text format") {
               val remaining = r.minusOrderedInside(soc)
               val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
               val fakePoints = if (visual.fix.start <= visual.move.start) {
-                mode.Content.RichVisual(IntRange.len(range._1, deli.newDeliStartSize), IntRange.endLen(range._2 + deli.newDeliStartSize, deli.newDeliEndSize))
+                mode.Content.RichVisual(IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
               } else {
-                mode.Content.RichVisual(IntRange.endLen(range._2 + deli.newDeliStartSize, deli.newDeliEndSize), IntRange.len(range._1, deli.newDeliStartSize))
+                mode.Content.RichVisual(IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
               }
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
@@ -201,6 +209,9 @@ class RichSpecial extends CommandCategory("text format") {
     * also we currently only wraps plain text
     */
   SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
+
+    override def available(a: DocState): Boolean = a.isRichVisual && super.available(a)
+
     override val description: String = s"wrap selection as ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
       case (cursor, rich, visual) =>
@@ -210,9 +221,9 @@ class RichSpecial extends CommandCategory("text format") {
           if (deli.atomic) {
             mode.Content.RichVisual(p, p)
           } else if (visual.fix.start <= visual.move.start) {
-            mode.Content.RichVisual(IntRange.len(p.start, deli.newDeliStartSize), IntRange.endLen(p.until, deli.newDeliEndSize))
+            mode.Content.RichVisual(IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
           } else {
-            mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, deli.newDeliStartSize))
+            mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
           }
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
@@ -229,25 +240,40 @@ class RichSpecial extends CommandCategory("text format") {
 
   SpecialChar.formattedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
-      case (cursor, rich, visual) =>
-        var r = visual.merged
-        val g = rich.isSubRich(r)
-        if (g.isDefined) r = g.get
-        if (g.isDefined) {
-          val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
-          val fakeMode =
-            if (visual.fix.start <= visual.move.start) {
-              mode.Content.RichVisual(IntRange.len(p.start, deli.newDeliStartSize), IntRange.endLen(p.until, deli.newDeliEndSize))
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      if (a.isRichVisual) {
+        a.asRichVisual match {
+          case (cursor, rich, visual) =>
+            var r = visual.merged
+            val g = rich.isSubRich(r)
+            if (g.isDefined) r = g.get
+            if (g.isDefined) {
+              val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
+              val fakeMode =
+                if (visual.fix.start <= visual.move.start) {
+                  mode.Content.RichVisual(IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
+                } else {
+                  mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
+                }
+              DocTransaction(Seq(
+                operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
+                Some(a.copyContentMode(fakeMode)))
             } else {
-              mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, deli.newDeliStartSize))
+              DocTransaction.empty
             }
-          DocTransaction(Seq(
-            operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
-            Some(a.copyContentMode(fakeMode)))
-        } else {
-          DocTransaction.empty
         }
-    }
+      } else if (a.isNodeVisual) {
+        val v = a.asNodeVisual
+        if (v.fix == v.move) {
+          val node = a.node(v.fix)
+          if (node.content.isRich) {
+            val rich = node.content.asInstanceOf[data.Content.Rich].content
+            return DocTransaction(Seq(operation.Node.rich(v.fix, operation.Rich.wrap(IntRange(0, rich.size), deli))), None)
+          }
+        }
+        DocTransaction.empty
+      } else {
+        throw new IllegalStateException("Not possible")
+      }
   }).toMap
 }

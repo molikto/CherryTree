@@ -234,7 +234,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
           (text, s)
         case aa =>
           assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked], s"expecting a deli start $aa")
-          val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
+          val node = domChildArray(domAt(model.cursor.Node.parent(aa.nodeCursor)))
           (node, aa.nodeCursor.last)
       }
 
@@ -245,7 +245,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
           (text, s)
         case aa =>
           assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked], s"expecting a deli end, $aa")
-          val node = domChildArray(domAt(aa.nodeCursor.dropRight(1)))
+          val node = domChildArray(domAt(model.cursor.Node.parent(aa.nodeCursor)))
           (node, aa.nodeCursor.last + 1)
       }
       (createRange(start._1, start._2, end._1, end._2), null)

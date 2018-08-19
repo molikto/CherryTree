@@ -157,7 +157,7 @@ object Text {
         case HTMLStart =>
           HTML(reader.eatUntilAndDrop(HTMLEnd))
         case kk =>
-          throw new UnicodeParseException(s"Expecting a non-special char or a special start char, but found $kk")
+          throw new UnicodeParseException(s"Expecting a non-special char or a special start char, but found $kk, reader:\n$reader")
       }
       case None =>
         Plain(reader.eatUntilSpecialChar())

@@ -87,7 +87,7 @@ class RichDelete extends CommandCategory("delete text") {
 //      val deleteLines = if (c == cursor.Node.root || count <= 1) {
 //        Seq.empty
 //      } else {
-//        val p = c.dropRight(1)
+//        val p = model.cursor.Node.parent(c)
 //        Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
 //      }
       val deleteFirstLine = deleteRichNormalRange(a, commandState,c, IntRange(normal.range.start, rich.size), insert = false)

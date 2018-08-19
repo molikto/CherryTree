@@ -133,7 +133,7 @@ case class Node (
   }
 
   def insert(c: cursor.Node, cs: Seq[Node]): data.Node =
-    map(c.dropRight(1), a => a.insert(c.last, cs))
+    map(model.cursor.Node.parent(c), a => a.insert(c.last, cs))
 
   def move(r: range.Node, at: cursor.Node): data.Node = {
     val a = this(r)
@@ -252,7 +252,7 @@ object Node extends DataObject[Node] {
       case 3 => 2
       case _ => 1
     }
-    data.Node(r.nextString(10), data.Content.random(r),
+    data.Node(r.nextInt.toString, data.Content.random(r),
       Map.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }

@@ -42,6 +42,9 @@ private[model] class UnicodeReader(a: Unicode) {
   private val str = a.str
   private var start = 0
 
+
+  override def toString: String = str
+
   def isEmpty: Boolean = start >= str.length
 
   private def isSpecialCodePoint(c: Int) = SpecialChar.special(c)

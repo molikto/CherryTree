@@ -5,7 +5,7 @@ import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface, Key, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.{mode, operation, range}
+import model.{cursor, mode, operation, range}
 import model.data.{Rich, SpecialChar, Text, Unicode}
 import model.range.IntRange
 
@@ -81,9 +81,10 @@ class RichInsert extends CommandCategory("when in insert mode") {
     override val description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
+
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
-      if (insert.pos == rich.size) {
+      if (node != a.zoom && insert.pos == rich.size) {
         val mover = a.mover()
         val n = mover.firstChild(node).getOrElse(mover.nextOver(node))
         DocTransaction(

@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 trait RegisterInterface {
   def setRegister(a: Int): Unit
   def yank(registerable: Registerable, isDelete: Boolean): Unit
-  def retrieveSetRegisterAndSetToDefault(): Option[Registerable]
+  def retrieveSetRegisterAndSetToCloneNode(): Option[Registerable]
 }
 
 
@@ -32,7 +32,7 @@ trait RegisterHandler extends RegisterInterface {
   /**
     * if in current register there is a fresh deleted node, we will mark this as needs clone
     */
-  override def retrieveSetRegisterAndSetToDefault(): Option[Registerable] = {
+  override def retrieveSetRegisterAndSetToCloneNode(): Option[Registerable] = {
     val reg =
       if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
         named.get(set)

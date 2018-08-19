@@ -55,7 +55,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
       var zoom = a.zoom
       if (tag == data.Node.ContentType.name &&
         to == data.Node.ContentType.serialize(data.Node.ContentType.Heading(1)) &&
-        a.folded(at, true)) {
+        a.inViewport(at) &&
+        a.viewAsFolded(at, true)) {
         a.mode0 match {
           case mode.Node.Visual(a, b) =>
             val l = if (cursor.Node.contains(at, a)) at else a
@@ -215,7 +216,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def merge(before: Any): Option[Node] = before match {
       case Node.Content(at, _) if r.contains(at) => Some(this)
       case Node.Replace(at, _) if r.contains(at) => Some(this)
-      case Node.Insert(at, childs) if r.contains(at.dropRight(1)) => Some(this)
+      case Node.Insert(at, childs) if r.contains(model.cursor.Node.parent(at)) => Some(this)
       case Node.Delete(rr) =>
         if (r.contains(rr.parent)) {
           Some(this)
@@ -224,7 +225,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
         } else {
           None
         }
-      case m@Node.Move(rr, to) if r.contains(rr.transformNodeAfterMoved(to, to).dropRight(1)) => merge(Delete(rr))
+      case m@Node.Move(rr, to) if r.contains(model.cursor.Node.parent(rr.transformNodeAfterMoved(to, to))) => merge(Delete(rr))
       case _ => None
     }
 

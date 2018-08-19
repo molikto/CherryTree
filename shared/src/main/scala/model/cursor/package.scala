@@ -23,14 +23,14 @@ package object cursor {
     def contains(zoom: Node, node: Node): Boolean = node.startsWith(zoom)
 
 
-    def moveBy(a: cursor.Node, i: Int): cursor.Node = a.dropRight(1) :+ (a.last + i)
+    def moveBy(a: cursor.Node, i: Int): cursor.Node = model.cursor.Node.parent(a) :+ (a.last + i)
 
     class Mover(root: data.Node, zoom: cursor.Node, isFolded: Node => Boolean) {
 
 
 
       def parent(a: Node): Option[Node] = {
-        if (a == zoom) None else Some(a.dropRight(1))
+        if (a == zoom) None else Some(model.cursor.Node.parent(a))
       }
 
       def size(a: Node): Int = root(a).childs.size
@@ -64,7 +64,7 @@ package object cursor {
         } else {
           val last = a.last
           if (last > 0) {
-            Some(a.dropRight(1) :+ (last - 1))
+            Some(model.cursor.Node.parent(a) :+ (last - 1))
           } else {
             None
           }
@@ -75,7 +75,7 @@ package object cursor {
         if (a == zoom) {
           throw new IllegalArgumentException("Root has no next")
         } else {
-          a.dropRight(1) :+ (a.last + 1)
+          model.cursor.Node.parent(a) :+ (a.last + 1)
         }
       }
 
@@ -84,8 +84,8 @@ package object cursor {
           None
         } else {
           val last = a.last
-          if (last < root(a.dropRight(1)).childs.size - 1) {
-            Some(a.dropRight(1) :+ (last + 1))
+          if (last < root(model.cursor.Node.parent(a)).childs.size - 1) {
+            Some(model.cursor.Node.parent(a) :+ (last + 1))
           } else {
             None
           }

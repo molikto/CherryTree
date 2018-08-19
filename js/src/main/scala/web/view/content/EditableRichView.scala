@@ -83,7 +83,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
                   updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
                 }
               } else { // different sibling node
-                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor.dropRight(1))), ss.nodeCursor.last + 1)
+                updateTempEmptyTextNodeIn(domChildArray(domAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1)
               }
             case ep: Atom.PlainGrapheme =>
               updateExistingTextNodeIn(domAt(ee.nodeCursor), 0)
@@ -134,7 +134,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   })
 
   event("input", (a: Event) => {
-    // TODO only accept single node text changes, or subparagraph changes??
     // formatBold
     // Contenteditable	"insertText", "insertCompositionText", "insertFromComposition", "formatSetBlockTextDirection", "formatSetInlineTextDirection", "formatBackColor", "formatFontColor", "formatFontName", "insertLink"	Yes	null	Non-empty Array
     //Contenteditable	"insertFromPaste", "insertFromDrop", "insertReplacementText", "insertFromYank"	null
@@ -431,7 +430,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     updateContent(c, viewUpdated)
     if (!viewUpdated) {
       // val cs = c.asInstanceOf[operation.Content.Rich]
-      // TODO incrementally update dom remember to clear the empty range when needed
       if (!editorUpdated) {
         if (editor != null) {
           val range = editor._2

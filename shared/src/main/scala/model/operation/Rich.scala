@@ -266,7 +266,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def wrapUnwrap(from: Int, text: Text.Delimited, to: SpecialChar.Delimitation): operation.Rich = {
     val op2 = operation.Rich.wrap(IntRange.len(from, text.size), to).u
-    val op1 = operation.Rich.unwrap(from + to.newDeliStartSize, text).u
+    val op1 = operation.Rich.unwrap(from + 1, text).u
     operation.Rich(op2 ++ op1, Type.AddDelete)
   }
   def unwrap(start: Int, value: Text.Delimited): operation.Rich = {

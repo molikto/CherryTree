@@ -1,6 +1,7 @@
 package view
 
 import command.Key
+import doc.DocTransaction
 import model.{cursor, operation}
 import model.data.{CodeType, Unicode}
 import model.range.IntRange

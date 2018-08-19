@@ -474,7 +474,7 @@ class Client(
             DocTransaction.empty
           case model.mode.Content.CodeInside(_, int) =>
             throw new IllegalStateException("not handled by me")
-          case model.mode.Content.RichSubMode(_, _, _) =>
+          case model.mode.Content.RichCodeSubMode(_, _, _) =>
             throw new IllegalStateException("not handled by me")
         }
       case model.mode.Node.Visual(fix, move) =>
@@ -503,7 +503,7 @@ class Client(
     }
   }
 
-  def localChange(update0: DocTransaction, isSmartInsert: Boolean = false): Unit = {
+  def localChange(update0: DocTransaction, isSmartInsert: Boolean = false): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
       println(update)

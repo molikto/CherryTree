@@ -49,13 +49,21 @@ case class DocState(
   }
 
   def viewAsFolded(a: cursor.Node): Boolean = {
-    assert(a.startsWith(zoom))
+    assert(cursor.Node.contains(zoom, a))
     val no = node(a)
     a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
+  def viewAsFolded(a: cursor.Node, default: Boolean): Boolean = {
+    assert(cursor.Node.contains(zoom, a))
+    val no = node(a)
+    a != zoom && userFoldedNodes.getOrElse(no.uuid, default)
+  }
 
-  def hidden(k: Node): Boolean = {
+  def inViewport(a: cursor.Node): Boolean = cursor.Node.contains(zoom, a)
+
+
+  def viewAsHidden(k: Node): Boolean = {
     var n = k
     while (n.size > zoom.size) {
       n = cursor.Node.parent(n)
@@ -64,12 +72,6 @@ case class DocState(
       }
     }
     false
-  }
-
-  def folded(a: cursor.Node, default: Boolean): Boolean = {
-    assert(a.startsWith(zoom))
-    val no = node(a)
-    a != zoom && userFoldedNodes.getOrElse(no.uuid, default)
   }
 
   def mover(): cursor.Node.Mover = new cursor.Node.Mover(node, zoom, viewAsFolded)

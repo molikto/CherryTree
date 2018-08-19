@@ -55,6 +55,21 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           mode.Content.RichNormal(transformRange(r))
         }
+      case mode.Content.RichCodeSubMode(range, code, rich) =>
+        var insertInside = Int.MaxValue
+        val ran = if (at < range.start) {
+          range.moveBy(unicode.size)
+        } else if (at >= range.start && at <= range.until) {
+          insertInside = at - range.start
+          IntRange(range.start, range.until + unicode.size)
+        } else if (at > range.until) {
+          range
+        } else {
+          throw new Exception("Not handled case")
+        }
+        val co = code.copy(pos = if (code.pos <= insertInside) code.pos else code.pos + unicode.size)
+        val (ri, _) = transformRichMaybeBad(i)
+        mode.Content.RichCodeSubMode(ran, co, ri)
     }, false)
 
     override def reverse(d: data.Unicode): Unicode = Delete(at, at + unicode.size)
@@ -104,6 +119,25 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         transformRange(range).map(r => (mode.Content.RichNormal(r) : mode.Content.Rich, false)).getOrElse(
           (mode.Content.RichInsert(r.start), true)
         )
+      case mode.Content.RichCodeSubMode(range, code, rich) =>
+        val (ri, bad) = transformRichMaybeBad(i)
+        if (bad) {
+          (ri, bad)
+        } else {
+          var deleteInside: IntRange = null
+          val ran = if (r.until < range.start) {
+            range.moveBy(-r.size)
+          } else if (r.start > range.until) {
+            range
+          } else if (range.contains(r)) {
+            deleteInside = r.moveBy(range.start)
+            IntRange(range.start, range.until - r.size)
+          } else {
+            throw new Exception("Not handled case")
+          }
+          val co = if (deleteInside != null) deleteInside.transformAfterDeleted(code.pos).getOrElse(deleteInside.start) else code.pos
+          (mode.Content.RichCodeSubMode(ran, code.copy(pos = co), ri), false)
+        }
     }
 
     override def reverse(d: data.Unicode): Unicode = Insert(r.start, d.slice(r))
@@ -165,6 +199,15 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         mode.Content.RichVisual(transformRange(a), transformRange(b))
       case mode.Content.RichNormal(range) =>
         mode.Content.RichNormal(transformRange(range))
+      case mode.Content.RichCodeSubMode(range, code, rich) =>
+        val ran = if (r.until < range.start) {
+          range.moveBy(sizeDiff)
+        } else if (r.start > range.until) {
+          range
+        } else {
+          throw new Exception("Not handled case")
+        }
+        mode.Content.RichCodeSubMode(ran, code, transformRichMaybeBad(rich)._1)
     }, false)
 
     override def reverse(d: data.Unicode): Unicode = ReplaceAtomic(IntRange(r.start, r.start + unicode.size), d.slice(r))
@@ -215,6 +258,15 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
         } else {
           transformRange(range).map(a => mode.Content.RichNormal(a)).get
         }
+      case mode.Content.RichCodeSubMode(range, code, rich) =>
+        val ran = if (r.until < range.start) {
+          range.moveBy(left.size)
+        } else if (r.start > range.until) {
+          range
+        } else {
+          throw new Exception("Not handled case")
+        }
+        mode.Content.RichCodeSubMode(ran, code, transformRichMaybeBad(rich)._1)
     }, false)
 
     def reverse2: Seq[operation.Unicode] = {

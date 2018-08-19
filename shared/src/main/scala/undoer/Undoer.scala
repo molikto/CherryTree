@@ -119,7 +119,7 @@ trait Undoer extends UndoerInterface {
   }
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(docBefore: DocState, trans: transaction.Node, ty: Type, isSmartInsert: Boolean): Unit = {
+  def trackUndoerChange(docBefore: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean): Unit = {
     // compress the history, by marking do/undo parts
     if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
@@ -135,7 +135,7 @@ trait Undoer extends UndoerInterface {
         replaceUndoRedoPair(a, items)
       case _ =>
         lastOption match {
-          case Some(a) if a.ty == Local && !isSmartInsert  =>
+          case Some(a) if a.ty == Local && !isExtra  =>
             if (a.ty == Local) {
               transaction.Node.mergeForUndoer(trans, a.trans) match {
                 case Some((merged, wait)) =>
@@ -163,7 +163,7 @@ trait Undoer extends UndoerInterface {
     }
     val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore)
     val coverage = oldDocAsNowForModes.mode0.coverage // can only be normal
-    val zzz = if (cursor.Node.contains(currentDoc.zoom, coverage) && !currentDoc.hidden(coverage)) {
+    val zzz = if (cursor.Node.contains(currentDoc.zoom, coverage) && !currentDoc.viewAsHidden(coverage)) {
       None
     } else {
       var break = false

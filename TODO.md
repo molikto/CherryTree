@@ -1,3 +1,7 @@
+
+* fix submode
+* make whole client module testable
+
 ## bugs
 
 * when use j/k the cursor jumps too much scroll

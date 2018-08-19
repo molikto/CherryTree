@@ -6,7 +6,7 @@ import command.Key
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 
-class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) extends UnselectableView {
+class LeftPanelSwitcher(private val cl: Client, enable: Boolean => Unit) extends UnselectableView {
 
 
   private val container = div(
@@ -50,13 +50,13 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
           enabledAll(true)
         }
         active = a
-        model.localStorage.set(".left-panel", indexOf(active).toString)
+        client.localStorage.set(".left-panel", indexOf(active).toString)
         create()
       } else if (active != null) {
         active.classList.remove("ct-tab-selected")
         current.destroy()
         active = null
-        model.localStorage.set(".left-panel", "")
+        client.localStorage.set(".left-panel", "")
         enabledAll(false)
       }
     })
@@ -69,7 +69,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
     current = if (active == quickAccess) {
       new TocPanel().attachToNode(container)
     } else if (active == commands) {
-      new CommandListPanel(client).attachToNode(container)
+      new CommandListPanel(cl).attachToNode(container)
     } else {
       null
     }
@@ -79,7 +79,7 @@ class LeftPanelSwitcher(private val client: Client, enable: Boolean => Unit) ext
   }
 
   private var active = {
-    model.localStorage.get(".left-panel") match {
+    client.localStorage.get(".left-panel") match {
       case Some(a) if a.nonEmpty => childs(a.toInt)
       case _ => null
     }

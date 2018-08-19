@@ -108,7 +108,7 @@ object SpecialChar {
     def newSkipSize = attributes.size
     def newDeliEndSize = newSkipSize + 1
     def newDeliStartSize = 1
-    def wrapSizeOffset = newDeliEndSize + newDeliStartSize
+    def wrapSizeOffset = newDeliEndSize + 1
   }
 
 }

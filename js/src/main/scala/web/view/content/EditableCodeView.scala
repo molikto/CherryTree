@@ -105,9 +105,9 @@ class EditableCodeView(
             controller.onCodeTypeChangeAndEditorUpdated(to)
           }
 
-          override def onSubMode(str: String, a: Int): Unit = {
-            controller.onCodeSubModeAndEditorUpdated(str, a)
-          }
+//          override def onSubMode(str: String, a: Int): Unit = {
+//            controller.onCodeSubModeAndEditorUpdated(str, a)
+//          }
         })
       }
     }

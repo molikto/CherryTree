@@ -304,7 +304,7 @@ case class Rich(text: Seq[Text]) {
     if (isValidStart(a) && isValidEnd(b)) {
       if (a.nodeCursor == b.nodeCursor) {
         return Some(IntRange(a.range.start, b.range.until))
-      } else if (a.nodeCursor.dropRight(1) == b.nodeCursor.dropRight(1)) {
+      } else if (model.cursor.Node.parent(a.nodeCursor) == model.cursor.Node.parent(b.nodeCursor)) {
         return Some(IntRange(a.range.start, b.range.until))
       }
     }

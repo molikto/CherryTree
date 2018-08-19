@@ -33,7 +33,7 @@ class NodeFold extends CommandCategory("fold & zoom") {
         DocTransaction(Seq.empty,
           if (a.folded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultNormalMode()))
           else None,
-          zoomAfter = Some(a.zoom.dropRight(1)))
+          zoomAfter = Some(model.cursor.Node.parent(a.zoom)))
       }
     }
   }

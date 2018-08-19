@@ -41,14 +41,14 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
     }
 
     def deleteMove(w: operation.Node.Delete, m: operation.Node.Move, deleteConflict : => conflict.Node): RebaseResult = {
-      if (w.r.contains(m.to.dropRight(1))) { // move should be entirely deleted
+      if (w.r.contains(model.cursor.Node.parent(m.to))) { // move should be entirely deleted
         val deletedAfterMoved = m.r.split(w.r).map(dd => range.Node(m.r.transformNodeAfterMoved(m.to, dd.start), dd.size)) ++
           (if (w.r.contains(m.r.parent)) Seq(range.Node(m.r.transformNodeAfterMoved(m.to, m.r.start), m.r.size)) else Seq.empty )
         val mdAfterMoved = range.Node(m.r.transformNodeAfterMoved(m.to, m.r.start), m.r.size)
         free(operation.Node.deleteRanges(deletedAfterMoved :+ mdAfterMoved), w.r.transformDeletingRangeAfterDeleted(m.r).map(a => operation.Node.Delete(a)).toSeq)
       } else {
         val moveTo = w.r.transformAfterDeleted(m.to).getOrElse(w.r.start)
-        val mtoS = range.Node(m.to.dropRight(1), IntRange(0, m.to.last))
+        val mtoS = range.Node(model.cursor.Node.parent(m.to), IntRange(0, m.to.last))
         val deletedAfterMoved = m.r.split(w.r).flatMap(a => mtoS.split(a)).map(dd => range.Node(m.r.transformNodeAfterMoved(m.to, dd.start), dd.size)) ++
           (if (w.r.contains(m.r.parent)) Seq(range.Node(m.r.transformNodeAfterMoved(m.to, m.r.start), m.r.size)) else Seq.empty )
         val delete = operation.Node.deleteRanges(deletedAfterMoved)
@@ -77,13 +77,13 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           // end.size = d.r.childs.size - range1.size = right - left + 1
           val range2 = IntRange(end + 1 - (d.r.childs.size - range1.size), end + 1)
           free(
-            Seq(i.modify(_.at).using(a => a.dropRight(1) :+ left)),
+            Seq(i.modify(_.at).using(a => model.cursor.Node.parent(a) :+ left)),
             Seq(
               operation.Node.Delete(d.r.copy(childs = range2)),
               operation.Node.Delete(d.r.copy(childs = range1))
           ))
         } else {
-          free(i.modify(_.at).using(a => a.dropRight(1) :+ (a.last - d.r.childs.size)), d)
+          free(i.modify(_.at).using(a => model.cursor.Node.parent(a) :+ (a.last - d.r.childs.size)), d)
         }
       } else {
         d.r.transformAfterDeleted(i.at) match {
@@ -251,7 +251,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
                     free(w, l)
                   } else {
                     val wstart = if (wr.start.last == 0) {
-                      lr.transformNodeAfterMoved(la, wr.start.dropRight(1)) :+ 0
+                      lr.transformNodeAfterMoved(la, model.cursor.Node.parent(wr.start)) :+ 0
                     } else {
                       moveBy(lr.transformNodeAfterMoved(la, moveBy(wr.start, -1)), 1)
                     }
@@ -272,7 +272,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
               (w, l) match {
                 case (operation.Node.Move(wr, wa), operation.Node.Move(lr, la)) =>
                   val wstart = if (wr.start.last == 0) {
-                    lr.transformNodeAfterMoved(la, wr.start.dropRight(1)) :+ 0
+                    lr.transformNodeAfterMoved(la, model.cursor.Node.parent(wr.start)) :+ 0
                   } else {
                     moveBy(lr.transformNodeAfterMoved(la, moveBy(wr.start, -1)), 1)
                   }

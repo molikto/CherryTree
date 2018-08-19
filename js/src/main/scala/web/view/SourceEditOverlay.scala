@@ -22,7 +22,7 @@ import scala.scalajs.js
 abstract class SourceEditOption(val str: Unicode, val insert: Boolean, val codeType: CodeType) {
   def onCodeTypeChange(to: CodeType): Unit
   def onTransaction(unicode: Seq[operation.Unicode]): Unit
-  def onSubMode(str: String, a: Int)
+  //def onSubMode(str: String, a: Int)
   def onDismiss(): Unit
 }
 

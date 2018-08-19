@@ -121,7 +121,7 @@ class NodeMisc extends CommandCategory("node: misc") {
   new TextualCommand {
     override val description: String = "insert rendered Markdown bellow (commonmark)"
 
-    override protected def available(a: DocState): Boolean = a.isCodeNormal
+    override protected def available(a: DocState): Boolean = a.isCodeNormal && model.parseFromCommonMarkMarkdown != null
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, _) = a.asNormal

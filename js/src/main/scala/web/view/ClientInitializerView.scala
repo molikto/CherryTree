@@ -1,8 +1,7 @@
 package web.view
 
 import api.{Api, Authentication}
-import client.{Client, ClientInitializer}
-import model.LocalStorage
+import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
 import web.net.JsAutowireClient
 import command.Key
@@ -29,7 +28,7 @@ object ClientInitializerView {
       model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
       globalInitialized = true
 
-      model.localStorage = new LocalStorage {
+      client.localStorage = new LocalStorage {
         override def set(key: String, str: String): Unit = {
           window.localStorage.setItem(key, str)
         }
