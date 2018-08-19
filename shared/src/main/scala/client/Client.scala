@@ -428,6 +428,14 @@ class Client(
   }
 
 
+  override def onSourceEditorUndo(): Unit = {
+    localChange(undo(state))
+  }
+
+  override def onSourceEditorRedo(): Unit = {
+    localChange(redo(state))
+  }
+
   override def onAttributeModified(url: data.Unicode, title: data.Unicode): Unit = {
     state.mode match {
       case Some(model.mode.Node.Content(node, model.mode.Content.RichAttributeSubMode(range, modeBefore))) =>

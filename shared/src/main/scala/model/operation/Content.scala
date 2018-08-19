@@ -35,6 +35,11 @@ object Content extends OperationObject[data.Content, Content] {
       case _ => None
     }
 
+    override def mergeForUndoer(before: Content): Option[(Content, Boolean)] = before match {
+      case Rich(be) => op.mergeForUndoer(be).map(a => (Rich(a._1), a._2))
+      case _ => None
+    }
+
     override def isEmpty: Boolean = op.isEmpty
   }
   case class CodeLang(lang: String) extends Code {

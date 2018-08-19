@@ -119,6 +119,18 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   var keys: String = ""
 
 
+  private def doUndo() = {
+    if (!dismissed) {
+      opt.editor.onSourceEditorUndo()
+    }
+  }
+
+  private def doRedo() = {
+    if (!dismissed) {
+      opt.editor.onSourceEditorRedo()
+    }
+  }
+
   override def onAttach(): Unit = {
     super.onAttach()
     codeMirror = CodeMirror.fromTextArea(ta, jsObject(a => {
@@ -130,11 +142,23 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.showCursorWhenSelecting = true
       a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
+      val mod = if (model.isMac) "Cmd" else "Ctrl"
       a.extraKeys = CodeMirror.normalizeKeyMap(
         jsObject(a => {
+          a.updateDynamic(s"$mod-Z")((a: js.Dynamic) => doUndo())
+          a.updateDynamic(s"Shift-${mod}-Z")((a: js.Dynamic) => doRedo())
+          a.updateDynamic(s"${mod}-Y")((a: js.Dynamic) => {})
         })
       )
     }))
+    CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
+      doRedo()
+    })
+    CodeMirror.Vim.defineAction("outterUndo", (cm: js.Dynamic, opt: js.Dynamic) => {
+      doUndo()
+    })
+    CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
+    CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
 
     codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = codeHeight
 

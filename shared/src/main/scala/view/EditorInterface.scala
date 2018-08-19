@@ -14,6 +14,8 @@ trait SourceEditInterface {
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
   def exitCodeEdit(): Unit
   def onSourceEditorCommandBuffer(a: String): Unit
+  def onSourceEditorUndo(): Unit
+  def onSourceEditorRedo(): Unit
 }
 
 trait EditorInterface extends SourceEditInterface {
