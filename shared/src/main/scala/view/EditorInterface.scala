@@ -21,6 +21,6 @@ trait EditorInterface {
   def onInlineModifiedAndEditorUpdated(cur: cursor.Node, range: IntRange, uni: Seq[operation.Unicode])
   def onInlineCodeTypeChangedAndEditorUpdated(cur: cursor.Node, range: IntRange, ty: CodeType)
   def onInlineSubModeAndEditorUpdated(str: String, a: Int): Unit
-  def onExternalPastePlain(a: Unicode)
+  def onExternalPasteInRichEditor(a: Unicode)
   def onKeyDown(k: Key): Boolean
 }

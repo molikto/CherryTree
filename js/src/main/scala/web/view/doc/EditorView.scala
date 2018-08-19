@@ -83,6 +83,7 @@ trait EditorView extends View {
 
     event( "paste", (a: ClipboardEvent) => {
       preventDefault(a)
+      window.console.log(a.clipboardData)
       if (a.clipboardData != null) {
         val html = a.clipboardData.getData("text/html")
 //        if (html != null) {
@@ -92,7 +93,7 @@ trait EditorView extends View {
 //        }
         val plain = a.clipboardData.getData("text/plain")
         if (plain != null) {
-          editor.onExternalPastePlain(Unicode(plain))
+          editor.onExternalPasteInRichEditor(Unicode(plain))
         }
         // LATER ProseMirror capturePaste...
       }

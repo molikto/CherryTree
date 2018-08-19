@@ -8,7 +8,6 @@ trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers wi
 
   implicit val pickler_Node: Pickler[data.Node] = data.Node.pickler
   implicit val operationPickler_Node: Pickler[operation.Node] = operation.Node.pickler
-  implicit val modePickler_Node: Pickler[mode.Node] = mode.Node.pickler
 
   implicit val pickler_Content: Pickler[data.Content] = data.Content.pickler
   implicit val operationPickler_Content: Pickler[operation.Content] = operation.Content.pickler

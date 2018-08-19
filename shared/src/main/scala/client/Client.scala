@@ -442,44 +442,44 @@ class Client(
     ), None, editorUpdated = true))
   }
 
-  override def onExternalPastePlain(unicode: Unicode): Unit = {
-    val update = state.mode match {
-      case Some(m) => m match {
-        case model.mode.Node.Content(n, c) =>
-          def insert(a: Int): operation.Node = operation.Node.rich(n, operation.Rich.insert(a, unicode))
-          c match {
-            case model.mode.Content.RichNormal(r) =>
-              DocTransaction(Seq(insert(r.start)),
-                Some(state.copyContentMode(mode.Content.RichNormal(r.moveBy(unicode.size)))))
-            case model.mode.Content.RichInsert(pos) =>
-              DocTransaction(Seq(insert(pos)),
-                Some(state.copyContentMode(mode.Content.RichInsert(pos + unicode.size))))
-            case model.mode.Content.RichVisual(f, m) =>
-              val rg = f.merge(m)
-              val rich = state.rich(n)
-              val op = operation.Rich.insert(rg.start, unicode)
-              val applied = op(rich)
-              operation.Rich.deleteTextualRange(applied, rg.moveBy(unicode.size)) match {
-                case Some((a, b, _)) =>
-                  DocTransaction(operation.Node.rich(n, op) +: a.map(o => operation.Node.rich(n, o)),
-                    Some(state.copyContentMode(model.mode.Content.RichNormal(b))))
-                case None =>
-                  DocTransaction(Seq(operation.Node.rich(n, op)),
-                    Some(state.copyContentMode(mode.Content.RichNormal(f.min(m).moveBy(unicode.size)))))
-              }
-            case model.mode.Content.CodeNormal =>
-              DocTransaction.empty
-              // LATER paste in code normal
-            case model.mode.Content.CodeInside(_, int) =>
-              DocTransaction.empty
-              // LATER  paste in code inside
-          }
-        case model.mode.Node.Visual(fix, move) =>
-          DocTransaction.empty
-      }
-      case _ => DocTransaction.empty
-    }
-    localChange(update)
+  /**
+    * currently code editors system copy/paste is not handled by this
+    */
+  override def onExternalPasteInRichEditor(unicode: Unicode): Unit = {
+    state.mode.map {
+      case model.mode.Node.Content(n, c) =>
+        def insert(a: Int): operation.Node = operation.Node.rich(n, operation.Rich.insert(a, unicode))
+        c match {
+          case model.mode.Content.RichNormal(r) =>
+            DocTransaction(Seq(insert(r.start)),
+              Some(state.copyContentMode(mode.Content.RichNormal(r.moveBy(unicode.size)))))
+          case model.mode.Content.RichInsert(pos) =>
+            DocTransaction(Seq(insert(pos)),
+              Some(state.copyContentMode(mode.Content.RichInsert(pos + unicode.size))))
+          case model.mode.Content.RichVisual(f, m) =>
+            val rg = f.merge(m)
+            val rich = state.rich(n)
+            val op = operation.Rich.insert(rg.start, unicode)
+            val applied = op(rich)
+            operation.Rich.deleteTextualRange(applied, rg.moveBy(unicode.size)) match {
+              case Some((a, b, _)) =>
+                DocTransaction(operation.Node.rich(n, op) +: a.map(o => operation.Node.rich(n, o)),
+                  Some(state.copyContentMode(model.mode.Content.RichNormal(b))))
+              case None =>
+                DocTransaction(Seq(operation.Node.rich(n, op)),
+                  Some(state.copyContentMode(mode.Content.RichNormal(f.min(m).moveBy(unicode.size)))))
+            }
+          case model.mode.Content.CodeNormal =>
+            // LATER paste in code normal
+            DocTransaction.empty
+          case model.mode.Content.CodeInside(_, int) =>
+            throw new IllegalStateException("not handled by me")
+          case model.mode.Content.RichSubMode(_, _, _) =>
+            throw new IllegalStateException("not handled by me")
+        }
+      case model.mode.Node.Visual(fix, move) =>
+        DocTransaction.empty
+    }.foreach(t => localChange(t))
   }
 
   def applyFolds(folded0: DocState,
