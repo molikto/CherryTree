@@ -3,6 +3,8 @@ package doc
 import model.{cursor, data, mode}
 import model.cursor.Node
 import model.data.{Atom, Rich}
+import model.mode.Content.CodeInside
+import model.range.IntRange
 
 
 case class DocState(
@@ -133,6 +135,29 @@ case class DocState(
       val t = rich.after(nv.focus.start)
       (cur, rich, t)
     }
+  }
+
+  def editCode(text: Atom): DocTransaction = {
+    assert(text.text.isCodedAtomic)
+    editCode(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
+  }
+
+  def editCode(range: IntRange): DocTransaction = {
+    val cur = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich]
+    DocTransaction(
+      copyContentMode(model.mode.Content.RichCodeSubMode(range,
+        CodeInside(if (cur.isInstanceOf[model.mode.Content.RichInsert]) "insert" else "normal", 0),
+        cur)))
+  }
+
+  def editAttribute(range: IntRange): DocTransaction = {
+    DocTransaction(
+      copyContentMode(model.mode.Content.RichAttributeSubMode(range,
+        mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich])))
+  }
+
+  def editAttribute(text: Atom): DocTransaction = {
+    editAttribute(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
   }
 
   def isRich(a: (cursor.Node, Rich, Atom) => Boolean): Boolean = {

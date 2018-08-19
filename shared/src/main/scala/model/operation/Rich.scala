@@ -85,8 +85,6 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else {
           throw new Exception("Not handled case")
         }
-      case Unicode.Move(_, _) =>
-        ???
     }
   }._2
 

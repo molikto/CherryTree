@@ -87,7 +87,6 @@ class DocumentView(
     if (document.activeElement != currentEditable) {
       if (currentEditable != noEditable) {
         currentEditable = null
-        updateMode(None, viewUpdated = false)
         updateMode(client.state.mode, viewUpdated = false)
       } else {
         noEditable.focus()
@@ -398,7 +397,6 @@ class DocumentView(
         //            cleanFrame(rootFrame)
         //            insertNodesRec(update.root(a), rootFrame)
         //          }
-        updateMode(None, false, false)
         cleanFrame(rootFrame)
         insertNodesRec(currentZoom, update.to.node(currentZoom), rootFrame)
       } else {
@@ -501,17 +499,6 @@ class DocumentView(
   def showCommandMenu(): Unit = {
     commandMenu.show(commandMenuAnchor)
   }
-
-
-  def showAttributeEditor(cur: model.cursor.Node, pos: range.IntRange, text: model.data.Text.Delimited): Unit = {
-    contentAt(cur).asInstanceOf[EditableRichView].showAttributeEditor(pos, text)
-  }
-
-
-  def showInlineEditor(cur: model.cursor.Node, pos: range.IntRange, text: Unicode, ty: CodeType): Unit = {
-    contentAt(cur).asInstanceOf[EditableRichView].showInlineEditor(cur, pos, client.state.isRichInsert, text, ty)
-  }
-
 
 
   /**

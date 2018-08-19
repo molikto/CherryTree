@@ -1,5 +1,6 @@
 package model
 
+import model.data.Text
 import model.range.IntRange
 
 package object mode {
@@ -47,7 +48,9 @@ package object mode {
       override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
     }
 
-    sealed trait RichSubMode extends Rich {
+    sealed abstract class RichSubMode extends Rich {
+      def getText(rich: data.Rich): Text.Delimited = rich.after(range.start - 1).text.asDelimited
+      // range inside!
       def range: IntRange
       def modeBefore: Rich
       def copyWithRange(range: IntRange, rich: Rich): RichSubMode

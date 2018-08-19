@@ -42,11 +42,6 @@ object Client {
   object ViewMessage {
     case class VisitUrl(url: String) extends ViewMessage
     case class ShowCommandMenu() extends ViewMessage
-    case class ShowUrlAndTitleAttributeEditor(node: cursor.Node,
-      range: IntRange,
-      text: data.Text.Delimited) extends ViewMessage
-    case class ShowInlineEditor(node: cursor.Node, at: IntRange, prev: Unicode, ty: CodeType) extends ViewMessage
-    //case class ContinueCommandMenu(items: Seq[String]) extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage

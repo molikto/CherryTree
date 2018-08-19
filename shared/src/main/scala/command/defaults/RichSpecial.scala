@@ -54,16 +54,15 @@ class RichSpecial extends CommandCategory("text format") {
         val k = operation.Rich.insert(insert, wrap)
         val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
         val vms = if (deli == SpecialChar.Image) {
-          Seq(ViewMessage.ShowUrlAndTitleAttributeEditor(n, IntRange(insert, insert + wrap.size), Text.Image(Unicode.empty)))
+          a.editAttribute(IntRange.len(insert + 1, 0))
         } else if (deli == SpecialChar.LaTeX) {
-          Seq(ViewMessage.ShowInlineEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty, Embedded.LaTeX))
+          a.editCode(IntRange.len(insert + 1, 0))
         } else if (deli == SpecialChar.HTML) {
-          Seq(ViewMessage.ShowInlineEditor(n, IntRange(insert, insert + wrap.size), Unicode.empty, Embedded.HTML))
+          a.editCode(IntRange.len(insert + 1, 0))
         } else {
-          Seq.empty
+          DocTransaction.empty
         }
-        val ret = DocTransaction(trans, moveSomeInsertMode(if (deli.atomic) wrap.size else 1),
-          viewMessagesAfter = vms)
+        val ret = vms.copy(trans, moveSomeInsertMode(if (deli.atomic) wrap.size else 1))
         extraInsert match {
           case Some(extra) => DocTransaction(Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))), a.mode, extra = Some(ret))
           case None => ret

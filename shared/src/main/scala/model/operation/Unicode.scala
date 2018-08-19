@@ -314,22 +314,6 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def isEmpty: Boolean = false
   }
 
-  case class Move(r: IntRange, at: Int) extends Unicode {
-    override def ty: Type = Type.Structural
-    override def apply(d: data.Unicode): data.Unicode = d.move(r, at)
-
-    override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
-
-    override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = throw new IllegalAccessError("We don't have unicode move yet")
-
-    override def reverse(d: data.Unicode): Unicode =  throw new IllegalAccessError("We don't have unicode move yet")
-
-    override def merge(before: Any): Option[Unicode] =  throw new IllegalAccessError("We don't have unicode move yet")
-
-    override def isEmpty: Boolean =  throw new IllegalAccessError("We don't have unicode move yet")
-  }
-
-
   /**
     * replace is not generated for this, because it is used for some structural data
     */
@@ -357,10 +341,6 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
           writeInt(3)
           IntRange.pickler.pickle(range)
           writeString(unicode.str)
-        case Move(r, at) =>
-          writeInt(4)
-          IntRange.pickler.pickle(r)
-          writeInt(at)
         case Surround(r, start, end, id) =>
           writeInt(if (id) 5 else 6)
           IntRange.pickler.pickle(r)
@@ -378,8 +358,6 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
           Delete(IntRange.pickler.unpickle)
         case 3 =>
           ReplaceAtomic(IntRange.pickler.unpickle, data.Unicode(readString))
-        case 4 =>
-          Move(IntRange.pickler.unpickle, readInt)
         case 5 | 6 =>
           Surround(IntRange.pickler.unpickle, data.Unicode(readString), data.Unicode(readString), idempotent = k == 5)
       }

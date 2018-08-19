@@ -125,7 +125,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, rich, t) => {
         val text = rich.insideUrlAttributed(t.range.until).get
-        return DocTransaction.message(ViewMessage.ShowUrlAndTitleAttributeEditor(cur, text.textRange, text.text.asDelimited))
+        return a.editAttribute(text)
       })
       DocTransaction.empty
     }
@@ -140,11 +140,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     })
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, _, t) => {
-        return DocTransaction.message(ViewMessage.ShowInlineEditor(
-          cur,
-          t.textRange,
-          t.text.asCoded.content,
-          t.text.asDelimited.delimitation.codeType))
+        return a.editCode(t)
       })
       DocTransaction.empty
     }

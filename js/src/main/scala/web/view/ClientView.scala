@@ -98,10 +98,6 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       docView.scrollToTop()
     case Client.ViewMessage.ScrollToBottom =>
       docView.scrollToBottom()
-    case Client.ViewMessage.ShowUrlAndTitleAttributeEditor(cur, pos, text) =>
-      docView.showAttributeEditor(cur, pos, text)
-    case Client.ViewMessage.ShowInlineEditor(cur, pos, init, ty) =>
-      docView.showInlineEditor(cur, pos, init, ty)
   })
 
 }

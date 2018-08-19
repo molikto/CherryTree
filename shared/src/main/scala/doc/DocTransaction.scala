@@ -1,6 +1,7 @@
 package doc
 
 import client.Client.ViewMessage
+import model.range.IntRange
 import model.{cursor, range}
 import undoer.Undoer
 
@@ -25,11 +26,13 @@ case class DocTransaction(
   def nonTransactional: Boolean = {
     transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoomAfter.isEmpty && extra.isEmpty
   }
+
 }
 
 object DocTransaction {
   val empty = DocTransaction(Seq.empty, None)
   def apply(a: model.mode.Node): DocTransaction = DocTransaction(Seq.empty, Some(a))
+
 
   def message(a: ViewMessage): DocTransaction = {
     DocTransaction(Seq.empty, None, viewMessagesBefore = Seq(a))
