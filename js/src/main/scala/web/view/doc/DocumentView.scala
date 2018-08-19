@@ -111,7 +111,7 @@ class DocumentView(
     currentEditable.focus()
   }
 
-  override def unmarkEditable(dom: HTMLElement): Unit = {
+  override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
     if (dom == currentEditable) {
       dom.contentEditable = "false"
       currentEditable = noEditable

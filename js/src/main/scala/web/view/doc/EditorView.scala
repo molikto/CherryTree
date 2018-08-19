@@ -12,7 +12,7 @@ trait EditorView extends View {
   protected def editor: EditorInterface
 
   def markEditable(dom: HTMLElement): Unit
-  def unmarkEditable(dom: HTMLElement): Unit
+  def unmarkEditableIfActive(dom: HTMLElement): Unit
 
 
   def onFps(duration: Long): Unit = {

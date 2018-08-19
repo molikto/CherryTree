@@ -109,9 +109,10 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def translate(start: Int): Unicode = copy(r = r.moveBy(start))
 
     def transformAtomicRange(range: IntRange): Option[IntRange] = {
-      r.transformDeletingRangeAfterDeleted(range) match {
-        case k@Some(j) if j.size == range.size => k
-        case _ => None
+      if (range.start == r.start || r.until == range.until) {
+        None
+      } else {
+        r.transformDeletingRangeAfterDeleted(range)
       }
     }
 

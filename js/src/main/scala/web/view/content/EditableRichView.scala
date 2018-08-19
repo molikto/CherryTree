@@ -294,7 +294,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   override def clearMode(): Unit = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
-    documentView.unmarkEditable(dom)
+    documentView.unmarkEditableIfActive(dom)
   }
 
   override def initMode(): Unit = {

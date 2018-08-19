@@ -391,13 +391,12 @@ class Client(
   override def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit = {
     state.mode match {
       case Some(model.mode.Node.Content(cur, model.mode.Content.RichCodeSubMode(range, code, modeBefore))) =>
-        val aft = state.rich(cur).after(range.start - 1)
+        val rich = state.rich(cur)
+        val aft = rich.after(range.start - 1)
         assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
         val deli = aft.text.asDelimited
-        localChange(DocTransaction(Seq(
-          operation.Node.rich(cur, operation.Rich.fromCode(range.start, op))
-        ), Some(state.copyContentMode(model.mode.Content.RichCodeSubMode(range, inside, modeBefore))),
-          editorUpdated = true))
+        val ot = operation.Rich.fromCode(range.start, op)
+        localChange(DocTransaction(Seq(operation.Node.rich(cur, ot)), None, subCodeMode = Some(inside), editorUpdated = true))
       case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
         localChange(DocTransaction(
           op.map(o => model.operation.Node.Content(cur, model.operation.Content.CodeContent(o)))
@@ -542,7 +541,16 @@ class Client(
     }
     val (last0, from) = operation.Node.apply(update.transaction, state)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
-    val last = last0.copy(mode0 = update.mode.getOrElse(last0.mode0),
+    val toMode: model.mode.Node = update.mode.getOrElse(last0.mode0 match {
+      case c@model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode) =>
+        update.subCodeMode match {
+          case Some(scm) =>
+            model.mode.Node.Content(cur, sub.copy(code = scm))
+          case None => c
+        }
+      case a => a
+    })
+    val last = last0.copy(mode0 = toMode,
       badMode = false,
       zoom = update.zoomAfter.getOrElse(last0.zoom),
       userFoldedNodes = res)

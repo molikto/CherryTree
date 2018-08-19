@@ -118,20 +118,25 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         }
         sp: Frag
       case Text.HTML(c) =>
-        val a = span(contenteditable := "false").render
+        val a = span(contenteditable := "false",
+          span(evilChar, contenteditable := false) // don't fuck with my cursor!!!
+        ).render
         if (c.isBlank) {
           a.className = ""
           a.appendChild(warningInline("empty inline HTML").render)
         } else {
           try {
             a.className = "ct-inline-html"
-            a.innerHTML = c.str
+            val b = span().render
+            b.innerHTML = c.str
+            a.appendChild(b)
           } catch {
             case err: Throwable =>
               a.className = ""
               a.appendChild(errorInline("inline HTML error", err).render)
           }
         }
+        a.appendChild(span(evilChar, contenteditable := false).render)
         a: Frag
       case Text.LaTeX(c) =>
         val a = span().render
