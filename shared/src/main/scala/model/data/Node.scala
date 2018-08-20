@@ -23,7 +23,7 @@ case class Node (
   attributes: Map[String, String],
   childs: Seq[Node]) {
 
-  def refOfThis() = Node.nodRef("", uuid)
+  def refOfThis() = Node.nodRef( uuid)
 
   def count: Int = 1 + childs.map(_.count).sum
   def size: Int = content.size + childs.map(_.size).sum
@@ -149,15 +149,17 @@ case class Node (
 }
 
 object Node extends DataObject[Node] {
-  def matchNodeRef(url: String): Option[String] = if (url.startsWith(NodeRefScheme)) Some(url.substring(NodeRefScheme.length + "?node=".length)) else None
+  def matchNodeRef(url: String): Option[String] = if (url.startsWith(NodeRefScheme)) Some(url.substring(NodeRefScheme.length + "node?node=".length)) else None
 
-
-  def nodRef(docId: String, nodeId: String): String = {
-    assert(docId == "") // LATER support across doc ids
-    val query = if (docId == "") s"?node=$nodeId"
-    else s"?doc=${docId}&node=$nodeId"
-    s"${NodeRefScheme}node$query"
+  def nodeRefRelative(nodeId: String): String = {
+    val query = s"?node=$nodeId"
+    s"node$query"
   }
+
+  def nodRef(nodeId: String): String = {
+    s"$NodeRefScheme${nodeRefRelative(nodeId)}"
+  }
+
   val NodeRefScheme = "cherrytree://"
 
   sealed trait ChildrenType {

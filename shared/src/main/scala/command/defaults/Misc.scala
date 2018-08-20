@@ -170,8 +170,14 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
       val (_, rich, t0) = a.asRichNormalAtom
       val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
-      Node.matchNodeRef(url).flatMap(a.lookup).foreach { a =>
-        return DocTransaction(Seq.empty, None, zoomAfter = Some(a))
+      Node.matchNodeRef(url).foreach { uuid =>
+        a.lookup(uuid) match {
+          case Some(cur) =>
+            return a.goTo(cur)
+          case None =>
+            // TODO report error
+            return DocTransaction.empty
+        }
       }
       import io.lemonlabs.uri._
       Try {

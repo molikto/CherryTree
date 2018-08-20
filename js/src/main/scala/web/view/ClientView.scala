@@ -11,7 +11,7 @@ import web.view.doc.DocumentView
 import scala.scalajs._
 
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val parent: HTMLElement, val client: Client) extends View {
+class ClientView(private val parent: HTMLElement, val client: Client, val global: Boolean) extends View {
 
   /**
     *
@@ -86,6 +86,28 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
 
 
 
+  private var rootUrl: String = null
+  private var duringGoTo = false
+  if (global) {
+    if (rootUrl == null) {
+      rootUrl = window.location.href
+      if (!rootUrl.endsWith("/")) rootUrl = rootUrl + "/"
+    }
+    window.history.replaceState(client.state.zoomId, document.title, rootUrl)
+    observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {
+      if (!duringGoTo) {
+        window.history.pushState(uuid, document.title, rootUrl + client.state.nodeRefRelative(uuid))
+      }
+    }))
+    event(window, "popstate", (ev: PopStateEvent) => {
+      val uuid = ev.state.asInstanceOf[String]
+      duringGoTo = true
+      client.state.lookup(uuid).foreach(cur => {
+        client.localChange(client.state.goTo(cur))
+      })
+      duringGoTo = false
+    })
+  }
 
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>

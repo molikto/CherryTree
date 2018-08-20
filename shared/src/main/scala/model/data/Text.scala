@@ -292,6 +292,8 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.StrikeThrough
   }
   case class Link(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted {
+    def isNodeRef: Boolean = url.str.startsWith(Node.NodeRefScheme)
+
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode =
       if (i == UrlAttribute) url

@@ -498,6 +498,10 @@ block selection
    color: #268bd2;
 }
 
+.ct-link-node {
+   color: #b7b419;
+}
+
 .ct-latex {
    color: #abb2bf;
 }

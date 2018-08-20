@@ -98,12 +98,12 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         del(`class` := "ct-del", rec(c)),
         cg("~")
       )
-      case Text.Link(t, b, c) =>
+      case l@Text.Link(t, b, c) =>
         val tt: String = if (c.isEmpty) b.str else s"${c.str}\n${b.str}"
         span(
           title := tt,
           cg("["),
-          span(`class` := "ct-link", rec(t)),
+          span(`class` := (if (l.isNodeRef) "ct-link-node" else "ct-link"), rec(t)),
           cg("]")
         )
       case Text.Image(b, c) =>

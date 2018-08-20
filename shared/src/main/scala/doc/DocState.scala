@@ -14,6 +14,16 @@ case class DocState(
   badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
+  def nodeRefRelative(uuid: String): String = {
+    if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
+  }
+
+  def goTo(cur: Node): DocTransaction = {
+    DocTransaction(Seq.empty,
+      Some(model.mode.Node.Content(cur, node(cur).content.defaultNormalMode())),
+      zoomAfter = Some(cur).filter(c => !currentlyVisible(c)))
+  }
+
 
   def breakWhiteSpaceInserts: Boolean = mode.exists(_.breakWhiteSpaceInserts)
 
@@ -70,6 +80,9 @@ case class DocState(
   def inViewport(a: cursor.Node): Boolean = cursor.Node.contains(zoom, a)
 
 
+  def currentlyVisible(a: Node): Boolean = {
+    inViewport(a) && !viewAsHidden(a)
+  }
   def viewAsHidden(k: Node): Boolean = {
     var n = k
     while (n.size > zoom.size) {

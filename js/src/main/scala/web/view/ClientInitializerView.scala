@@ -51,7 +51,7 @@ object ClientInitializerView {
   * @param where an id of a html element, it is assumed that you don't modify it after handling to us
   */
 @JSExportTopLevel("ClientInitializerView")
-class ClientInitializerView(where: String) {
+class ClientInitializerView(where: String, global: Boolean) {
   ClientInitializerView.initializeGlobal()
 
   private val rootView = el[dom.html.Element](where)
@@ -66,12 +66,13 @@ class ClientInitializerView(where: String) {
       import scalatags.JsDom.all._
       p("connecting")
     }.render)
+    val ec = scala.concurrent.ExecutionContext.Implicits.global
     ClientInitializer.init(server, token).onComplete {
       case Success(c) =>
         goClient(c)
       case Failure(exception) =>
         goFailure(exception)
-    }
+    }(ec)
   }
 
   goConnecting()
@@ -93,6 +94,6 @@ class ClientInitializerView(where: String) {
     this.client = Some(client)
     removeAllChild(rootView)
     client.start()
-    new ClientView(rootView, client)
+    new ClientView(rootView, client, global)
   }
 }

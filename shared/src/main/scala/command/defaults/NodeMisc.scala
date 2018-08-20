@@ -28,7 +28,7 @@ class NodeMisc extends CommandCategory("node: misc") {
     override val description: String = "copy node link"
     override protected def available(a: DocState): Boolean = a.isNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asNormal._1).uuid))
+      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asNormal._1).refOfThis()))
     }
   }
 
