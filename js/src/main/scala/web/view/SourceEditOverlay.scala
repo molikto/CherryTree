@@ -140,7 +140,8 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.keyMap = "vim"
       a.lineWrapping = true
       a.showCursorWhenSelecting = true
-      a.inputStyle = "contenteditable"
+      // LATER wait for CodeMirorr to udpate... hope VIM support is fixed
+      //a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
       val mod = if (model.isMac) "Cmd" else "Ctrl"
       a.extraKeys = CodeMirror.normalizeKeyMap(
