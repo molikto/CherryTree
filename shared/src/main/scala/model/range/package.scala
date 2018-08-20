@@ -145,7 +145,7 @@ package object range {
 
     override def size: Int = childs.size
 
-    override def toString(): String = "-" + parent.mkString(",") + childs
+    override def toString(): String = parent.mkString("-") + "[" + childs.start + "," + childs.until  + ")"
 
     def split(w: Node): Seq[Node] = {
       if (w.parent == parent) {

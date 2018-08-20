@@ -49,11 +49,8 @@ class CommandListPanel(val client: Client) extends UnselectableView  {
           }
       }.toSeq
     ).render
-    dom.appendChild(div(
-      client.debug_undoHistory.map(a => p(a)).toSeq
-    ).render)
-//    dom.appendChild(res)
-//    dom.childNodes(0).asInstanceOf[HTMLElement].scrollIntoView(true)
+    dom.appendChild(res)
+    dom.childNodes(0).asInstanceOf[HTMLElement].scrollIntoView(true)
   }))
 
 }

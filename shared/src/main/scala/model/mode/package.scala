@@ -57,6 +57,7 @@ package object mode {
       def range: IntRange
       def modeBefore: Rich
       def copyWithRange(range: IntRange, rich: Rich): RichSubMode
+
     }
 
     // we assume that code will always have delimitation 1

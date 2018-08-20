@@ -31,6 +31,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     override def apply(d: data.Unicode): data.Unicode = d.insert(at, unicode)
 
 
+    override def toString: String = s"$at+$unicode"
+
     override def translate(start: Int): Unicode = copy(at = at + start)
 
     def transformRange(r: IntRange): IntRange = r match {
@@ -108,6 +110,8 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     def apply(l: Int, r: Int): Delete = Delete(IntRange(l, r))
   }
   case class Delete(r: IntRange) extends Unicode {
+
+    override def toString: String = s"${r.start}-${r.size}"
     override def ty: Type = Type.Delete
     override def apply(d: data.Unicode): data.Unicode = d.delete(r)
 

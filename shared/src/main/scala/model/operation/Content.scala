@@ -36,6 +36,8 @@ object Content extends OperationObject[data.Content, Content] {
     }
 
     override def isEmpty: Boolean = op.isEmpty
+
+    override def toString: String = op.toString
   }
   case class CodeLang(lang: String) extends Code {
     override def ty: Type = Type.AddDelete
@@ -80,6 +82,8 @@ object Content extends OperationObject[data.Content, Content] {
     }
 
     override def isEmpty: Boolean = op.isEmpty
+
+    override def toString: String = op.toString
   }
 
 

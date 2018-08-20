@@ -38,8 +38,13 @@ class LeftPanelSwitcher(private val cl: Client, enable: Boolean => Unit) extends
 
   private val quickAccess = span(span(`class` := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
 
+  private val undoHistory = span(span(`class` := "ct-tab-icon ct-tab-bug"), a("Undo History")).render
 
-  private val childs = Seq(commands, quickAccess)
+  private var childs = Seq(commands, quickAccess)
+
+  if (model.debug_view) {
+    childs = undoHistory +: childs
+  }
   for (a <- childs) {
     event(a, "click", (c: MouseEvent) => {
       if (a != active) {
@@ -70,6 +75,8 @@ class LeftPanelSwitcher(private val cl: Client, enable: Boolean => Unit) extends
       new TocPanel().attachToNode(container)
     } else if (active == commands) {
       new CommandListPanel(cl).attachToNode(container)
+    } else if (active == undoHistory) {
+      new UndoHistoryPanel(cl).attachToNode(container)
     } else {
       null
     }

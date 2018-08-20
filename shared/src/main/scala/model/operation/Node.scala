@@ -90,6 +90,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
       d.map(at, a => a.copy(content = content(a.content)))
     }
 
+
     override def apply(a: DocState): DocState = {
       val (m0, bm) = a.mode0 match {
         case c: mode.Node.Content if c.node == at =>
@@ -109,6 +110,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
     }
 
     override def isEmpty: Boolean = content.isEmpty
+
+    override def toString: String = s"Content(${at.mkString("-")}, $content)"
   }
 
   case class Replace(at: cursor.Node, content: data.Content) extends Node {
@@ -117,7 +120,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
       d.map(at, a => a.copy(content = content))
     }
 
-    override def toString: String = s"Replace($at)"
+    override def toString: String = s"Replace(${at.mkString("-")})"
 
 
     override def apply(a: DocState): DocState = {
@@ -144,7 +147,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def apply(d: data.Node): data.Node = d.insert(at, childs)
 
 
-    override def toString: String = s"Insert($at, ${childs.size})"
+    override def toString: String = s"Insert(${at.mkString("-")}, ${childs.size})"
 
 
     override def apply(a: DocState): DocState = {
@@ -217,8 +220,9 @@ object Node extends OperationObject[data.Node, operation.Node] {
       case Node.Delete(rr) =>
         if (r.contains(rr.parent)) {
           Some(this)
-        } else if (r.parent == rr.parent && r.childs.containsInsertion(rr.childs.start)) {
-          Some(Delete(range.Node(r.parent, IntRange(r.childs.start, r.childs.until + rr.childs.size))))
+          // this is disabled because this will causes undoer to panic
+//        } else if (r.parent == rr.parent && r.childs.containsInsertion(rr.childs.start)) {
+//          Some(Delete(range.Node(r.parent, IntRange(r.childs.start, r.childs.until + rr.childs.size))))
         } else {
           None
         }
@@ -227,6 +231,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     }
 
     override def isEmpty: Boolean = r.isEmpty
+
   }
   case class Move(r: range.Node, to: cursor.Node) extends Node {
     assert(!r.contains(to))

@@ -234,6 +234,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         if (isInnerInsert && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
           dismiss()
         } else {
+          flush() // flush the cursor position
           if (text.isEmpty) {
             if (fromCp != toCp) {
               newOp(operation.Unicode.Delete(fromCp, toCp))
@@ -291,8 +292,15 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     }
   }
 
-  def sync(a: CodeInside): Unit = {
+  private def syncModeInner(a: CodeInside) = {
+    val pp = codeMirror.posFromIndex(a.pos)
+    codeMirror.setSelection(pp, pp)
+  }
 
+  def sync(a: CodeInside): Unit = {
+    updating = true
+    syncModeInner(a)
+    updating = false
   }
 
   def sync(a: CodeType): Unit = {
@@ -339,6 +347,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     isInnerNormal = true
     isInnerInsert = false
     if (opt.mode.mode == "insert") {
+      syncModeInner(opt.mode)
       window.setTimeout(() => {
         if (!dismissed) CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
       }, 0)

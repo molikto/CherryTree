@@ -396,13 +396,25 @@ class Client(
         val rich = state.rich(cur)
         val aft = rich.after(range.start - 1)
         assert(aft.text.asDelimited.delimitation.newDeliEndSize == 1)
-        val deli = aft.text.asDelimited
-        val ot = operation.Rich.fromCode(range.start, op)
-        localChange(DocTransaction(Seq(operation.Node.rich(cur, ot)), None, subCodeMode = Some(inside), editorUpdated = true))
-      case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
-        localChange(DocTransaction(
-          op.map(o => model.operation.Node.Content(cur, model.operation.Content.CodeContent(o)))
-          , Some(state.copyContentMode(inside)), editorUpdated = true))
+        val trans = if (op.nonEmpty) {
+          val ot = operation.Rich.fromCode(range.start, op)
+          Seq(operation.Node.rich(cur, ot))
+        } else {
+          Seq.empty
+        }
+        if (trans.isEmpty && inside == code) {
+          // do nothing
+        } else {
+          localChange(DocTransaction(trans, None, subCodeMode = Some(inside), editorUpdated = true))
+        }
+      case Some(model.mode.Node.Content(cur, c: model.mode.Content.CodeInside)) =>
+        if (op.isEmpty && inside == c) {
+          // do nothing
+        } else {
+          localChange(DocTransaction(
+            op.map(o => model.operation.Node.Content(cur, model.operation.Content.CodeContent(o)))
+            , Some(state.copyContentMode(inside)), editorUpdated = true))
+        }
       case _ => throw new IllegalStateException("What??")
     }
   }

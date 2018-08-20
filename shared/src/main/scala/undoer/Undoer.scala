@@ -20,8 +20,14 @@ object Undoer {
 
   case object Remote extends Type
 
-  case class Undo(a: Int, historyAfter: Seq[transaction.Node]) extends Type // points to the local or redo
-  case class Redo(a: Int, historyAfter: Seq[transaction.Node]) extends Type // points to the undo
+// points to the local or redo
+  case class Undo(a: Int, historyAfter: Seq[transaction.Node]) extends Type {
+  override def toString: String = "Undo"
+}
+  // points to the undo
+  case class Redo(a: Int, historyAfter: Seq[transaction.Node]) extends Type  {
+    override def toString: String = "Redo"
+  }
 }
 
 import Undoer._
@@ -83,8 +89,8 @@ trait Undoer extends UndoerInterface {
   }
 
   protected def cutOneLocalHistory(assertTrans: transaction.Node): Unit = {
-    assert(history_.last.ty == Local)
-    assert(history_.last.trans == assertTrans)
+    assert(history_.last.ty == Local, "history is not local....?")
+    assert(history_.last.trans == assertTrans, s"trans different ${history_.last.trans} $assertTrans")
     removeOne()
   }
 
@@ -97,9 +103,10 @@ trait Undoer extends UndoerInterface {
   }
 
   private def compatHistory(whitespace: Boolean): Unit = {
-    while (size >= base + 2 && size - 2 >= lastCompactedVersion) {
+    while (size >= base + 2) {
       val last = history(size - 1)
       val before = history(size - 2)
+      if (before == lastCompatItem) return
       if (before.ty == Local && last.ty == Local) {
         transaction.Node.mergeSingleOpTransactions(last.trans, before.trans, whitespace) match {
           case Some(trans) =>
@@ -143,7 +150,7 @@ trait Undoer extends UndoerInterface {
 
 
 
-  def debug_undoHistory = history_.zipWithIndex.map(p => (p._2 + discarded).toString + p._1.trans.toString() +" " + p._1.ty)
+  def debug_undoHistory = history_.zipWithIndex.map(p => (p._2 + discarded, p._1.trans, p._1.ty.toString))
 
   private def size: Int = discarded + history_.size
 
@@ -207,27 +214,33 @@ trait Undoer extends UndoerInterface {
       case Redo(a, items) =>
         replaceUndoRedoPair(a, items)
       case Remote =>
-        putIn()
-        sinkRemote() // LATER do this while undo, to save some space
+        if (trans.nonEmpty) {
+          putIn()
+          sinkRemote() // LATER do this while undo, to save some space
+        }
       case Local =>
         if (trans.nonEmpty) {
+          if (previousIsExtra) {
+            previousIsExtra = false
+            compatHistory(true)
+          }
           putIn()
           if (!isExtra) {
             compatHistory(true)
+          } else {
+            previousIsExtra = true
           }
         }
     }
     if (breaking && !docAfter.breakWhiteSpaceInserts) {
       compatHistory(false)
-      lastCompactedVersion = size
+      lastCompatItem = lastOption.orNull
     }
     breaking = docAfter.breakWhiteSpaceInserts
   }
 
-
-
-  private var lastCompactedVersion = 0
-
+  private var previousIsExtra = false
+  private var lastCompatItem: HistoryItem = null
 
   private def undo(currentDoc: DocState, i: Int, isRedo: Boolean): DocTransaction = {
     val item = history(i)

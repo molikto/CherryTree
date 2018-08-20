@@ -16,6 +16,8 @@ import scala.util.Random
 case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
 
 
+  override def toString: String = u.mkString(", ")
+
   def canBeSmartInsert(rich: data.Rich): Option[(data.Unicode, Int, data.Unicode)] = {
     def doIt(at: Int, unicode: data.Unicode):  Option[(data.Unicode, Int, data.Unicode)]  = {
       if (unicode.forall(a => !SpecialChar.special(a))) {
