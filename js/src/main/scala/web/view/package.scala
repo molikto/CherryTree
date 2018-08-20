@@ -12,6 +12,8 @@ import scala.scalajs.js
 
 package object view {
 
+
+
   val EmptyStr = "∅"
   def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
 

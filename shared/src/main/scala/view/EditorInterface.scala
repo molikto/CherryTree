@@ -8,7 +8,6 @@ import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.reactive.Observable
 
-
 trait SourceEditInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit

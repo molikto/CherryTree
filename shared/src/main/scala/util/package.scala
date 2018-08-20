@@ -7,6 +7,23 @@ import scala.util.Random
 
 package object util extends ObservablePropertyImplicits  {
 
+
+  var debug_fpsView: String => Unit = null
+
+  private var debug_fpsStartTime = 0L
+
+  def fpsStart(): Unit = {
+    debug_fpsStartTime = System.currentTimeMillis()
+  }
+
+  def fpsEnd(): Unit = {
+    val time = System.currentTimeMillis() - debug_fpsStartTime
+    if (debug_fpsView != null) {
+      debug_fpsView(time.toString)
+    }
+  }
+
+
   private val debugOn = false
 
   def isAscii(c: String): Boolean = Unicode(c).forall(isAscii)
@@ -28,6 +45,24 @@ package object util extends ObservablePropertyImplicits  {
       n = Some(a.next())
     }
     n
+  }
+
+
+  def quickDiff(oldVal: String, newVal: String): (Int, Int, String) = {
+    var start = 0
+    var oldEnd = oldVal.length
+    var newEnd = newVal.length
+    while (start < newEnd && start < oldEnd && oldVal.codePointAt(start) == newVal.codePointAt(start)) {
+      start += 1
+    }
+    while (oldEnd > start && newEnd > start && oldVal.codePointAt(oldEnd - 1) == newVal.codePointAt(newEnd - 1)) {
+      oldEnd -= 1
+      newEnd -= 1
+    }
+    val from = start
+    val to = oldEnd
+    val text = newVal.substring(start, newEnd)
+    (from, to, text)
   }
 
 

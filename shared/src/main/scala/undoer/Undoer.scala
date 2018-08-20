@@ -146,8 +146,11 @@ trait Undoer extends UndoerInterface {
         at = -1
       }
     }
+    if (at == base) { // we can happily forget this change...
+      discarded += 1
+      history_.remove(0, 1)
+    }
   }
-
 
 
   def debug_undoHistory = history_.zipWithIndex.map(p => (p._2 + discarded, p._1.trans, p._1.ty.toString))

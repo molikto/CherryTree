@@ -7,7 +7,6 @@ import java.util.stream.IntStream
 import model._
 import model.range.IntRange
 import util.GraphemeSplitter
-import util.diff.{Diff, Operation, OperationType}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -331,42 +330,42 @@ case class Unicode(var str: String) extends Seq[Int] {
     sp
   }
 
-  def diff(to: Unicode): Seq[operation.Unicode] = {
-    if (this.isBlank) {
-      return Seq(operation.Unicode.Insert(0, to))
-    }
-    val time = System.currentTimeMillis()
-    val diff = util.diff.Diff.create(toStrList, to.toStrList).diffs
-    var olen = 0
-    val ops = new ArrayBuffer[operation.Unicode]()
-    var i = 0
-    while (i < diff.size) {
-      val d = diff(i)
-      d.op match {
-        case OperationType.Insert =>
-          val j = i
-          while (i < diff.size && diff(i).op == OperationType.Insert) {
-            i += 1
-          }
-          val text = Unicode(diff.slice(j, i).flatMap(_.text))
-          ops.append(operation.Unicode.Insert(olen, text))
-          olen += text.size
-        case OperationType.Delete =>
-          val j = i
-          while (i < diff.size && diff(i).op == OperationType.Delete) {
-            i += 1
-          }
-          val text = Unicode(diff.slice(j, i).flatMap(_.text))
-          val size = text.size
-          ops.append(operation.Unicode.Delete(olen, olen + size))
-        case OperationType.Equals =>
-          val size = Unicode(d.text).size
-          olen += size
-          i += 1
-      }
-    }
-    ops
-  }
+//  def diff(to: Unicode): Seq[operation.Unicode] = {
+//    if (this.isBlank) {
+//      return Seq(operation.Unicode.Insert(0, to))
+//    }
+//    val time = System.currentTimeMillis()
+//    val diff = util.diff.Diff.create(toStrList, to.toStrList).diffs
+//    var olen = 0
+//    val ops = new ArrayBuffer[operation.Unicode]()
+//    var i = 0
+//    while (i < diff.size) {
+//      val d = diff(i)
+//      d.op match {
+//        case OperationType.Insert =>
+//          val j = i
+//          while (i < diff.size && diff(i).op == OperationType.Insert) {
+//            i += 1
+//          }
+//          val text = Unicode(diff.slice(j, i).flatMap(_.text))
+//          ops.append(operation.Unicode.Insert(olen, text))
+//          olen += text.size
+//        case OperationType.Delete =>
+//          val j = i
+//          while (i < diff.size && diff(i).op == OperationType.Delete) {
+//            i += 1
+//          }
+//          val text = Unicode(diff.slice(j, i).flatMap(_.text))
+//          val size = text.size
+//          ops.append(operation.Unicode.Delete(olen, olen + size))
+//        case OperationType.Equals =>
+//          val size = Unicode(d.text).size
+//          olen += size
+//          i += 1
+//      }
+//    }
+//    ops
+//  }
 
   def graphemes: Iterator[(Int, Unicode)] = after(0)
 

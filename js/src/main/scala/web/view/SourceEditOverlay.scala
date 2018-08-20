@@ -218,19 +218,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         // LATER change to a line based diff this should be more efficient with code mirror
         val oldVal = str.str
         val newVal = codeMirror.getValue().asInstanceOf[String]
-        var start = 0
-        var oldEnd = oldVal.length
-        var newEnd = newVal.length
-        while (start < newEnd && start < oldEnd && oldVal.codePointAt(start) == newVal.codePointAt(start)) {
-          start += 1
-        }
-        while (oldEnd > start && newEnd > start && oldVal.codePointAt(oldEnd - 1) == newVal.codePointAt(newEnd - 1)) {
-          oldEnd -= 1
-          newEnd -= 1
-        }
-        val from = start
-        val to = oldEnd
-        val text = newVal.substring(start, newEnd)
+        val (from, to, text) = _root_.util.quickDiff(oldVal, newVal)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
         if (isInnerInsert && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {

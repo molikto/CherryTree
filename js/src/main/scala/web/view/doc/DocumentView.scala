@@ -23,20 +23,6 @@ class DocumentView(
 ) extends EditorView {
 
 
-  private val fpsDisplay = div(
-    position := "absolute",
-    left := "16px",
-    top := "16px",
-    color := "#FFFFFF",
-    padding := "8px",
-    backgroundColor := "#FFFFFF22"
-  ).render
-
-  override def onFps(duration: Long): Unit = {
-    if (model.debug_view) {
-      fpsDisplay.textContent = duration.toString
-    }
-  }
 
   private val rootFrame = div(
     `class` := "ct-document-style ct-d-frame",
@@ -54,9 +40,10 @@ class DocumentView(
     div(height := "36px", display := "block"),
     rootFrame,
     div(height := "36px", display := "block"),
-    noEditable,
-    fpsDisplay
+    noEditable
   ).render
+
+
 
   /**
     *
@@ -328,13 +315,14 @@ class DocumentView(
     val cur = cursorOf(ee)
     val node = client.state.node(cur)
     hold.title =
-      Seq(s"items: ${node.count}",
-        s"text size: ${node.content.size}",
-        s"total text size: ${node.size}",
+      Seq(
         node.attribute(model.data.Node.ContentType) match {
-          case Some(model.data.Node.ContentType.Heading(i)) => s"heading $i"
+          case Some(model.data.Node.ContentType.Heading(i)) => s"heading level $i"
           case _ => ""
-        }
+        },
+        s"items: ${node.count}",
+        s"text size: ${node.content.size}",
+        s"total text size: ${node.size}"
       ).filter(_.nonEmpty).mkString("\n")
   }
 

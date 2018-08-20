@@ -96,7 +96,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     window.history.replaceState(client.state.zoomId, document.title, rootUrl)
     observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {
       if (!duringGoTo) {
-        window.history.pushState(uuid, document.title, rootUrl + client.state.nodeRefRelative(uuid))
+        // , rootUrl + client.state.nodeRefRelative(uuid)
+        window.history.pushState(uuid, document.title)
       }
     }))
     event(window, "popstate", (ev: PopStateEvent) => {
@@ -124,4 +125,20 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       util.copyTextToClipboard(str)
   })
 
+
+  private val fpsDisplay = div(
+    position := "absolute",
+    left := "16px",
+    top := "16px",
+    color := "#FFFFFF",
+    padding := "8px",
+    backgroundColor := "#FFFFFF22"
+  ).render
+
+  if (model.debug_view) {
+    dom.appendChild(fpsDisplay)
+    _root_.util.debug_fpsView = str => {
+      fpsDisplay.textContent = str
+    }
+  }
 }
