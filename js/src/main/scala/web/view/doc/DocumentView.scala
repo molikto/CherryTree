@@ -517,6 +517,7 @@ class DocumentView(
   })
   event("mousemove", (a: MouseEvent) => {
     //window.console.log(a)
+    preventDefault(a)
   })
 
 
