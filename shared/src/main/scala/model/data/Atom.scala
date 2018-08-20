@@ -134,7 +134,15 @@ object Atom {
         a.str == "”" && u.str == "\"" ||
         a.str == "‘" && u.str == "'" ||
         a.str == "’" && u.str == "'" ||
-        a.str == "…" && u.str == "."
+        a.str == "…" && u.str == "." ||
+        a.str == "↔" && "<->".contains(u.str) ||
+        a.str == "→" && "->".contains(u.str) ||
+        a.str == "←" && "<-".contains(u.str) ||
+        a.str == "⟶" && "->".contains(u.str) ||
+        a.str == "⟵" && "<-".contains(u.str) ||
+        a.str == "⇔" && "<=>".contains(u.str) ||
+        a.str == "⇐" && "<=".contains(u.str) ||
+        a.str == "⇒" && "=>".contains(u.str)
 
     override def subIndex: Int = unicodeIndex
   }
