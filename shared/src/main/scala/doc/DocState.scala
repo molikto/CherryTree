@@ -1,6 +1,6 @@
 package doc
 
-import model.{cursor, data, mode}
+import model.{cursor, data, mode, operation, transaction}
 import model.cursor.Node
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
@@ -14,6 +14,19 @@ case class DocState(
   badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
+  def changeContentType(cur: cursor.Node,
+    to: Option[data.Node.ContentType],
+    opts: transaction.Node = Seq.empty
+  ): DocTransaction = {
+    val chidlren = if (!node(cur).has(data.Node.ChildrenType)) {
+      to.flatMap(_.preferredChildrenType).map(a => operation.Node.AttributeChange(cur, data.Node.ChildrenType, Some(a))).toSeq
+    } else {
+      Seq.empty
+    }
+    DocTransaction(
+      opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren, None)
+  }
+
   def nodeRefRelative(uuid: String): String = {
     if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
   }

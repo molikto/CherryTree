@@ -68,15 +68,7 @@ class NodeMisc extends CommandCategory("node: misc") {
     override val description: String = s"content style: $desc"
     override protected def available(a: DocState): Boolean = a.isNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asNormal._1
-      val chidlren = if (!a.node(cur).has(data.Node.ChildrenType)) {
-        to.flatMap(_.preferredChildrenType).map(a => operation.Node.AttributeChange(cur, data.Node.ChildrenType, Some(a))).toSeq
-      } else {
-        Seq.empty
-      }
-      DocTransaction(
-        Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren,
-        a.mode)
+      a.changeContentType(a.asNormal._1, to)
     }
   }
 
