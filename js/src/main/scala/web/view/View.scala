@@ -15,6 +15,15 @@ object View {
 
   def fromDom[T <: View](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
 
+  def maybeDom[T <: View](a: Node): Option[T] = {
+    val tt = a.asInstanceOf[js.Dynamic].ctview
+    if (tt != js.undefined && tt != null && tt.isInstanceOf[T]) {
+      Some(tt.asInstanceOf[T])
+    } else {
+      None
+    }
+  }
+
   private val views = new ArrayBuffer[View]()
 
   if (model.debug_view) {

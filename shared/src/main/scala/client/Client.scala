@@ -462,6 +462,9 @@ class Client(
   }
 
 
+  override def focusOn(cur: Node): Unit = {
+    localChange(DocTransaction(model.mode.Node.Content(cur, state.node(cur).content.defaultNormalMode())))
+  }
 
   /**
     * currently code editors system copy/paste is not handled by this

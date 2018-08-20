@@ -2,6 +2,7 @@ package view
 
 import command.Key
 import doc.DocTransaction
+import model.cursor.Node
 import model.{cursor, operation}
 import model.data.{CodeType, Unicode}
 import model.mode.Content.CodeInside
@@ -18,7 +19,7 @@ trait SourceEditInterface {
 }
 
 trait EditorInterface extends SourceEditInterface {
-
+  def focusOn(cur: Node): Unit
   def disableStateUpdate: Boolean
   def disableStateUpdate_=(a: Boolean): Unit
   def flushes: Observable[Unit]

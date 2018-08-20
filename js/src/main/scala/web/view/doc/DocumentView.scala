@@ -509,29 +509,40 @@ class DocumentView(
 
 
   event("mousedown", (a: MouseEvent) => {
-    window.console.log(a)
+    //window.console.log(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    window.console.log(a)
+    //window.console.log(a)
   })
   event("mousemove", (a: MouseEvent) => {
-    window.console.log(a)
+    //window.console.log(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    window.console.log(a)
+    //window.console.log(a)
     focus()
+    var t = a.target.asInstanceOf[Node]
+    while (t != null && t != dom) {
+      View.maybeDom[ContentView.General](t) match {
+        case Some(a) if a.isInstanceOf[EditableContentView.General] =>
+          val cur = cursorOf(a.asInstanceOf[EditableContentView.General])
+          editor.focusOn(cur)
+          t = null
+        case _ =>
+      }
+      if (t != null) t = t.parentNode
+    }
   })
 
   event("dblclick", (a: MouseEvent) => {
-    window.console.log(a)
+    preventDefault(a)
     focus()
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    window.console.log(a)
+    //window.console.log(a)
     focus()
   })
 
