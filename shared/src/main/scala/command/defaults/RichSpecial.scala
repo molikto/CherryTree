@@ -18,6 +18,9 @@ class RichSpecial extends CommandCategory("text format") {
 
     override def emptyAsFalseInInsertMode: Boolean = true
 
+
+    override def priority: Int = (if (keys.isEmpty) 4 else 0) + super.priority
+
     override def available(a: DocState): Boolean =
       a.isRichNormalOrInsert && {
         val (node, rich, insert, until) = a.asRichNormalOrInsert
@@ -34,7 +37,7 @@ class RichSpecial extends CommandCategory("text format") {
         } else {
           !rich.insideCoded(insert)
         }
-        op1 && !a.isRichNormal((_, p) => p.special)
+        op1 && (keys.isEmpty || !a.isRichNormal((_, p) => p.special))
       }
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
@@ -81,7 +84,7 @@ class RichSpecial extends CommandCategory("text format") {
 
     override val description: String = s"change to a ${deli.name}"
 
-    override def available(a: DocState): Boolean = a.isRichNormal((_, p) => p.special)
+    override def available(a: DocState): Boolean = keys.nonEmpty && a.isRichNormal((_, p) => p.special)
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (cursor, content, in) = a.asRichNormalAtom

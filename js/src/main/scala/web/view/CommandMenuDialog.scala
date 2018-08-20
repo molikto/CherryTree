@@ -47,7 +47,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
 
 
   override def data(term: String): Seq[Command] = {
-    client.commands.filter(a => util.matchCommandSearch(a.description, term) && a.available(client.state, client) && a.keys.isEmpty )
+    client.commands.filter(a => util.matchCommandSearch(a.description, term) && a.available(client.state, client) && a.keys.isEmpty ).sortBy(a => (-a.priority, a.description))
   }
 
 

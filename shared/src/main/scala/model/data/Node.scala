@@ -166,10 +166,18 @@ object Node extends DataObject[Node] {
 
   }
   object ChildrenType extends NodeTag[ChildrenType] {
-    case object Paragraphs extends ChildrenType
-    case object OrderedList extends ChildrenType
-    case object UnorderedList extends ChildrenType
-    case object DashList extends ChildrenType
+    case object Paragraphs extends ChildrenType {
+      override def toString: String = "paragraphs"
+    }
+    case object OrderedList extends ChildrenType {
+      override def toString: String = "ordered list"
+    }
+    case object UnorderedList extends ChildrenType {
+      override def toString: String = "bullet list"
+    }
+    case object DashList extends ChildrenType {
+      override def toString: String = "dash list"
+    }
 
     override private[model] val name = "ChildrenType"
 
@@ -196,10 +204,15 @@ object Node extends DataObject[Node] {
   object ContentType extends NodeTag[ContentType] {
     case object Cite extends ContentType {
       override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
+      override def toString: String = "cite"
     }
-    case object Br extends ContentType
+    case object Br extends ContentType {
+      override def toString: String = "br"
+    }
     case class Heading(i: Int) extends ContentType {
       override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
+
+      override def toString: String = s"heading $i"
     }
 
     override private[model] val name = "ContentType"

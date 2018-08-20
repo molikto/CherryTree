@@ -316,10 +316,8 @@ class DocumentView(
     val node = client.state.node(cur)
     hold.title =
       Seq(
-        node.attribute(model.data.Node.ContentType) match {
-          case Some(model.data.Node.ContentType.Heading(i)) => s"heading level $i"
-          case _ => ""
-        },
+        node.attribute(model.data.Node.ContentType).map("content type: " + _.toString).getOrElse(""),
+        node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
         s"items: ${node.count}",
         s"text size: ${node.content.size}",
         s"total text size: ${node.size}"
@@ -511,28 +509,30 @@ class DocumentView(
 
 
   event("mousedown", (a: MouseEvent) => {
-    preventDefault(a)
+    window.console.log(a)
   })
 
   event("mouseup", (a: MouseEvent) => {
-    preventDefault(a)
+    window.console.log(a)
+  })
+  event("mousemove", (a: MouseEvent) => {
+    window.console.log(a)
   })
 
 
   event("click", (a: MouseEvent) => {
-    preventDefault(a)
+    window.console.log(a)
     focus()
   })
 
   event("dblclick", (a: MouseEvent) => {
-    preventDefault(a)
+    window.console.log(a)
     focus()
   })
 
   event("contextmenu", (a: MouseEvent) => {
-  //  preventDefault(a)
+    window.console.log(a)
     focus()
-    //commandMenu.showAt(Rect(a.clientX, a.clientY, 0, 0))
   })
 
 

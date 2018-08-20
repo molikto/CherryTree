@@ -169,13 +169,22 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
-    Rich(
-      Seq(
-        Unicode.Insert(start, b),
-        Unicode.Delete(start + b.size, end + b.size)
-      ),
-      Type.Structural
-    )
+    if (b.isEmpty) {
+      Rich(
+        Seq(
+          Unicode.Delete(start, end)
+        ),
+        Type.Delete
+      )
+    } else {
+      Rich(
+        Seq(
+          Unicode.Insert(start, b),
+          Unicode.Delete(start + b.size, end + b.size)
+        ),
+        Type.AddDelete
+      )
+    }
   }
 
 
@@ -285,6 +294,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)).toVector, Type.Delete)
 
+
+  def delete(start: Int, until: Int): Rich = deleteNoneOverlappingOrderedRanges(Seq(IntRange(start, until)))
   def delete(range: IntRange): Rich = deleteNoneOverlappingOrderedRanges(Seq(range))
 
   def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
