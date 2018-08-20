@@ -319,8 +319,11 @@
 */
 
 .ct-d-cite > .ct-rich {
-  font-style: italic;
   text-align: right;
+}
+
+.ct-d-cite > .ct-d-childlist {
+  font-style: italic;
 }
 
 .ct-d-cite + .ct-d-hold {
