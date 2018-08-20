@@ -103,7 +103,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       val uuid = ev.state.asInstanceOf[String]
       duringGoTo = true
       client.state.lookup(uuid).foreach(cur => {
-        client.localChange(client.state.goTo(cur))
+        client.localChange(client.state.goTo(cur, mustZoom = true))
       })
       duringGoTo = false
     })

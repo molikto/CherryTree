@@ -18,10 +18,10 @@ case class DocState(
     if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
   }
 
-  def goTo(cur: Node): DocTransaction = {
+  def goTo(cur: Node, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultNormalMode())),
-      zoomAfter = Some(cur).filter(c => !currentlyVisible(c)))
+      zoomAfter = Some(cur).filter(c => mustZoom || !currentlyVisible(c)))
   }
 
 
