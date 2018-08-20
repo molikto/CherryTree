@@ -86,15 +86,20 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
 
     override def reverse(d: data.Unicode): Unicode = Delete(at, at + unicode.size)
 
-    override def merge(before: Any, whitespace: Boolean): Option[Unicode] = before match {
-      case Insert(a, u2, _) if IntRange(a, a + u2.size).containsInsertion(at) =>
-        if (a == at) {
-          Some(Insert(a, unicode + u2))
-        } else {
-          Some(Insert(a, u2.replace(IntRange(at - a, at - a), unicode)))
+    override def merge(before: Any, whitespace: Boolean): Option[Unicode] =
+      if (whitespace && unicode.containsSpace) {
+        None
+      } else {
+        before match {
+          case Insert(a, u2, _) if IntRange(a, a + u2.size).containsInsertion(at) =>
+            if (a == at) {
+              Some(Insert(a, unicode + u2))
+            } else {
+              Some(Insert(a, u2.replace(IntRange(at - a, at - a), unicode)))
+            }
+          case _ => None
         }
-      case _ => None
-    }
+      }
 
     override def isEmpty: Boolean = unicode.isEmpty
 

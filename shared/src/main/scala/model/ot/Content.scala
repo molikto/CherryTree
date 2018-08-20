@@ -45,4 +45,5 @@ object Content extends Ot[data.Content, operation.Content, conflict.Content] {
         }
     }
   }
+
 }

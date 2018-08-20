@@ -191,7 +191,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
     CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
       if (!dismissed) {
-        modePos = codeMirror.indexFromPos(codeMirror.getCursor("head")).asInstanceOf[Int]
+        modePos = codeMirror.indexFromPos(codeMirror.getCursor("anchor")).asInstanceOf[Int]
       }
     })
 

@@ -19,6 +19,7 @@ abstract sealed class Node extends Operation[data.Node] {
 
 object Node extends OperationObject[data.Node, operation.Node] {
 
+
   def apply(transforms: transaction.Node, a: DocState): (DocState, Seq[(DocState, operation.Node)]) = {
     var aa = a
     val bf = new ArrayBuffer[DocState]()

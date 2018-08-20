@@ -371,23 +371,22 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
               documentView.inlineEditor.sync(code)
             }
         }
-      case _ =>
+      case mode.Content.RichInsert(pos) =>
         clearEditor()
-        aa match {
-          case mode.Content.RichInsert(pos) =>
-            initMode(0)
-            updateInsertMode(pos, fromUser)
-          case mode.Content.RichVisual(fix, move) =>
-            initMode(1)
-            updateVisualMode(fix, move, fromUser)
-          case mode.Content.RichNormal(range) =>
-            if (isEmpty) {
-              initMode(3)
-            } else {
-              initMode(2)
-              updateNormalMode(range, fromUser)
-            }
-    }
+        initMode(0)
+        updateInsertMode(pos, fromUser)
+      case mode.Content.RichVisual(fix, move) =>
+        clearEditor()
+        initMode(1)
+        updateVisualMode(fix, move, fromUser)
+      case mode.Content.RichNormal(range) =>
+        clearEditor()
+        if (isEmpty) {
+          initMode(3)
+        } else {
+          initMode(2)
+          updateNormalMode(range, fromUser)
+        }
     }
   }
 

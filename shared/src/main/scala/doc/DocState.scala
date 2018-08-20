@@ -15,6 +15,8 @@ case class DocState(
   userFoldedNodes: Map[String, Boolean]
 ) {
 
+  def breakWhiteSpaceInserts: Boolean = mode.exists(_.breakWhiteSpaceInserts)
+
   def quickSearch(tt: Seq[data.Unicode],
     heading: Boolean,
     headingLevel: Int,

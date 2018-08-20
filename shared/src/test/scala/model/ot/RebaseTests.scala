@@ -336,52 +336,44 @@ object RebaseTests extends TestSuite {
       * Change c1: Move[0, 1) to before 3
       * Change c2: empty
       */
-
-    /*
-    we don't have this property!
-
-    TP2 is NOT satisfied in any weak form
-
-    'partialStrong - {
+    'tp2 - {
       val n = node
       val random = new Random()
       val debug = new ArrayBuffer[String]()
       var test = 0
-      for (_ <- 0 until 3000) {
+      var kk = 0
+      while (kk < 3000) {
         val a = operation.Node.randomTransaction(1, n, random)
         val b = operation.Node.randomTransaction(1, n, random)
         try {
-          ot.Node.rebase(a, b) match {
-            case Rebased(conflicts, (ap, bp)) =>
-              if (conflicts.isEmpty) {
-                debug.append(s"Change a: $a")
-                debug.append(s"Change b: $b")
-                debug.append(s"Change a': $ap")
-                debug.append(s"Change b': $bp")
-                val abp = a ++ bp
-                val bap = b ++ ap
-                val aaa = operation.Node.apply(abp, n)
-                for (_ <- 0 until 20) {
-                  val c = operation.Node.randomTransaction(2, n, random)
-                  val Rebased(c1, (_, r10)) = ot.Node.rebase(abp, c)
-                  val Rebased(c2, (_, r20)) = ot.Node.rebase(bap, c)
-                  val r1 = operation.Node.merge(r10)
-                  val r2 = operation.Node.merge(r20)
-                  if (operation.Node.apply(r1, aaa) == operation.Node.apply(r2, aaa)) {
-                    test += 1
-                  } else {
-                    debug.append(s"Change c: $c")
-                    debug.append(s"Change r1: $r1")
-                    debug.append(s"Change r2: $r2")
-                    debug.foreach(println)
-                    debug.dropRight(3)
-                    assert(false)
-                  }
-                  if (c1.isEmpty && c2.isEmpty) {
-                  }
+          ot.Node.tp2(a, b) match {
+            case Some((ap, bp)) =>
+              kk += 1
+              debug.append(s"Change a: $a")
+              debug.append(s"Change b: $b")
+              debug.append(s"Change a': $ap")
+              debug.append(s"Change b': $bp")
+              assert(ot.Node.tp2(b, a).contains((bp, ap)))
+              val abp = a ++ bp
+              val bap = b ++ ap
+              val aaa = operation.Node.apply(abp, n)
+              for (_ <- 0 until 20) {
+                val c = operation.Node.randomTransaction(2, n, random)
+                val Rebased(c1, (_, r10)) = ot.Node.rebase(abp, c)
+                val Rebased(c2, (_, r20)) = ot.Node.rebase(bap, c)
+                if (r10 == r20) {
+                  test += 1
+                } else {
+                  debug.append(s"Change c: $c")
+                  debug.append(s"Change r1: $r10")
+                  debug.append(s"Change r2: $r20")
+                  debug.foreach(println)
+                  debug.dropRight(3)
+                  assert(false)
                 }
-                debug.dropRight(4)
               }
+              debug.dropRight(4)
+            case _ =>
           }
         } catch {
           case t: Throwable =>
@@ -391,7 +383,55 @@ object RebaseTests extends TestSuite {
         }
       }
     }
-    */
+
+    'swap - {
+      val n = node
+      val random = new Random()
+      val debug = new ArrayBuffer[String]()
+      var test = 0
+      var kk = 0
+      while (kk < 3000) {
+        val a = operation.Node.randomTransaction(1, n, random)
+        val b = operation.Node.randomTransaction(1, operation.Node.apply(a, n), random)
+        try {
+          ot.Node.swap(n, a, b) match {
+            case Some((bp, ap)) =>
+              kk += 1
+              debug.append(s"Change a: $a")
+              debug.append(s"Change b: $b")
+              debug.append(s"Change a': $ap")
+              debug.append(s"Change b': $bp")
+              val before = a ++ b
+              val after = bp ++ ap
+              val aaa = operation.Node.apply(before, n)
+              val bbb = operation.Node.apply(after, n)
+              assert(aaa == bbb)
+              for (_ <- 0 until 20) {
+                val c = operation.Node.randomTransaction(2, n, random)
+                val Rebased(c1, (_, r10)) = ot.Node.rebase(before, c)
+                val Rebased(c2, (_, r20)) = ot.Node.rebase(after, c)
+                if (r10 == r20) {
+                  test += 1
+                } else {
+                  debug.append(s"Change c: $c")
+                  debug.append(s"Change r1: $r10")
+                  debug.append(s"Change r2: $r20")
+                  debug.foreach(println)
+                  debug.dropRight(3)
+                  assert(false)
+                }
+              }
+              debug.dropRight(4)
+            case _ =>
+          }
+        } catch {
+          case t: Throwable =>
+            debug.foreach(println)
+            debug.clear()
+            throw t
+        }
+      }
+    }
 
   }
 }

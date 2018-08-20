@@ -1,9 +1,10 @@
 package undoer
 
 import doc.{DocState, DocTransaction}
-import model._
+import model.{ot, _}
 import model.data.Node
 import model.range.IntRange
+import undoer.Undoer.Remote
 
 import scala.collection.immutable.Queue
 import scala.collection.mutable
@@ -34,13 +35,12 @@ trait UndoerInterface {
 
 private[undoer] class HistoryItem(
   var trans: transaction.Node,
-  var reverse: transaction.Node,
   var docBefore: DocState,
-  val docAfter: DocState,
   val ty: Type,
   var undoer: (Seq[transaction.Node], Int) = null
 ) {
 
+  def reverse: transaction.Node = ot.Node.reverse(docBefore.node, trans)
 }
 
 /**
@@ -49,9 +49,12 @@ private[undoer] class HistoryItem(
 trait Undoer extends UndoerInterface {
 
   private var discarded = 0
-  private var history_ : List[HistoryItem] = List.empty
+  private val history_ : ArrayBuffer[HistoryItem] = new ArrayBuffer()
 
   private def history(i: Int) = history_(i - discarded)
+
+  private def history(i: Int, b: HistoryItem): Unit = history_(i - discarded) = b
+
   private def after(i: Int): Seq[transaction.Node] = {
     val bf = new ArrayBuffer[transaction.Node]()
     var s = i - discarded + 1
@@ -70,13 +73,74 @@ trait Undoer extends UndoerInterface {
 
   private def lastOption = history_.lastOption
 
-  def replaceUndoRedoPair(a: Int, items: Seq[transaction.Node]): Unit = {
-    history_ = history_.take(a - discarded)
+  private def replaceUndoRedoPair(a: Int, items: Seq[transaction.Node]): Unit = {
+    val from = a - discarded
+    history_.remove(from, history_.size - from)
     // it is ok to discard all history with remote
     if (items.nonEmpty) {
-      history_ = history_ :+ new HistoryItem(items.flatten, null, null, null, Remote, null)
+      append(new HistoryItem(items.flatten, null, Remote, null))
     }
   }
+
+  protected def cutOneLocalHistory(assertTrans: transaction.Node): Unit = {
+    assert(history_.last.ty == Local)
+    assert(history_.last.trans == assertTrans)
+    removeOne()
+  }
+
+  private def append(newItem: HistoryItem) = {
+    history_.append(newItem)
+  }
+
+  private def removeOne() = {
+    history_.remove(history_.size - 1)
+  }
+
+  private def compatHistory(whitespace: Boolean): Unit = {
+    while (size >= base + 2 && size - 2 >= lastCompactedVersion) {
+      val last = history(size - 1)
+      val before = history(size - 2)
+      if (before.ty == Local && last.ty == Local) {
+        transaction.Node.mergeSingleOpTransactions(last.trans, before.trans, whitespace) match {
+          case Some(trans) =>
+            assert(before.undoer == null && last.undoer == null)
+            before.trans = trans
+            removeOne()
+          case None => return
+        }
+      } else {
+        return
+      }
+    }
+  }
+
+  private def sinkRemote() = {
+    assert(lastOption.get.ty == Remote)
+    var at = size - 1
+    while (at > base) {
+      val remote = history(at)
+      val before = history(at - 1)
+      if (before.ty == Local) {
+        ot.Node.swap(before.docBefore.node, before.trans, remote.trans) match {
+          case Some((r, l)) =>
+            assert(before.undoer == null && remote.undoer == null)
+            val docBefore = before.docBefore
+            remote.docBefore = docBefore
+            remote.trans = r
+            before.trans = l
+            before.docBefore = operation.Node.apply(r, docBefore)._1
+            history(at, before)
+            history(at - 1, remote)
+            at -= 1
+          case None =>
+            at = -1
+        }
+      } else {
+        at = -1
+      }
+    }
+  }
+
 
 
   def debug_undoHistory = history_.zipWithIndex.map(p => (p._2 + discarded).toString + p._1.trans.toString() +" " + p._1.ty)
@@ -91,17 +155,17 @@ trait Undoer extends UndoerInterface {
       case v: model.mode.Node.Visual =>
         model.mode.Node.Content(v.fix, docBefore(v.fix).content match {
           case _: data.Content.Code => model.mode.Content.CodeNormal
-          case _: data.Content.Rich => model.mode.Content.RichInsert(0)
+          case _: data.Content.Rich => model.mode.Content.RichNormal(docBefore(v.fix).rich.rangeBeginning)
         })
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, {
         def rec(c: model.mode.Content): model.mode.Content = c match {
           // LATER this is also hacky!!!
-          case model.mode.Content.RichNormal(pos) =>
-            model.mode.Content.RichInsert(pos.start)
           case model.mode.Content.RichVisual(fix, move) =>
-            model.mode.Content.RichInsert(fix.start)
+            model.mode.Content.RichNormal(fix)
           case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
             rec(modeBefore)
+          case sub@model.mode.Content.RichCodeSubMode(range, code, modeBefore) =>
+            sub
           case a => a
         }
         rec(a)
@@ -109,29 +173,32 @@ trait Undoer extends UndoerInterface {
     }
   }
 
-  def convertBackMode(nodeNow: Node, modeNow: mode.Node): mode.Node= {
+  def convertInsertMode(nodeNow: Node, modeNow: mode.Node): mode.Node= {
     modeNow match {
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, a match {
         // LATER this is also hacky!!!
         case model.mode.Content.RichInsert(pos) =>
           val node = nodeNow(n).rich
           model.mode.Content.RichNormal(if (node.isEmpty) IntRange(0, 0) else node.rangeAfter(pos))
+        case sub@model.mode.Content.RichCodeSubMode(node, a, content) =>
+          sub.copy(code = sub.code.copy(mode = "normal"))
+        case sub: model.mode.Content.CodeInside =>
+          sub.copy(mode = "normal")
         case a => a
       })
       case _ => throw new IllegalArgumentException("That is impossible")
     }
   }
 
+  private var breaking = false
+
+
+
   // local change consists of local, undo, redo
   def trackUndoerChange(docBefore: DocState, docAfter: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean): Unit = {
-    // compress the history, by marking do/undo parts
-    if (trans.isEmpty && ty == Local) return
     def putIn(): Unit = {
-      val reverse = transaction.Node.reverse(docBefore.node, trans)
-      val newItem = new HistoryItem(trans, reverse,
-        docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)),
-        docAfter.copy(mode0 = convertMode(docAfter.node, docAfter.mode0)), ty)
-      history_ = history_ :+ newItem
+      val newItem = new HistoryItem(trans, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), ty)
+      append(newItem)
     }
     ty match {
       case u@Undo(a, pp) =>
@@ -139,24 +206,27 @@ trait Undoer extends UndoerInterface {
         putIn()
       case Redo(a, items) =>
         replaceUndoRedoPair(a, items)
-      case _ =>
-        lastOption match {
-          case Some(a) if a.ty == Local && !isExtra  =>
-            if (a.ty == Local) {
-              transaction.Node.merge(trans, a.trans, docBefore.mode.exists(_.breakWhiteSpaceInserts)) match {
-                case Some(merged) =>
-                  a.trans = merged
-                  a.reverse = transaction.Node.reverse(a.docBefore.node, a.trans)
-                  return
-                case _ =>
-              }
-            }
-          case _ =>
-        }
+      case Remote =>
         putIn()
+        sinkRemote() // LATER do this while undo, to save some space
+      case Local =>
+        if (trans.nonEmpty) {
+          putIn()
+          if (!isExtra) {
+            compatHistory(true)
+          }
+        }
     }
+    if (breaking && !docAfter.breakWhiteSpaceInserts) {
+      compatHistory(false)
+      lastCompactedVersion = size
+    }
+    breaking = docAfter.breakWhiteSpaceInserts
   }
 
+
+
+  private var lastCompactedVersion = 0
 
 
   private def undo(currentDoc: DocState, i: Int, isRedo: Boolean): DocTransaction = {
@@ -184,16 +254,11 @@ trait Undoer extends UndoerInterface {
       Some(zz)
     }
     DocTransaction(tt,
-      Some(convertBackMode(applied.node, oldDocAsNowForModes.mode0)),
+      Some(if (currentDoc.isInsert) oldDocAsNowForModes.mode0 else convertInsertMode(applied.node, oldDocAsNowForModes.mode0)),
       zoomAfter = zzz,
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }
 
-  protected def cutOneLocalHistory(assertTrans: transaction.Node): Unit = {
-    assert(history_.last.ty == Local)
-    assert(history_.last.trans == assertTrans)
-    history_ = history_.dropRight(1)
-  }
 
   override def undo(currentDoc: DocState): DocTransaction = {
     var i = size - 1

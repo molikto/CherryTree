@@ -14,6 +14,42 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
 
 
 
+  override def tp2(a: operation.Node, b: operation.Node): Option[(operation.Node, operation.Node)] = {
+    def rebaseAndSee(a: operation.Node, b: operation.Node) = {
+      rebase(a, b) match {
+        case Rebased(set, (Seq(aa), Seq(bb))) if set.isEmpty =>
+          Some((aa, bb))
+        case _ => None
+      }
+    }
+    (a, b) match {
+      case (operation.Node.Content(at, content), operation.Node.Content(at2, content2)) =>
+        if (at == at2) {
+          ot.Content.tp2(content, content2).map(a =>
+            (operation.Node.Content(at, a._1), operation.Node.Content(at2, a._2))
+          )
+        } else {
+          Some((a, b))
+        }
+      case (a: operation.Node.Content, b) =>
+        rebaseAndSee(a, b)
+      case (a, b: operation.Node.Content) =>
+        rebaseAndSee(a, b)
+      case (operation.Node.AttributeChange(at, tag, to), operation.Node.AttributeChange(at2, tag2, to2)) =>
+        if (at == at2 && tag == tag2) {
+          None
+        } else {
+          Some((a, b))
+        }
+      case (a: operation.Node.AttributeChange, b) =>
+        rebaseAndSee(a, b)
+      case (a, b: operation.Node.AttributeChange) =>
+        rebaseAndSee(a, b)
+      case _ =>
+        None
+    }
+  }
+
   // LATER handle move
   override def rebase(winner: operation.Node, loser: operation.Node): RebaseResult = {
 

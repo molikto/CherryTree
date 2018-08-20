@@ -330,10 +330,11 @@ class Client(
       try {
         val take = success.acceptedLosersCount
         val winners = success.winners
+        val flatten = operation.Node.merge(winners.flatten, false)
         val (loser, remaining) = uncommitted.splitAt(take)
         // LATER handle conflict, modal handling of winner deletes loser
-        val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(winners.flatten, loser)
-        committed = operation.Node.applyT(lp, operation.Node.applyT(winners, committed))
+        val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(flatten, loser)
+        committed = operation.Node.applyT(lp, operation.Node.apply(flatten, committed))
         val altVersion = committedVersion + winners.size + lp.size
         committedVersion = success.finalVersion
         assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")

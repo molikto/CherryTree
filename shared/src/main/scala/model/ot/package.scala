@@ -15,6 +15,32 @@ package object ot {
 
     type TRANSACTION = Seq[OPERATION]
 
+    def reverse(before: DATA, trans: TRANSACTION): TRANSACTION = {
+      if (trans.isEmpty) {
+        trans
+      } else if (trans.size == 1) {
+        Seq(trans.head.reverse(before).asInstanceOf[OPERATION])
+      } else {
+        trans.foldLeft((before, Seq.empty[OPERATION])) { (s, a) =>
+          val op = a.reverse(s._1).asInstanceOf[OPERATION]
+          (a(s._1), op +: s._2)
+        }._2
+      }
+    }
+
+    def swap(docBefore: DATA, before: TRANSACTION, after: TRANSACTION): Option[(TRANSACTION, TRANSACTION)] = {
+      val rev = reverse(docBefore, before)
+      tp2(rev, after).flatMap {
+        case (revp, afterp) =>
+          tp2(afterp, before).map {
+            case (afterpp, beforep) =>
+              (afterp, beforep)
+          }
+      }
+    }
+
+    def tp2(a: OPERATION, b: OPERATION): Option[(OPERATION, OPERATION)] = None
+
     def rebase(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])]
 
     def free(winner: OPERATION, loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] =
@@ -23,27 +49,6 @@ package object ot {
     def free(winner: Seq[OPERATION], loser: Seq[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] =
       Rebased(Set.empty, (winner, loser))
 
-    def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
-      winner match {
-        case Some(a) => rebase(winner, loser)
-        case None => Rebased(Set.empty, (Seq.empty, Seq(loser)))
-      }
-    }
-
-    def rebase(winner: Option[OPERATION], loser: Option[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
-      (winner, loser) match {
-        case (None, None) => Rebased(Set.empty, (Seq.empty, Seq.empty))
-        case (Some(a), _) => rebase(a, loser)
-        case (None, Some(b)) => rebase(None, b)
-      }
-    }
-
-    def rebase(winner: OPERATION, loser: Option[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
-      loser match {
-        case Some(l) => rebase(winner, l)
-        case None => Rebased(Set.empty, (Seq(winner), Seq.empty))
-      }
-    }
 
     def rebase(winner: OPERATION, loser: TRANSACTION): Rebased[CONFLICT, (Seq[OPERATION], TRANSACTION)] = {
       loser.foldLeft(Rebased(Set.empty[CONFLICT], (Seq(winner): Seq[OPERATION], Seq.empty[OPERATION]))) { (pair, ll) =>
@@ -58,6 +63,43 @@ package object ot {
         }
       }
     }
+
+    def tp2(winner: TRANSACTION, loser: OPERATION): Option[(TRANSACTION, OPERATION)] = {
+      winner.foldLeft(Option((Seq.empty[OPERATION], loser))) { (pair, ww) =>
+        pair.flatMap {
+          case (wp, li) =>
+            tp2(ww, li).map {
+              case (wp0, li0) =>
+                (wp :+ wp0, li0)
+            }
+        }
+      }
+    }
+
+    def tp2(winner: OPERATION, loser: TRANSACTION): Option[(OPERATION, TRANSACTION)] = {
+      loser.foldLeft(Option((winner, Seq.empty[OPERATION]))) { (pair, ll) =>
+        pair.flatMap {
+          case (wi, lp) =>
+            tp2(wi, ll).map {
+              case (wi0, lp0) =>
+                (wi0, lp :+ lp0)
+            }
+        }
+      }
+    }
+
+    def tp2(winner: TRANSACTION, loser: TRANSACTION): Option[(TRANSACTION, TRANSACTION)] = {
+      loser.foldLeft(Option((winner, Seq.empty[OPERATION]))) { (pair, ll) =>
+        pair.flatMap {
+          case (wi, lp) =>
+            tp2(wi, ll).map {
+              case (wi0, lp0) =>
+                (wi0, lp :+ lp0)
+            }
+        }
+      }
+    }
+
 
     def rebase(winner: TRANSACTION, loser: OPERATION): Rebased[CONFLICT, (TRANSACTION, Seq[OPERATION])] = {
       winner.foldLeft(Rebased(Set.empty[CONFLICT], (Seq.empty[OPERATION], Seq(loser): Seq[OPERATION]))) { (pair, ww) =>
@@ -96,6 +138,28 @@ package object ot {
             val ret = if (lp0.isEmpty) lp else lp :+ lp0
             Rebased(t ++ t0, (wi0, ret))
         }
+      }
+    }
+
+    def rebase(winner: Option[OPERATION], loser: OPERATION): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
+      winner match {
+        case Some(a) => rebase(winner, loser)
+        case None => Rebased(Set.empty, (Seq.empty, Seq(loser)))
+      }
+    }
+
+    def rebase(winner: Option[OPERATION], loser: Option[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
+      (winner, loser) match {
+        case (None, None) => Rebased(Set.empty, (Seq.empty, Seq.empty))
+        case (Some(a), _) => rebase(a, loser)
+        case (None, Some(b)) => rebase(None, b)
+      }
+    }
+
+    def rebase(winner: OPERATION, loser: Option[OPERATION]): Rebased[CONFLICT, (Seq[OPERATION], Seq[OPERATION])] = {
+      loser match {
+        case Some(l) => rebase(winner, l)
+        case None => Rebased(Set.empty, (Seq(winner), Seq.empty))
       }
     }
   }

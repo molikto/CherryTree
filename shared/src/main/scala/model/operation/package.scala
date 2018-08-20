@@ -63,6 +63,8 @@ package object operation {
       cs
     }
 
+
+
     def merge(a0: Seq[OPERATION], whiteSpace: Boolean = false): Seq[OPERATION] = {
       def rec(a0: Seq[OPERATION]): Seq[OPERATION] = {
         val a = a0.filter(!_.isEmpty)
