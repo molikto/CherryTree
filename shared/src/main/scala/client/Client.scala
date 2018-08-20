@@ -46,6 +46,7 @@ object Client {
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
+    case class CopyToClipboard(a: String) extends ViewMessage
   }
 }
 

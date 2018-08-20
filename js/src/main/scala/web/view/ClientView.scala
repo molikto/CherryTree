@@ -98,6 +98,8 @@ class ClientView(private val parent: HTMLElement, val client: Client) extends Vi
       docView.scrollToTop()
     case Client.ViewMessage.ScrollToBottom =>
       docView.scrollToBottom()
+    case Client.ViewMessage.CopyToClipboard(str) =>
+      util.copyTextToClipboard(str)
   })
 
 }

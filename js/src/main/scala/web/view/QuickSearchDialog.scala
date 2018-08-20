@@ -113,7 +113,7 @@ class QuickSearchDialog(val client: Client,
   override def onSelected(t:  (model.cursor.Node, String)): Unit = {
     var n = t._1
     if (client.state.node(n).uuid != t._2) {
-      val find = client.state.node.lookup(t._2)
+      val find = client.state.lookup(t._2)
       if (find.isDefined) {
         n = find.get
       } else {

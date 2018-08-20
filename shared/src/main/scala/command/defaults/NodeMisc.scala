@@ -1,5 +1,6 @@
 package command.defaults
 
+import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface}
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
@@ -19,6 +20,15 @@ class NodeMisc extends CommandCategory("node: misc") {
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Code.empty)),
         Some(a.copyContentMode(mode.Content.CodeNormal)))
+    }
+  }
+
+
+  new TextualCommand {
+    override val description: String = "copy node link"
+    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asNormal._1).uuid))
     }
   }
 

@@ -141,6 +141,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.lineWrapping = true
       a.showCursorWhenSelecting = true
       // LATER wait for CodeMirorr to udpate... hope VIM support is fixed
+
       //a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
       val mod = if (model.isMac) "Cmd" else "Ctrl"
@@ -339,7 +340,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
   override def show(opt: T): Unit = {
     super.show(opt)
-    window.asInstanceOf[js.Dynamic].cm = codeMirror
     str = opt.str
     codeType_ = opt.codeType
     updating = true

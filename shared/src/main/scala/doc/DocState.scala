@@ -17,6 +17,9 @@ case class DocState(
 
   def breakWhiteSpaceInserts: Boolean = mode.exists(_.breakWhiteSpaceInserts)
 
+
+  def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
+
   def quickSearch(tt: Seq[data.Unicode],
     heading: Boolean,
     headingLevel: Int,

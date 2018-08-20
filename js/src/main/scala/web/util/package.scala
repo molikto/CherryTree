@@ -3,12 +3,33 @@ package web
 import model.data
 import model.data.{Content, Text, Unicode}
 import web.view._
-import org.scalajs.dom.window
+import org.scalajs.dom._
+import org.scalajs.dom.raw.HTMLTextAreaElement
 import web.interop.CommonMark
 
 import scala.collection.mutable.ArrayBuffer
+import scala.scalajs.js
 
 package object util {
+
+  private def fallbackCopyTextToClipboard(text: String) {
+    val textArea = document.createElement("textarea").asInstanceOf[HTMLTextAreaElement]
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+
+    document.execCommand("copy")
+    document.body.removeChild(textArea)
+  }
+
+  def copyTextToClipboard(text: String) = {
+    if (!js.Object.hasProperty(window.navigator, "clipboard")) {
+      fallbackCopyTextToClipboard(text)
+    } else {
+      window.navigator.asInstanceOf[js.Dynamic].clipboard.writeText(text)
+    }
+  }
 
 
 

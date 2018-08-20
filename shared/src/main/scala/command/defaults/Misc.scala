@@ -158,7 +158,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
 
   val visitLink = new Command {
-    override val description: String = "visit link url"
+    override val description: String = "visit link destination"
 
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
@@ -170,6 +170,9 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
       val (_, rich, t0) = a.asRichNormalAtom
       val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
+      Node.matchNodeRef(url).flatMap(a.lookup).foreach { a =>
+        return DocTransaction(Seq.empty, None, zoomAfter = Some(a))
+      }
       import io.lemonlabs.uri._
       Try {
         Url.parse(url)

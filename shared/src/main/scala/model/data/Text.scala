@@ -39,6 +39,7 @@ object Text {
     text.exists(_.quickSearch(p, deli))
   }
 
+
   private[model] def serialize(text: Seq[Text]): Unicode = {
     val buffer = new UnicodeWriter()
     text.foreach(_.serialize(buffer))
@@ -292,7 +293,10 @@ object Text {
   }
   case class Link(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
-    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
+    override def attribute(i: SpecialChar): Unicode =
+      if (i == UrlAttribute) url
+      else if (i == TitleAttribute) title
+      else throw new IllegalArgumentException("Not here")
   }
 
   sealed trait Coded extends DelimitedT[Unicode] {
@@ -376,8 +380,9 @@ object Text {
 
   case class Image(url: Unicode, title: Unicode = Unicode.empty) extends DelimitedEmpty with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
-    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else title
+    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else if (i == TitleAttribute) title else throw new IllegalArgumentException("Not here")
   }
+
 
   /**
     * we make it invariant tha plain cannot be empty
