@@ -456,6 +456,11 @@ selection
   background: #d8617466;
 }
 
+.ct-rich-selection {
+    position: absolute;
+    background: #d8617488;
+}
+
 /**
 code mirror cursor
 

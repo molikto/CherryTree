@@ -73,12 +73,7 @@ class DocumentView(
     isFocusedOut = false
     dom.classList.remove("ct-window-inactive")
     if (document.activeElement != currentEditable) {
-      if (currentEditable != noEditable) {
-        currentEditable = null
-        updateMode(client.state.mode)
-      } else {
-        noEditable.focus()
-      }
+      currentEditable.focus()
     }
   }
 
@@ -88,7 +83,7 @@ class DocumentView(
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
       if (window.document.activeElement != currentEditable) {
-        updateMode(client.state.mode)
+        currentEditable.focus()
       }
     }
   })
@@ -96,8 +91,6 @@ class DocumentView(
 
   override def markEditableIfInactive(dom: HTMLElement): Boolean = {
     if (currentEditable == dom && window.document.activeElement == dom) return false
-    dom.contentEditable = "true"
-    noEditable.contentEditable = "false"
     currentEditable = dom
     if (!isFocusedOut) {
       currentEditable.focus()
@@ -107,21 +100,19 @@ class DocumentView(
 
   override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
     if (dom == currentEditable) {
-      dom.contentEditable = "false"
       currentEditable = noEditable
-      noEditable.contentEditable = "true"
       if (!isFocusedOut) {
         noEditable.focus()
       }
     }
   }
 
-  private var focusContent: EditableContentView.General = null
+  private var activeContent: EditableContentView.General = null
 
-  private def removeFocusContent(): Unit = {
-    if (focusContent != null) {
-      if (!focusContent.destroyed) focusContent.clearMode()
-      focusContent = null
+  private def removeActiveContent(): Unit = {
+    if (activeContent != null) {
+      if (!activeContent.destroyed) activeContent.clearMode()
+      activeContent = null
     }
   }
 
@@ -336,8 +327,8 @@ class DocumentView(
 
 
   def selectionRect: Rect = {
-    if (focusContent != null) {
-      focusContent.selectionRect
+    if (activeContent != null) {
+      activeContent.selectionRect
     } else if (previousNodeMove != null) {
       toRect(previousNodeMove.getBoundingClientRect())
     } else {
@@ -350,19 +341,19 @@ class DocumentView(
     duringStateUpdate = true
     m match {
       case None =>
-        removeFocusContent()
+        removeActiveContent()
         clearNodeVisual()
       case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
           clearNodeVisual()
           val current = contentAt(at)
-          if (current != focusContent) {
-            removeFocusContent()
-            focusContent = current
+          if (current != activeContent) {
+            removeActiveContent()
+            activeContent = current
           }
           current.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
-          removeFocusContent()
+          removeActiveContent()
           updateNodeVisual(v)
       }
     }

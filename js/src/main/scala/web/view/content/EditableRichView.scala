@@ -6,7 +6,7 @@ import model.mode.Content
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Paragraph
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLDivElement, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
@@ -18,9 +18,17 @@ import scala.scalajs.js
 
 class EditableRichView(documentView: DocumentView, val controller: EditorInterface, rich0: Rich) extends RichView(rich0) with EditableContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
-  final protected override val root: HTMLElement = createRoot()
+  override protected def createDom(): HTMLElement = div(createRoot(), position := "relative").render
 
-  override protected def createDom(): HTMLElement = div(root).render
+
+  private var root_ : HTMLElement = null
+  final protected override def root: HTMLElement =
+    if (root_ == null) {
+      root_ = dom.childNodes(dom.childNodes.length - 1).asInstanceOf[HTMLElement]
+      root_
+    } else {
+      root_
+    }
 
   private var insertEmptyTextNode: (raw.Text, Int) = null
   private var insertNonEmptyTextNode: (raw.Text, String, Int) = null
@@ -139,6 +147,12 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     astHighlight = _5
     _5.classList.remove("ct-ast-highlight")
   }
+
+  event(root, "focus", (a: Event) => {
+    if (!isInserting) {
+      documentView.focus()
+    }
+  })
 
   event(root, "compositionstart", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = true
@@ -318,6 +332,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def clearInsertionMode(): Unit = {
     insertNonEmptyTextNode = null
     removeInsertEmptyTextNode()
+    documentView.unmarkEditableIfActive(dom)
   }
 
   private def clearVisualMode(): Unit = {
@@ -349,6 +364,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   private def updateInsertMode(pos: Int, fromUser: Boolean): Unit = {
+    documentView.markEditableIfInactive(root)
     val range = document.createRange()
     val start = updateInsertCursorAt(pos)
     range.setStart(start._1, start._2)
@@ -357,10 +373,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
-  override def selectionRect: Rect = {
-    val range = window.getSelection().getRangeAt(0)
-    web.view.toRect(range.getBoundingClientRect())
-  }
 
 
   private def updateNormalMode(r: IntRange, fromUser: Boolean): Unit = {
@@ -370,19 +382,62 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     if (light != null) addFormattedNodeHighlight(light)
   }
 
+
+  /**
+    * selection
+    */
+
+  private var selectionRange: Range = null
+
+  override def selectionRect: Rect = {
+    web.view.toRect(if (selectionRange != null) {
+      selectionRange.getBoundingClientRect()
+    } else {
+      dom.getBoundingClientRect()
+    })
+  }
+
   private def clearSelection(): Unit = {
-    val sel = window.getSelection
-    sel.removeAllRanges()
+    if (selectionRange != null) {
+      if (selectionRange.collapsed) {
+        window.getSelection().removeRange(selectionRange)
+      }
+    }
+    while (dom.childNodes.length > 1) {
+      dom.removeChild(dom.childNodes(0))
+    }
+    selectionRange = null
   }
 
   private def setSelection(range: Range, fromUser: Boolean): Unit = {
-    val sel = window.getSelection
-    sel.removeAllRanges()
-    sel.addRange(range)
+    if (range.collapsed) {
+      selectionRange = range
+      val sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(range)
+    } else {
+      clearSelection()
+      selectionRange = range
+      val p = dom.getBoundingClientRect()
+      val rects = range.getClientRects()
+      for (i <- 0 until rects.length) {
+        val rect = rects(i)
+        dom.insertBefore(
+          div(
+            `class` := "ct-rich-selection",
+            left := rect.left - p.left,
+            top := rect.top - p.top,
+            width := rect.width,
+            height := rect.height
+          ).render, dom.childNodes(0))
+      }
+    }
+
     //    documentView.dom.scrollTop = top
   }
 
   override def clearMode(): Unit = {
+    root.contentEditable = "false"
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
     documentView.unmarkEditableIfActive(root)
@@ -395,20 +450,15 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def isInserting = previousMode == 0
 
   private def initMode(i: Int): Unit = {
-    var forceUpdate = false
-    if (previousMode < 0) {
+    if (previousMode < 0 && i >= 0) {
+      root.contentEditable = "true"
       if (flushSubscription == null) {
         flushSubscription = observe(controller.flushes.doOnNext(_ => {
           flushInsertionMode()
         }))
       }
     }
-    if (i >= 0) {
-      if (documentView.markEditableIfInactive(root)) {
-        forceUpdate = true
-      }
-    }
-    if (previousMode != i || forceUpdate) {
+    if (previousMode != i) {
       if (debug_view) {
         println(s"mode change from  $previousMode to $i")
       }
