@@ -24,7 +24,7 @@ trait EditorInterface extends SourceEditInterface {
   def disableStateUpdate_=(a: Boolean): Unit
   def flushes: Observable[Unit]
   def flush(): Unit
-  def onInsertRichTextAndViewUpdated(unicode: Unicode)
+  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode)
   def onAttributeModified(url: Unicode, title: Unicode)
   def onExternalPasteInRichEditor(a: Unicode)
   def onKeyDown(k: Key): Boolean

@@ -170,12 +170,9 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
     if (b.isEmpty) {
-      Rich(
-        Seq(
-          Unicode.Delete(start, end)
-        ),
-        Type.Delete
-      )
+      Rich(Seq(Unicode.Delete(start, end)), Type.Delete)
+    } else if (start == end) {
+      Rich(Seq(Unicode.Insert(start, b)), Type.Add)
     } else {
       Rich(
         Seq(

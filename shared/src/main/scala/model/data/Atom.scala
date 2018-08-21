@@ -114,6 +114,7 @@ object Atom {
     override def size: Int = a.size
     override def toString: String = a.toString
     def unicodeIndex: Int
+    def unicodeUntil: Int = unicodeIndex + size
     override def letterLike: Boolean = {
       val h = a.head
       Character.isAlphabetic(h) || Character.isDigit(h) || Character.isIdeographic(h) || h == '_'.toInt

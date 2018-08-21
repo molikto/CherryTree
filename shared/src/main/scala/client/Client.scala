@@ -424,12 +424,13 @@ class Client(
   /**
     * view calls this method to insert text at current insertion point,
     */
-  def onInsertRichTextAndViewUpdated(unicode: Unicode): Unit = {
+
+  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode): Unit = {
     import model._
-    val (n, _, insert) = state.asRichInsert
+    val (n, _, _) = state.asRichInsert
     localChange(
-      DocTransaction(Seq(operation.Node.rich(n, operation.Rich.insert(insert.pos, unicode))),
-      Some(state.copyContentMode(mode.Content.RichInsert(insert.pos + unicode.size))),
+      DocTransaction(Seq(operation.Node.rich(n, operation.Rich.replacePlain(start, end, unicode))),
+      Some(state.copyContentMode(mode.Content.RichInsert(start + unicode.size))),
       viewUpdated = true))
   }
 

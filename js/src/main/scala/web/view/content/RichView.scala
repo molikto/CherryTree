@@ -168,7 +168,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
 
   protected def domAt(a: Seq[Int]): Node = domAt(dom, a)
 
-  protected var insertEmptyTextNode: raw.Text = null
+  protected var extraNode: raw.Text = null
 
   protected def domAt(parent: Node, a: Seq[Int]): Node = {
     if (a.isEmpty) {
@@ -176,15 +176,15 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     } else {
       var c: Node = null
       val childArray = domChildArray(parent)
-      if (insertEmptyTextNode == null || insertEmptyTextNode.parentNode != childArray) {
+      if (extraNode == null || extraNode.parentNode != childArray) {
         c = childArray.childNodes(a.head)
       } else {
         c = childArray.firstChild
-        if (c == insertEmptyTextNode) c = c.nextSibling
+        if (c == extraNode) c = c.nextSibling
         var i = 0
         while (i < a.head) {
           c = c.nextSibling
-          if (c != insertEmptyTextNode) {
+          if (c != extraNode) {
             i += 1
           }
         }

@@ -25,6 +25,10 @@ package object view {
     a.appendChild(b)
   }
 
+  def removeFromChild(extraNode: Node): Unit = {
+    if (extraNode.parentNode != null) extraNode.parentNode.removeChild(extraNode)
+  }
+
   def indexOf(c: Node): Int = indexOf(c.parentNode, c)
 
   def indexOf(p: Node, c: Node): Int = {
