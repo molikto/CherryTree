@@ -7,13 +7,14 @@ import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Paragraph
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLDivElement, HTMLElement, HTMLSpanElement, Node, Range}
-import org.scalajs.dom.{document, raw, window}
+import org.scalajs.dom.{ClientRect, document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.view.doc.DocumentView
 import web.view._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 class RichViewEditor(val documentView: DocumentView, val controller: EditorInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
@@ -51,11 +52,29 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private def setRangeSelection(range: Range, fromUser: Boolean): Unit = {
     clearRangeSelection()
     val dom = documentView.selections
-    rangeSelection = range
     val p = dom.getBoundingClientRect()
+    rangeSelection = range
     val rects = range.getClientRects()
+    val ar = new ArrayBuffer[Rect]()
     for (i <- 0 until rects.length) {
-      val rect = rects(i)
+      var rect = rects(i)
+      val b = toRect(rect)
+      var j = 0
+      while (rect != null && j < ar.size) {
+        val a = ar(j)
+        if (a.seemsSameLine(b)) {
+          ar(j) = a.merge(b)
+          rect = null
+        }
+        j += 1
+      }
+      if (rect != null) {
+        ar.append(b)
+      }
+      j += 1
+    }
+
+    for (rect <- ar) {
       dom.appendChild(
         div(
           `class` := "ct-rich-selection",
@@ -66,7 +85,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
           height := rect.height
         ).render)
     }
-
   }
 
   import contentView._

@@ -443,18 +443,6 @@ code mirror cursor
 
 **/
 
-.cm-fat-cursor .CodeMirror-cursor {
-    background-color: #d86174AA;
-}
-
-.cm-animate-fat-cursor {
-    background-color: #d86174AA;
-}
-
-.cm-fat-cursor-mark {
-    background-color: #d86174AA;
-}
-
 
 
 /**
@@ -464,11 +452,15 @@ block selection
 **/
 .ct-selection {
     background: #58617488;
+    border-bottom: 2px solid #cc7233;
+    margin-bottom: -2px;
 }
 
 
 .ct-window-inactive .ct-selection {
     background: #58617466;
+    border-bottom: 2px solid #cc723388;
+    margin-bottom: -2px;
 }
 
 .ct-rich-selection {
@@ -490,6 +482,32 @@ block selection
 .ct-window-inactive .ct-node-visual {
     background: #58617466;
 }
+
+.cm-fat-cursor .CodeMirror-cursor {
+    background-color: #cc7233cc;
+}
+
+.cm-animate-fat-cursor {
+    background-color: #cc7233cc;
+}
+
+.cm-fat-cursor-mark {
+    background-color: #cc7233cc;
+}
+
+/*
+.ct-window-inactive .cm-fat-cursor .CodeMirror-cursor {
+    background-color: #cc723388;
+}
+
+.ct-window-inactive .cm-animate-fat-cursor {
+    background-color: #cc723388;
+}
+
+.ct-window-inactive .cm-fat-cursor-mark {
+    background-color: #cc723388;
+}
+*/
 
 
 
@@ -565,7 +583,6 @@ block selection
     background-color: #FFF2CF;
     border-radius: .2rem;
     vertical-align: middle;
-    display: inline-block;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 

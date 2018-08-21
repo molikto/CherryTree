@@ -19,10 +19,10 @@ package object content {
 
 
   def warningInline(str: String): JsDom.TypedTag[Span] = {
-    span(`class` := "ct-warning-inline", contenteditable := "false", str)
+    span(display := "inline-block", contenteditable := "false", span(`class` := "ct-warning-inline", str))
   }
 
   def errorInline(str: String, th: Throwable = null): JsDom.TypedTag[Span] = {
-    span(`class` := "ct-error-inline", contenteditable := "false", str)
+    span(display := "inline-block", contenteditable := "false", span(`class` := "ct-error-inline", str))
   }
 }

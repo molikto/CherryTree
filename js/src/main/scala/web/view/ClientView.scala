@@ -69,7 +69,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   new BottomBarView(client).attachToNode(rightPanel)
 
-  private val docView = new DocumentView(client, client).attachToNode(rightPanel).asInstanceOf[DocumentView]
+  private val docView = new DocumentView(client, client, dom).attachToNode(rightPanel).asInstanceOf[DocumentView]
 
   private val overlayLayer = {
     val o = new OverlayLayer(dom, docView)

@@ -20,7 +20,8 @@ import scala.scalajs.js
 
 class DocumentView(
   private val client: DocInterface,
-  override protected val editor: EditorInterface
+  override protected val editor: EditorInterface,
+  val windowRoot: HTMLElement
 ) extends EditorView {
 
 
