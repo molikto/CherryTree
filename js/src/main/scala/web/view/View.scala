@@ -40,6 +40,9 @@ object View {
 
 abstract class View {
 
+  def fpsStart(): Unit = _root_.util.fpsStart()
+  def fpsEnd(): Unit = _root_.util.fpsEnd()
+
   private var dom_ : HTMLElement = null
   private var attached = false
   private var des = ArrayBuffer[Unit => Unit]()
@@ -111,12 +114,17 @@ abstract class View {
   }
 
   def event[T <: Event](ty: String,
-    listener: js.Function1[T, _]): Unit = {
-    event(dom, ty, listener)
+    listener: T => Any): Unit = {
+    event(dom, ty, (t: T) => {
+      fpsStart()
+      val res = listener(t)
+      fpsEnd()
+      res
+    })
   }
 
   def event[T <: Event](node: EventTarget, ty: String,
-    listener: js.Function1[T, _]): Unit = {
+    listener: T => Any): Unit = {
     if (des == null) throw new IllegalAccessException("Destroyed!")
     node.addEventListener(ty, listener)
     defer(_ => node.removeEventListener(ty, listener))

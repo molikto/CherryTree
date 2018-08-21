@@ -34,6 +34,13 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     })
   }
 
+
+  override def refreshRangeSelection(): Unit = {
+    if (rangeSelection != null) {
+      setRangeSelection(rangeSelection, false)
+    }
+  }
+
   private def clearRangeSelection(): Unit = {
     if (rangeSelection != null) {
       removeAllChild(documentView.selections)
@@ -324,19 +331,19 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         insertNonEmptyTextNode = (node, str, pos)
         insertEmptyTextNode = null
         extraNode = null
-        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), readInsertionPoint(node, pos))
+        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), -1)
       }
     } else if (insertNonEmptyTextNode != null) {
       val (node, oldContent, pos) = insertNonEmptyTextNode
       val newContent = mergeTextsFix(node)
       val (from, to, text) = util.quickDiff(oldContent, newContent)
       val insertionPoint = readInsertionPoint(node, pos)
-      if (model.debug_view) {
-//        window.console.log(node)
-//        window.console.log(node.parentNode)
-//        println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
-      }
       if (from != to || !text.isEmpty) {
+        if (model.debug_view) {
+          window.console.log(node)
+          window.console.log(node.parentNode)
+          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+        }
         insertNonEmptyTextNode = (node, newContent, pos)
         controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), insertionPoint)
         if (!isInserting) insertNonEmptyTextNode = null

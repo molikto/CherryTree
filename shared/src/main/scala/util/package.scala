@@ -19,7 +19,9 @@ package object util extends ObservablePropertyImplicits  {
   def fpsEnd(): Unit = {
     val time = System.currentTimeMillis() - debug_fpsStartTime
     if (debug_fpsView != null) {
-      debug_fpsView(time.toString)
+      if (time > 1) {
+        debug_fpsView(time.toString)
+      }
     }
   }
 

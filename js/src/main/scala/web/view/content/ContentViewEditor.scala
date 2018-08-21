@@ -16,6 +16,10 @@ abstract class ContentViewEditor[T <: data.Content, O <: model.operation.Content
     contentView.updateContent(c, trans, viewUpdated)
   }
 
+  def refreshRangeSelection(): Unit = {
+
+  }
+
   def updateMode(aa: M, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean)
 
   def clearMode(): Unit

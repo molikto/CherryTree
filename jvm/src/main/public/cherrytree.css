@@ -243,10 +243,17 @@
 
 /* document view */
 
+.ct-document-view-background {
+  background: #282c34;
+}
+.ct-document-view-root {
+  color: #abb2bf;
+  outline: 0px solid transparent;
+}
+
 .ct-document-view-color {
   background: #282c34;
   color: #abb2bf;
-  outline: 0px solid transparent;
 }
 
 .ct-document-style {
@@ -407,25 +414,6 @@
 
 
 
-.ct-node-visual {
-    background: #58617488;
-}
-
-.ct-window-inactive .ct-node-visual {
-    background: #58617466;
-}
-
-
-
-.ct-node-visual-move {
-  outline-offset: -2px;
-  outline: 2px solid #d8617488;
-}
-
-.ct-window-inactive .ct-node-visual-move {
-  outline-offset: -2px;
-  outline: 2px solid #d8617466;
-}
 
 /**  rich view **/
 .ct-rich {
@@ -448,18 +436,7 @@
 selection
 **/
 
-::selection {
-    background: #d8617488;
-}
 
-::selection:window-inactive {
-  background: #d8617466;
-}
-
-.ct-rich-selection {
-    position: absolute;
-    background: #d8617488;
-}
 
 /**
 code mirror cursor
@@ -486,12 +463,44 @@ block selection
 
 **/
 .ct-selection {
-    background: #d8617433;
+    background: #58617488;
 }
 
 
 .ct-window-inactive .ct-selection {
-    background: #d8617422;
+    background: #58617466;
+}
+
+.ct-rich-selection {
+    position: absolute;
+    background: #58617488;
+    z-index: -1;
+    border-bottom: 2px solid #cc7233;
+}
+
+.ct-window-inactive .ct-rich-selection {
+    background: #58617466;
+    border-bottom: 2px solid #cc723388;
+}
+
+.ct-node-visual {
+    background: #58617488;
+}
+
+.ct-window-inactive .ct-node-visual {
+    background: #58617466;
+}
+
+
+
+.ct-node-visual-move {
+  outline-offset: -2px;
+  outline: 2px solid #cc7233;
+}
+
+.ct-window-inactive .ct-node-visual-move {
+  outline-offset: -2px;
+  outline: 2px solid #cc723388;
 }
 
 .ct-code {

@@ -14,7 +14,6 @@ trait EditorView extends View {
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
-      util.fpsStart()
       val timeStart = System.currentTimeMillis()
       var key = KeyMap.get(event.key).orNull
       // TODO better handling this
@@ -43,7 +42,6 @@ trait EditorView extends View {
       if (allow && !key.isInstanceOf[Key.Modifier]) {
         if (editor.onKeyDown(kk)) preventDefault(event)
       }
-      util.fpsEnd()
     })
 
     event( "keyup", (event: KeyboardEvent) => {

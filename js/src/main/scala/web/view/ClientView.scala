@@ -27,6 +27,13 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     display :="flex",
     position := "relative",
     flexDirection := "row",
+    div(
+      position := "absolute",
+      `class` := "ct-document-view-background",
+      width := "100%",
+      height := "100%",
+      zIndex := "-2"
+    ),
     overflow := "hidden").render
   attachToNode(parent)
 
@@ -89,6 +96,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
   private var rootUrl: String = null
   private var duringGoTo = false
   if (global) {
+    docView.focus()
     if (rootUrl == null) {
       rootUrl = window.location.href
       if (!rootUrl.endsWith("/")) rootUrl = rootUrl + "/"

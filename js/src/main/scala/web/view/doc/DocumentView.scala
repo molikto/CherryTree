@@ -5,6 +5,7 @@ import doc.{DocInterface, DocState}
 import model.{cursor, data, range}
 import model.data.{Node => _, _}
 import model.range.IntRange
+import org.scalajs.dom.html.Div
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
@@ -40,7 +41,7 @@ class DocumentView(
   nonEditableSelection.setStart(noEditable.childNodes(0), 0)
   nonEditableSelection.setEnd(noEditable.childNodes(0), 1)
 
-  val selections = div(
+  val selections: Div = div(
     position := "absolute",
     width := "0px",
     height := "0px"
@@ -48,7 +49,7 @@ class DocumentView(
 
   dom = div(
     position := "relative",
-    `class` := "ct-scroll ct-document-view-color",
+    `class` := "ct-scroll ct-document-view-root",
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
@@ -488,6 +489,7 @@ class DocumentView(
 
   event(window, "resize", (a: MouseEvent) => {
     refreshMounted()
+    if (activeContentEditor != null) activeContentEditor.refreshRangeSelection()
   })
 
 
