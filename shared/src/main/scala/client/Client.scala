@@ -467,7 +467,7 @@ class Client(
             } else if (domInsertion > start && domInsertion <= start + unicode.size) {
               rangeOf(unicode.before(domInsertion - start).next()).moveBy(start)
             } else {
-              before.rangeBefore(domInsertion - unicode.size + (end - start))
+              before.rangeBefore(domInsertion - unicode.size + (end - start)).moveBy(unicode.size - (end - start))
             }
           } else {
             if (unicode.isEmpty) {
