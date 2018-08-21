@@ -45,14 +45,19 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     *
     *
     */
+  protected def createRoot(): HTMLElement = p(`class` := "ct-rich").render
 
-  dom = p(`class` := "ct-rich").render
+  protected def createDom(): HTMLElement = createRoot()
+
+  dom = createDom()
+
+  protected def root: HTMLElement = dom
 
 
 
   protected def initDom(): Unit = {
-    if (dom.childNodes.length == 0) {
-      dom.appendChild(rec(rich.text).render)
+    if (root.childNodes.length == 0) {
+      root.appendChild(rec(rich.text).render)
       if (isEmpty) initEmptyContent()
     } else {
       throw new IllegalStateException("...")
@@ -62,17 +67,17 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   initDom()
 
   protected def clearDom(): Unit = {
-    removeAllChild(dom)
+    removeAllChild(root)
   }
 
 
   protected def removeEmptyContent(): Unit = {
-    removeAllChild(dom)
+    removeAllChild(root)
   }
 
   protected def initEmptyContent(): Unit = {
-    removeAllChild(dom)
-    dom.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
+    removeAllChild(root)
+    root.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
   }
 
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
@@ -172,7 +177,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
 
   protected def cursorOf(t: raw.Text): model.cursor.Node = {
     def rec(t: Node): Seq[Int] = {
-      if (t.parentNode == dom) {
+      if (t.parentNode == root) {
         Seq(indexOf(t, extraNode))
       } else {
         rec(t.parentNode.parentNode) :+ indexOf(t, extraNode)
@@ -181,16 +186,16 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     rec(t)
   }
 
-  protected def domAt(a: Seq[Int]): Node = domAt(dom, a)
+  protected def nodeAt(a: Seq[Int]): Node = nodeAt(root, a)
 
   protected var extraNode: raw.Text = null
 
-  protected def domAt(parent: Node, a: Seq[Int]): Node = {
+  protected def nodeAt(parent: Node, a: Seq[Int]): Node = {
     if (a.isEmpty) {
       parent
     } else {
       var c: Node = null
-      val childArray = domChildArray(parent)
+      val childArray = nodeChildArray(parent)
       if (extraNode == null || extraNode.parentNode != childArray) {
         c = childArray.childNodes(a.head)
       } else {
@@ -204,11 +209,11 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
           }
         }
       }
-      domAt(c, a.tail)
+      nodeAt(c, a.tail)
     }
   }
 
-  protected def domChildArray(parent: Node): Node = {
+  protected def nodeChildArray(parent: Node): Node = {
     if (parent.isInstanceOf[HTMLSpanElement]) {
       parent.childNodes(1)
     } else {
@@ -230,7 +235,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
       ee.isInstanceOf[Atom.CodedGrapheme] &&
       ss.nodeCursor == ee.nodeCursor &&
       ss.text.isCodedNonAtomic) {
-      val codeText = domAt(ss.nodeCursor)
+      val codeText = nodeAt(ss.nodeCursor)
       val ast = ss.text.asCoded
       val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)
       val eee = ast.content.toStringPosition(ee.asInstanceOf[Atom.CodedGrapheme].unicodeIndex + ee.asInstanceOf[Atom.CodedGrapheme].size)
@@ -238,29 +243,29 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     } else if (ss.totalIndex == ee.totalIndex &&
       ss.special) {
       val isStart = ss.delimitationStart
-      val span = domAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
+      val span = nodeAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
       val (s, e) = if (isStart) (0, 1) else (2, 3)
       (createRange(span, s, span, e), span) // change this might causes problems when focus out then focus in...
     } else {
       val start = ss match {
         case grapheme: Atom.PlainGrapheme =>
-          val text = domAt(grapheme.nodeCursor)
+          val text = nodeAt(grapheme.nodeCursor)
           val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex)
           (text, s)
         case aa =>
           assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked], s"expecting a deli start $aa")
-          val node = domChildArray(domAt(model.cursor.Node.parent(aa.nodeCursor)))
+          val node = nodeChildArray(nodeAt(model.cursor.Node.parent(aa.nodeCursor)))
           (node, aa.nodeCursor.last)
       }
 
       val end = ee match {
         case grapheme: Atom.PlainGrapheme =>
-          val text = domAt(grapheme.nodeCursor)
+          val text = nodeAt(grapheme.nodeCursor)
           val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex + grapheme.size)
           (text, s)
         case aa =>
           assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked], s"expecting a deli end, $aa")
-          val node = domChildArray(domAt(model.cursor.Node.parent(aa.nodeCursor)))
+          val node = nodeChildArray(nodeAt(model.cursor.Node.parent(aa.nodeCursor)))
           (node, aa.nodeCursor.last + 1)
       }
       (createRange(start._1, start._2, end._1, end._2), null)

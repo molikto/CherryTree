@@ -5,6 +5,7 @@ import model.data._
 import model.mode.Content
 import model.range.IntRange
 import monix.execution.Cancelable
+import org.scalajs.dom.html.Paragraph
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
@@ -17,6 +18,9 @@ import scala.scalajs.js
 
 class EditableRichView(documentView: DocumentView, val controller: EditorInterface, rich0: Rich) extends RichView(rich0) with EditableContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
+  final protected override val root: HTMLElement = createRoot()
+
+  override protected def createDom(): HTMLElement = div(root).render
 
   private var insertEmptyTextNode: (raw.Text, Int) = null
   private var insertNonEmptyTextNode: (raw.Text, String, Int) = null
@@ -73,39 +77,39 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
     if (pos == 0) {
       if (isEmpty) {
-        updateTempEmptyTextNodeIn(dom, 0)
+        updateTempEmptyTextNodeIn(root, 0)
       } else if (rich.text.head.isPlain) {
-        updateExistingInsertingTextNodeIn(domAt(Seq(0)), 0, 0)
+        updateExistingInsertingTextNodeIn(nodeAt(Seq(0)), 0, 0)
       } else {
-        updateTempEmptyTextNodeIn(domChildArray(dom), 0)
+        updateTempEmptyTextNodeIn(nodeChildArray(root), 0)
       }
     } else if (pos == rich.size) {
       rich.text.last match {
         case plain: Text.Plain =>
-          updateExistingInsertingTextNodeIn(domAt(Seq(rich.text.size - 1)), plain.unicode.str.length, plain.unicode.size)
+          updateExistingInsertingTextNodeIn(nodeAt(Seq(rich.text.size - 1)), plain.unicode.str.length, plain.unicode.size)
         case _ =>
-          updateTempEmptyTextNodeIn(domChildArray(dom), rich.text.size)
+          updateTempEmptyTextNodeIn(nodeChildArray(root), rich.text.size)
       }
     } else {
       val ss = rich.before(pos)
       val ee = rich.after(pos)
       ss match {
         case p: Atom.PlainGrapheme =>
-          updateExistingInsertingTextNodeIn(domAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
+          updateExistingInsertingTextNodeIn(nodeAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
         case s: Atom.SpecialOrMarked =>
           ee match {
             case es: Atom.SpecialOrMarked =>
               if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
-                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(ss.nodeCursor)), 0)
               } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
+                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(ss.nodeCursor)), 0)
               } else { // different sibling node
-                updateTempEmptyTextNodeIn(domChildArray(domAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1)
+                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1)
               }
             case ep: Atom.PlainGrapheme =>
-              updateExistingInsertingTextNodeIn(domAt(ee.nodeCursor), 0, 0)
+              updateExistingInsertingTextNodeIn(nodeAt(ee.nodeCursor), 0, 0)
             case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(domAt(ee.nodeCursor), 0, 0)
+              updateExistingInsertingTextNodeIn(nodeAt(ee.nodeCursor), 0, 0)
             case _ =>
               throw new IllegalStateException("Not possible")
           }
@@ -113,9 +117,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
           val unicode = ss.text.asCoded.content
           ee match {
             case es: Atom.SpecialOrMarked =>
-              updateExistingInsertingTextNodeIn(domAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
+              updateExistingInsertingTextNodeIn(nodeAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
             case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(domAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
+              updateExistingInsertingTextNodeIn(nodeAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
             case _ =>
               throw new IllegalStateException("Not possible")
           }
@@ -136,16 +140,16 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     _5.classList.remove("ct-ast-highlight")
   }
 
-  event("compositionstart", (a: CompositionEvent) => {
+  event(root, "compositionstart", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = true
     else preventDefault(a)
   })
 
-  event("compositionupdate", (a: CompositionEvent) => {
+  event(root, "compositionupdate", (a: CompositionEvent) => {
     if (!isInserting) preventDefault(a)
   })
 
-  event("compositionend", (a: CompositionEvent) => {
+  event(root, "compositionend", (a: CompositionEvent) => {
     // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
     if (isInserting) controller.disableStateUpdate = false
     else preventDefault(a)
@@ -381,7 +385,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   override def clearMode(): Unit = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
-    documentView.unmarkEditableIfActive(dom)
+    documentView.unmarkEditableIfActive(root)
     if (flushSubscription != null) {
       flushSubscription.cancel()
       flushSubscription = null
@@ -400,7 +404,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       }
     }
     if (i >= 0) {
-      if (documentView.markEditableIfInactive(dom)) {
+      if (documentView.markEditableIfInactive(root)) {
         forceUpdate = true
       }
     }
@@ -435,8 +439,8 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   protected def initEmptyNormalMode(): Unit = {
     initEmptyContent()
     val range = document.createRange()
-    range.setStart(dom, 0)
-    range.setEnd(dom, 1)
+    range.setStart(root, 0)
+    range.setEnd(root, 1)
     setSelection(range, false)
   }
 

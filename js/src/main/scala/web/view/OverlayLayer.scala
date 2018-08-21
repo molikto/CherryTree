@@ -73,7 +73,6 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
       if (view.left < 0) {
         view = view.moveBy(-view.left, 0)
       }
-      //whereToShow(bounding, rec)
       dom.style.position = "absolute"
       dom.style.left = view.left.toString + "px"
       dom.style.top = view.top.toString + "px"

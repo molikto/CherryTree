@@ -112,10 +112,7 @@ abstract class View {
 
   def event[T <: Event](ty: String,
     listener: js.Function1[T, _]): Unit = {
-    if (des == null) throw new IllegalAccessException("Destroyed!")
-    dom.addEventListener(ty, listener)
-    defer(_ => dom.removeEventListener(ty, listener))
-
+    event(dom, ty, listener)
   }
 
   def event[T <: Event](node: EventTarget, ty: String,
