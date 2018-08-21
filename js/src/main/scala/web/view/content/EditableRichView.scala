@@ -18,7 +18,10 @@ import scala.scalajs.js
 
 class EditableRichView(documentView: DocumentView, val controller: EditorInterface, rich0: Rich) extends RichView(rich0) with EditableContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
-  override protected def createDom(): HTMLElement = div(createRoot(), position := "relative").render
+  override protected def createDom(): HTMLElement = div({
+    val root = createRoot()
+    root
+  }, position := "relative").render
 
 
   private var root_ : HTMLElement = null
@@ -147,12 +150,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     astHighlight = _5
     _5.classList.remove("ct-ast-highlight")
   }
-
-  event(root, "focus", (a: Event) => {
-    if (!isInserting) {
-      documentView.focus()
-    }
-  })
 
   event(root, "compositionstart", (a: CompositionEvent) => {
     if (isInserting) controller.disableStateUpdate = true
@@ -332,7 +329,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def clearInsertionMode(): Unit = {
     insertNonEmptyTextNode = null
     removeInsertEmptyTextNode()
-    documentView.unmarkEditableIfActive(dom)
   }
 
   private def clearVisualMode(): Unit = {
@@ -364,7 +360,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   private def updateInsertMode(pos: Int, fromUser: Boolean): Unit = {
-    documentView.markEditableIfInactive(root)
     val range = document.createRange()
     val start = updateInsertCursorAt(pos)
     range.setStart(start._1, start._2)
@@ -437,7 +432,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   override def clearMode(): Unit = {
-    root.contentEditable = "false"
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
     documentView.unmarkEditableIfActive(root)
@@ -450,15 +444,20 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def isInserting = previousMode == 0
 
   private def initMode(i: Int): Unit = {
+    var forceUpdate = false
     if (previousMode < 0 && i >= 0) {
-      root.contentEditable = "true"
       if (flushSubscription == null) {
         flushSubscription = observe(controller.flushes.doOnNext(_ => {
           flushInsertionMode()
         }))
       }
     }
-    if (previousMode != i) {
+    if (i >= 0) {
+      if (documentView.markEditableIfInactive(root)) {
+        forceUpdate = true
+      }
+    }
+    if (previousMode != i || forceUpdate) {
       if (debug_view) {
         println(s"mode change from  $previousMode to $i")
       }
@@ -498,9 +497,26 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     pmode = aa
+    def updateViewMode(a: mode.Content.Rich, sub: Boolean): Unit = a match {
+      case mode.Content.RichInsert(pos) =>
+        if (!sub) {
+          initMode(0)
+          updateInsertMode(pos, fromUser)
+        }
+      case mode.Content.RichVisual(fix, move) =>
+        if (!sub) initMode(1)
+        updateVisualMode(fix, move, fromUser)
+      case mode.Content.RichNormal(range) =>
+        if (isEmpty) {
+          if (!sub) initMode(3)
+        } else {
+          if (!sub) initMode(2)
+          updateNormalMode(range, fromUser)
+        }
+    }
     aa match {
       case sub: mode.Content.RichSubMode =>
-        setPreviousModeToEmpty()
+        updateViewMode(sub.modeBefore, true)
         sub match {
           case mode.Content.RichAttributeSubMode(range, mode) =>
             if (editor == null) {
@@ -523,22 +539,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
               documentView.inlineEditor.sync(code)
             }
         }
-      case mode.Content.RichInsert(pos) =>
+      case _ =>
         clearEditor()
-        initMode(0)
-        updateInsertMode(pos, fromUser)
-      case mode.Content.RichVisual(fix, move) =>
-        clearEditor()
-        initMode(1)
-        updateVisualMode(fix, move, fromUser)
-      case mode.Content.RichNormal(range) =>
-        clearEditor()
-        if (isEmpty) {
-          initMode(3)
-        } else {
-          initMode(2)
-          updateNormalMode(range, fromUser)
-        }
+        updateViewMode(aa, false)
     }
   }
 

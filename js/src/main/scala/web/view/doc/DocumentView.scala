@@ -83,7 +83,7 @@ class DocumentView(
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
       if (window.document.activeElement != currentEditable) {
-        currentEditable.focus()
+        updateMode(client.state.mode)
       }
     }
   })
@@ -91,6 +91,8 @@ class DocumentView(
 
   override def markEditableIfInactive(dom: HTMLElement): Boolean = {
     if (currentEditable == dom && window.document.activeElement == dom) return false
+    dom.contentEditable = "true"
+    noEditable.contentEditable = "false"
     currentEditable = dom
     if (!isFocusedOut) {
       currentEditable.focus()
@@ -100,7 +102,9 @@ class DocumentView(
 
   override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
     if (dom == currentEditable) {
+      dom.contentEditable = "false"
       currentEditable = noEditable
+      noEditable.contentEditable = "true"
       if (!isFocusedOut) {
         noEditable.focus()
       }
