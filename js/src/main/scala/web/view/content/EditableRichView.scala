@@ -276,9 +276,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       val (from, to, text) = util.quickDiff(oldContent, newContent)
       val insertionPoint = readSelection(node, pos)
       if (model.debug_view) {
-        window.console.log(node)
-        window.console.log(node.parentNode)
-        println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+//        window.console.log(node)
+//        window.console.log(node.parentNode)
+//        println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
       }
       if (from != to || !text.isEmpty) {
         insertNonEmptyTextNode = (node, newContent, pos)
