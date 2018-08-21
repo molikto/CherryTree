@@ -132,13 +132,13 @@ class DocumentView(
     *
     */
   //   frame = rootframe
-  //     hold
   //     box
   //       content
   //       child list
   //         frame...
   //         frame...
   //         frame...
+  //     hold
   //    nonEditable...
 
   private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && model.cursor.Node.contains(currentZoom, a)

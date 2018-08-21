@@ -39,8 +39,8 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
 
   override def show(anchor: ANCHOR): Unit = {
     this.anchor = anchor
-    setDomAttributeBy(anchor.rect)
     super.show(anchor)
+    setDomAttributeBy(anchor.rect)
   }
 
   override protected def onDismiss(): Unit = {
@@ -50,6 +50,34 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
 
   def refresh(): Unit = {
     if (!dismissed && anchor != null) setDomAttributeBy(anchor.rect)
+  }
+
+  def setDomAttributeBy(rect: Rect): Unit = {
+    if (dom.clientWidth == 0) {
+      if (!dismissed && anchor != null) {
+        window.setTimeout(() => setDomAttributeBy(rect), 14)
+      }
+    } else {
+      val bounding = toRect(layer.dom.getBoundingClientRect())
+      val rec = rect.moveBy(-bounding.left, -bounding.top)
+      var view = Rect(rec.left, rect.bottom, dom.clientWidth, dom.clientHeight)
+      if (view.bottom > bounding.height) {
+        view = view.moveBy(0, -rec.height - view.height)
+      }
+      if (view.top < 0) {
+        view = view.moveBy(0, -view.top)
+      }
+      if (view.right > bounding.width) {
+        view = view.moveBy(bounding.width - view.right, 0)
+      }
+      if (view.left < 0) {
+        view = view.moveBy(-view.left, 0)
+      }
+      //whereToShow(bounding, rec)
+      dom.style.position = "absolute"
+      dom.style.left = view.left.toString + "px"
+      dom.style.top = view.top.toString + "px"
+    }
   }
 }
 
@@ -107,14 +135,6 @@ trait OverlayT[T <: Any] extends Overlay {
     super.destroy()
   }
 
-  def setDomAttributeBy(rect: Rect): Unit = {
-    val bounding = toRect(layer.dom.getBoundingClientRect())
-    val rec = rect.moveBy(-bounding.left, -bounding.top)
-    //whereToShow(bounding, rec)
-    dom.style.position = "absolute"
-    dom.style.left = rec.left.toString + "px"
-    dom.style.top = rec.bottom.toString + "px"
-  }
 }
 
 class OverlayLayer(val parent: HTMLElement, base: View) extends View {
