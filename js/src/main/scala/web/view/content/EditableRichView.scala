@@ -18,10 +18,8 @@ import scala.scalajs.js
 
 class EditableRichView(documentView: DocumentView, val controller: EditorInterface, rich0: Rich) extends RichView(rich0) with EditableContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
 
-  override protected def createDom(): HTMLElement = div({
-    val root = createRoot()
-    root
-  }, position := "relative").render
+  private def evilSpanText = dom.childNodes(dom.childNodes.length - 2).childNodes(0)
+  override protected def createDom(): HTMLElement = div(outline := "none", span(RichView.EvilChar, position := "absolute").render, createRoot(), position := "relative").render
 
 
   private var root_ : HTMLElement = null
@@ -398,7 +396,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         window.getSelection().removeRange(selectionRange)
       }
     }
-    while (dom.childNodes.length > 1) {
+    while (dom.childNodes.length > 2) {
       dom.removeChild(dom.childNodes(0))
     }
     selectionRange = null
@@ -434,7 +432,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   override def clearMode(): Unit = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
-    documentView.unmarkEditableIfActive(root)
+    documentView.unmarkEditableIfActive(dom)
     if (flushSubscription != null) {
       flushSubscription.cancel()
       flushSubscription = null
@@ -442,6 +440,16 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   private def isInserting = previousMode == 0
+
+  private def setEvilSelection() = {
+    val sel = window.getSelection()
+    sel.removeAllRanges()
+    val range = document.createRange()
+    val n = evilSpanText
+    range.setStart(n, 0)
+    range.setEnd(n, 1)
+    sel.addRange(range)
+  }
 
   private def initMode(i: Int): Unit = {
     var forceUpdate = false
@@ -453,7 +461,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       }
     }
     if (i >= 0) {
-      if (documentView.markEditableIfInactive(root)) {
+      if (documentView.markEditableIfInactive(dom)) {
+        if (i != 0) {
+          setEvilSelection()
+        }
         forceUpdate = true
       }
     }
