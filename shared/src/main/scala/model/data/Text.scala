@@ -9,6 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
+  protected def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
   def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
@@ -125,6 +126,7 @@ object Text {
       if (i < size) Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
     }
+    protected override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
@@ -226,6 +228,7 @@ object Text {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
+    protected override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
       super.quickSearch(p, deli) ||
@@ -306,6 +309,8 @@ object Text {
     def delimitation: SpecialChar.Delimitation
     override def contentSize: Int = content.size
 
+    //override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else if (cur == Se
+
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
       buffer.put(content)
     }
@@ -322,7 +327,7 @@ object Text {
         i += 1
         Atom.CodedSpecial(myCursor, myIndex, delimitation.start, Coded.this)
       } else if (i == 1) {
-        if (it == null) it = content.after((b - 1) max 0).map(a => Atom.CodedGrapheme(myCursor, myIndex + 1 + a._1, a._1, a._2, Coded.this))
+        if (it == null) it = content.after((b - 1) max 0).map(a => Atom.CodedGrapheme(myCursor :+ 0, myIndex + 1 + a._1, a._1, a._2, Coded.this))
         if (it.hasNext) {
           it.next()
         } else {
@@ -344,7 +349,7 @@ object Text {
         i -= 1
         Atom.CodedSpecial(myCursor, myIndex + 1 + contentSize, delimitation.end, Coded.this)
       } else if (i == 1) {
-        if (it == null) it = content.before(((b - 1) max 0) min contentSize).map(a => Atom.CodedGrapheme(myCursor, a._1 + myIndex + 1, a._1, a._2, Coded.this))
+        if (it == null) it = content.before(((b - 1) max 0) min contentSize).map(a => Atom.CodedGrapheme(myCursor :+ 0, a._1 + myIndex + 1, a._1, a._2, Coded.this))
         if (it.hasNext) {
           it.next()
         } else {

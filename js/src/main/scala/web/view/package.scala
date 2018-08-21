@@ -29,17 +29,21 @@ package object view {
     if (extraNode.parentNode != null) extraNode.parentNode.removeChild(extraNode)
   }
 
-  def indexOf(c: Node): Int = indexOf(c.parentNode, c)
+  def indexOf(c: Node, extraNode: Node = null): Int = indexOf(c.parentNode, c, extraNode)
 
-  def indexOf(p: Node, c: Node): Int = {
-    var i = 0
-    while (i < p.childNodes.length) {
-      if (p.childNodes(i) == c) {
-        return i
+  def indexOf(p: Node, c: Node, extraNode: Node): Int = {
+    var j = 0
+    var ch = p.firstChild
+    while (ch != null) {
+      if (ch == extraNode) {
+      } else if (ch == c) {
+        return j
+      } else {
+        j += 1
       }
-      i += 1
+      ch = ch.nextSibling
     }
-    return -1
+    -1
   }
 
 

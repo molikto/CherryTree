@@ -37,10 +37,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   }
 
-  private def updateNonEmptyInsertCursorAt(pos: Int): (Node, Int) = {
+  private def updateInsertCursorAt(pos: Int): (Node, Int) = {
 
     def createTempEmptyInsertTextNode(node: Node, i: Int, pos: Int): Unit = {
-      val extra = document.createTextNode(s"$evilChar$evilChar")
+      val extra = document.createTextNode(s"${RichView.EvilChar}${RichView.EvilChar}")
       extraNode = extra
       insertEmptyTextNode = (extra, pos)
       val before = if (i == node.childNodes.length) null else node.childNodes(i)
@@ -64,6 +64,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
     def updateExistingInsertingTextNodeIn(node: Node, i: Int, atUnicode: Int): (Node, Int) = {
       removeInsertEmptyTextNode()
+      assert(node != null)
       val n = node.asInstanceOf[raw.Text]
       insertNonEmptyTextNode = (n, n.textContent, pos - atUnicode)
       (node, i)
@@ -97,18 +98,14 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
               if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
                 updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
               } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-                if (ee.text.isCodedNonAtomic) {
-                  updateExistingInsertingTextNodeIn(domCodeText(domAt(ss.nodeCursor)), 0, 0)
-                } else {
-                  updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
-                }
+                updateTempEmptyTextNodeIn(domChildArray(domAt(ss.nodeCursor)), 0)
               } else { // different sibling node
                 updateTempEmptyTextNodeIn(domChildArray(domAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1)
               }
             case ep: Atom.PlainGrapheme =>
               updateExistingInsertingTextNodeIn(domAt(ee.nodeCursor), 0, 0)
             case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), 0, 0)
+              updateExistingInsertingTextNodeIn(domAt(ee.nodeCursor), 0, 0)
             case _ =>
               throw new IllegalStateException("Not possible")
           }
@@ -116,9 +113,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
           val unicode = ss.text.asCoded.content
           ee match {
             case es: Atom.SpecialOrMarked =>
-              updateExistingInsertingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(unicode.size), unicode.size)
+              updateExistingInsertingTextNodeIn(domAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
             case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(domCodeText(domAt(ee.nodeCursor)), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
+              updateExistingInsertingTextNodeIn(domAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
             case _ =>
               throw new IllegalStateException("Not possible")
           }
@@ -167,9 +164,32 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     isSimpleInputType(inputType) || isOtherInputType(inputType)
   }
 
+  // node, before
+  private var replaceComplexInputBySimple: (raw.Text, String, Int) = null
+  private var isComplexInput = false
+
   event("beforeinput", (a: Event) => {
-    val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
-    if (!allowInputType(inputType)) {
+    val ev = a.asInstanceOf[js.Dynamic]
+    val inputType = ev.inputType.asInstanceOf[String]
+    if (isSimpleInputType(inputType)) {
+    } else if (isOtherInputType(inputType)) {
+      val ranges = ev.getTargetRanges().asInstanceOf[js.Array[js.Dynamic]]
+      if (ranges.length == 1) {
+        val range = ranges(0)
+        if (range.startContainer == range.endContainer && range.startContainer.isInstanceOf[raw.Text]) {
+          val textNode = range.startContainer.asInstanceOf[raw.Text]
+          val plainCursor = cursorOf(textNode)
+          val indexOfPlain = contentData.content.indexOf(plainCursor)
+          val textBefore = range.startContainer.textContent.asInstanceOf[String]
+          replaceComplexInputBySimple =
+            (textNode, textBefore, indexOfPlain)
+        }
+      }
+      if (replaceComplexInputBySimple == null) {
+        window.console.log(a)
+        window.console.log(ev.getTargetRanges())
+      }
+    } else {
       if (a.cancelable) {
         window.console.log(a)
         a.preventDefault()
@@ -177,14 +197,21 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   })
 
-  private var isComplexInput = false
 
   event("input", (a: Event) => {
-    val inputType = a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String]
+    val ev = a.asInstanceOf[js.Dynamic]
+    val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
       controller.flush()
     } else if (isOtherInputType(inputType)) {
-      isComplexInput = true
+      if (replaceComplexInputBySimple != null) {
+        removeInsertEmptyTextNode()
+        insertNonEmptyTextNode = replaceComplexInputBySimple
+        replaceComplexInputBySimple = null
+      } else {
+        window.console.log(a)
+        isComplexInput = true
+      }
       controller.flush()
     }
   })
@@ -192,6 +219,10 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   private def mergeTextsFix(center: raw.Text): String = {
     if (center.wholeText != center.textContent) {
+      if (model.debug_view) {
+//        println(s"whole text ${center.wholeText}")
+//        println(s"text content ${center.textContent}")
+      }
       center.textContent = center.wholeText
       var previous = center.previousSibling
       var next = center.nextSibling
@@ -208,30 +239,50 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   private def flushComplex(): Unit = {
-    flushSimple()
+    throw new Exception("Cannot handle complex input yet, see log for details")
+  }
+
+  def readSelection(node: Node, pos: Int): Int = {
+    if (window.getSelection().rangeCount == 1) {
+      val range = window.getSelection().getRangeAt(0)
+      if (range.collapsed) {
+        if (range.startContainer == node) {
+          val tc = node.textContent
+          val cc = tc.codePointCount(0, range.startOffset)
+          return cc + pos
+        }
+      }
+    }
+    -1
   }
 
   private def flushSimple(): Unit = {
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode
       val tc = node.textContent
-      assert(tc.startsWith(evilChar))
-      assert(tc.endsWith(evilChar))
+      assert(tc.startsWith(RichView.EvilChar))
+      assert(tc.endsWith(RichView.EvilChar))
       val str = tc.substring(1, tc.length - 1)
       if (str.length > 0) {
         node.textContent = str
         insertNonEmptyTextNode = (node, str, pos)
         insertEmptyTextNode = null
         extraNode = null
-        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str))
+        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), readSelection(node, pos))
       }
     } else if (insertNonEmptyTextNode != null) {
       val (node, oldContent, pos) = insertNonEmptyTextNode
       val newContent = mergeTextsFix(node)
       val (from, to, text) = util.quickDiff(oldContent, newContent)
+      if (model.debug_view) {
+        window.console.log(node)
+        window.console.log(node.parentNode)
+        println(s"old content $oldContent new content $newContent, $from, $to, $text")
+      }
       if (from != to || !text.isEmpty) {
         insertNonEmptyTextNode = (node, newContent, pos)
-        controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text))
+        controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), readSelection(node, pos))
+        if (!isInserting) insertNonEmptyTextNode = null
       }
     }
   }
@@ -248,19 +299,15 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def flushInsertionMode(): Unit = {
     if (isComplexInput) {
       flushComplex()
-      isComplexInput = true
+      isComplexInput = false
     } else {
       flushSimple()
     }
   }
 
   private def clearInsertionMode(): Unit = {
-    removeInsertEmptyTextNode()
     insertNonEmptyTextNode = null
-    if (flushSubscription != null) {
-      flushSubscription.cancel()
-      flushSubscription = null
-    }
+    removeInsertEmptyTextNode()
   }
 
   private def clearVisualMode(): Unit = {
@@ -292,13 +339,8 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
 
   private def updateInsertMode(pos: Int, fromUser: Boolean): Unit = {
-    if (flushSubscription == null) {
-      flushSubscription = observe(controller.flushes.doOnNext(_ => {
-        flushInsertionMode()
-      }))
-    }
     val range = document.createRange()
-    val start = updateNonEmptyInsertCursorAt(pos)
+    val start = updateInsertCursorAt(pos)
     range.setStart(start._1, start._2)
     range.setEnd(start._1, start._2)
     setSelection(range, fromUser)
@@ -334,12 +376,23 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
     documentView.unmarkEditableIfActive(dom)
+    if (flushSubscription != null) {
+      flushSubscription.cancel()
+      flushSubscription = null
+    }
   }
 
-  private def isInserting = flushSubscription != null
+  private def isInserting = previousMode == 0
 
   private def initMode(i: Int): Unit = {
     var forceUpdate = false
+    if (previousMode < 0) {
+      if (flushSubscription == null) {
+        flushSubscription = observe(controller.flushes.doOnNext(_ => {
+          flushInsertionMode()
+        }))
+      }
+    }
     if (i >= 0) {
       if (documentView.markEditableIfInactive(dom)) {
         forceUpdate = true

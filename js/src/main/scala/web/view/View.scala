@@ -41,6 +41,8 @@ object View {
 abstract class View {
 
   private var dom_ : HTMLElement = null
+  private var attached = false
+  private var des = ArrayBuffer[Unit => Unit]()
 
   if (model.debug_view) {
     View.views.append(this)
@@ -79,11 +81,6 @@ abstract class View {
   def onAttach(): Unit = {
 
   }
-
-
-  private var attached = false
-  private var des = ArrayBuffer[Unit => Unit]()
-
 
   def destroyed: Boolean = des == null
 

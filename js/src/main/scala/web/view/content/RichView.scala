@@ -16,6 +16,9 @@ import web.view._
 
 import scala.scalajs.js
 
+object RichView {
+  val EvilChar = "\u200B"
+}
 class RichView(protected var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
   override def contentData = model.data.Content.Rich(rich)
   override def contentData_=(c: model.data.Content.Rich): Unit = {
@@ -23,8 +26,9 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
   }
 
 
+  import RichView._
 
-  protected val evilChar = "\u200B"
+
   /**
     *
     * state
@@ -119,7 +123,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         sp: Frag
       case Text.HTML(c) =>
         val a = span(contenteditable := "false",
-          span(evilChar, contenteditable := false) // don't fuck with my cursor!!!
+          span(EvilChar, contenteditable := false) // don't fuck with my cursor!!!
         ).render
         if (c.isBlank) {
           a.className = ""
@@ -136,7 +140,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
               a.appendChild(errorInline("inline HTML error", err).render)
           }
         }
-        a.appendChild(span(evilChar, contenteditable := false).render)
+        a.appendChild(span(EvilChar, contenteditable := false).render)
         a: Frag
       case Text.LaTeX(c) =>
         val a = span().render
@@ -152,9 +156,9 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         }
         span(`class` := "ct-latex",
           contenteditable := false,
-          span(evilChar), // don't fuck with my cursor!!!
+          span(EvilChar), // don't fuck with my cursor!!!
           a,
-          span(evilChar)
+          span(EvilChar)
         )
       case Text.Code(c) =>
         span(
@@ -164,6 +168,17 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
         )
       case Text.Plain(c) => stringFrag(c.str)
     }
+  }
+
+  protected def cursorOf(t: raw.Text): model.cursor.Node = {
+    def rec(t: Node): Seq[Int] = {
+      if (t.parentNode == dom) {
+        Seq(indexOf(t, extraNode))
+      } else {
+        rec(t.parentNode.parentNode) :+ indexOf(t, extraNode)
+      }
+    }
+    rec(t)
   }
 
   protected def domAt(a: Seq[Int]): Node = domAt(dom, a)
@@ -201,11 +216,6 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     }
   }
 
-  protected def domCodeText(parent: Node): Node = {
-    parent.childNodes(1).childNodes(0)
-  }
-
-
   protected def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
     assert(!range.isEmpty, "range is empty")
     def createRange(a: Node, b: Int, c: Node, d: Int): Range = {
@@ -220,7 +230,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
       ee.isInstanceOf[Atom.CodedGrapheme] &&
       ss.nodeCursor == ee.nodeCursor &&
       ss.text.isCodedNonAtomic) {
-      val codeText = domCodeText(domAt(ss.nodeCursor))
+      val codeText = domAt(ss.nodeCursor)
       val ast = ss.text.asCoded
       val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)
       val eee = ast.content.toStringPosition(ee.asInstanceOf[Atom.CodedGrapheme].unicodeIndex + ee.asInstanceOf[Atom.CodedGrapheme].size)

@@ -13,6 +13,25 @@ import scala.util.Random
   */
 case class Rich(text: Seq[Text]) {
 
+  def indexOf(node: cursor.Node): Int = {
+    assert(node.nonEmpty)
+    def rec(seq: Seq[Text], cur: cursor.Node): Int = {
+      val remaining = if (cur.size == 1) {
+        0
+      } else {
+        val current = seq(cur.head)
+        if (current.isCoded && cur.size == 2 && cur(1) == 0) {
+          1
+        } else {
+          1 + rec(current.asInstanceOf[Text.Formatted].content, cur.tail)
+        }
+      }
+      seq.take(cur.head).map(_.size).sum + remaining
+    }
+    rec(text, node)
+  }
+
+
   def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings) = {
     tt.forall(p => Text.quickSearch(text, p, deli))
   }

@@ -420,18 +420,75 @@ class Client(
     }
   }
 
+  override def focusOn(c: Node): Unit = {
+    import model._
+    state.mode match {
+      case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
+        if (cur == c) {
+          return
+        }
+      case _ =>
+    }
+    localChange(DocTransaction(model.mode.Node.Content(c, state.node(c).content.defaultNormalMode())))
+  }
+
 
   /**
     * view calls this method to insert text at current insertion point,
     */
 
-  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode): Unit = {
+  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int): Unit = {
     import model._
-    val (n, _, _) = state.asRichInsert
-    localChange(
-      DocTransaction(Seq(operation.Node.rich(n, operation.Rich.replacePlain(start, end, unicode))),
-      Some(state.copyContentMode(mode.Content.RichInsert(start + unicode.size))),
-      viewUpdated = true))
+    state.mode match {
+      case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
+        val before = state.node(cur).rich
+        val afterSize = before.size + (end - start) + unicode.size
+        val m = if (rich.isInstanceOf[mode.Content.RichInsert]) {
+          if (domInsertion >= 0 && domInsertion <= afterSize) {
+            mode.Content.RichInsert(domInsertion)
+          } else {
+            mode.Content.RichInsert(start + unicode.size)
+          }
+        } else {
+          def rangeOf(tuple: (Int, Unicode)) = {
+            IntRange.len(tuple._1, tuple._2.size)
+          }
+          val range = if (domInsertion >= 0) {
+            if (domInsertion <= start) {
+              if (domInsertion == 0 ) {
+                if (unicode.isEmpty) {
+                  before.rangeAfter(end)
+                } else {
+                  rangeOf(unicode.after(0).next()).moveBy(start)
+                }
+              } else {
+                before.rangeBefore(domInsertion)
+              }
+            } else if (domInsertion > start && domInsertion <= start + unicode.size) {
+              rangeOf(unicode.before(domInsertion - start).next()).moveBy(start)
+            } else {
+              before.rangeBefore(domInsertion - unicode.size + (end - start))
+            }
+          } else {
+            if (unicode.isEmpty) {
+              if (start == 0) {
+                before.rangeAfter(end).moveBy(-end)
+              } else {
+                before.rangeBefore(start)
+              }
+            } else {
+              rangeOf(unicode.before(unicode.size).next()).moveBy(start)
+            }
+          }
+          mode.Content.RichNormal(range)
+        }
+        localChange(
+          DocTransaction(Seq(operation.Node.rich(cur, operation.Rich.replacePlain(start, end, unicode))),
+            Some(state.copyContentMode(m)),
+            viewUpdated = true))
+      case _ => throw new IllegalStateException("Not supported")
+    }
+
   }
 
 
@@ -463,9 +520,6 @@ class Client(
   }
 
 
-  override def focusOn(cur: Node): Unit = {
-    localChange(DocTransaction(model.mode.Node.Content(cur, state.node(cur).content.defaultNormalMode())))
-  }
 
   /**
     * currently code editors system copy/paste is not handled by this
