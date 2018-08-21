@@ -242,6 +242,11 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     throw new Exception("Cannot handle complex input yet, see log for details")
   }
 
+
+//  def readSelection(): IntRange = {
+//    //window.getSelection().anchorNode
+//  }
+
   def readSelection(node: Node, pos: Int): Int = {
     if (window.getSelection().rangeCount == 1) {
       val range = window.getSelection().getRangeAt(0)

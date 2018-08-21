@@ -517,7 +517,7 @@ class DocumentView(
   })
   event("mousemove", (a: MouseEvent) => {
     //window.console.log(a)
-    preventDefault(a)
+    //preventDefault(a)
   })
 
 
@@ -528,8 +528,11 @@ class DocumentView(
     while (t != null && t != dom) {
       View.maybeDom[ContentView.General](t) match {
         case Some(a) if a.isInstanceOf[EditableContentView.General] =>
-          val cur = cursorOf(a.asInstanceOf[EditableContentView.General])
-          editor.focusOn(cur)
+          val contentView = a.asInstanceOf[EditableContentView.General]
+          val cur = cursorOf(contentView)
+          if (editor.focusOn(cur)) {
+
+          }
           t = null
         case _ =>
       }
@@ -538,7 +541,7 @@ class DocumentView(
   })
 
   event("dblclick", (a: MouseEvent) => {
-    preventDefault(a)
+    //preventDefault(a)
     focus()
   })
 

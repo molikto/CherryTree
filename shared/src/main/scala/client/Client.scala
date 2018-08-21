@@ -420,16 +420,17 @@ class Client(
     }
   }
 
-  override def focusOn(c: Node): Unit = {
+  override def focusOn(c: Node): Boolean = {
     import model._
     state.mode match {
       case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
         if (cur == c) {
-          return
+          return false
         }
       case _ =>
     }
     localChange(DocTransaction(model.mode.Node.Content(c, state.node(c).content.defaultNormalMode())))
+    true
   }
 
 
