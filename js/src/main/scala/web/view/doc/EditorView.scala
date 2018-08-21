@@ -11,10 +11,6 @@ trait EditorView extends View {
 
   protected def editor: EditorInterface
 
-  def markEditableIfInactive(dom: HTMLElement): Boolean
-  def unmarkEditableIfActive(dom: HTMLElement): Unit
-
-
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {

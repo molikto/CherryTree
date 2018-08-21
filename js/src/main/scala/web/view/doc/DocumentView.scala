@@ -29,14 +29,32 @@ class DocumentView(
     width := "100%"
   ).render
 
-  private val noEditable = div(contenteditable := true, width := "0px", height := "0px", readonly := "true").render
+  private val noEditable = div(
+    width := "0px",
+    height := "0px",
+    RichView.EvilChar,
+    readonly := "true").render
+
+  private val nonEditableSelection = document.createRange()
+
+  nonEditableSelection.setStart(noEditable.childNodes(0), 0)
+  nonEditableSelection.setEnd(noEditable.childNodes(0), 1)
+
+  val selections = div(
+    position := "absolute",
+    width := "0px",
+    height := "0px"
+  ).render
 
   dom = div(
+    position := "relative",
     `class` := "ct-scroll ct-document-view-color",
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
+    contenteditable := "true",
     overflowY := "scroll",
+    selections,
     div(height := "36px", display := "block"),
     rootFrame,
     div(height := "36px", display := "block"),
@@ -53,9 +71,9 @@ class DocumentView(
     *
     *
     */
-  private var currentEditable: HTMLElement = noEditable
   private var isFocusedOut: Boolean = false
   private var duringStateUpdate: Boolean = false
+  private var insertionPoint: Range = nonEditableSelection
 
 
   event("focusout", (a: FocusEvent) => {
@@ -72,13 +90,10 @@ class DocumentView(
   override def focus(): Unit = {
     isFocusedOut = false
     dom.classList.remove("ct-window-inactive")
-    if (document.activeElement != currentEditable) {
-      if (currentEditable == noEditable) {
-        noEditable.focus()
-      } else {
-        updateMode(client.state.mode)
-      }
-    }
+    dom.focus()
+    val sel = window.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(insertionPoint)
   }
 
 
@@ -86,41 +101,38 @@ class DocumentView(
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
-      if (window.document.activeElement != currentEditable) {
-        updateMode(client.state.mode)
-      }
+      window.getSelection().removeAllRanges()
+      window.getSelection().addRange(insertionPoint)
     }
   })
 
 
-  override def markEditableIfInactive(dom: HTMLElement): Boolean = {
-    if (currentEditable == dom && window.document.activeElement == dom) return false
-    dom.contentEditable = "true"
-    noEditable.contentEditable = "false"
-    currentEditable = dom
+  def startInsertion(range: Range): Unit = {
+    insertionPoint = range
     if (!isFocusedOut) {
-      currentEditable.focus()
-    }
-    true
-  }
-
-  override def unmarkEditableIfActive(dom: HTMLElement): Unit = {
-    if (dom == currentEditable) {
-      dom.contentEditable = "false"
-      currentEditable = noEditable
-      noEditable.contentEditable = "true"
-      if (!isFocusedOut) {
-        noEditable.focus()
-      }
+      window.getSelection().removeAllRanges()
+      window.getSelection().addRange(insertionPoint)
     }
   }
 
-  private var activeContent: EditableContentView.General = null
+  def endInsertion(): Unit = {
+    startInsertion(nonEditableSelection)
+  }
 
-  private def removeActiveContent(): Unit = {
-    if (activeContent != null) {
-      if (!activeContent.destroyed) activeContent.clearMode()
-      activeContent = null
+  def hasInsertion: Boolean = {
+    nonEditableSelection != insertionPoint
+  }
+
+  def insertion: Range = insertionPoint
+
+  private var activeContentEditor: ContentViewEditor.General = null
+
+  private def activeContent = if (activeContentEditor == null) null else activeContentEditor.contentView
+
+  private def removeActiveContentEditor(): Unit = {
+    if (activeContentEditor != null) {
+      activeContentEditor.clearMode()
+      activeContentEditor = null
     }
   }
 
@@ -166,12 +178,12 @@ class DocumentView(
     frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
-  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): EditableContentView.General = {
+  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
     val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
-    View.fromDom[EditableContentView.General](v)
+    View.fromDom[ContentView.General](v)
   }
 
-  def cursorOf[T <: model.data.Content, O <: model.operation.Content, M <: model.mode.Content](a: EditableContentView[T, O, M]): model.cursor.Node = {
+  def cursorOf[T <: model.data.Content, O <: model.operation.Content](a: ContentView[T, O]): model.cursor.Node = {
     def rec(a: Node): Seq[Int] = {
       val frame = a.parentNode.parentNode
       if (frame == rootFrame) {
@@ -310,7 +322,7 @@ class DocumentView(
 
   private val handleHoverEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
     val hold = e.target.asInstanceOf[HTMLElement]
-    val ee = View.fromDom[EditableContentView.General](hold.previousSibling.firstChild)
+    val ee = View.fromDom[ContentView.General](hold.previousSibling.firstChild)
     val cur = cursorOf(ee)
     val node = client.state.node(cur)
     hold.title =
@@ -324,19 +336,14 @@ class DocumentView(
   }
 
 
-  private def createContent(c: Content): EditableContentView.General = {
-    c match {
-      case model.data.Content.Rich(cs) =>
-        new EditableRichView(this, editor, cs).asInstanceOf[EditableContentView.General]
-      case c@model.data.Content.Code(_, _) =>
-        new EditableCodeView(this, editor, c).asInstanceOf[EditableContentView.General]
-    }
+  private def createContent(c: Content): ContentView.General = {
+    ContentView.create(c, true)
   }
 
 
   def selectionRect: Rect = {
-    if (activeContent != null) {
-      activeContent.selectionRect
+    if (activeContentEditor != null) {
+      activeContentEditor.selectionRect
     } else if (previousNodeMove != null) {
       toRect(previousNodeMove.getBoundingClientRect())
     } else {
@@ -349,19 +356,19 @@ class DocumentView(
     duringStateUpdate = true
     m match {
       case None =>
-        removeActiveContent()
+        removeActiveContentEditor()
         clearNodeVisual()
       case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
           clearNodeVisual()
           val current = contentAt(at)
           if (current != activeContent) {
-            removeActiveContent()
-            activeContent = current
+            removeActiveContentEditor()
+            activeContentEditor = current.createEditor(this, editor)
           }
-          current.updateMode(aa, viewUpdated, editorUpdated, fromUser)
+          activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
-          removeActiveContent()
+          removeActiveContentEditor()
           updateNodeVisual(v)
       }
     }
@@ -409,7 +416,12 @@ class DocumentView(
                 case _ => None
               }
               if (inViewport(at)) {
-                contentAt(at).updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
+                val content = contentAt(at)
+                if (content == activeContent) {
+                  activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
+                } else {
+                  content.updateContent(to.node(at).content, c, update.viewUpdated)
+                }
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
               if (inViewport(at)) {
@@ -526,8 +538,8 @@ class DocumentView(
     var t = a.target.asInstanceOf[Node]
     while (t != null && t != dom) {
       View.maybeDom[ContentView.General](t) match {
-        case Some(a) if a.isInstanceOf[EditableContentView.General] =>
-          val contentView = a.asInstanceOf[EditableContentView.General]
+        case Some(a) if a.isInstanceOf[ContentView.General] =>
+          val contentView = a.asInstanceOf[ContentView.General]
           val cur = cursorOf(contentView)
           if (editor.focusOn(cur)) {
 

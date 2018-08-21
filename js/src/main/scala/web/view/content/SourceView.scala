@@ -17,7 +17,7 @@ import scala.scalajs.js
 
 class SourceView(
   var contentData: model.data.Content.Code
-) extends ContentView[model.data.Content.Code, model.operation.Content.Code]  {
+) extends StaticCodeView {
 
   // background := "#304148",
   private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next").render
@@ -29,7 +29,7 @@ class SourceView(
     marginBottom := "4px",
     fontSize := "70%",
     "").render
-  dom = div(preCode, remainingView).render
+  dom = div(contenteditable := "false", preCode, remainingView).render
 
   override def updateContent() {
     removeAllChild(preCode)

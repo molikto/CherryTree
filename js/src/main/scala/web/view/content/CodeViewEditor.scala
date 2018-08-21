@@ -18,23 +18,12 @@ import web.view._
 import scala.scalajs.js
 
 
-class EditableCodeView(
+class CodeViewEditor(
   val documentView: DocumentView,
   val controller: EditorInterface,
-  override var contentData: model.data.Content.Code)
-  extends EditableContentView[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code] {
+  override val contentView: WrappedCodeView)
+  extends ContentViewEditor[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code](contentView) {
 
-  var codeView: ContentView.Code = ContentView.createFromCode(contentData)
-
-  dom = div(
-  ).render
-
-
-
-  override def onAttach(): Unit = {
-    super.onAttach()
-    codeView.attachToNode(dom)
-  }
 
   private var editing: CoveringSourceEditDialog = null
 
@@ -42,7 +31,7 @@ class EditableCodeView(
     if (editing != null) {
       editing.dismiss()
       if (changedInsideEditor) {
-        updateContent()
+        contentView.updateContent()
         changedInsideEditor = false
       }
       editing = null
@@ -50,16 +39,9 @@ class EditableCodeView(
   }
 
   override def updateContent(c: model.data.Content.Code, m: Option[model.mode.Content.Code], trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
-    this.contentData = c
-    codeView.contentData = c
+    contentView.contentData = c
     if (editing == null) {
-      if (ContentView.matches(c.ty, codeView)) {
-        codeView.updateContent(c, trans, viewUpdated)
-      } else {
-        codeView.destroy()
-        codeView = ContentView.createFromCode(c)
-        codeView.attachToNode(dom)
-      }
+      contentView.updateContent(c, trans, viewUpdated)
     } else {
       changedInsideEditor = true
       if (!editorUpdated) {
@@ -76,16 +58,7 @@ class EditableCodeView(
 
   var changedInsideEditor = false
 
-  // this will only be called when editor is null
-  override def updateContent(): Unit = {
-    if (ContentView.matches(contentData.ty, codeView)) {
-      codeView.updateContent()
-    } else {
-      codeView.destroy()
-      codeView = ContentView.createFromCode(contentData)
-      codeView.attachToNode(dom)
-    }
-  }
+  import contentView._
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     dom.classList.add("ct-selection")
@@ -111,20 +84,13 @@ class EditableCodeView(
   }
 
 
-  /**
-    * will also remove from parent
-    * ALSO make sure you destroy child dom attachments!!!
-    */
-  override def destroy(): Unit = {
+
+
+  contentView.defer(_ => {
     clearMode()
-    codeView.destroy()
-    super.destroy()
-  }
+  })
 
 
-  override def focus(): Unit = {
-    codeView.focus()
-  }
 
   override def selectionRect: Rect = {
     toRect(dom.getBoundingClientRect())

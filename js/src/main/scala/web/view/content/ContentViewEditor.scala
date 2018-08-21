@@ -6,15 +6,14 @@ import web.view.View
 
 
 
-object EditableContentView {
-  type General = EditableContentView[data.Content, model.operation.Content, model.mode.Content]
+object ContentViewEditor {
+  type General = ContentViewEditor[data.Content, model.operation.Content, model.mode.Content]
 }
 
-trait EditableContentView[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content] extends ContentView[T, O] {
-
+abstract class ContentViewEditor[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content](val contentView: ContentView[T, O]) {
 
   def updateContent(c: T, m: Option[M], trans: O, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
-    updateContent(c, trans, viewUpdated)
+    contentView.updateContent(c, trans, viewUpdated)
   }
 
   def updateMode(aa: M, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean)

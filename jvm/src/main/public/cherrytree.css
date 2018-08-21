@@ -246,6 +246,7 @@
 .ct-document-view-color {
   background: #282c34;
   color: #abb2bf;
+  outline: 0px solid transparent;
 }
 
 .ct-document-style {
@@ -429,7 +430,6 @@
 /**  rich view **/
 .ct-rich {
     margin-bottom: 0rem;
-    outline: 0px solid transparent;
     padding: 4px;
 }
 

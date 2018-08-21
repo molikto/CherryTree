@@ -13,28 +13,34 @@ import util.Rect
 import view.EditorInterface
 import web.view.doc.DocumentView
 import web.view._
+import web.view.content.ContentViewEditor.General
 
 import scala.scalajs.js
 
 object RichView {
   val EvilChar = "\u200B"
 }
-class RichView(protected var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
+class RichView(private[content] var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
   override def contentData = model.data.Content.Rich(rich)
   override def contentData_=(c: model.data.Content.Rich): Unit = {
     rich = c.content
   }
+  
+  
 
 
   import RichView._
 
+
+  override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
+    new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
 
   /**
     *
     * state
     *
     */
-  protected def isEmpty = rich.isEmpty
+  private[content] def isEmpty = rich.isEmpty
 
   /**
     *
@@ -45,17 +51,14 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     *
     *
     */
-  protected def createRoot(): HTMLElement = p(`class` := "ct-rich").render
 
-  protected def createDom(): HTMLElement = createRoot()
+  dom = p(`class` := "ct-rich").render
 
-  dom = createDom()
-
-  protected def root: HTMLElement = dom
+  private[content] def root: HTMLElement = dom
 
 
 
-  protected def initDom(): Unit = {
+  private[content] def initDom(): Unit = {
     if (root.childNodes.length == 0) {
       root.appendChild(rec(rich.text).render)
       if (isEmpty) initEmptyContent()
@@ -66,16 +69,16 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
 
   initDom()
 
-  protected def clearDom(): Unit = {
+  private[content] def clearDom(): Unit = {
     removeAllChild(root)
   }
 
 
-  protected def removeEmptyContent(): Unit = {
+  private[content] def removeEmptyContent(): Unit = {
     removeAllChild(root)
   }
 
-  protected def initEmptyContent(): Unit = {
+  private[content] def initEmptyContent(): Unit = {
     removeAllChild(root)
     root.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
   }
@@ -175,7 +178,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     }
   }
 
-  protected def cursorOf(t: raw.Text): model.cursor.Node = {
+  private[content] def cursorOf(t: raw.Text): model.cursor.Node = {
     def rec(t: Node): Seq[Int] = {
       if (t.parentNode == root) {
         Seq(indexOf(t, extraNode))
@@ -186,11 +189,11 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     rec(t)
   }
 
-  protected def nodeAt(a: Seq[Int]): Node = nodeAt(root, a)
+  private[content] def nodeAt(a: Seq[Int]): Node = nodeAt(root, a)
 
-  protected var extraNode: raw.Text = null
+  private[content] var extraNode: raw.Text = null
 
-  protected def nodeAt(parent: Node, a: Seq[Int]): Node = {
+  private[content] def nodeAt(parent: Node, a: Seq[Int]): Node = {
     if (a.isEmpty) {
       parent
     } else {
@@ -213,7 +216,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     }
   }
 
-  protected def nodeChildArray(parent: Node): Node = {
+  private[content] def nodeChildArray(parent: Node): Node = {
     if (parent.isInstanceOf[HTMLSpanElement]) {
       parent.childNodes(1)
     } else {
@@ -221,7 +224,7 @@ class RichView(protected var rich: model.data.Rich) extends ContentView[model.da
     }
   }
 
-  protected def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
+  private[content] def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
     assert(!range.isEmpty, "range is empty")
     def createRange(a: Node, b: Int, c: Node, d: Int): Range = {
       val rr = document.createRange()

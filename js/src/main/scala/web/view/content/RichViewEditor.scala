@@ -16,20 +16,53 @@ import web.view._
 
 import scala.scalajs.js
 
-class EditableRichView(documentView: DocumentView, val controller: EditorInterface, rich0: Rich) extends RichView(rich0) with EditableContentView[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich]  {
+class RichViewEditor(val documentView: DocumentView, val controller: EditorInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
 
-  private def evilSpanText = dom.childNodes(dom.childNodes.length - 2).childNodes(0)
-  override protected def createDom(): HTMLElement = div(outline := "none", span(RichView.EvilChar, position := "absolute").render, createRoot(), position := "relative").render
+  /**
+    * selection
+    */
 
+  private var rangeSelection: Range = null
 
-  private var root_ : HTMLElement = null
-  final protected override def root: HTMLElement =
-    if (root_ == null) {
-      root_ = dom.childNodes(dom.childNodes.length - 1).asInstanceOf[HTMLElement]
-      root_
+  override def selectionRect: Rect = {
+    web.view.toRect(if (rangeSelection != null) {
+      rangeSelection.getBoundingClientRect()
+    } else if (documentView.hasInsertion) {
+      documentView.insertion.getBoundingClientRect()
     } else {
-      root_
+      contentView.dom.getBoundingClientRect()
+    })
+  }
+
+  private def clearRangeSelection(): Unit = {
+    if (rangeSelection != null) {
+      removeAllChild(documentView.selections)
     }
+    rangeSelection = null
+  }
+
+  private def setRangeSelection(range: Range, fromUser: Boolean): Unit = {
+    clearRangeSelection()
+    val dom = documentView.selections
+    rangeSelection = range
+    val p = dom.getBoundingClientRect()
+    val rects = range.getClientRects()
+    for (i <- 0 until rects.length) {
+      val rect = rects(i)
+      dom.appendChild(
+        div(
+          `class` := "ct-rich-selection",
+          contenteditable := "false",
+          left := rect.left - p.left,
+          top := rect.top - p.top,
+          width := rect.width,
+          height := rect.height
+        ).render)
+    }
+
+  }
+
+  import contentView._
 
   private var insertEmptyTextNode: (raw.Text, Int) = null
   private var insertNonEmptyTextNode: (raw.Text, String, Int) = null
@@ -49,6 +82,11 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
       assert(insertEmptyTextNode == null)
     }
   }
+
+  defer(_ => {
+    clearMode()
+    clearEditor()
+  })
 
   private def updateInsertCursorAt(pos: Int): (Node, Int) = {
 
@@ -260,7 +298,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 //    //window.getSelection().anchorNode
 //  }
 
-  def readSelection(node: Node, pos: Int): Int = {
+  def readInsertionPoint(node: Node, pos: Int): Int = {
     if (window.getSelection().rangeCount == 1) {
       val range = window.getSelection().getRangeAt(0)
       if (range.collapsed) {
@@ -286,13 +324,13 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         insertNonEmptyTextNode = (node, str, pos)
         insertEmptyTextNode = null
         extraNode = null
-        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), readSelection(node, pos))
+        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), readInsertionPoint(node, pos))
       }
     } else if (insertNonEmptyTextNode != null) {
       val (node, oldContent, pos) = insertNonEmptyTextNode
       val newContent = mergeTextsFix(node)
       val (from, to, text) = util.quickDiff(oldContent, newContent)
-      val insertionPoint = readSelection(node, pos)
+      val insertionPoint = readInsertionPoint(node, pos)
       if (model.debug_view) {
 //        window.console.log(node)
 //        window.console.log(node.parentNode)
@@ -325,12 +363,13 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   private def clearInsertionMode(): Unit = {
+    documentView.endInsertion()
     insertNonEmptyTextNode = null
     removeInsertEmptyTextNode()
   }
 
   private def clearVisualMode(): Unit = {
-    clearSelection()
+    clearRangeSelection()
   }
 
   private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
@@ -347,12 +386,12 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     } else {
       range.setEnd(r2.endContainer, r2.endOffset)
     }
-    setSelection(range, fromUser)
+    setRangeSelection(range, fromUser)
   }
 
 
   private def clearNormalMode(): Unit = {
-    clearSelection()
+    clearRangeSelection()
     clearFormattedNodeHighlight()
   }
 
@@ -362,7 +401,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     val start = updateInsertCursorAt(pos)
     range.setStart(start._1, start._2)
     range.setEnd(start._1, start._2)
-    setSelection(range, fromUser)
+    documentView.startInsertion(range)
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 
@@ -370,70 +409,16 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   private def updateNormalMode(r: IntRange, fromUser: Boolean): Unit = {
     val (range, light) = nonEmptySelectionToDomRange(r)
-    setSelection(range, fromUser = fromUser)
+    setRangeSelection(range, fromUser = fromUser)
     if (light != astHighlight) clearFormattedNodeHighlight()
     if (light != null) addFormattedNodeHighlight(light)
   }
 
 
-  /**
-    * selection
-    */
-
-  private var selectionRange: Range = null
-
-  override def selectionRect: Rect = {
-    web.view.toRect(if (selectionRange != null) {
-      selectionRange.getBoundingClientRect()
-    } else {
-      dom.getBoundingClientRect()
-    })
-  }
-
-  private def clearSelection(): Unit = {
-    if (selectionRange != null) {
-      if (selectionRange.collapsed) {
-        window.getSelection().removeAllRanges()
-      }
-    }
-    while (dom.childNodes.length > 2) {
-      dom.removeChild(dom.childNodes(0))
-    }
-    selectionRange = null
-  }
-
-  private def setSelection(range: Range, fromUser: Boolean): Unit = {
-    if (range.collapsed) {
-      selectionRange = range
-      val sel = window.getSelection()
-      sel.removeAllRanges()
-      sel.addRange(range)
-    } else {
-      clearSelection()
-      selectionRange = range
-      val p = dom.getBoundingClientRect()
-      val rects = range.getClientRects()
-      for (i <- 0 until rects.length) {
-        val rect = rects(i)
-        dom.insertBefore(
-          div(
-            `class` := "ct-rich-selection",
-            contenteditable := "false",
-            left := rect.left - p.left,
-            top := rect.top - p.top,
-            width := rect.width,
-            height := rect.height
-          ).render, dom.childNodes(0))
-      }
-    }
-
-    //    documentView.dom.scrollTop = top
-  }
 
   override def clearMode(): Unit = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
-    documentView.unmarkEditableIfActive(dom)
     if (flushSubscription != null) {
       flushSubscription.cancel()
       flushSubscription = null
@@ -442,18 +427,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
 
   private def isInserting = previousMode == 0
 
-  private def setEvilSelection() = {
-    val sel = window.getSelection()
-    sel.removeAllRanges()
-    val range = document.createRange()
-    val n = evilSpanText
-    range.setStart(n, 0)
-    range.setEnd(n, 1)
-    sel.addRange(range)
-  }
-
   private def initMode(i: Int): Unit = {
-    var forceUpdate = false
     if (previousMode < 0 && i >= 0) {
       if (flushSubscription == null) {
         flushSubscription = observe(controller.flushes.doOnNext(_ => {
@@ -461,15 +435,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         }))
       }
     }
-    if (i >= 0) {
-      if (documentView.markEditableIfInactive(dom)) {
-        if (i != 0) {
-          setEvilSelection()
-        }
-        forceUpdate = true
-      }
-    }
-    if (previousMode != i || forceUpdate) {
+    if (previousMode != i) {
       if (debug_view) {
         println(s"mode change from  $previousMode to $i")
       }
@@ -494,6 +460,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   }
 
   protected def clearEmptyNormalMode(): Unit = {
+    clearRangeSelection()
     removeEmptyContent()
   }
 
@@ -502,7 +469,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     val range = document.createRange()
     range.setStart(root, 0)
     range.setEnd(root, 1)
-    setSelection(range, false)
+    setRangeSelection(range, false)
   }
 
   var pmode: mode.Content.Rich = null
@@ -525,6 +492,9 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
           if (!sub) initMode(2)
           updateNormalMode(range, fromUser)
         }
+    }
+    if (fromUser) {
+      scrollInToViewIfNotVisible(dom, documentView.dom)
     }
     aa match {
       case sub: mode.Content.RichSubMode =>
@@ -557,16 +527,6 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   }
 
-
-  /**
-    * will also remove from parent
-    */
-  override def destroy(): Unit = {
-    clearMode()
-    clearEditor()
-    super.destroy()
-  }
-
   private var editor: Overlay = null
 
   def clearEditor(): Unit = {
@@ -587,18 +547,13 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
     }
   }
 
-  override protected def clearDom(): Unit = {
-    super.clearDom()
-    setPreviousModeToEmpty()
-  }
-
   private def setPreviousModeToEmpty(): Unit = {
     previousMode = if (isEmpty) -2 else -1
   }
 
   override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     val dataBefore = rich
-    updateContent(data, c, viewUpdated)
+    contentView.updateContent(data, c, viewUpdated)
     if (!viewUpdated) {
       if (!editorUpdated) {
         if (editor != null) {
