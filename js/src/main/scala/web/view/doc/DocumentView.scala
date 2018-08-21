@@ -73,7 +73,11 @@ class DocumentView(
     isFocusedOut = false
     dom.classList.remove("ct-window-inactive")
     if (document.activeElement != currentEditable) {
-      currentEditable.focus()
+      if (currentEditable == noEditable) {
+        noEditable.focus()
+      } else {
+        updateMode(client.state.mode)
+      }
     }
   }
 

@@ -393,7 +393,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
   private def clearSelection(): Unit = {
     if (selectionRange != null) {
       if (selectionRange.collapsed) {
-        window.getSelection().removeRange(selectionRange)
+        window.getSelection().removeAllRanges()
       }
     }
     while (dom.childNodes.length > 2) {
@@ -418,6 +418,7 @@ class EditableRichView(documentView: DocumentView, val controller: EditorInterfa
         dom.insertBefore(
           div(
             `class` := "ct-rich-selection",
+            contenteditable := "false",
             left := rect.left - p.left,
             top := rect.top - p.top,
             width := rect.width,
