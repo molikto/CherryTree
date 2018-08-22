@@ -47,7 +47,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }
   }
 
-  def transformToCodeChange(range: IntRange): Seq[Unicode] = u.foldLeft((range, Seq.empty[Unicode])) { (res, to) =>
+  def transformToCodeChange(range: IntRange): Option[Seq[Unicode]] = Some(u.foldLeft((range, Seq.empty[Unicode])) { (res, to) =>
     val range = res._1
     val se = res._2
     to match {
@@ -59,7 +59,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else if (range.contains(r)) {
           (IntRange(range.start, range.until - r.size), se :+ Unicode.Delete(r.moveBy(-range.start)))
         } else {
-          throw new Exception("Not handled case")
+          return None
         }
       case Unicode.Insert(at, a, gl) =>
         if (at < range.start) {
@@ -69,7 +69,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else if (at > range.until) {
           res
         } else {
-          throw new Exception("Not handled case")
+          return None
         }
       case Unicode.Surround(r, left, right, _) =>
         if (r.until < range.start) {
@@ -79,7 +79,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else if (r.start < range.start && r.until > range.until) {
           (range.moveBy(left.size), se)
         } else {
-          throw new Exception("Not handled case")
+          return None
         }
       case a@Unicode.ReplaceAtomic(r, unicode) =>
         if (r.until < range.start) {
@@ -87,10 +87,10 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else if (r.start > range.until) {
           res
         } else {
-          throw new Exception("Not handled case")
+          return None
         }
     }
-  }._2
+  }._2)
 
 
   def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {

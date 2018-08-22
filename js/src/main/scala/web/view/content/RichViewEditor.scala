@@ -596,7 +596,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
 
   override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
-    val dataBefore = rich
     contentView.updateContent(data, c, viewUpdated)
     if (!viewUpdated) {
       if (!editorUpdated) {
@@ -605,7 +604,11 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
             case dialog: InlineCodeDialog =>
               mode match {
                 case Some(model.mode.Content.RichCodeSubMode(range, code, modeBefore)) =>
-                  dialog.sync(c.op.transformToCodeChange(IntRange(range.start, range.until)))
+                  c.op.transformToCodeChange(IntRange(range.start, range.until)) match {
+                    case Some(edit) =>
+                      dialog.sync(edit)
+                    case _ => clearEditor()
+                  }
                   // no need to sync type change, this will dismiss the dialog instead
                 case _ =>
               }

@@ -27,13 +27,15 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     display :="flex",
     position := "relative",
     flexDirection := "row",
-    div(
-      position := "absolute",
-      `class` := "ct-document-view-background",
-      width := "100%",
-      height := "100%",
-      if (web.debug_fakeSelection) zIndex := "-2" else width := "100%"
-    ),
+    if (web.debug_fakeSelection) {
+      div(
+        position := "absolute",
+        zIndex := "-2",
+        `class` := "ct-document-view-background",
+        width := "100%",
+        height := "100%"
+      ) : Frag
+    } else Seq.empty[Frag] : Frag,
     overflow := "hidden").render
   attachToNode(parent)
 

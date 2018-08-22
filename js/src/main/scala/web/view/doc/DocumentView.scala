@@ -52,7 +52,7 @@ class DocumentView(
 
   dom = div(
     position := "relative",
-    `class` := "ct-scroll ct-document-view-root",
+    `class` := "ct-scroll ct-document-view-root " + (if (!web.debug_fakeSelection) "ct-document-view-background" else ""),
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
