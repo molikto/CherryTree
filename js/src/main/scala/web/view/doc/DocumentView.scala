@@ -641,6 +641,7 @@ class DocumentView(
       }
       mouseFirstContent = null
       mouseSecondContent = null
+      savedSelectionForLater = null
     }
   }
 
@@ -657,6 +658,8 @@ class DocumentView(
     if (pc != null) mouseFirstContent = pc._1
   }
 
+
+  private var savedSelectionForLater: Range = null
 
   event("mouseover", (a: MouseEvent) => {
     if (mouseDown) {
@@ -675,9 +678,21 @@ class DocumentView(
           if (curSecondContent != mouseSecondContent) {
             mouseSecondContent = curSecondContent
             if (mouseSecondContent != null) {
+              if (savedSelectionForLater == null && window.getSelection().rangeCount > 0) {
+                savedSelectionForLater = window.getSelection().getRangeAt(0)
+              }
               editor.onVisualMode(mouseFirstContent, mouseSecondContent)
             } else {
               clearNodeVisual()
+              if (savedSelectionForLater != null) {
+                val saved = savedSelectionForLater
+                savedSelectionForLater = null
+                window.getSelection().removeAllRanges()
+                window.getSelection().addRange(saved)
+//                window.setTimeout(() => {
+//                  window.console.log("restore saved ", saved)
+//                }, 0)
+              }
             }
           }
         } else {
