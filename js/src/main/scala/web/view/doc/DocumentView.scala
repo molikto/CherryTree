@@ -25,7 +25,6 @@ class DocumentView(
 ) extends EditorView {
 
 
-
   private val rootFrame = div(
     `class` := "ct-document-style ct-d-frame",
     width := "100%"
@@ -383,9 +382,12 @@ class DocumentView(
     }
   }
 
+  def simuateKeyboardMotion(isUp: Boolean): Unit = {
+    
+  }
+
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
-    if (isKeyboardTriggeredModeUpdate) return
     duringStateUpdate = true
     m match {
       case None =>
@@ -570,47 +572,15 @@ class DocumentView(
 
   private var focusFinder: Int = -1
 
-  // node, offset, n time, and handle
-  private var selectionBeforeRead: (Node, Int, Int, Int) = null
-
-  override protected def readSelectionOnKeyUpDown() = {
-    clearAllPreviousReading()
-    def inner(): Unit = {
-      val cur = window.getSelection()
-      def readNow(): Unit = {
-        selectionBeforeRead = null
-        focusAt(window.getSelection().anchorNode, 0, true)
-      }
-      if (selectionBeforeRead == null || selectionBeforeRead._3 < 10) {
-        val nth = if (selectionBeforeRead == null) 0 else selectionBeforeRead._3 + 1
-        selectionBeforeRead = (cur.anchorNode, cur.anchorOffset, nth, window.setTimeout(() => {
-          if (selectionBeforeRead._1 != window.getSelection().anchorNode || selectionBeforeRead._2 !=  window.getSelection().anchorOffset) {
-            readNow()
-          } else {
-            readSelectionOnKeyUpDown()
-          }
-        }, 1))
-      } else {
-        readNow()
-      }
-    }
-    inner()
-  }
-
   private def clearAllPreviousReading(): Unit = {
     if (focusFinder != -1) {
       window.clearTimeout(focusFinder)
       focusFinder = -1
     }
-    if (selectionBeforeRead != null) {
-      window.clearTimeout(selectionBeforeRead._4)
-      selectionBeforeRead = null
-    }
   }
 
-  private var isKeyboardTriggeredModeUpdate = false
 
-  private def focusAt(t0: Node, delay: Int, isKeyboard: Boolean) = {
+  private def focusAt(t0: Node, delay: Int) = {
     clearAllPreviousReading()
     var t = t0
     while (t != null && t != dom) {
@@ -627,9 +597,7 @@ class DocumentView(
                 sel
               case _ => None
             }
-            if (isKeyboard) isKeyboardTriggeredModeUpdate = true
-            editor.focusOn(cur, range, isKeyboard)
-            isKeyboardTriggeredModeUpdate = false
+            editor.focusOn(cur, range, false)
             focusFinder = -1
           }, delay)
           t = null
@@ -644,7 +612,7 @@ class DocumentView(
 
   def onMouseInteract(a: MouseEvent, i: Int) = {
     focus()
-    focusAt(a.target.asInstanceOf[Node], i, true)
+    focusAt(a.target.asInstanceOf[Node], i)
   }
 
   event("click", (a: MouseEvent) => {
