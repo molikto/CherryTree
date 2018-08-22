@@ -598,12 +598,12 @@ class DocumentView(
 
   private def clearAllPreviousReading(): Unit = {
     if (focusFinder != -1) {
-      focusFinder = -1
       window.clearTimeout(focusFinder)
+      focusFinder = -1
     }
     if (selectionBeforeRead != null) {
-      selectionBeforeRead = null
       window.clearTimeout(selectionBeforeRead._4)
+      selectionBeforeRead = null
     }
   }
 
