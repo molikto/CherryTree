@@ -4,6 +4,7 @@ import command.Key
 import doc.{DocInterface, DocState}
 import model.{cursor, data, range}
 import model.data.{Node => _, _}
+import model.mode.Content.RichInsert
 import model.range.IntRange
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.raw._
@@ -89,6 +90,34 @@ class DocumentView(
   event(noEditable, "compositionend", (a: CompositionEvent) => {
     cancelNoEditableInput()
   })
+
+  event("compositionstart", (a: CompositionEvent) => {
+    if (isInserting) editor.disableRemoteStateUpdate(true, false)
+    else preventDefault(a)
+  })
+
+  event("compositionupdate", (a: CompositionEvent) => {
+    if (!isInserting) preventDefault(a)
+  })
+
+  event("compositionend", (a: CompositionEvent) => {
+    // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
+    if (isInserting) editor.disableRemoteStateUpdate(true, false)
+    else preventDefault(a)
+  })
+
+  event("beforeinput", (a: Event) => {
+    if (activeContent != null) {
+      activeContentEditor.beforeInputEvent(a)
+    }
+  })
+
+  event("input", (a: Event) => {
+    if (activeContent != null) {
+      activeContentEditor.inputEvent(a)
+    }
+  })
+
 
   event("beforeinput", (ev: Event) => {
     if (currentSelection == nonEditableSelection) {
@@ -390,16 +419,19 @@ class DocumentView(
   def simulateKeyboardMotion(isUp: Boolean): Unit = {
   }
 
+  var isInserting = false
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true
     m match {
       case None =>
+        isInserting = false
         removeActiveContentEditor()
         endSelection()
         clearNodeVisual()
       case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
+          isInserting = aa.isInstanceOf[RichInsert]
           clearNodeVisual()
           val current = contentAt(at)
           if (current != activeContent) {
@@ -408,6 +440,7 @@ class DocumentView(
           }
           activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
+          isInserting = false
           removeActiveContentEditor()
           endSelection()
           updateNodeVisual(v)
@@ -589,13 +622,13 @@ class DocumentView(
   def mouseUpFinal(ev: MouseEvent) = {
     editor.disableRemoteStateUpdate(false, true)
     onMouseInteract(ev, 5)
-    println(s"final mouse detection $isRightMouseButton")
   }
 
-  event(window, "mouseup", (a: MouseEvent) => {
+  private def endMouseDown(a: MouseEvent, isRight: Boolean): Unit = {
     if (mouseDown) {
       val duration = System.currentTimeMillis() - mouseDownTime
       mouseDownTime = -1
+      isRightMouseButton = isRight || a.button != 0
       window.clearInterval(mouseDisableWrongSelectionHandler)
       if (mouseSecondContent == null) {
         clearAllPreviousReading()
@@ -609,6 +642,14 @@ class DocumentView(
       mouseFirstContent = null
       mouseSecondContent = null
     }
+  }
+
+  event(window, "mouseup", (a: MouseEvent) => {
+    endMouseDown(a, false)
+  })
+
+  event("contextmenu", (a: MouseEvent) => {
+    endMouseDown(a, true)
   })
 
   private def getFirstContentView(a: MouseEvent): Unit = {
@@ -706,8 +747,6 @@ class DocumentView(
     readSelectionAt(a.target.asInstanceOf[Node], i)
   }
 
-  event("contextmenu", (a: MouseEvent) => {
-  })
 
 
 

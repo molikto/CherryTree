@@ -1,6 +1,7 @@
 package web.view.content
 
 import model._
+import org.scalajs.dom.raw.Event
 import util.Rect
 import web.view.View
 
@@ -11,6 +12,9 @@ object ContentViewEditor {
 }
 
 abstract class ContentViewEditor[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content](val contentView: ContentView[T, O]) {
+  def beforeInputEvent(a: Event): Unit = {}
+  def inputEvent(a: Event): Unit = {}
+
   def flush(): Unit = {}
 
 

@@ -178,21 +178,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     _5.classList.remove("ct-ast-highlight")
   }
 
-  event(root, "compositionstart", (a: CompositionEvent) => {
-    if (isInserting) controller.disableRemoteStateUpdate(true, false)
-    else preventDefault(a)
-  })
-
-  event(root, "compositionupdate", (a: CompositionEvent) => {
-    if (!isInserting) preventDefault(a)
-  })
-
-  event(root, "compositionend", (a: CompositionEvent) => {
-    // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
-    if (isInserting) controller.disableRemoteStateUpdate(true, false)
-    else preventDefault(a)
-  })
-
   private def isSimpleInputType(inputType: String) = {
     inputType == "insertText" ||
       inputType == "insertFromComposition"
@@ -210,7 +195,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private var replaceComplexInputBySimple: (raw.Text, String, Int) = null
   private var isComplexInput = false
 
-  event(documentView.dom, "beforeinput", (a: Event) => {
+  override def beforeInputEvent(a: Event): Unit = {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
@@ -238,10 +223,9 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         a.preventDefault()
       }
     }
-  })
+  }
 
-
-  event(documentView.dom, "input", (a: Event) => {
+  override def inputEvent(a: Event): Unit = {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
@@ -259,8 +243,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     } else {
       window.console.log(a)
     }
-  })
 
+  }
 
   private def mergeTextsFix(center: raw.Text): String = {
     if (center.wholeText != center.textContent) {
