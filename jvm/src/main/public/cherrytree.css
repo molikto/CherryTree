@@ -521,7 +521,7 @@ block selection
   outline: 2px solid #cc723388;
 }
 
-.ct-code {
+.ct-c-code {
     font-style: normal;
     font-weight:normal;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
@@ -529,11 +529,11 @@ block selection
     color: #f0c5ce;
 }
 
-.ct-link {
+.ct-c-link {
    color: #268bd2;
 }
 
-.ct-link-node {
+.ct-c-link-node {
    color: #b7b419;
 }
 
@@ -551,12 +551,12 @@ block selection
  padding: 8px;
 }
 
-.ct-strong {
+.ct-c-strong {
 }
 
-.ct-em {
+.ct-c-em {
 }
-.ct-del {
+.ct-c-del {
     text-decoration-color: #FFFFFF33;
 }
 

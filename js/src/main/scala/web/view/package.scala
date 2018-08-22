@@ -53,6 +53,15 @@ package object view {
     }
   }
 
+  def exitsClassPrefix(element: HTMLElement, function: String): Boolean = {
+    val cn = element.className
+    if (cn.isEmpty) {
+      false
+    } else {
+      cn.startsWith(function) || cn.contains(" " + function)
+    }
+  }
+
 
   // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
   val KeyMap: Map[String, Key.V] = {

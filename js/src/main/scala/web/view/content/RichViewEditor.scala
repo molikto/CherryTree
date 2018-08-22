@@ -38,15 +38,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     })
   }
 
-  def syncSelectionFromDom(): Unit = {
-    if (window.getSelection().rangeCount == 1) {
-      val range = window.getSelection().getRangeAt(0)
-      if (contentView.dom.contains(range.startContainer) && contentView.dom.contains(range.endContainer)) {
-        documentView.endSelection()
-        setRangeSelection(range, false)
-      }
-    }
-  }
 
 
   override def refreshRangeSelection(): Unit = {
@@ -110,17 +101,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
 
-  def readInsertionPoint(isNode: Node = null): Int = {
-    if (window.getSelection().rangeCount == 1) {
-      val range = window.getSelection().getRangeAt(0)
-      if (range.collapsed && range.startContainer.isInstanceOf[dom.Text] && (isNode == null || isNode == range.startContainer)) {
-        val tc = range.startContainer.textContent
-        val cc = tc.codePointCount(0, range.startOffset)
-        return cc + contentView.rich.indexOf(contentView.cursorOf(range.startContainer.asInstanceOf[dom.Text]))
-      }
-    }
-    -1
-  }
 
   import contentView._
 
@@ -177,57 +157,11 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       insertNonEmptyTextNode = (n, n.textContent, pos - atUnicode)
       (node, i)
     }
-
-
-    if (pos == 0) {
-      if (isEmpty) {
-        updateTempEmptyTextNodeIn(root, 0)
-      } else if (rich.text.head.isPlain) {
-        updateExistingInsertingTextNodeIn(nodeAt(Seq(0)), 0, 0)
-      } else {
-        updateTempEmptyTextNodeIn(nodeChildArray(root), 0)
-      }
-    } else if (pos == rich.size) {
-      rich.text.last match {
-        case plain: Text.Plain =>
-          updateExistingInsertingTextNodeIn(nodeAt(Seq(rich.text.size - 1)), plain.unicode.str.length, plain.unicode.size)
-        case _ =>
-          updateTempEmptyTextNodeIn(nodeChildArray(root), rich.text.size)
-      }
+    val (node, offset, unicode) = posInDom(pos)
+    if (unicode == -1) {
+      updateTempEmptyTextNodeIn(node, offset)
     } else {
-      val ss = rich.before(pos)
-      val ee = rich.after(pos)
-      ss match {
-        case p: Atom.PlainGrapheme =>
-          updateExistingInsertingTextNodeIn(nodeAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
-        case s: Atom.SpecialOrMarked =>
-          ee match {
-            case es: Atom.SpecialOrMarked =>
-              if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
-                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(ss.nodeCursor)), 0)
-              } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(ss.nodeCursor)), 0)
-              } else { // different sibling node
-                updateTempEmptyTextNodeIn(nodeChildArray(nodeAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1)
-              }
-            case ep: Atom.PlainGrapheme =>
-              updateExistingInsertingTextNodeIn(nodeAt(ee.nodeCursor), 0, 0)
-            case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(nodeAt(ee.nodeCursor), 0, 0)
-            case _ =>
-              throw new IllegalStateException("Not possible")
-          }
-        case c: Atom.CodedGrapheme =>
-          val unicode = ss.text.asCoded.content
-          ee match {
-            case es: Atom.SpecialOrMarked =>
-              updateExistingInsertingTextNodeIn(nodeAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
-            case ec: Atom.CodedGrapheme =>
-              updateExistingInsertingTextNodeIn(nodeAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
-            case _ =>
-              throw new IllegalStateException("Not possible")
-          }
-      }
+      updateExistingInsertingTextNodeIn(node, offset, unicode)
     }
   }
 
@@ -287,7 +221,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         if (range.startContainer == range.endContainer && range.startContainer.isInstanceOf[raw.Text]) {
           val textNode = range.startContainer.asInstanceOf[raw.Text]
           val plainCursor = cursorOf(textNode)
-          val indexOfPlain = contentData.content.indexOf(plainCursor)
+          val indexOfPlain = contentData.content.startPosOf(plainCursor)
           val textBefore = range.startContainer.textContent.asInstanceOf[String]
           replaceComplexInputBySimple =
             (textNode, textBefore, indexOfPlain)
@@ -418,20 +352,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
     rangeGlowing = true
-    val (r1,_) = nonEmptySelectionToDomRange(fix)
-    val (r2,_) = nonEmptySelectionToDomRange(move)
-    val range = document.createRange()
-    if (r1.compareBoundaryPoints(Range.START_TO_START, r2) == -1) {
-      range.setStart(r1.startContainer, r1.startOffset)
-    } else {
-      range.setStart(r2.startContainer, r2.startOffset)
-    }
-    if (r1.compareBoundaryPoints(Range.END_TO_END, r2) == 1) {
-      range.setEnd(r1.endContainer, r1.endOffset)
-    } else {
-      range.setEnd(r2.endContainer, r2.endOffset)
-    }
-    setRangeSelection(range, fromUser)
+    val (r1,_) = nonEmptySelectionToDomRange(fix.merge(move))
+    setRangeSelection(r1, fromUser)
   }
 
 

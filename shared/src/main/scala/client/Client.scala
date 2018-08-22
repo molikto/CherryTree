@@ -420,16 +420,40 @@ class Client(
     }
   }
 
-  override def focusOn(c: Node): Boolean = {
+  override def focusOn(c: Node, ran: Option[IntRange] = None): Boolean = {
     import model._
     state.mode match {
       case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
-        if (cur == c) {
+        if (cur == c && ran.isEmpty) {
           return false
         }
       case _ =>
     }
-    localChange(DocTransaction(model.mode.Node.Content(c, state.node(c).content.defaultNormalMode())))
+    val mo = state.node(c).content match {
+      case c@data.Content.Rich(r) =>
+        ran match {
+          case Some(a) =>
+            if (a.isEmpty) {
+              if (state.isInsert) {
+                mode.Content.RichInsert(a.start)
+              } else {
+                mode.Content.RichNormal(r.rangeBefore(a.start))
+              }
+            } else {
+              val r1 = r.rangeAfter(a.start)
+              val r2 = r.rangeBefore(a.until)
+              if (r1 == r2) {
+                mode.Content.RichNormal(r1)
+              } else {
+                mode.Content.RichVisual(r1, r2)
+              }
+            }
+          case None =>
+            c.defaultNormalMode()
+        }
+      case c: data.Content.Code => c.defaultNormalMode()
+    }
+    localChange(DocTransaction(model.mode.Node.Content(c, mo)))
     true
   }
 

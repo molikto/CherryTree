@@ -567,18 +567,27 @@ class DocumentView(
     //preventDefault(a)
   })
 
+  private var focusFinder: Int = -1
 
-  private def focusAt(a: MouseEvent) = {
+  private def focusAt(a: MouseEvent, delay: Int) = {
     focus()
+    if (focusFinder != -1) {
+      window.clearTimeout(focusFinder)
+    }
     var t = a.target.asInstanceOf[Node]
     while (t != null && t != dom) {
       View.maybeDom[ContentView.General](t) match {
         case Some(a) if a.isInstanceOf[ContentView.General] =>
           val contentView = a.asInstanceOf[ContentView.General]
           val cur = cursorOf(contentView)
-          if (editor.focusOn(cur)) {
-
-          }
+          focusFinder = window.setTimeout(() => {
+            val range = contentView.asInstanceOf[Any] match {
+              case r: RichView => r.readSelectionFromDom()
+              case _ => None
+            }
+            editor.focusOn(cur, range)
+            focusFinder = -1
+          }, delay)
           t = null
         case _ =>
       }
@@ -588,21 +597,16 @@ class DocumentView(
 
   event("click", (a: MouseEvent) => {
     //window.console.log(a)
+    focusAt(a, 100)
   })
 
   event("dblclick", (a: MouseEvent) => {
     //preventDefault(a)
-    focus()
+    focusAt(a, 10)
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    focus()
-    if (activeContent != null) {
-      activeContentEditor.asInstanceOf[Any] match {
-        case a: RichViewEditor => a.readSelectionFromDom()
-        case _ => focusAt(a)
-      }
-    }
+    focusAt(a, 10)
   })
 
 

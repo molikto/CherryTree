@@ -103,17 +103,17 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     seq.map {
       case Text.Emphasis(c) => span(
         cg("*"),
-        em(`class` := "ct-em", rec(c)),
+        em(`class` := "ct-c-em", rec(c)),
         cg("*")
       )
       case Text.Strong(c) => span(
         cg("*", "ct-cg-shadow"),
-        strong(`class` := "ct-strong", rec(c)),
+        strong(`class` := "ct-c-strong", rec(c)),
         cg("*", "ct-cg-shadow")
       )
       case Text.StrikeThrough(c) => span(
         cg("~"),
-        del(`class` := "ct-del", rec(c)),
+        del(`class` := "ct-c-del", rec(c)),
         cg("~")
       )
       case l@Text.Link(t, b, c) =>
@@ -121,7 +121,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         span(
           title := tt,
           cg("["),
-          span(`class` := (if (l.isNodeRef) "ct-link-node" else "ct-link"), rec(t)),
+          span(`class` := (if (l.isNodeRef) "ct-c-link-node" else "ct-c-link"), rec(t)),
           cg("]")
         )
       case Text.Image(b, c) =>
@@ -180,14 +180,73 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       case Text.Code(c) =>
         span(
           cg("`"),
-          code(`class` := "ct-code", c.str),
+          code(`class` := "ct-c-code", c.str),
           cg("`")
         )
       case Text.Plain(c) => stringFrag(c.str)
     }
   }
 
-  private[content] def cursorOf(t: raw.Text): model.cursor.Node = {
+
+  private def isValidContainer(a: Node) = {
+    a == root || (a.isInstanceOf[HTMLElement] && exitsClassPrefix(a.asInstanceOf[HTMLElement], "ct-c-"))
+  }
+
+  private def nodeOfContainer(a: Node) =  a.parentNode
+
+  private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
+    if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) {
+      rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
+    } else if (isValidContainer(a)) {
+      if (o == a.childNodes.length) {
+        rich.startPosOf(model.cursor.Node.moveBy(cursorOf(a.childNodes(o - 1)), 1))
+      } else {
+        rich.startPosOf(cursorOf(a.childNodes(o)))
+      }
+    } else {
+      if (isEnd) {
+        readOffset(a.parentNode, indexOf(a) + 1, isEnd = true)
+      } else {
+        readOffset(a.parentNode, indexOf(a), isEnd = false)
+      }
+    }
+  }
+
+  def readSelectionFromDom(): Option[IntRange] = {
+    val sel = window.getSelection()
+    if (sel.rangeCount == 1) {
+      val range = sel.getRangeAt(0)
+      if (range.collapsed) {
+        val start = readOffset(range.startContainer, range.startOffset, true)
+        if (start >= 0) {
+          return Some(IntRange(start, start))
+        }
+      } else {
+        val start = readOffset(range.startContainer, range.startOffset, false)
+        val end = readOffset(range.endContainer, range.endOffset, true)
+        if (start >= 0 && end >= 0) {
+          return Some(IntRange(start, end))
+        }
+      }
+    }
+    None
+  }
+
+
+  def readInsertionPoint(isNode: Node = null): Int = {
+    val sel = window.getSelection()
+    if (sel.rangeCount == 1) {
+      val range = sel.getRangeAt(0)
+      readOffset(range.endContainer, range.endOffset, true)
+    } else {
+      -1
+    }
+  }
+
+  private[content] def cursorOf(t: Node): model.cursor.Node = {
+    if (debug_view) {
+      window.console.log(t)
+    }
     def rec(t: Node): Seq[Int] = {
       if (t.parentNode == root) {
         Seq(indexOf(t, extraNode))
@@ -233,55 +292,74 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     }
   }
 
+  /**
+    *
+    * 1. node == text, int == pos in text, int == unicode index
+    * 2. node == parent, int offset, int == -1
+    */
+  private[content] def posInDom(pos: Int): (Node, Int, Int) = {
+    if (pos == 0) {
+      if (isEmpty) {
+        (root, 0, -1)
+      } else if (rich.text.head.isPlain) {
+        (nodeAt(Seq(0)), 0, 0)
+      } else {
+        (nodeChildArray(root), 0, -1)
+      }
+    } else if (pos == rich.size) {
+      rich.text.last match {
+        case plain: Text.Plain =>
+          (nodeAt(Seq(rich.text.size - 1)), plain.unicode.str.length, plain.unicode.size)
+        case _ =>
+          (nodeChildArray(root), rich.text.size, -1)
+      }
+    } else {
+      val ss = rich.before(pos)
+      val ee = rich.after(pos)
+      ss match {
+        case p: Atom.PlainGrapheme =>
+          (nodeAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
+        case s: Atom.SpecialOrMarked =>
+          ee match {
+            case es: Atom.SpecialOrMarked =>
+              if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
+                (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
+              } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
+                (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
+              } else { // different sibling node
+                (nodeChildArray(nodeAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1, -1)
+              }
+            case ep: Atom.PlainGrapheme =>
+              (nodeAt(ee.nodeCursor), 0, 0)
+            case ec: Atom.CodedGrapheme =>
+              (nodeAt(ee.nodeCursor), 0, 0)
+            case _ =>
+              throw new IllegalStateException("Not possible")
+          }
+        case c: Atom.CodedGrapheme =>
+          val unicode = ss.text.asCoded.content
+          ee match {
+            case es: Atom.SpecialOrMarked =>
+              (nodeAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
+            case ec: Atom.CodedGrapheme =>
+              (nodeAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
+            case _ =>
+              throw new IllegalStateException("Not possible")
+          }
+      }
+    }
+  }
+
   private[content] def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
-    assert(!range.isEmpty, "range is empty")
+    val (ss, so, _) = posInDom(range.start)
+    val (es, eo, _) = posInDom(range.until)
     def createRange(a: Node, b: Int, c: Node, d: Int): Range = {
       val rr = document.createRange()
       rr.setStart(a, b)
       rr.setEnd(c, d)
       rr
     }
-    val ss = rich.after(range.start)
-    val ee = rich.before(range.until)
-    if (ss.isInstanceOf[Atom.CodedGrapheme] &&
-      ee.isInstanceOf[Atom.CodedGrapheme] &&
-      ss.nodeCursor == ee.nodeCursor &&
-      ss.text.isCodedNonAtomic) {
-      val codeText = nodeAt(ss.nodeCursor)
-      val ast = ss.text.asCoded
-      val sss = ast.content.toStringPosition(ss.asInstanceOf[Atom.CodedGrapheme].unicodeIndex)
-      val eee = ast.content.toStringPosition(ee.asInstanceOf[Atom.CodedGrapheme].unicodeIndex + ee.asInstanceOf[Atom.CodedGrapheme].size)
-      (createRange(codeText, sss, codeText, eee), null)
-    } else if (ss.totalIndex == ee.totalIndex &&
-      ss.special) {
-      val isStart = ss.delimitationStart
-      val span = nodeAt(ss.nodeCursor).asInstanceOf[HTMLSpanElement]
-      val (s, e) = if (isStart) (0, 1) else (2, 3)
-      (createRange(span, s, span, e), span) // change this might causes problems when focus out then focus in...
-    } else {
-      val start = ss match {
-        case grapheme: Atom.PlainGrapheme =>
-          val text = nodeAt(grapheme.nodeCursor)
-          val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex)
-          (text, s)
-        case aa =>
-          assert(aa.delimitationStart || aa.isInstanceOf[Atom.Marked], s"expecting a deli start $aa")
-          val node = nodeChildArray(nodeAt(model.cursor.Node.parent(aa.nodeCursor)))
-          (node, aa.nodeCursor.last)
-      }
-
-      val end = ee match {
-        case grapheme: Atom.PlainGrapheme =>
-          val text = nodeAt(grapheme.nodeCursor)
-          val s = grapheme.text.unicode.toStringPosition(grapheme.unicodeIndex + grapheme.size)
-          (text, s)
-        case aa =>
-          assert(aa.delimitationEnd || aa.isInstanceOf[Atom.Marked], s"expecting a deli end, $aa")
-          val node = nodeChildArray(nodeAt(model.cursor.Node.parent(aa.nodeCursor)))
-          (node, aa.nodeCursor.last + 1)
-      }
-      (createRange(start._1, start._2, end._1, end._2), null)
-    }
+    (createRange(ss, so, es, eo), null)
   }
 
 
