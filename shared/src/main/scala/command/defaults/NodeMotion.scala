@@ -18,7 +18,7 @@ class NodeMotion extends CommandCategory("move among notes") {
   // LATER these
   abstract class NodeMotionCommand extends Command {
     override def repeatable: Boolean = true
-    def move(data: DocState, a: cursor.Node): Option[cursor.Node]
+    def move(data: DocState, a: cursor.Node): Option[cursor.Node] = None
     def message: Option[ViewMessage] = None
 
     override def available(a: DocState): Boolean = a.mode match {
@@ -33,7 +33,7 @@ class NodeMotion extends CommandCategory("move among notes") {
       case None => false
     }
 
-    final override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
       DocTransaction(Seq.empty, Some(a.mode match {
         case Some(m) => m match {
@@ -48,21 +48,26 @@ class NodeMotion extends CommandCategory("move among notes") {
       }), viewMessagesBefore = message.toSeq)
     }
   }
-  /*
-  val up: Command = new NodeMotionCommand {
+
+  new NodeMotionCommand {
     override val description: String = "move up"
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
-    override val defaultKeys: Seq[KeySeq] = Seq("k", "-", Up)
-    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualUp(a)
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Up)
+    override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
 
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(true))
   }
-  val down: Command = new NodeMotionCommand {
+
+  new NodeMotionCommand {
     override val description: String = "move down"
-    override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
-    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Down)
+    override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(false))
   }
-  */
+
   val parent: Command = new NodeMotionCommand {
     override val description: String = "move to parent"
     override val defaultKeys: Seq[KeySeq] = Seq("gp")

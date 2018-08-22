@@ -6,8 +6,6 @@ import model.data.{SpecialChar, Unicode}
 
 trait Settings {
 
-
-
   /**
     * these are settings??
     */

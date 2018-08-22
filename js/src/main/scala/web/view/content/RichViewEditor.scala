@@ -210,7 +210,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private var replaceComplexInputBySimple: (raw.Text, String, Int) = null
   private var isComplexInput = false
 
-  event(root, "beforeinput", (a: Event) => {
+  event(documentView.dom, "beforeinput", (a: Event) => {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
@@ -256,6 +256,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         isComplexInput = true
       }
       controller.flush()
+    } else {
+      window.console.log(a)
     }
   })
 
@@ -435,7 +437,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     pmode = aa
-    def updateViewMode(a: mode.Content.Rich, sub: Boolean): Unit = if (!viewUpdated) {
+    def updateViewMode(a: mode.Content.Rich, sub: Boolean): Unit = {
       a match {
         case mode.Content.RichInsert(pos) =>
           if (!sub) {

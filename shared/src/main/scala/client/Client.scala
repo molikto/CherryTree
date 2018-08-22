@@ -47,6 +47,7 @@ object Client {
     case object ScrollToBottom extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
     case class CopyToClipboard(a: String) extends ViewMessage
+    case class SimulateKeyboardMotion(isUp: Boolean) extends ViewMessage
   }
 }
 
@@ -179,9 +180,9 @@ class Client(
     from: Seq[(DocState, operation.Node)],
     viewAdded: Seq[(DocState, operation.Node)],
     ty: Undoer.Type,
-    viewUpdated: Boolean,
-    editorUpdated: Boolean,
-    fromUser: Boolean,
+    viewUpdated: Boolean = false,
+    editorUpdated: Boolean = false,
+    fromUser: Boolean = false,
     isSmartInsert: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
@@ -207,7 +208,7 @@ class Client(
       scheduledUpdateTempMode = Observable.delay({
         if (model.debug_view) println("updating temp mode")
         lockObject.synchronized {
-          updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, false, false, false)
+          updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local)
         }
       }).delaySubscription(2.seconds).subscribe()
     }
@@ -348,10 +349,7 @@ class Client(
             last,
             from,
             Seq.empty,
-            Undoer.Remote,
-            viewUpdated = false,
-            false,
-            fromUser = false)
+            Undoer.Remote)
       }
       } catch {
         case e: Exception =>
@@ -421,7 +419,7 @@ class Client(
   }
 
   override def refreshMode(): Unit = {
-    localChange(DocTransaction(Seq.empty, Some(state.mode0), None, state.badMode))
+    updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
   override def focusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
@@ -458,7 +456,7 @@ class Client(
       case c: data.Content.Code => c.defaultNormalMode()
     }
     // don't update the view
-    localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo)), viewUpdated = viewUpdated))
+    localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo))))
     true
   }
 

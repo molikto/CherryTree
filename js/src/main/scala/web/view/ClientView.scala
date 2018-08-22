@@ -6,7 +6,7 @@ import org.scalajs.dom.raw._
 import web._
 import org.scalajs.dom.window
 import scalatags.JsDom.all._
-import web.view.doc.DocumentView
+import web.view.doc.{DocumentView, EditorView}
 
 import scala.scalajs._
 
@@ -120,6 +120,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     })
   }
 
+
   observe(client.viewMessages.doOnNext {
     case Client.ViewMessage.VisitUrl(url) =>
       window.open(url)
@@ -133,6 +134,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       docView.scrollToBottom()
     case Client.ViewMessage.CopyToClipboard(str) =>
       util.copyTextToClipboard(str)
+    case Client.ViewMessage.SimulateKeyboardMotion(isUp) =>
   })
 
 

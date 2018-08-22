@@ -8,18 +8,57 @@ import org.scalajs.dom.raw.HTMLElement
 import view.EditorInterface
 import web.view._
 
+import scala.scalajs.js
+
+object EditorView {
+
+}
 trait EditorView extends View {
 
-  protected def editor: EditorInterface
+  /*
+  private def keyboardOf(j: Int, key: String): Unit = {
+    for (ev <- Seq("keydown", "keyup")) {
 
-  protected def readSelectionOnKeyUpDown()
+      val keyboardEvent = new KeyboardEvent(ev, web.jsObject(a => {
+        a.keyCode = j
+        a.key = key
+      }).asInstanceOf[KeyboardEventInit])
+      keyboardEvent.initKeyboardEvent(
+        ev, // event type : keydown, keyup, keypress
+        true, // bubbles
+        true, // cancelable
+        window, // viewArg: should be window
+        key, // ctrlKeyArg
+        0,
+        "",
+        false,
+        ""
+      )
+      window.console.log(keyboardEvent)
+      document.dispatchEvent(keyboardEvent.asInstanceOf[KeyboardEvent])
+
+//      val e = jQ.Event(ev, init)
+//      window.console.log(e)
+//      jQ(dom).trigger(e)
+    }
+  }
+
+  def upEvent() =  {
+    keyboardOf(38, "ArrowUp")
+  }
+
+  def downEvent() =  {
+    keyboardOf(40, "ArrowDown")
+  }
+  */
+
+  protected def editor: EditorInterface
 
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
       var key = KeyMap.get(event.key).orNull
-      if (key == Key.Down || key == Up) {
-        readSelectionOnKeyUpDown()
+      if (false) {
       } else {
         // TODO better handling this
         var isBiy = false

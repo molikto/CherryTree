@@ -9,7 +9,6 @@ case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
   subCodeMode: Option[model.mode.Content.CodeInside] = None,
-  badMode: Boolean = false,
 
   unfoldBefore: Set[cursor.Node] = Set.empty,
   toggleBefore: Set[cursor.Node] = Set.empty,
@@ -37,7 +36,7 @@ object DocTransaction {
 
 
   def message(a: ViewMessage): DocTransaction = {
-    DocTransaction(Seq.empty, None, viewMessagesBefore = Seq(a))
+    DocTransaction(Seq.empty, None, viewMessagesAfter = Seq(a))
   }
 }
 

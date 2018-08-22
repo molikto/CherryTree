@@ -60,9 +60,9 @@ class DocumentView(
     overflowY := "scroll",
     fakeSelections,
     noEditable,
-    div(height := "36px", display := "block"),
+    div(height := "36px", display := "block", contenteditable := "false"),
     rootFrame,
-    div(height := "36px", display := "block")
+    div(height := "36px", display := "block", contenteditable := "false")
   ).render
 
   private def cancelNoEditableInput(): Any = {
@@ -385,6 +385,7 @@ class DocumentView(
 
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
+    if (isKeyboardTriggeredModeUpdate) return
     duringStateUpdate = true
     m match {
       case None =>
@@ -607,6 +608,8 @@ class DocumentView(
     }
   }
 
+  private var isKeyboardTriggeredModeUpdate = false
+
   private def focusAt(t0: Node, delay: Int, isKeyboard: Boolean) = {
     clearAllPreviousReading()
     var t = t0
@@ -617,10 +620,16 @@ class DocumentView(
           val cur = cursorOf(contentView)
           focusFinder = window.setTimeout(() => {
             val range = contentView.asInstanceOf[Any] match {
-              case r: RichView => r.readSelectionFromDom()
+              case r: RichView =>
+                window.console.log(t0)
+                val sel = r.readSelectionFromDom()
+                println(sel)
+                sel
               case _ => None
             }
+            if (isKeyboard) isKeyboardTriggeredModeUpdate = true
             editor.focusOn(cur, range, isKeyboard)
+            isKeyboardTriggeredModeUpdate = false
             focusFinder = -1
           }, delay)
           t = null
