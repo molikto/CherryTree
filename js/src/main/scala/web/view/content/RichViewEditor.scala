@@ -268,7 +268,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private var replaceComplexInputBySimple: (raw.Text, String, Int) = null
   private var isComplexInput = false
 
-  event("beforeinput", (a: Event) => {
+  event(root, "beforeinput", (a: Event) => {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
@@ -298,7 +298,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   })
 
 
-  event("input", (a: Event) => {
+  event(root, "input", (a: Event) => {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {

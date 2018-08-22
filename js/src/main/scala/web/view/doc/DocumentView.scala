@@ -32,10 +32,12 @@ class DocumentView(
   ).render
 
   private val noEditable = div(
-    width := "0px",
+    position := "absolute",
+    top := "-30px",
+    width := "1000px",
     height := "0px",
-    RichView.EvilChar,
-    readonly := "true").render
+    RichView.EvilChar).render
+
 
   private val nonEditableSelection = document.createRange()
 
@@ -63,7 +65,37 @@ class DocumentView(
     div(height := "36px", display := "block")
   ).render
 
+  private def cancelNoEditableInput(): Any = {
+    window.setTimeout(() => {
+      if (model.debug_view) println("cancelled illegal input")
+      noEditable.textContent = RichView.EvilChar
+      if (insertionPoint == nonEditableSelection) {
+        val sel = window.getSelection()
+        if (sel.anchorNode != nonEditableSelection.startContainer) {
+          sel.removeAllRanges()
+          sel.addRange(nonEditableSelection)
+        }
+      }
+    }, 100)
+  }
 
+  event(noEditable, "compositionstart", (a: CompositionEvent) => {
+    cancelNoEditableInput()
+  })
+
+  event(noEditable, "compositionupdate", (a: CompositionEvent) => {
+    cancelNoEditableInput()
+  })
+
+  event(noEditable, "compositionend", (a: CompositionEvent) => {
+    cancelNoEditableInput()
+  })
+
+  event("beforeinput", (ev: Event) => {
+    if (insertionPoint == nonEditableSelection) {
+      cancelNoEditableInput()
+    }
+  })
 
   /**
     *
@@ -103,8 +135,9 @@ class DocumentView(
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
-      window.getSelection().removeAllRanges()
-      window.getSelection().addRange(insertionPoint)
+      val sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(insertionPoint)
     }
   })
 
@@ -112,8 +145,9 @@ class DocumentView(
   def startInsertion(range: Range): Unit = {
     insertionPoint = range
     if (!isFocusedOut) {
-      window.getSelection().removeAllRanges()
-      window.getSelection().addRange(insertionPoint)
+      val sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(insertionPoint)
     }
   }
 
@@ -561,9 +595,9 @@ class DocumentView(
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    if (activeContent != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
-      activeContentEditor.asInstanceOf[RichViewEditor].syncSelectionFromDom()
-    }
+//    if (activeContent != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
+//      activeContentEditor.asInstanceOf[RichViewEditor].syncSelectionFromDom()
+//    }
   })
 
 
