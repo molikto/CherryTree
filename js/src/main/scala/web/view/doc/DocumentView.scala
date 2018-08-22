@@ -57,10 +57,10 @@ class DocumentView(
     contenteditable := "true",
     overflowY := "scroll",
     selections,
+    noEditable,
     div(height := "36px", display := "block"),
     rootFrame,
-    div(height := "36px", display := "block"),
-    noEditable
+    div(height := "36px", display := "block")
   ).render
 
 
