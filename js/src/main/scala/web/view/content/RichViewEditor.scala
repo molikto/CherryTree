@@ -179,7 +179,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   event(root, "compositionstart", (a: CompositionEvent) => {
-    if (isInserting) controller.disableStateUpdate = true
+    if (isInserting) controller.disableRemoteStateUpdate(true, false)
     else preventDefault(a)
   })
 
@@ -189,7 +189,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   event(root, "compositionend", (a: CompositionEvent) => {
     // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
-    if (isInserting) controller.disableStateUpdate = false
+    if (isInserting) controller.disableRemoteStateUpdate(true, false)
     else preventDefault(a)
   })
 
@@ -313,9 +313,9 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       val insertionPoint = readInsertionPoint()
       if (from != to || !text.isEmpty) {
         if (model.debug_view) {
-          window.console.log(node)
-          window.console.log(node.parentNode)
-          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+//          window.console.log(node)
+//          window.console.log(node.parentNode)
+//          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
         }
         insertNonEmptyTextNode = (node, newContent, pos)
         controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), insertionPoint)

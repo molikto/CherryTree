@@ -195,6 +195,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   private def nodeOfContainer(a: Node) =  a.parentNode
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
+    if (a.parentNode == null) return -1
     if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) {
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) {
@@ -237,16 +238,14 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     val sel = window.getSelection()
     if (sel.rangeCount == 1) {
       val range = sel.getRangeAt(0)
-      readOffset(range.endContainer, range.endOffset, true)
-    } else {
-      -1
+      if (root.contains(range.endContainer)) {
+        return readOffset(range.endContainer, range.endOffset, true)
+      }
     }
+    -1
   }
 
   private[content] def cursorOf(t: Node): model.cursor.Node = {
-    if (debug_view) {
-      window.console.log(t)
-    }
     def rec(t: Node): Seq[Int] = {
       if (t.parentNode == root) {
         Seq(indexOf(t, extraNode))

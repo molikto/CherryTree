@@ -34,14 +34,14 @@ class DocumentView(
     position := "absolute",
     top := "-30px",
     width := "1000px",
-    height := "0px",
-    RichView.EvilChar).render
+    RichView.EvilChar,
+    height := "0px").render
 
 
   private val nonEditableSelection = document.createRange()
 
   nonEditableSelection.setStart(noEditable.childNodes(0), 0)
-  nonEditableSelection.setEnd(noEditable.childNodes(0), 1)
+  nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
 
   val fakeSelections: Div = div(
     position := "absolute",
@@ -132,12 +132,13 @@ class DocumentView(
     }
   })
 
-
   private def flushSelection(): Unit = {
     if (!isFocusedOut) {
-      val sel = window.getSelection()
-      sel.removeAllRanges()
-      sel.addRange(currentSelection)
+      if (window.getSelection().rangeCount == 1 && window.getSelection().getRangeAt(0) == currentSelection) {
+      } else {
+        window.getSelection().removeAllRanges()
+        window.getSelection().addRange(currentSelection)
+      }
     }
   }
 
@@ -255,21 +256,25 @@ class DocumentView(
       if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
       previousNodeMove = newMove
       previousNodeMove.classList.add("ct-node-visual-move")
-      if (v.move == currentZoom) {
-        scrollToTop()
-      } else {
-        scrollInToViewIfNotVisible(previousNodeMove, dom)
+      if (mouseSecondContent == null) { // don't scroll for mouse
+        if (v.move == currentZoom) {
+          scrollToTop()
+        } else {
+          scrollInToViewIfNotVisible(previousNodeMove, dom)
+        }
       }
     }
   }
 
   private def clearNodeVisual(): Unit = {
-    for (c <- previousNodeVisual) {
-      c.classList.remove("ct-node-visual")
+    if (previousNodeMove != null) {
+      for (c <- previousNodeVisual) {
+        c.classList.remove("ct-node-visual")
+      }
+      previousNodeVisual = ArrayBuffer.empty
+      if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
+      previousNodeMove = null
     }
-    previousNodeVisual = ArrayBuffer.empty
-    if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
-    previousNodeMove = null
   }
 
 
@@ -382,8 +387,7 @@ class DocumentView(
     }
   }
 
-  def simuateKeyboardMotion(isUp: Boolean): Unit = {
-    
+  def simulateKeyboardMotion(isUp: Boolean): Unit = {
   }
 
 
@@ -392,6 +396,7 @@ class DocumentView(
     m match {
       case None =>
         removeActiveContentEditor()
+        endSelection()
         clearNodeVisual()
       case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
@@ -404,6 +409,7 @@ class DocumentView(
           activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
           removeActiveContentEditor()
+          endSelection()
           updateNodeVisual(v)
       }
     }
@@ -557,17 +563,87 @@ class DocumentView(
     *
     */
 
+  private var isRightMouseButton: Boolean = false
+  private var mouseDownTime = -1L
+  private var mouseFirstContent: model.cursor.Node = null
+  private var mouseSecondContent: model.cursor.Node = null
+
+  private var mouseDisableWrongSelectionHandler = -1
+  private var mouseFlushSelectionHandler = -1
+
+  def mouseDown = mouseDownTime  > 0
 
   event("mousedown", (a: MouseEvent) => {
-    //window.console.log(a)
+    editor.disableRemoteStateUpdate(true, true)
+    mouseDownTime = System.currentTimeMillis()
+    isRightMouseButton = a.button != 0
+    getFirstContentView(a)
+    if (mouseFlushSelectionHandler != -1) window.clearTimeout(mouseFlushSelectionHandler)
+    mouseDisableWrongSelectionHandler = window.setInterval(() => {
+      if (mouseSecondContent != null) {
+        flushSelection()
+      }
+    }, 8)
   })
 
-  event("mouseup", (a: MouseEvent) => {
-    //window.console.log(a)
+  def mouseUpFinal(ev: MouseEvent) = {
+    editor.disableRemoteStateUpdate(false, true)
+    onMouseInteract(ev, 5)
+    println(s"final mouse detection $isRightMouseButton")
+  }
+
+  event(window, "mouseup", (a: MouseEvent) => {
+    if (mouseDown) {
+      val duration = System.currentTimeMillis() - mouseDownTime
+      mouseDownTime = -1
+      window.clearInterval(mouseDisableWrongSelectionHandler)
+      if (mouseSecondContent == null) {
+        clearAllPreviousReading()
+        var waitTime = 200 - duration
+        if (isRightMouseButton && waitTime < 100) waitTime = 100
+        if (waitTime < 0) waitTime = 0
+        mouseFlushSelectionHandler = window.setTimeout(() => mouseUpFinal(a), waitTime)
+      } else {
+        editor.disableRemoteStateUpdate(false, true)
+      }
+      mouseFirstContent = null
+      mouseSecondContent = null
+    }
   })
-  event("mousemove", (a: MouseEvent) => {
-    //window.console.log(a)
-    //preventDefault(a)
+
+  private def getFirstContentView(a: MouseEvent): Unit = {
+    val pc = findParentContent(a.target.asInstanceOf[Node])
+    if (pc != null) mouseFirstContent = pc._1
+  }
+
+
+  event("mouseover", (a: MouseEvent) => {
+    if (mouseDown) {
+      if (mouseFirstContent == null) {
+        getFirstContentView(a)
+      } else {
+        val curContent = findParentContent(a.target.asInstanceOf[Node])
+        if (curContent != null) {
+          val curSecondContent = if (curContent._1 != mouseFirstContent) {
+          //  a.preventDefault()
+            curContent._1
+          } else {
+            //onMouseInteract(a, 5)
+            null
+          }
+          if (curSecondContent != mouseSecondContent) {
+            mouseSecondContent = curSecondContent
+            if (mouseSecondContent != null) {
+              editor.onVisualMode(mouseFirstContent, mouseSecondContent)
+            } else {
+              clearNodeVisual()
+            }
+          }
+        } else {
+          //a.preventDefault()
+        }
+      }
+    }
   })
 
   private var focusFinder: Int = -1
@@ -580,53 +656,57 @@ class DocumentView(
   }
 
 
-  private def focusAt(t0: Node, delay: Int) = {
-    clearAllPreviousReading()
+  private def findParentContent(t0: Node): (model.cursor.Node, ContentView.General) = {
     var t = t0
     while (t != null && t != dom) {
-      View.maybeDom[ContentView.General](t) match {
-        case Some(a) if a.isInstanceOf[ContentView.General] =>
-          val contentView = a.asInstanceOf[ContentView.General]
-          val cur = cursorOf(contentView)
-          focusFinder = window.setTimeout(() => {
-            val range = contentView.asInstanceOf[Any] match {
-              case r: RichView =>
-                window.console.log(t0)
-                val sel = r.readSelectionFromDom()
-                println(sel)
-                sel
-              case _ => None
-            }
-            editor.focusOn(cur, range, false)
-            focusFinder = -1
-          }, delay)
-          t = null
+      View.maybeDom[View](t) match {
+        case Some(a)  =>
+          val contentView: ContentView.General = a match {
+            case view: RichView =>
+              view.asInstanceOf[ContentView.General]
+            case view: WrappedCodeView =>
+              view.asInstanceOf[ContentView.General]
+            case _ =>
+              null
+          }
+          if (contentView != null) {
+            val cur = cursorOf(contentView)
+            return (cur, contentView)
+          }
         case _ =>
       }
-      if (t != null) t = t.parentNode
+      t = t.parentNode
     }
-    if (t != null) {
-      editor.refreshMode()
+    null
+  }
+
+  private def readSelectionAt(t: Node, delay: Int): Unit = {
+    if (mouseSecondContent != null) return
+    if (focusFinder == -1) {
+      focusFinder = window.setTimeout(() => {
+        val pc = findParentContent(t)
+        if (pc != null) {
+          val (cur, contentView) = pc
+          val range = contentView.asInstanceOf[Any] match {
+            case r: RichView =>
+              r.readSelectionFromDom()
+            case _ => None
+          }
+          editor.focusOn(cur, range, false)
+        } else {
+          editor.refreshMode()
+        }
+        focusFinder = -1
+      }, delay)
     }
   }
 
-  def onMouseInteract(a: MouseEvent, i: Int) = {
+  private def onMouseInteract(a: MouseEvent, i: Int): Unit = {
     focus()
-    focusAt(a.target.asInstanceOf[Node], i)
+    readSelectionAt(a.target.asInstanceOf[Node], i)
   }
-
-  event("click", (a: MouseEvent) => {
-    window.console.log(a)
-    onMouseInteract(a, 100)
-  })
-
-  event("dblclick", (a: MouseEvent) => {
-    window.console.log(a)
-    onMouseInteract(a, 5)
-  })
 
   event("contextmenu", (a: MouseEvent) => {
-    onMouseInteract(a, 5)
   })
 
 

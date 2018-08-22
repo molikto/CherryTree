@@ -19,10 +19,11 @@ trait SourceEditInterface {
 }
 
 trait EditorInterface extends SourceEditInterface {
+  def onVisualMode(mouseFirstContent: Node, node: Node): Unit
+
   def refreshMode(): Unit
   def focusOn(cur: Node, range: Option[IntRange], viewUpdated: Boolean): Boolean
-  def disableStateUpdate: Boolean
-  def disableStateUpdate_=(a: Boolean): Unit
+  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
   def flushes: Observable[Unit]
   def flush(): Unit
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int)

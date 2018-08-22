@@ -136,16 +136,21 @@ class Client(
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
-  private var disableStateUpdate_ : Boolean = false
+  private var disableForMouse: Boolean = false
+  private var disableForComposition: Boolean = false
 
 
   private var flushing = false
   private var updatingState = false
-  def disableStateUpdate: Boolean = disableStateUpdate_
-  def disableStateUpdate_=(a: Boolean): Unit = {
+  private def disableRemoteStateUpdate: Boolean = disableForComposition || disableForMouse
+  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit = {
     if (flushing) throw new IllegalStateException("You should not change state will fetching state!!")
-    disableStateUpdate_ = a
-    if (!a) {
+    if (forMouse) {
+      disableForMouse = disable
+    } else {
+      disableForComposition = disable
+    }
+    if (!disableRemoteStateUpdate) {
       flush()
     }
   }
@@ -153,7 +158,7 @@ class Client(
   def flushes: Observable[Unit] = flushes_
 
   def flush(): Unit = {
-    if (!disableStateUpdate) {
+    if (!disableRemoteStateUpdate) {
       flushing = true
       flushes_.onNext(Unit)
       flushing = false
@@ -326,7 +331,7 @@ class Client(
     * update committed, committed version, uncommited, state
     */
   private def updateFromServer(success: ClientUpdate): Unit = {
-    if (disableStateUpdate) {
+    if (disableRemoteStateUpdate) {
       disabledStateUpdates.append(success)
     } else {
       try {
@@ -460,6 +465,11 @@ class Client(
     true
   }
 
+
+
+  override def onVisualMode(mouseFirstContent: Node, node: Node): Unit = {
+    localChange(DocTransaction(model.mode.Node.Visual(mouseFirstContent, node)))
+  }
 
   /**
     * view calls this method to insert text at current insertion point,
@@ -611,9 +621,8 @@ class Client(
   def localChange(update0: DocTransaction, isSmartInsert: Boolean = false): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
-      println(update)
+     // println(update)
     }
-    if (disableStateUpdate) throw new IllegalStateException("You have disabled state update!!!")
     // for a delete of a non empty node, we disable sync from server for sometime
     // during this time, if the next local change is an insert, we try to merge them as a move
     var viewAdd : Seq[(DocState, operation.Node)] = Seq.empty

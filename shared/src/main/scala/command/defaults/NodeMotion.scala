@@ -6,6 +6,7 @@ import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.cursor
+import model.cursor.Node
 
 class NodeMotion extends CommandCategory("move among notes") {
 
@@ -56,16 +57,19 @@ class NodeMotion extends CommandCategory("move among notes") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(Up)
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
 
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(true))
+
+//    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+//      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(true))
+    override def move(data: DocState, a: Node): Option[Node] = data.mover().visualUp(a)
   }
 
   new NodeMotionCommand {
     override val description: String = "move down"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Down)
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(false))
+//    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+//      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(false))
+    override def move(data: DocState, a: Node): Option[Node] = data.mover().visualDown(a)
   }
 
   val parent: Command = new NodeMotionCommand {
