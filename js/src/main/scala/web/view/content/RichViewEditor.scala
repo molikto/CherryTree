@@ -438,7 +438,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     val start = updateInsertCursorAt(pos)
     range.setStart(start._1, start._2)
     range.setEnd(start._1, start._2)
-    documentView.startInsertion(range)
+    documentView.startSelection(range)
     mergeTextsFix(start._1.asInstanceOf[raw.Text])
   }
 

@@ -142,8 +142,7 @@ class DocumentView(
   })
 
 
-  def startInsertion(range: Range): Unit = {
-    insertionPoint = range
+  private def flushSelection(): Unit = {
     if (!isFocusedOut) {
       val sel = window.getSelection()
       sel.removeAllRanges()
@@ -151,8 +150,12 @@ class DocumentView(
     }
   }
 
+  def startSelection(range: Range): Unit = {
+    insertionPoint = range
+  }
+
   def endSelection(): Unit = {
-    startInsertion(nonEditableSelection)
+    insertionPoint = nonEditableSelection
   }
 
   def hasSelection: Boolean = {
@@ -410,6 +413,7 @@ class DocumentView(
       }
     }
     duringStateUpdate = false
+    flushSelection()
   }
 
   // we use onAttach because we access window.setSelection
