@@ -538,7 +538,9 @@ block selection
 }
 
 .ct-latex {
-   color: #abb2bf;
+ color: #abb2bf;
+ display: inline-block;
+ box-sizing: border-box;
 }
 
 .ct-inline-html {
@@ -583,6 +585,8 @@ block selection
     background-color: #FFF2CF;
     border-radius: .2rem;
     vertical-align: middle;
+    box-sizing: border-box;
+    border: 1px solid #000000;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 
@@ -593,6 +597,8 @@ block selection
     background-color: #EDCED1;
     vertical-align: middle;
     border-radius: .2rem;
+    box-sizing: border-box;
+    border: 1px solid #000000;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 

@@ -5,6 +5,7 @@ import model.data._
 import model.mode.Content
 import model.range.IntRange
 import monix.execution.Cancelable
+import org.scalajs.dom
 import org.scalajs.dom.html.Paragraph
 import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLDivElement, HTMLElement, HTMLSpanElement, Node, Range}
 import org.scalajs.dom.{ClientRect, document, raw, window}
@@ -18,6 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 class RichViewEditor(val documentView: DocumentView, val controller: EditorInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
+
 
   /**
     * selection
@@ -33,6 +35,16 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     } else {
       contentView.dom.getBoundingClientRect()
     })
+  }
+
+  def syncSelectionFromDom(): Unit = {
+    if (window.getSelection().rangeCount == 1) {
+      val range = window.getSelection().getRangeAt(0)
+      if (contentView.dom.contains(range.startContainer) && contentView.dom.contains(range.endContainer)) {
+        documentView.endInsertion()
+        setRangeSelection(range, false)
+      }
+    }
   }
 
 
@@ -74,7 +86,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       j += 1
     }
 
-    for (rect <- ar) {
+    for (rect <- ar.reverse) {
       dom.appendChild(
         div(
           `class` := "ct-rich-selection",
@@ -323,15 +335,13 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 //    //window.getSelection().anchorNode
 //  }
 
-  def readInsertionPoint(node: Node, pos: Int): Int = {
+  def readInsertionPoint(isNode: Node = null): Int = {
     if (window.getSelection().rangeCount == 1) {
       val range = window.getSelection().getRangeAt(0)
-      if (range.collapsed) {
-        if (range.startContainer == node) {
-          val tc = node.textContent
-          val cc = tc.codePointCount(0, range.startOffset)
-          return cc + pos
-        }
+      if (range.collapsed && range.startContainer.isInstanceOf[dom.Text] && (isNode == null || isNode == range.startContainer)) {
+        val tc = range.startContainer.textContent
+        val cc = tc.codePointCount(0, range.startOffset)
+        return cc + rich.indexOf(cursorOf(range.startContainer.asInstanceOf[dom.Text]))
       }
     }
     -1
@@ -355,7 +365,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       val (node, oldContent, pos) = insertNonEmptyTextNode
       val newContent = mergeTextsFix(node)
       val (from, to, text) = util.quickDiff(oldContent, newContent)
-      val insertionPoint = readInsertionPoint(node, pos)
+      val insertionPoint = readInsertionPoint()
       if (from != to || !text.isEmpty) {
         if (model.debug_view) {
           window.console.log(node)

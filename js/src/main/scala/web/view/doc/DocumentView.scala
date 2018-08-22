@@ -560,8 +560,9 @@ class DocumentView(
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    //window.console.log(a)
-    focus()
+    if (activeContentEditor != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
+      activeContentEditor.asInstanceOf[RichViewEditor].syncSelectionFromDom()
+    }
   })
 
 

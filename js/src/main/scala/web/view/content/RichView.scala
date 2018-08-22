@@ -131,6 +131,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         sp: Frag
       case Text.HTML(c) =>
         val a = span(contenteditable := "false",
+          display := "inline-block",
           span(EvilChar, contenteditable := false) // don't fuck with my cursor!!!
         ).render
         if (c.isBlank) {
@@ -151,7 +152,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         a.appendChild(span(EvilChar, contenteditable := false).render)
         a: Frag
       case Text.LaTeX(c) =>
-        val a = span().render
+        val a = span(display := "inline-block").render
         if (c.isBlank) {
           a.appendChild(warningInline("empty LaTeX").render)
         } else {
@@ -164,6 +165,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         }
         span(`class` := "ct-latex",
           contenteditable := false,
+          display := "inline-block",
+          boxSizing := "border-box",
           span(EvilChar), // don't fuck with my cursor!!!
           a,
           span(EvilChar)
