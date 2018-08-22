@@ -11,6 +11,7 @@ object ContentViewEditor {
 }
 
 abstract class ContentViewEditor[T <: data.Content, O <: model.operation.Content, M <: model.mode.Content](val contentView: ContentView[T, O]) {
+  def flush(): Unit = {}
 
 
   def updateContent(c: T, m: Option[M], trans: O, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {

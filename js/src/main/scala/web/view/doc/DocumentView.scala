@@ -105,31 +105,27 @@ class DocumentView(
     *
     *
     */
-  private var isFocusedOut: Boolean = false
+  private var isFocusedOut: Boolean = true
   private var duringStateUpdate: Boolean = false
   private var currentSelection: Range = nonEditableSelection
 
 
-  event("focusout", (a: FocusEvent) => {
-    a.relatedTarget match {
-      case h: HTMLElement if dom.contains(h) =>
-      case _ =>
-        if (!duringStateUpdate) {
-          isFocusedOut = true
-          dom.classList.add("ct-window-inactive")
-        }
-    }
+  event("blur", (a: FocusEvent) => {
+    isFocusedOut = true
+    dom.classList.add("ct-window-inactive")
   })
 
   override def focus(): Unit = {
-    isFocusedOut = false
-    dom.classList.remove("ct-window-inactive")
-    dom.focus()
-    flushSelection()
+    if (isFocusedOut) {
+      isFocusedOut = false
+      dom.classList.remove("ct-window-inactive")
+      dom.focus()
+      flushSelection()
+    }
   }
 
 
-  event("focusin", (a: FocusEvent) => {
+  event("focus", (a: FocusEvent) => {
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
@@ -529,6 +525,8 @@ class DocumentView(
   })
 
 
+  observe(editor.flushes.doOnNext(_ => if (activeContent != null) activeContentEditor.flush()))
+
 
 
 
@@ -570,8 +568,7 @@ class DocumentView(
   })
 
 
-  event("click", (a: MouseEvent) => {
-    //window.console.log(a)
+  private def focusAt(a: MouseEvent) = {
     focus()
     var t = a.target.asInstanceOf[Node]
     while (t != null && t != dom) {
@@ -587,6 +584,10 @@ class DocumentView(
       }
       if (t != null) t = t.parentNode
     }
+  }
+
+  event("click", (a: MouseEvent) => {
+    //window.console.log(a)
   })
 
   event("dblclick", (a: MouseEvent) => {
@@ -595,9 +596,13 @@ class DocumentView(
   })
 
   event("contextmenu", (a: MouseEvent) => {
-//    if (activeContent != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
-//      activeContentEditor.asInstanceOf[RichViewEditor].syncSelectionFromDom()
-//    }
+    focus()
+    if (activeContent != null) {
+      activeContentEditor.asInstanceOf[Any] match {
+        case a: RichViewEditor => a.readSelectionFromDom()
+        case _ => focusAt(a)
+      }
+    }
   })
 
 

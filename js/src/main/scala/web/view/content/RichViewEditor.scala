@@ -127,7 +127,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private var insertEmptyTextNode: (raw.Text, Int) = null
   private var insertNonEmptyTextNode: (raw.Text, String, Int) = null
   private var astHighlight: HTMLSpanElement = null
-  private var flushSubscription: Cancelable = null
 
 
 
@@ -294,9 +293,10 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
             (textNode, textBefore, indexOfPlain)
         }
       }
-      if (model.debug_view && replaceComplexInputBySimple == null) {
+      if (model.debug_view) {
         window.console.log(a)
         window.console.log(ev.getTargetRanges())
+        println(replaceComplexInputBySimple)
       }
     } else {
       if (a.cancelable) {
@@ -307,7 +307,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   })
 
 
-  event(root, "input", (a: Event) => {
+  event(documentView.dom, "input", (a: Event) => {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
@@ -397,7 +397,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     *
     */
 
-  private def flushInsertionMode(): Unit = {
+  override def flush(): Unit = {
     if (isComplexInput) {
       flushComplex()
       isComplexInput = false
@@ -465,21 +465,12 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   override def clearMode(): Unit = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
-    if (flushSubscription != null) {
-      flushSubscription.cancel()
-      flushSubscription = null
-    }
   }
 
   private def isInserting = previousMode == 0
 
   private def initMode(i: Int): Unit = {
     if (previousMode < 0 && i >= 0) {
-      if (flushSubscription == null) {
-        flushSubscription = observe(controller.flushes.doOnNext(_ => {
-          flushInsertionMode()
-        }))
-      }
     }
     if (previousMode != i) {
       if (debug_view) {
