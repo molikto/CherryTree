@@ -129,10 +129,11 @@ class DocumentView(
 
   private var activeContentEditor: ContentViewEditor.General = null
 
-  private def activeContent = if (activeContentEditor == null) null else activeContentEditor.contentView
+  private def activeContent =
+    if (activeContentEditor == null || activeContentEditor.contentView.destroyed) null else activeContentEditor.contentView
 
   private def removeActiveContentEditor(): Unit = {
-    if (activeContentEditor != null) {
+    if (activeContentEditor != null && !activeContentEditor.contentView.destroyed) {
       activeContentEditor.clearMode()
       activeContentEditor = null
     }
@@ -344,7 +345,7 @@ class DocumentView(
 
 
   def selectionRect: Rect = {
-    if (activeContentEditor != null) {
+    if (activeContent != null) {
       activeContentEditor.selectionRect
     } else if (previousNodeMove != null) {
       toRect(previousNodeMove.getBoundingClientRect())
@@ -490,7 +491,7 @@ class DocumentView(
 
   event(window, "resize", (a: MouseEvent) => {
     refreshMounted()
-    if (activeContentEditor != null) activeContentEditor.refreshRangeSelection()
+    if (activeContent != null) activeContentEditor.refreshRangeSelection()
   })
 
 
@@ -560,7 +561,7 @@ class DocumentView(
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    if (activeContentEditor != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
+    if (activeContent != null && activeContentEditor.isInstanceOf[RichViewEditor]) {
       activeContentEditor.asInstanceOf[RichViewEditor].syncSelectionFromDom()
     }
   })

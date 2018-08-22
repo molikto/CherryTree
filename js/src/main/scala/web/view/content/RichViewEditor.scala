@@ -273,7 +273,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
             (textNode, textBefore, indexOfPlain)
         }
       }
-      if (replaceComplexInputBySimple == null) {
+      if (model.debug_view && replaceComplexInputBySimple == null) {
         window.console.log(a)
         window.console.log(ev.getTargetRanges())
       }
