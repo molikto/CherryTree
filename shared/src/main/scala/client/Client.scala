@@ -424,7 +424,7 @@ class Client(
     localChange(DocTransaction(Seq.empty, Some(state.mode0), None, state.badMode))
   }
 
-  override def focusOn(c: Node, ran: Option[IntRange], updateDom: Boolean): Boolean = {
+  override def focusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
     import model._
     state.mode match {
       case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
@@ -458,7 +458,7 @@ class Client(
       case c: data.Content.Code => c.defaultNormalMode()
     }
     // don't update the view
-    localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo)), viewUpdated = !updateDom))
+    localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo)), viewUpdated = viewUpdated))
     true
   }
 
