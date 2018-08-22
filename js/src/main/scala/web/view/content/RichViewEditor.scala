@@ -31,8 +31,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   override def selectionRect: Rect = {
     web.view.toRect(if (rangeSelection != null) {
       rangeSelection.getBoundingClientRect()
-    } else if (documentView.hasInsertion) {
-      documentView.insertion.getBoundingClientRect()
+    } else if (documentView.hasSelection) {
+      documentView.selection.getBoundingClientRect()
     } else {
       contentView.dom.getBoundingClientRect()
     })
@@ -42,7 +42,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     if (window.getSelection().rangeCount == 1) {
       val range = window.getSelection().getRangeAt(0)
       if (contentView.dom.contains(range.startContainer) && contentView.dom.contains(range.endContainer)) {
-        documentView.endInsertion()
+        documentView.endSelection()
         setRangeSelection(range, false)
       }
     }
@@ -398,7 +398,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   private def clearInsertionMode(): Unit = {
-    documentView.endInsertion()
+    documentView.endSelection()
     insertNonEmptyTextNode = null
     removeInsertEmptyTextNode()
   }

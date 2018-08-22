@@ -151,15 +151,15 @@ class DocumentView(
     }
   }
 
-  def endInsertion(): Unit = {
+  def endSelection(): Unit = {
     startInsertion(nonEditableSelection)
   }
 
-  def hasInsertion: Boolean = {
+  def hasSelection: Boolean = {
     nonEditableSelection != insertionPoint
   }
 
-  def insertion: Range = insertionPoint
+  def selection: Range = insertionPoint
 
   private var activeContentEditor: ContentViewEditor.General = null
 
