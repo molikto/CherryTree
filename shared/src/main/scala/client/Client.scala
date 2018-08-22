@@ -439,7 +439,7 @@ class Client(
               if (state.isInsert) {
                 mode.Content.RichInsert(a.start)
               } else {
-                mode.Content.RichNormal(r.rangeBefore(a.start))
+                mode.Content.RichNormal(r.rangeAfter(a.start))
               }
             } else {
               val r1 = r.rangeAfter(a.start)

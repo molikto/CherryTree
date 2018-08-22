@@ -54,11 +54,14 @@ trait EditorView extends View {
 
   protected def editor: EditorInterface
 
+  def readSelectionOnKeyUpDown(): Unit
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
       var key = KeyMap.get(event.key).orNull
-      if (false) {
+      if (key == Key.Down || key == Key.Up) {
+        readSelectionOnKeyUpDown()
       } else {
         // TODO better handling this
         var isBiy = false
