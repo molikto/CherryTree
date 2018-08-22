@@ -55,48 +55,57 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     }
   }
 
+
   private def clearRangeSelection(): Unit = {
-    if (rangeSelection != null) {
-      removeAllChild(documentView.selections)
+    if (web.debug_fakeSelection) {
+      if (rangeSelection != null) {
+        removeAllChild(documentView.fakeSelections)
+      }
+      rangeSelection = null
+    } else {
+      documentView.endSelection()
     }
-    rangeSelection = null
   }
 
   private def setRangeSelection(range: Range, fromUser: Boolean): Unit = {
-    clearRangeSelection()
-    val dom = documentView.selections
-    val p = dom.getBoundingClientRect()
-    rangeSelection = range
-    val rects = range.getClientRects()
-    val ar = new ArrayBuffer[Rect]()
-    for (i <- 0 until rects.length) {
-      var rect = rects(i)
-      val b = toRect(rect)
-      var j = 0
-      while (rect != null && j < ar.size) {
-        val a = ar(j)
-        if (a.seemsSameLine(b)) {
-          ar(j) = a.merge(b)
-          rect = null
+    if (web.debug_fakeSelection) {
+      clearRangeSelection()
+      val dom = documentView.fakeSelections
+      val p = dom.getBoundingClientRect()
+      rangeSelection = range
+      val rects = range.getClientRects()
+      val ar = new ArrayBuffer[Rect]()
+      for (i <- 0 until rects.length) {
+        var rect = rects(i)
+        val b = toRect(rect)
+        var j = 0
+        while (rect != null && j < ar.size) {
+          val a = ar(j)
+          if (a.seemsSameLine(b)) {
+            ar(j) = a.merge(b)
+            rect = null
+          }
+          j += 1
+        }
+        if (rect != null) {
+          ar.append(b)
         }
         j += 1
       }
-      if (rect != null) {
-        ar.append(b)
-      }
-      j += 1
-    }
 
-    for (rect <- ar.reverse) {
-      dom.appendChild(
-        div(
-          `class` := "ct-rich-selection",
-          contenteditable := "false",
-          left := rect.left - p.left,
-          top := rect.top - p.top,
-          width := rect.width,
-          height := rect.height
-        ).render)
+      for (rect <- ar.reverse) {
+        dom.appendChild(
+          div(
+            `class` := "ct-rich-selection",
+            contenteditable := "false",
+            left := rect.left - p.left,
+            top := rect.top - p.top,
+            width := rect.width,
+            height := rect.height
+          ).render)
+      }
+    } else {
+      documentView.startSelection(range)
     }
   }
 

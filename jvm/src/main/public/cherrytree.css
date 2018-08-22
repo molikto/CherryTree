@@ -433,23 +433,23 @@
 
 
 /**
+
 selection
-**/
-
-
-
-/**
 code mirror cursor
-
-**/
-
-
-
-/**
-
 block selection
 
 **/
+
+
+::selection {
+    background: #cc723388;
+}
+
+::selection:window-inactive {
+  background: #cc723366;
+}
+
+
 .ct-selection {
     background: #58617488;
     border-bottom: 2px solid #cc7233;

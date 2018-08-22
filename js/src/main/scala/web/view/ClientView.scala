@@ -32,7 +32,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       `class` := "ct-document-view-background",
       width := "100%",
       height := "100%",
-      zIndex := "-2"
+      if (web.debug_fakeSelection) zIndex := "-2" else width := "100%"
     ),
     overflow := "hidden").render
   attachToNode(parent)
