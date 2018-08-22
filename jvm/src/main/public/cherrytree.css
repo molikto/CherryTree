@@ -544,7 +544,9 @@ block selection
 }
 
 .ct-inline-html {
- border: 1px solid #399dc6;
+ outline: 1px solid #399dc6;
+ outline-offset: -4px;
+ box-sizing: border-box;
  display: inline-block;
  padding: 8px;
 }
@@ -586,7 +588,7 @@ block selection
     border-radius: .2rem;
     vertical-align: middle;
     box-sizing: border-box;
-    border: 1px solid #000000;
+    border: 1px solid #00000088;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 
@@ -598,7 +600,7 @@ block selection
     vertical-align: middle;
     border-radius: .2rem;
     box-sizing: border-box;
-    border: 1px solid #000000;
+    border: 1px solid #00000088;
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
 

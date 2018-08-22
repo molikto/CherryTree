@@ -135,8 +135,8 @@ class DocumentView(
   private def removeActiveContentEditor(): Unit = {
     if (activeContentEditor != null && !activeContentEditor.contentView.destroyed) {
       activeContentEditor.clearMode()
-      activeContentEditor = null
     }
+    activeContentEditor = null
   }
 
   /**

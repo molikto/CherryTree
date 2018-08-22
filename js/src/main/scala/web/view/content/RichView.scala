@@ -56,6 +56,11 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   private[content] def root: HTMLElement = dom
 
+  private[content] var previousMode = if (isEmpty) -2 else -1
+
+  private[content] def setPreviousModeToEmpty(): Unit = {
+    previousMode = if (isEmpty) -2 else -1
+  }
 
 
   private[content] def initDom(): Unit = {
@@ -70,6 +75,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   initDom()
 
   private[content] def clearDom(): Unit = {
+    setPreviousModeToEmpty()
     removeAllChild(root)
   }
 

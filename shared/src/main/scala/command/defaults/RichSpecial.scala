@@ -68,7 +68,10 @@ class RichSpecial extends CommandCategory("text format") {
         }
         val ret = vms.copy(trans)
         extraInsert match {
-          case Some(extra) => DocTransaction(Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))), a.mode, extra = Some(ret))
+          case Some(extra) => DocTransaction(
+            Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))),
+            Some(a.copyContentMode(model.mode.Content.RichInsert(insert + extra.size))),
+            extra = Some(ret))
           case None => ret
         }
       } else {

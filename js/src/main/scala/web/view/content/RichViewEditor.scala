@@ -25,6 +25,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     * selection
     */
 
+  private var rangeGlowing: Boolean = false
   private var rangeSelection: Range = null
 
   override def selectionRect: Rect = {
@@ -99,13 +100,25 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     }
   }
 
+
+  def readInsertionPoint(isNode: Node = null): Int = {
+    if (window.getSelection().rangeCount == 1) {
+      val range = window.getSelection().getRangeAt(0)
+      if (range.collapsed && range.startContainer.isInstanceOf[dom.Text] && (isNode == null || isNode == range.startContainer)) {
+        val tc = range.startContainer.textContent
+        val cc = tc.codePointCount(0, range.startOffset)
+        return cc + contentView.rich.indexOf(contentView.cursorOf(range.startContainer.asInstanceOf[dom.Text]))
+      }
+    }
+    -1
+  }
+
   import contentView._
 
   private var insertEmptyTextNode: (raw.Text, Int) = null
   private var insertNonEmptyTextNode: (raw.Text, String, Int) = null
   private var astHighlight: HTMLSpanElement = null
   private var flushSubscription: Cancelable = null
-  private var previousMode = if (isEmpty) -2 else -1
 
 
 
@@ -122,7 +135,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   defer(_ => {
     clearMode()
-    clearEditor()
   })
 
   private def updateInsertCursorAt(pos: Int): (Node, Int) = {
@@ -335,18 +347,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 //    //window.getSelection().anchorNode
 //  }
 
-  def readInsertionPoint(isNode: Node = null): Int = {
-    if (window.getSelection().rangeCount == 1) {
-      val range = window.getSelection().getRangeAt(0)
-      if (range.collapsed && range.startContainer.isInstanceOf[dom.Text] && (isNode == null || isNode == range.startContainer)) {
-        val tc = range.startContainer.textContent
-        val cc = tc.codePointCount(0, range.startOffset)
-        return cc + rich.indexOf(cursorOf(range.startContainer.asInstanceOf[dom.Text]))
-      }
-    }
-    -1
-  }
-
   private def flushSimple(): Unit = {
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode
@@ -408,6 +408,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
+    rangeGlowing = true
     val (r1,_) = nonEmptySelectionToDomRange(fix)
     val (r2,_) = nonEmptySelectionToDomRange(move)
     val range = document.createRange()
@@ -426,6 +427,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
 
   private def clearNormalMode(): Unit = {
+    rangeGlowing = false
     clearRangeSelection()
     clearFormattedNodeHighlight()
   }
@@ -527,9 +529,10 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
           if (!sub) initMode(2)
           updateNormalMode(range, fromUser)
         }
+      case _ => throw new IllegalStateException("Not here!")
     }
     if (fromUser) {
-      scrollInToViewIfNotVisible(dom, documentView.dom)
+      scrollInToViewIfNotVisible(contentView.dom, documentView.dom)
     }
     aa match {
       case sub: mode.Content.RichSubMode =>
@@ -582,9 +585,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     }
   }
 
-  private def setPreviousModeToEmpty(): Unit = {
-    previousMode = if (isEmpty) -2 else -1
-  }
 
   override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     val dataBefore = rich

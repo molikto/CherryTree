@@ -83,11 +83,8 @@ class CodeViewEditor(
     dom.classList.remove("ct-selection")
   }
 
-
-
-
   contentView.defer(_ => {
-    clearMode()
+    removeEditor()
   })
 
 
