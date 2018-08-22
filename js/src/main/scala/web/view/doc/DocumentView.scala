@@ -44,7 +44,7 @@ class DocumentView(
   nonEditableSelection.setStart(noEditable.childNodes(0), 0)
   nonEditableSelection.setEnd(noEditable.childNodes(0), 1)
 
-  val selections: Div = div(
+  val fakeSelections: Div = div(
     position := "absolute",
     width := "0px",
     height := "0px"
@@ -58,7 +58,7 @@ class DocumentView(
     paddingRight := "36px",
     contenteditable := "true",
     overflowY := "scroll",
-    selections,
+    fakeSelections,
     noEditable,
     div(height := "36px", display := "block"),
     rootFrame,
@@ -69,7 +69,7 @@ class DocumentView(
     window.setTimeout(() => {
       if (model.debug_view) println("cancelled illegal input")
       noEditable.textContent = RichView.EvilChar
-      if (insertionPoint == nonEditableSelection) {
+      if (currentSelection == nonEditableSelection) {
         val sel = window.getSelection()
         if (sel.anchorNode != nonEditableSelection.startContainer) {
           sel.removeAllRanges()
@@ -92,7 +92,7 @@ class DocumentView(
   })
 
   event("beforeinput", (ev: Event) => {
-    if (insertionPoint == nonEditableSelection) {
+    if (currentSelection == nonEditableSelection) {
       cancelNoEditableInput()
     }
   })
@@ -107,7 +107,7 @@ class DocumentView(
     */
   private var isFocusedOut: Boolean = false
   private var duringStateUpdate: Boolean = false
-  private var insertionPoint: Range = nonEditableSelection
+  private var currentSelection: Range = nonEditableSelection
 
 
   event("focusout", (a: FocusEvent) => {
@@ -125,9 +125,7 @@ class DocumentView(
     isFocusedOut = false
     dom.classList.remove("ct-window-inactive")
     dom.focus()
-    val sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(insertionPoint)
+    flushSelection()
   }
 
 
@@ -135,9 +133,7 @@ class DocumentView(
     if (!duringStateUpdate && isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
-      val sel = window.getSelection()
-      sel.removeAllRanges()
-      sel.addRange(insertionPoint)
+      flushSelection()
     }
   })
 
@@ -146,23 +142,23 @@ class DocumentView(
     if (!isFocusedOut) {
       val sel = window.getSelection()
       sel.removeAllRanges()
-      sel.addRange(insertionPoint)
+      sel.addRange(currentSelection)
     }
   }
 
   def startSelection(range: Range): Unit = {
-    insertionPoint = range
+    currentSelection = range
   }
 
   def endSelection(): Unit = {
-    insertionPoint = nonEditableSelection
+    currentSelection = nonEditableSelection
   }
 
   def hasSelection: Boolean = {
-    nonEditableSelection != insertionPoint
+    nonEditableSelection != currentSelection
   }
 
-  def selection: Range = insertionPoint
+  def selection: Range = currentSelection
 
   private var activeContentEditor: ContentViewEditor.General = null
 
