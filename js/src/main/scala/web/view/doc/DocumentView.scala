@@ -339,7 +339,7 @@ class DocumentView(
     val firstChild = parent.firstChild
     val box = div(`class` := classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
-    val hold = tag("i")(`class` := "ct-d-hold").render
+    val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
     createContent(root.content).attachToNode(box)
     val list = div(`class` := "ct-d-childlist").render
@@ -569,12 +569,47 @@ class DocumentView(
 
   private var focusFinder: Int = -1
 
-  private def focusAt(a: MouseEvent, delay: Int) = {
-    focus()
+  // node, offset, n time, and handle
+  private var selectionBeforeRead: (Node, Int, Int, Int) = null
+
+  override protected def readSelectionOnKeyUpDown() = {
+    clearAllPreviousReading()
+    def inner(): Unit = {
+      val cur = window.getSelection()
+      def readNow(): Unit = {
+        selectionBeforeRead = null
+        focusAt(window.getSelection().anchorNode, 0, true)
+      }
+      if (selectionBeforeRead == null || selectionBeforeRead._3 < 10) {
+        val nth = if (selectionBeforeRead == null) 0 else selectionBeforeRead._3 + 1
+        selectionBeforeRead = (cur.anchorNode, cur.anchorOffset, nth, window.setTimeout(() => {
+          if (selectionBeforeRead._1 != window.getSelection().anchorNode || selectionBeforeRead._2 !=  window.getSelection().anchorOffset) {
+            readNow()
+          } else {
+            readSelectionOnKeyUpDown()
+          }
+        }, 1))
+      } else {
+        readNow()
+      }
+    }
+    inner()
+  }
+
+  private def clearAllPreviousReading(): Unit = {
     if (focusFinder != -1) {
+      focusFinder = -1
       window.clearTimeout(focusFinder)
     }
-    var t = a.target.asInstanceOf[Node]
+    if (selectionBeforeRead != null) {
+      selectionBeforeRead = null
+      window.clearTimeout(selectionBeforeRead._4)
+    }
+  }
+
+  private def focusAt(t0: Node, delay: Int, isKeyboard: Boolean) = {
+    clearAllPreviousReading()
+    var t = t0
     while (t != null && t != dom) {
       View.maybeDom[ContentView.General](t) match {
         case Some(a) if a.isInstanceOf[ContentView.General] =>
@@ -585,7 +620,7 @@ class DocumentView(
               case r: RichView => r.readSelectionFromDom()
               case _ => None
             }
-            editor.focusOn(cur, range)
+            editor.focusOn(cur, range, isKeyboard)
             focusFinder = -1
           }, delay)
           t = null
@@ -593,20 +628,28 @@ class DocumentView(
       }
       if (t != null) t = t.parentNode
     }
+    if (t != null) {
+      editor.refreshMode()
+    }
+  }
+
+  def onMouseInteract(a: MouseEvent, i: Int) = {
+    focus()
+    focusAt(a.target.asInstanceOf[Node], i, true)
   }
 
   event("click", (a: MouseEvent) => {
-    //window.console.log(a)
-    focusAt(a, 100)
+    window.console.log(a)
+    onMouseInteract(a, 100)
   })
 
   event("dblclick", (a: MouseEvent) => {
-    //preventDefault(a)
-    focusAt(a, 10)
+    window.console.log(a)
+    onMouseInteract(a, 5)
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    focusAt(a, 10)
+    onMouseInteract(a, 5)
   })
 
 

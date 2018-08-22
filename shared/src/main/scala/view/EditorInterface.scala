@@ -19,7 +19,8 @@ trait SourceEditInterface {
 }
 
 trait EditorInterface extends SourceEditInterface {
-  def focusOn(cur: Node, range: Option[IntRange] = None): Boolean
+  def refreshMode(): Unit
+  def focusOn(cur: Node, range: Option[IntRange], updateDom: Boolean): Boolean
   def disableStateUpdate: Boolean
   def disableStateUpdate_=(a: Boolean): Unit
   def flushes: Observable[Unit]

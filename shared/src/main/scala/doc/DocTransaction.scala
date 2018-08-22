@@ -9,6 +9,7 @@ case class DocTransaction(
   transaction: model.transaction.Node,
   mode: Option[model.mode.Node],
   subCodeMode: Option[model.mode.Content.CodeInside] = None,
+  badMode: Boolean = false,
 
   unfoldBefore: Set[cursor.Node] = Set.empty,
   toggleBefore: Set[cursor.Node] = Set.empty,

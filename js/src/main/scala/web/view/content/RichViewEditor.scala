@@ -435,23 +435,25 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     pmode = aa
-    def updateViewMode(a: mode.Content.Rich, sub: Boolean): Unit = a match {
-      case mode.Content.RichInsert(pos) =>
-        if (!sub) {
-          initMode(0)
-          updateInsertMode(pos, fromUser)
-        }
-      case mode.Content.RichVisual(fix, move) =>
-        if (!sub) initMode(1)
-        updateVisualMode(fix, move, fromUser)
-      case mode.Content.RichNormal(range) =>
-        if (isEmpty) {
-          if (!sub) initMode(3)
-        } else {
-          if (!sub) initMode(2)
-          updateNormalMode(range, fromUser)
-        }
-      case _ => throw new IllegalStateException("Not here!")
+    def updateViewMode(a: mode.Content.Rich, sub: Boolean): Unit = if (!viewUpdated) {
+      a match {
+        case mode.Content.RichInsert(pos) =>
+          if (!sub) {
+            initMode(0)
+            updateInsertMode(pos, fromUser)
+          }
+        case mode.Content.RichVisual(fix, move) =>
+          if (!sub) initMode(1)
+          updateVisualMode(fix, move, fromUser)
+        case mode.Content.RichNormal(range) =>
+          if (isEmpty) {
+            if (!sub) initMode(3)
+          } else {
+            if (!sub) initMode(2)
+            updateNormalMode(range, fromUser)
+          }
+        case _ => throw new IllegalStateException("Not here!")
+      }
     }
     if (fromUser) {
       scrollInToViewIfNotVisible(contentView.dom, documentView.dom)

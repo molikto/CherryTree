@@ -48,6 +48,7 @@ class NodeMotion extends CommandCategory("move among notes") {
       }), viewMessagesBefore = message.toSeq)
     }
   }
+  /*
   val up: Command = new NodeMotionCommand {
     override val description: String = "move up"
     // DIFFERENCE we always go to first char now
@@ -61,6 +62,7 @@ class NodeMotion extends CommandCategory("move among notes") {
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+", Down)
     override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
   }
+  */
   val parent: Command = new NodeMotionCommand {
     override val description: String = "move to parent"
     override val defaultKeys: Seq[KeySeq] = Seq("gp")

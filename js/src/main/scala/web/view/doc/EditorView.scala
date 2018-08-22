@@ -1,6 +1,7 @@
 package web.view.doc
 
 import command.Key
+import command.Key.Up
 import model.data.Unicode
 import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLElement
@@ -11,36 +12,41 @@ trait EditorView extends View {
 
   protected def editor: EditorInterface
 
+  protected def readSelectionOnKeyUpDown()
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
-      val timeStart = System.currentTimeMillis()
       var key = KeyMap.get(event.key).orNull
-      // TODO better handling this
-      var isBiy = false
-      var isZo = false
-      if (key == null && Key.isUnicodeKey(event.key)) {
-        key = Key.Grapheme(model.data.Unicode(event.key))
-        isBiy = "biy".contains(event.key)
-        isZo = "zo".contains(event.key)
-      }
-      if (key == null) key = Key.Unknown(event.key)
-      val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-       // for meta keys, we ignore it, it is mostly browser keys
-      // for modifier keys, we also ignore them
-      val allow = if (!kk.meta) {
-        true
+      if (key == Key.Down || key == Up) {
+        readSelectionOnKeyUpDown()
       } else {
-        if (isBiy) {
-          !kk.shift
-        } else if (isZo) {
+        // TODO better handling this
+        var isBiy = false
+        var isZo = false
+        if (key == null && Key.isUnicodeKey(event.key)) {
+          key = Key.Grapheme(model.data.Unicode(event.key))
+          isBiy = "biy".contains(event.key)
+          isZo = "zo".contains(event.key)
+        }
+        if (key == null) key = Key.Unknown(event.key)
+        val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
+        // for meta keys, we ignore it, it is mostly browser keys
+        // for modifier keys, we also ignore them
+        val allow = if (!kk.meta) {
           true
         } else {
-          false
+          if (isBiy) {
+            !kk.shift
+          } else if (isZo) {
+            true
+          } else {
+            false
+          }
         }
-      }
-      if (allow && !key.isInstanceOf[Key.Modifier]) {
-        if (editor.onKeyDown(kk)) preventDefault(event)
+        if (allow && !key.isInstanceOf[Key.Modifier]) {
+          if (editor.onKeyDown(kk)) preventDefault(event)
+        }
       }
     })
 
