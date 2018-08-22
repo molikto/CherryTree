@@ -24,6 +24,11 @@ sealed trait Atom {
 
   def range = IntRange(totalIndex, totalIndex + size)
 
+  def isAtomic: Boolean = this match {
+    case a: Atom.Marked  =>true
+    case _ => false
+  }
+
   def isAtomicWithAttribute(c: SpecialChar): Boolean = this match {
     case a: Atom.Marked  =>a.text.asDelimited.delimitation.attributes.contains(c)
     case _ => false

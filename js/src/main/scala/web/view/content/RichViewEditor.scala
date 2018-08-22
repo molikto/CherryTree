@@ -552,7 +552,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
               val text = sub.getText(rich)
               editor = documentView.attributeEditor
               val anchor = new UrlAttributeEditDialog.Anchor(controller) {
-                override def rect: Rect = editorRect
+                override def rect: Rect = selectionRect
               }
               documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
            }
@@ -561,7 +561,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
               editor = documentView.inlineEditor
               val text = sub.getText(rich)
               val anchor = new InlineCodeDialog.Anchor(controller, text.asCoded.content, code, text.asDelimited.delimitation.codeType) {
-                override def rect: Rect = editorRect
+                override def rect: Rect = selectionRect
               }
               documentView.inlineEditor.show(anchor)
             } else if (!editorUpdated) {
@@ -582,18 +582,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       editor = null
     }
   }
-
-  private def editorRect: Rect = {
-    pmode match {
-      case sub: mode.Content.RichSubMode =>
-        val (sel, span) = nonEmptySelectionToDomRange(IntRange(sub.range.start - 1, sub.range.start))
-        val rects = if (span == null) sel.getClientRects() else span.getClientRects()
-        web.view.toRect(rects.item(0))
-      case _ =>
-        throw new IllegalStateException("Not possible!!!")
-    }
-  }
-
 
   override def updateContent(data: model.data.Content.Rich, mode: Option[model.mode.Content.Rich], c: operation.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     contentView.updateContent(data, c, viewUpdated)

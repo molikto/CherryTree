@@ -224,7 +224,7 @@ case class Rich(text: Seq[Text]) {
     if (!bs.hasNext) false
     else {
       val atom = bs.next()
-      atom.text.isCoded && !atom.delimitationEnd
+      !atom.isAtomic && atom.text.isCoded && !atom.delimitationEnd
     }
   }
 
