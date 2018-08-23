@@ -718,7 +718,6 @@ class DocumentView(
       }
 
       mouseSecondContent = null
-      savedSelectionForLater = null
     }
   }
 
@@ -756,52 +755,30 @@ class DocumentView(
   }
 
 
-  private var savedSelectionForLater: Range = null
-
   event("mouseover", (a: MouseEvent) => {
     if (mouseDown) {
       if (mouseFirstContent == null) {
         a.preventDefault()
         getFirstContentView(a)
       } else {
-        val curContent = findParentContent(a.target.asInstanceOf[Node])
-        if (curContent != null) {
-          val curSecondContent = if (curContent._1 != mouseFirstContent) {
-          //  a.preventDefault()
-            curContent._1
+        val ctt = {
+          val p = findParentContent(a.target.asInstanceOf[Node])
+          if (p != null) p._1 else null
+        }
+        val secondContent =
+          if (mouseSecondContent == null) {
+            if (ctt != mouseFirstContent) ctt else null
+          } else if (ctt != null) {
+            ctt
           } else {
-            //onMouseInteract(a, 5)
-            null
+            mouseSecondContent
           }
-          if (curSecondContent != mouseSecondContent) {
-            mouseSecondContent = curSecondContent
-            if (mouseSecondContent != null) {
-              if (savedSelectionForLater == null && window.getSelection().rangeCount > 0) {
-                savedSelectionForLater = window.getSelection().getRangeAt(0)
-              }
-              a.preventDefault()
-              editor.onVisualMode(mouseFirstContent, mouseSecondContent)
-            } else {
-              clearNodeVisual()
-              if (savedSelectionForLater != null) {
-                val saved = savedSelectionForLater
-                savedSelectionForLater = null
-                println("setting saved selection")
-                val sel = window.getSelection()
-                sel.removeAllRanges()
-                sel.addRange(saved)
-                window.setTimeout(() => {
-                  val sel = window.getSelection()
-                  sel.removeAllRanges()
-                  sel.addRange(saved)
-                }, 1)
-              }
-            }
-          } else if (mouseSecondContent != null) {
-            a.preventDefault()
-          }
-        } else {
+        if (secondContent != null) {
           a.preventDefault()
+          if (secondContent != mouseSecondContent) {
+            mouseSecondContent = secondContent
+            editor.onVisualMode(mouseFirstContent, mouseSecondContent)
+          }
         }
       }
     } else {
