@@ -765,6 +765,7 @@ class DocumentView(
           mouseFirstContentRich = r
           r.markCgAsEditableTempDuringMouseEvents(true)
         case _ =>
+          editor.focusOn(pc._1, None, false)
       }
     }
   }
@@ -791,7 +792,7 @@ class DocumentView(
         val sel = window.getSelection()
         if (sel.rangeCount > 0) sel.removeAllRanges()
       }
-    } else if (mouseFirstContentRich == null) {
+    } else if (mouseFirstContent != null && mouseFirstContentRich == null) {
       val sel = window.getSelection()
       if (sel.rangeCount > 0) sel.removeAllRanges()
     }

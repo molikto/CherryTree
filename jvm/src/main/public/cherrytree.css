@@ -249,6 +249,7 @@
 .ct-document-view-root {
   color: #abb2bf;
   outline: 0px solid transparent;
+  cursor: text;
 }
 
 .ct-document-view-color {
