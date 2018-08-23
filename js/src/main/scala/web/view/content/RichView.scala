@@ -93,7 +93,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     contenteditable := "false", a)
 
   def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit =
-    jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
+    jQ(dom).find(".ct-cg").attr("contenteditable", b.toString)
+    //jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
 
 
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
@@ -140,7 +141,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         }
         sp: Frag
       case Text.HTML(c) =>
-        val a = span(contenteditable := "false",
+        val a = span(
+         // contenteditable := "false",
           `class` := "ct-cg-atom",
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
@@ -162,7 +164,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         a: Frag
       case Text.LaTeX(c) =>
         val a = span(
-          contenteditable := "false",
+          //contenteditable := "false",
           `class` := "ct-cg-atom",
           span(EvilChar)
         ).render
@@ -246,9 +248,28 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       }
       val range = sel.getRangeAt(0)
       if (range.collapsed) {
-        val start = readOffset(range.startContainer, range.startOffset, true)
-        if (start >= 0) {
-          return Some(IntRange(start, start))
+        val start = readOffset(range.startContainer, range.startOffset, false)
+        val end = readOffset(range.endContainer, range.endOffset, true)
+        if (start >= 0 && end >= 0) {
+          if (start != end) {
+            val a = rich.after(start).nodeCursor
+            val node = nodeAt(a).asInstanceOf[HTMLElement]
+            if (model.debug_selection) {
+              val r1 = node.getBoundingClientRect()
+              val left = r1.left
+              val right = r1.right
+              val rect = range.getBoundingClientRect()
+              val c = (rect.left + rect.right) / 2
+              window.console.log("finding insertion point for atomic", node, left, right, c)
+              if (Math.abs(left - c) < Math.abs(right - c)) {
+                return Some(IntRange(start, start))
+              } else {
+                return Some(IntRange(end, end))
+              }
+            }
+          } else {
+            return Some(IntRange(start, start))
+          }
         }
       } else {
         val start = readOffset(range.startContainer, range.startOffset, false)
@@ -262,7 +283,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
 
-  def readInsertionPoint(isNode: Node = null): Int = {
+  private[content] def readPlainInsertionPointBeforeFlush(isNode: Node = null): Int = {
     val sel = window.getSelection()
     if (sel.rangeCount >= 1) {
       if (model.debug_selection) {

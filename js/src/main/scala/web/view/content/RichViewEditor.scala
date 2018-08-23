@@ -289,7 +289,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       val (node, oldContent, pos) = insertNonEmptyTextNode
       val newContent = mergeTextsFix(node)
       val (from, to, text) = util.quickDiff(oldContent, newContent)
-      val insertionPoint = readInsertionPoint()
+      val insertionPoint = readPlainInsertionPointBeforeFlush()
       if (from != to || !text.isEmpty) {
         if (model.debug_view) {
 //          window.console.log(node)

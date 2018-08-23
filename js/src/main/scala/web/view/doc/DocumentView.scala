@@ -183,8 +183,12 @@ class DocumentView(
       if (model.debug_selection) {
         window.console.log("flushing selection", sel)
       }
+      val oldTop = dom.scrollTop
       sel.removeAllRanges()
       sel.addRange(currentSelection)
+      if (dom.scrollTop != oldTop) {
+        dom.scrollTop = oldTop
+      }
     }
   }
 
@@ -255,6 +259,8 @@ class DocumentView(
   private def holdAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
     frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
   }
+
+  private def contentOfHold(a: Node): ContentView.General = View.fromDom(a.previousSibling.firstChild)
 
   private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
     val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
@@ -633,7 +639,6 @@ class DocumentView(
   private var clickCount = 0
 
   private var mouseDisableWrongSelectionHandler = -1
-  private var mouseFlushSelectionHandler = -1
 
   event("mousedown", (a: MouseEvent) => {
     clearAllPreviousReading()
@@ -675,7 +680,7 @@ class DocumentView(
         lastMouseDown = down
         isRightMouseButton = a.button != 0
         getFirstContentView(a)
-        if (mouseFlushSelectionHandler != -1) window.clearTimeout(mouseFlushSelectionHandler)
+        clearAllPreviousReading()
         mouseDisableWrongSelectionHandler = window.setInterval(() => {
           if (mouseSecondContent != null) {
             flushSelection()
@@ -686,34 +691,26 @@ class DocumentView(
   })
 
 
-
-  private def endMouseDown(a: MouseEvent, isRight: Boolean): Unit = {
+  private def endMouseDown(a: MouseEvent, isRight: Boolean, readSelection: Boolean): Unit = {
     if (mouseDown) {
-      mouseDown = false
-      isRightMouseButton = isRight || a.button != 0
       window.clearInterval(mouseDisableWrongSelectionHandler)
-      if (mouseSecondContent == null) {
-        var waitTime = 0L
+      if (!readSelection) {
+        editor.disableRemoteStateUpdate(false, true)
+      } else if (mouseSecondContent == null) {
+        isRightMouseButton = isRight || a.button != 0
+        var waitTime = 0
         if (clickCount == 1) {
-          waitTime = 200 - (System.currentTimeMillis() - lastMouseDown.t)
+          waitTime = (200 - (System.currentTimeMillis() - lastMouseDown.t)).toInt
           if (isRightMouseButton && waitTime < 100) waitTime = 100
           if (waitTime < 0) waitTime = 0
         }
         println("read selection at " + waitTime)
-        def work() = {
-          editor.disableRemoteStateUpdate(false, true)
-          focus()
-          readSelectionAt(a.target.asInstanceOf[Node], 5)
-        }
-        if (waitTime == 0L) {
-          work()
-        } else {
-          mouseFlushSelectionHandler = window.setTimeout(() => work(), waitTime)
-        }
+        readSelectionAfterMoouseUpWithDelay(waitTime)
       } else {
         editor.disableRemoteStateUpdate(false, true)
       }
 
+      mouseDown = false
       mouseFirstContent = null
       if (mouseFirstContentRich != null) {
         mouseFirstContentRich.markCgAsEditableTempDuringMouseEvents(false)
@@ -726,11 +723,23 @@ class DocumentView(
   }
 
   event(window, "mouseup", (a: MouseEvent) => {
-    endMouseDown(a, false)
+    endMouseDown(a, false, true)
+  })
+
+  event("click", (a: MouseEvent) => {
+    a.target match {
+      case element: HTMLElement if element.className.contains("ct-d-hold") =>
+        clearAllPreviousReading() // if mouseup is before us
+        val ct = contentOfHold(element)
+        endMouseDown(a, false, false)
+        editor.focusOn(cursorOf(ct), None, false)
+        showCommandMenu()
+      case _ =>
+    }
   })
 
   event("contextmenu", (a: MouseEvent) => {
-    endMouseDown(a, true)
+    endMouseDown(a, true, true)
   })
 
   private def getFirstContentView(a: MouseEvent): Unit = {
@@ -752,6 +761,7 @@ class DocumentView(
   event("mouseover", (a: MouseEvent) => {
     if (mouseDown) {
       if (mouseFirstContent == null) {
+        a.preventDefault()
         getFirstContentView(a)
       } else {
         val curContent = findParentContent(a.target.asInstanceOf[Node])
@@ -769,6 +779,7 @@ class DocumentView(
               if (savedSelectionForLater == null && window.getSelection().rangeCount > 0) {
                 savedSelectionForLater = window.getSelection().getRangeAt(0)
               }
+              a.preventDefault()
               editor.onVisualMode(mouseFirstContent, mouseSecondContent)
             } else {
               clearNodeVisual()
@@ -786,11 +797,15 @@ class DocumentView(
                 }, 1)
               }
             }
+          } else if (mouseSecondContent != null) {
+            a.preventDefault()
           }
         } else {
-          //a.preventDefault()
+          a.preventDefault()
         }
       }
+    } else {
+      a.preventDefault()
     }
   })
 
@@ -829,15 +844,20 @@ class DocumentView(
     }
   }
 
-  private def readSelectionAt(t: Node, delay: Int): Unit = {
+  private def readSelectionAfterMoouseUpWithDelay(delay: Int): Unit = {
     def work() = {
-      val pc = findParentContent(t)
+      editor.disableRemoteStateUpdate(false, true)
+      focus()
+      val sel = window.getSelection()
+      val pc = if (sel != null && sel.rangeCount > 0) findParentContent(sel.anchorNode) else null
       if (pc != null) {
         val (cur, contentView) = pc
         val range = contentView.asInstanceOf[Any] match {
           case r: RichView =>
             r.readSelectionFromDom()
           case _ => None
+            flushSelection()
+            None
         }
         editor.focusOn(cur, range, false)
       } else {
