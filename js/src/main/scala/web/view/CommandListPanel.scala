@@ -38,6 +38,7 @@ class CommandListPanel(val client: Client) extends UnselectableView  {
               commands.map(c => {
                 div(
                   p(marginLeft := "12px",
+                    marginBottom := "8px",
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
                     c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
                     Some(span(tag("kbd")(`class` := "ct-kbd2", "char"), " ")).filter(_ => c.needsChar),

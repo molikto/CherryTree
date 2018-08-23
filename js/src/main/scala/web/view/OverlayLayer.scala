@@ -60,7 +60,7 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
     } else {
       val bounding = toRect(layer.dom.getBoundingClientRect())
       val rec = rect.moveBy(-bounding.left, -bounding.top)
-      var view = Rect(rec.left, rect.bottom, dom.clientWidth, dom.clientHeight)
+      var view = Rect(rec.left, rec.bottom, dom.clientWidth, dom.clientHeight)
       if (view.bottom > bounding.height) {
         view = view.moveBy(0, -rec.height - view.height)
       }
@@ -76,6 +76,9 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
       dom.style.position = "absolute"
       dom.style.left = view.left.toString + "px"
       dom.style.top = view.top.toString + "px"
+      if (model.debug_view) {
+        window.console.log("shown mounted at ", view.left, view.top)
+      }
     }
   }
 }

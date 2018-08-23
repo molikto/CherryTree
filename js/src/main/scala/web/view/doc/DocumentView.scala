@@ -652,7 +652,7 @@ class DocumentView(
 
   }
 
-  event("mousedown", (a: MouseEvent) => {
+  event(rootFrame, "mousedown", (a: MouseEvent) => {
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
     if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
@@ -754,7 +754,7 @@ class DocumentView(
     endMouseDown(a, false, true)
   })
 
-  event("click", (a: MouseEvent) => {
+  event(rootFrame, "click", (a: MouseEvent) => {
     a.target match {
       case element: HTMLElement if element.className.contains("ct-d-hold") =>
         clearAllPreviousReading() // if mouseup is before us
@@ -766,7 +766,7 @@ class DocumentView(
     }
   })
 
-  event("contextmenu", (a: MouseEvent) => {
+  event(rootFrame, "contextmenu", (a: MouseEvent) => {
     endMouseDown(a, true, true)
   })
 
@@ -891,23 +891,23 @@ class DocumentView(
     *
     */
 
-  event("dragstart", (a: DragEvent) => {
+  event(rootFrame, "dragstart", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event("dragend", (a: DragEvent) => {
+  event(rootFrame, "dragend", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event("dragover", (a: DragEvent) => {
+  event(rootFrame, "dragover", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event("dragenter", (a: DragEvent) => {
+  event(rootFrame, "dragenter", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event("drop", (a: DragEvent) => {
+  event(rootFrame, "drop", (a: DragEvent) => {
     preventDefault(a)
   })
 
