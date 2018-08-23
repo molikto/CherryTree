@@ -614,13 +614,6 @@ class DocumentView(
 
   def scrollToTop(cur: model.cursor.Node): Unit = contentAt(cur).dom.scrollIntoView(true)
 
-  /**
-    *
-    *
-    * mouse event currently disabled for entire document
-    *
-    */
-
   private var isRightMouseButton: Boolean = false
   private var mouseDown = false
   private case class Click(t: Long, x: Double, y: Double) {

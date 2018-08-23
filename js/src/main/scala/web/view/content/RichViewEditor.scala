@@ -31,8 +31,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   override def selectionRect: Rect = {
     web.view.toRect(if (fakeRangeSelection != null) {
       fakeRangeSelection.getBoundingClientRect()
-    } else if (pmode.isInstanceOf[model.mode.Content.RichSubMode]) {
-      val atom = contentView.rich.after(pmode.asInstanceOf[model.mode.Content.RichSubMode].range.start)
+    } else if (pmode.isInstanceOf[model.mode.Content.RichCodeSubMode]) {
+      val atom = contentView.rich.after(pmode.asInstanceOf[model.mode.Content.RichCodeSubMode].range.start - 1)
       contentView.nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement].getBoundingClientRect()
     } else if (documentView.hasSelection) {
       documentView.selection.getBoundingClientRect()
@@ -394,9 +394,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       } else if (previousMode == -2) {
         removeEmptyContent()
       }
-      if (i == 3) {
-        initEmptyNormalMode()
-      } else if (i == -2) {
+      if (i == -2) {
         initEmptyContent()
       }
       previousMode = i
@@ -432,7 +430,10 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
           updateVisualMode(fix, move, fromUser)
         case mode.Content.RichNormal(range) =>
           if (isEmpty) {
-            if (!sub) initMode(3)
+            if (!sub) {
+              initMode(3)
+              initEmptyNormalMode()
+            }
           } else {
             if (!sub) initMode(2)
             updateNormalMode(range, fromUser)

@@ -356,39 +356,43 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       if (model.debug_selection) {
         window.console.log("read selection", sel)
       }
-      val range = sel.getRangeAt(0)
-      if (range.collapsed) {
-        val start = readOffset(range.startContainer, range.startOffset, false)
-        val end = readOffset(range.endContainer, range.endOffset, true)
-        if (start >= 0 && end >= 0) {
-          if (start != end) {
-            val a = rich.after(start).nodeCursor
-            val node = elementParent(nodeAt(a))
-            val r1 = node.getBoundingClientRect()
-            val left = r1.left
-            val right = r1.right
-            var rect = range.getBoundingClientRect()
-            if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
-              rect = elementParent(range.startContainer).getBoundingClientRect()
-            }
-            val c = (rect.left + rect.right) / 2
-            if (model.debug_selection) {
-              window.console.log("finding insertion point for atomic", node, left, right, c)
-            }
-            if (Math.abs(left - c) < Math.abs(right - c)) {
-              return Some(IntRange(start, start))
-            } else {
-              return Some(IntRange(end, end))
-            }
-          } else {
-            return Some(IntRange(start, start))
-          }
-        }
+      if (isEmpty) {
+        Some(IntRange(0, 0))
       } else {
-        val start = readOffset(range.startContainer, range.startOffset, false)
-        val end = readOffset(range.endContainer, range.endOffset, true)
-        if (start >= 0 && end >= 0) {
-          return Some(IntRange(start, end))
+        val range = sel.getRangeAt(0)
+        if (range.collapsed) {
+          val start = readOffset(range.startContainer, range.startOffset, false)
+          val end = readOffset(range.endContainer, range.endOffset, true)
+          if (start >= 0 && end >= 0) {
+            if (start != end) {
+              val a = rich.after(start).nodeCursor
+              val node = elementParent(nodeAt(a))
+              val r1 = node.getBoundingClientRect()
+              val left = r1.left
+              val right = r1.right
+              var rect = range.getBoundingClientRect()
+              if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
+                rect = elementParent(range.startContainer).getBoundingClientRect()
+              }
+              val c = (rect.left + rect.right) / 2
+              if (model.debug_selection) {
+                window.console.log("finding insertion point for atomic", node, left, right, c)
+              }
+              if (Math.abs(left - c) < Math.abs(right - c)) {
+                return Some(IntRange(start, start))
+              } else {
+                return Some(IntRange(end, end))
+              }
+            } else {
+              return Some(IntRange(start, start))
+            }
+          }
+        } else {
+          val start = readOffset(range.startContainer, range.startOffset, false)
+          val end = readOffset(range.endContainer, range.endOffset, true)
+          if (start >= 0 && end >= 0) {
+            return Some(IntRange(start, end))
+          }
         }
       }
     }
@@ -399,12 +403,16 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   private[content] def readPlainInsertionPointBeforeFlush(isNode: Node = null): Int = {
     val sel = window.getSelection()
     if (sel.rangeCount >= 1) {
-      if (model.debug_selection) {
-        window.console.log("read insertion", sel)
-      }
-      val range = sel.getRangeAt(0)
-      if (root.contains(range.endContainer)) {
-        return readOffset(range.endContainer, range.endOffset, true)
+      if (isEmpty) {
+        0
+      } else {
+        if (model.debug_selection) {
+          window.console.log("read insertion", sel)
+        }
+        val range = sel.getRangeAt(0)
+        if (root.contains(range.endContainer)) {
+          return readOffset(range.endContainer, range.endOffset, true)
+        }
       }
     }
     -1

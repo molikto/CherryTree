@@ -11,6 +11,22 @@ import model.range.IntRange
 class RichVisual extends CommandCategory("text visual mode") {
 
 
+  new OverrideCommand {
+    override val description: String = "select all"
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Meta + "a")
+    override def available(a: DocState): Boolean = true
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      a.mode match {
+        case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) =>
+          val r = a.node(cur).rich
+          if (!r.isEmpty) {
+            return DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(r.rangeBeginning, r.rangeEnd)))
+          }
+      }
+      DocTransaction.empty
+    }
+  }
+
   new Command {
     override val description: String = "enter text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")

@@ -68,12 +68,12 @@ trait EditorView extends View {
       if (false) {
       } else {
         // TODO better handling this
-        var isBiy = false
-        var isZo = false
+        var isCommandOnly = false
+        var isCommandShift = false
         if (key == null && Key.isUnicodeKey(event.key)) {
           key = Key.Grapheme(model.data.Unicode(event.key))
-          isBiy = "biy".contains(event.key)
-          isZo = "zo".contains(event.key)
+          isCommandOnly = "biya".contains(event.key)
+          isCommandShift = "zo".contains(event.key)
         }
         if (key == null) key = Key.Unknown(event.key)
         val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
@@ -82,9 +82,9 @@ trait EditorView extends View {
         val allow = if (!kk.meta) {
           true
         } else {
-          if (isBiy) {
+          if (isCommandOnly) {
             !kk.shift
-          } else if (isZo) {
+          } else if (isCommandShift) {
             true
           } else {
             false
