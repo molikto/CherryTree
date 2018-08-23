@@ -14,7 +14,9 @@ package object mode {
   }
 
   object Content {
-    sealed abstract class Rich extends Content
+    sealed abstract class Rich extends Content {
+      def end: Int
+    }
     sealed abstract class Code extends Content
     sealed trait NormalOrVisual extends Content
     sealed trait Normal extends NormalOrVisual
@@ -26,6 +28,7 @@ package object mode {
     }
     case class RichInsert(pos: Int) extends Rich {
       override def breakWhiteSpaceInserts: Boolean = true
+      override def end: Int = pos
     }
     /**
       * second parameter is a range because selection is not just one codepoint
@@ -42,12 +45,14 @@ package object mode {
       override def focus: IntRange = range
       override def merged: IntRange = range
       override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
+      override def end: Int = range.until
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
       def swap: RichVisual = RichVisual(move, fix)
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
       override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
+      override def end: Int = merged.until
     }
 
     sealed abstract class RichSubMode extends Rich {

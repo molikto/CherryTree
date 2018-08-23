@@ -26,7 +26,7 @@ class WrappedCodeView(
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
 
-  private var codeView: ContentView.Code = ContentView.createFromCode(contentData)
+  private[content] var codeView: ContentView.Code = ContentView.createFromCode(contentData)
 
   override def updateContent(): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
@@ -45,6 +45,7 @@ class WrappedCodeView(
   }
 
   override def updateContent(c: model.data.Content.Code, trans: operation.Content.Code, viewUpdated: Boolean): Unit = {
+    codeView.contentData = c
     contentData = c
     if (ContentView.matches(c.ty, codeView)) {
       codeView.updateContent(c, trans, viewUpdated)

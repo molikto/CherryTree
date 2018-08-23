@@ -5,7 +5,7 @@ import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, Node, NodeList, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom
 import scalatags.JsDom.all._
@@ -15,6 +15,7 @@ import web.view.doc.DocumentView
 import web.view._
 import web.view.content.ContentViewEditor.General
 
+import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 object RichView {
@@ -94,7 +95,6 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit =
     jQ(dom).find(".ct-cg").attr("contenteditable", b.toString)
-    //jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
 
 
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
@@ -104,19 +104,27 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     el.style.height= "12px"
   }
 
+  /**
+    * ct-cg is control glyph
+    * ct-c-xxx and root is valid container
+    * text node and ct-cg-node is valid container childs
+    */
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
+        `class` := "ct-cg-node",
         cg("*"),
         em(`class` := "ct-c-em", rec(c)),
         cg("*")
       )
       case Text.Strong(c) => span(
+        `class` := "ct-cg-node",
         cg("*", "ct-cg-shadow"),
         strong(`class` := "ct-c-strong", rec(c)),
         cg("*", "ct-cg-shadow")
       )
       case Text.StrikeThrough(c) => span(
+        `class` := "ct-cg-node",
         cg("~"),
         del(`class` := "ct-c-del", rec(c)),
         cg("~")
@@ -124,13 +132,16 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       case l@Text.Link(t, b, c) =>
         val tt: String = if (c.isEmpty) b.str else s"${c.str}\n${b.str}"
         span(
+          `class` := "ct-cg-node",
           title := tt,
           cg("["),
           span(`class` := (if (l.isNodeRef) "ct-c-link-node" else "ct-c-link"), rec(t)),
           cg("]")
         )
       case Text.Image(b, c) =>
-        val sp = span().render
+        val sp = span(
+          `class` := "ct-cg-node"
+        ).render
         if (b.isEmpty) {
           sp.appendChild(warningInline("empty image").render)
         } else {
@@ -143,7 +154,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       case Text.HTML(c) =>
         val a = span(
          // contenteditable := "false",
-          `class` := "ct-cg-atom",
+          `class` := "ct-cg-node ct-cg-atom",
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (c.isBlank) {
@@ -165,7 +176,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       case Text.LaTeX(c) =>
         val a = span(
           //contenteditable := "false",
-          `class` := "ct-cg-atom",
+          `class` := "ct-cg-node ct-cg-atom",
           span(EvilChar)
         ).render
         if (c.isBlank) {
@@ -186,6 +197,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         a: Frag
       case Text.Code(c) =>
         span(
+          `class` := "ct-cg-node",
           cg("`"),
           span(`class` := "ct-c-code", c.str),
           cg("`")
@@ -194,6 +206,104 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     }
   }
 
+
+  /**
+    * the only allowed operation is inserting/deleting plain text in a node (after normalize)
+    */
+  private[content] def normalizeAndDiffForInsertEvent(): Option[operation.Rich] = {
+    val bf = new ArrayBuffer[(Int, Int, Unicode)]
+    def diffAndSyncContainer(text: Seq[Text], dom: NodeList, i: Int): Unit = {
+      println(text)
+      window.console.log(dom)
+      var it = 0
+      var id = 0
+      var size = i
+      while (it < text.size && id < dom.length) {
+        val t = text(it)
+        val d = dom(id)
+        d match {
+          case h: HTMLElement if h.classList.contains("ct-cg-node") =>
+            id += 1
+            t match {
+              case Text.Plain(u) =>
+                bf.append((size, size, Unicode.empty)) // text delete
+                it += 1
+              case a: Text.Atomic if h.classList.contains("ct-cg-atom") =>
+                it += 1 // match atom
+              case a: Text.Coded if !h.classList.contains("ct-cg-atom") =>
+                it += 1 // match code node
+                val str = h.childNodes(1).textContent
+                if (a.content.str != str) {
+                  val base = size + 1
+                  val (from, to, text) = util.quickDiff(a.content.str, str)
+                  bf.append((base + from, base + to, Unicode(text)))
+                }
+              case a: Text.Formatted if a.isDelimited && !h.classList.contains("ct-cg-atom") =>
+                it += 1
+                diffAndSyncContainer(a.asInstanceOf[Text.Formatted].content, h.childNodes(1).childNodes, size + 1)
+            }
+          case _ =>
+            var str = ""
+            var cont = true
+            while (cont && id < dom.length) {
+              val d = dom(id)
+              d match {
+                case h: HTMLElement if h.classList.contains("ct-cg-node") =>
+                  cont = false
+                case _ =>
+                  if (str.isEmpty) str = d.textContent
+                  else str = str + d.textContent
+                  id += 1
+              }
+            }
+            // dom is a plain str
+            t match {
+              case Text.Plain(u) =>
+                if (u.str != str) {
+                  val base = size
+                  val (from, to, text) = util.quickDiff(u.str, str)
+                  bf.append((base + from, base + to, Unicode(text))) // a text change
+                }
+                it += 1
+              case _ =>
+                bf.append((size, size, Unicode(str))) // a insert
+            }
+        }
+        size += t.size
+      }
+      if (it < text.size) {
+        if (it == text.size - 1 && text.last.isPlain) {
+          bf.append((size, size + text.last.size, Unicode.empty))
+        } else {
+          throw new Exception("Not handled")
+        }
+      }
+      if (id < dom.length) {
+        var str = ""
+        while (id < dom.length) {
+          val d = dom(id)
+          d match {
+            case h: HTMLElement if h.classList.contains("ct-cg-node") =>
+              throw new Exception("not hanlded")
+            case _ =>
+              if (str.isEmpty) str = d.textContent
+              else str = str + d.textContent
+              id += 1
+          }
+        }
+        bf.append((size, size, Unicode(str))) // a insert
+      }
+    }
+    diffAndSyncContainer(rich.text, dom.childNodes, 0)
+    if (model.debug_view) {
+      println(bf)
+    }
+    if (bf.isEmpty) {
+      None
+    } else {
+      Some(operation.Rich.replacePlain(bf))
+    }
+  }
 
   private def isValidContainer(a: Node) = {
     a == root || (a.isInstanceOf[HTMLElement] && exitsClassPrefix(a.asInstanceOf[HTMLElement], "ct-c-"))
@@ -417,10 +527,14 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
 
-
-  override def updateContent(): Unit = {
+  def refreshDom(): Unit = {
     clearDom()
     initDom()
+  }
+
+
+  override def updateContent(): Unit = {
+    refreshDom()
   }
 
   override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {

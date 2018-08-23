@@ -24,7 +24,7 @@ package object view {
     }
   }
 
-  def removeAllChild(a: HTMLElement): Unit = {
+  def removeAllChild(a: Element): Unit = {
     a.innerHTML = ""
   }
   def onlyChild(a: HTMLElement, b: Node) : Unit = {

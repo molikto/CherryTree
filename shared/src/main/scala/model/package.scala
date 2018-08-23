@@ -13,7 +13,7 @@ package object model extends Picklers {
   var oldDocVersion = false
   val debug_view = true
   val debug_model = false
-  val debug_selection = debug_view && true
+  val debug_selection = debug_view && false
 
   var debug_RenderEmptyInsertionPointAsBox = false
 

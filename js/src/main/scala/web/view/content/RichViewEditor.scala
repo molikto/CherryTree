@@ -178,6 +178,10 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     _5.classList.remove("ct-ast-highlight")
   }
 
+  private def isCompositionInputType(inputType: String) = {
+    inputType == "insertCompositionText"
+  }
+
   private def isSimpleInputType(inputType: String) = {
     inputType == "insertText" ||
       inputType == "insertFromComposition"
@@ -192,58 +196,45 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   // node, before
-  private var replaceComplexInputBySimple: (raw.Text, String, Int) = null
   private var isComplexInput = false
+  private var affectPosBeforeInput = -1
 
   override def beforeInputEvent(a: Event): Unit = {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
+      isComplexInput = false
     } else if (isOtherInputType(inputType)) {
+      isComplexInput = true
       val ranges = ev.getTargetRanges().asInstanceOf[js.Array[js.Dynamic]]
-      if (ranges.length == 1) {
-        val range = ranges(0)
-        if (range.startContainer == range.endContainer && range.startContainer.isInstanceOf[raw.Text]) {
-          val textNode = range.startContainer.asInstanceOf[raw.Text]
-          val plainCursor = cursorOf(textNode)
-          val indexOfPlain = contentData.content.startPosOf(plainCursor)
-          val textBefore = range.startContainer.textContent.asInstanceOf[String]
-          replaceComplexInputBySimple =
-            (textNode, textBefore, indexOfPlain)
-        }
+      val range = ranges(ranges.length - 1)
+      val endNode = range.endContainer.asInstanceOf[raw.Node]
+      val endOffset = range.endOffset.asInstanceOf[Int]
+      if (endNode.isInstanceOf[raw.Text]) {
+        affectPosBeforeInput = readOffset(endNode, endOffset, true)
+      } else {
+        affectPosBeforeInput = -1
       }
       if (model.debug_view) {
-        window.console.log(a)
-        window.console.log(ev.getTargetRanges())
-        println(replaceComplexInputBySimple)
+        window.console.log(a, ev.getTargetRanges(), affectPosBeforeInput)
       }
-    } else {
+    } else if (!isCompositionInputType(inputType)) {
+      window.console.log("unknown input event", a)
       if (a.cancelable) {
-        window.console.log(a)
         a.preventDefault()
       }
     }
   }
 
+
   override def inputEvent(a: Event): Unit = {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
-    if (isSimpleInputType(inputType)) {
+    if (allowInputType(inputType)) {
       controller.flush()
-    } else if (isOtherInputType(inputType)) {
-      if (replaceComplexInputBySimple != null) {
-        removeInsertEmptyTextNode()
-        insertNonEmptyTextNode = replaceComplexInputBySimple
-        replaceComplexInputBySimple = null
-      } else {
-        window.console.log(a)
-        isComplexInput = true
-      }
-      controller.flush()
-    } else {
-      window.console.log(a)
+    } else if (!isCompositionInputType(inputType)) {
+      refreshDom()
     }
-
   }
 
   private def mergeTextsFix(center: raw.Text): String = {
@@ -268,37 +259,47 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   private def flushComplex(): Unit = {
-    throw new Exception("Cannot handle complex input yet, see log for details")
+    normalizeAndDiffForInsertEvent().foreach(c => controller.onRichTextChange(c, affectPosBeforeInput))
   }
 
   private def flushSimple(): Unit = {
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode
-      val tc = node.textContent
-      assert(tc.startsWith(RichView.EvilChar))
-      assert(tc.endsWith(RichView.EvilChar))
-      val str = tc.substring(1, tc.length - 1)
-      if (str.length > 0) {
-        node.textContent = str
-        insertNonEmptyTextNode = (node, str, pos)
+      if (node.parentNode == null) {
+        flushComplex()
         insertEmptyTextNode = null
-        extraNode = null
-        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), -1)
+      } else {
+        val tc = node.textContent
+        assert(tc.startsWith(RichView.EvilChar))
+        assert(tc.endsWith(RichView.EvilChar))
+        val str = tc.substring(1, tc.length - 1)
+        if (str.length > 0) {
+          node.textContent = str
+          insertNonEmptyTextNode = (node, str, pos)
+          insertEmptyTextNode = null
+          extraNode = null
+          controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), -1)
+        }
       }
     } else if (insertNonEmptyTextNode != null) {
       val (node, oldContent, pos) = insertNonEmptyTextNode
-      val newContent = mergeTextsFix(node)
-      val (from, to, text) = util.quickDiff(oldContent, newContent)
-      val insertionPoint = readPlainInsertionPointBeforeFlush()
-      if (from != to || !text.isEmpty) {
-        if (model.debug_view) {
-//          window.console.log(node)
-//          window.console.log(node.parentNode)
-//          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+      if (node.parentNode == null) {
+        insertNonEmptyTextNode = null
+        flushComplex()
+      } else {
+        val newContent = mergeTextsFix(node)
+        val (from, to, text) = util.quickDiff(oldContent, newContent)
+        val insertionPoint = readPlainInsertionPointBeforeFlush()
+        if (from != to || !text.isEmpty) {
+          if (model.debug_view) {
+            //          window.console.log(node)
+            //          window.console.log(node.parentNode)
+            //          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+          }
+          insertNonEmptyTextNode = (node, newContent, pos)
+          controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), insertionPoint)
+          if (!isInserting) insertNonEmptyTextNode = null
         }
-        insertNonEmptyTextNode = (node, newContent, pos)
-        controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), insertionPoint)
-        if (!isInserting) insertNonEmptyTextNode = null
       }
     }
   }

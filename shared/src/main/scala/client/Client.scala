@@ -22,6 +22,7 @@ import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import model.cursor.Node
 import model.mode.Content.CodeInside
+import model.operation.Rich
 import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
 import register.RegisterHandler
@@ -483,9 +484,24 @@ class Client(
     localChange(DocTransaction(model.mode.Node.Visual(mouseFirstContent, node)))
   }
 
-  /**
-    * view calls this method to insert text at current insertion point,
-    */
+  override def onRichTextChange(ope: Rich, positionBefore: Int): Unit = {
+    import model._
+    state.mode match {
+      case Some(mode.Node.Content(cur, md: mode.Content.Rich)) =>
+        val rich = state.node(cur).rich
+        val op = model.operation.Node.rich(cur, ope)
+        val after = ope(rich)
+        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(positionBefore))
+        val pos = aft.end
+        val mdAfter = md match {
+          case _: mode.Content.RichInsert => mode.Content.RichInsert(pos)
+          case _ => mode.Content.RichNormal(after.rangeBefore(pos))
+        }
+        localChange(DocTransaction(Seq(op), Some(state.copyContentMode(mdAfter))))
+      case _ =>
+        throw new IllegalStateException("Not allowed")
+    }
+  }
 
   override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int): Unit = {
     import model._
@@ -630,7 +646,10 @@ class Client(
     }
   }
 
-  def localChange(update0: DocTransaction, isSmartInsert: Boolean = false): Unit = this.synchronized {
+  def localChange(
+    update0: DocTransaction,
+    isSmartInsert: Boolean = false
+  ): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
      // println(update)

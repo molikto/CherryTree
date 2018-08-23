@@ -18,7 +18,14 @@ trait SourceEditInterface {
   def onSourceEditorRedo(): Unit
 }
 
-trait EditorInterface extends SourceEditInterface {
+trait RichEditInterface {
+  def onRichTextChange(ope: operation.Rich, positionBefore: Int): Unit
+  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int)
+  def onAttributeModified(url: Unicode, title: Unicode)
+  def onExternalPasteInRichEditor(a: Unicode)
+}
+
+trait EditorInterface extends SourceEditInterface with RichEditInterface {
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit
 
   def refreshMode(): Unit
@@ -26,8 +33,5 @@ trait EditorInterface extends SourceEditInterface {
   def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
   def flushes: Observable[Unit]
   def flush(): Unit
-  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int)
-  def onAttributeModified(url: Unicode, title: Unicode)
-  def onExternalPasteInRichEditor(a: Unicode)
   def onKeyDown(k: Key): Boolean
 }

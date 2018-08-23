@@ -168,6 +168,23 @@ object Rich extends OperationObject[data.Rich, Rich] {
     Rich(uni.map(_.translate(insideStart)), Type.AddDelete)
   }
 
+  def replacePlain(seq: Seq[(Int, Int, data.Unicode)]): Rich = {
+    Rich(seq.reverse.flatMap(a => replacePlain0(a._1, a._2, a._3)), Type.AddDelete)
+  }
+
+  private def replacePlain0(start: Int, end: Int, b: data.Unicode): Seq[operation.Unicode] = {
+    if (b.isEmpty) {
+      Seq(Unicode.Delete(start, end))
+    } else if (start == end) {
+      Seq(Unicode.Insert(start, b))
+    } else {
+        Seq(
+          Unicode.Insert(start, b),
+          Unicode.Delete(start + b.size, end + b.size)
+        )
+    }
+  }
+
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
     if (b.isEmpty) {
       Rich(Seq(Unicode.Delete(start, end)), Type.Delete)

@@ -40,6 +40,7 @@ class CodeViewEditor(
 
   override def updateContent(c: model.data.Content.Code, m: Option[model.mode.Content.Code], trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
     contentView.contentData = c
+    contentView.codeView.contentData = c
     if (editing == null) {
       contentView.updateContent(c, trans, viewUpdated)
     } else {

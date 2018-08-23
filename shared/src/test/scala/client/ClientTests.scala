@@ -131,7 +131,7 @@ object ClientTests extends TestSuite  {
           */
         def performAHumanAction(c: Client) = {
           if (c.state.isRichInsert) {
-            c.onInsertRichTextAndViewUpdated(Unicode(Random.nextInt().toString))
+            c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), -1)
           }
           val avs = c.commands.filter(a => a.available(c.state, c) && !a.needsStuff)
           if (avs.nonEmpty) {
