@@ -139,38 +139,33 @@ object Unicode extends DataObject[Unicode] {
 
 case class Unicode(var str: String) extends Seq[Int] {
 
+  // LATER faster??
   def containsLowerCase(p: Unicode): Boolean = str.toLowerCase().contains(p.str)
 
   def isBlank: Boolean = {
     var i = 0
     while (i < str.length) {
       val c = str.charAt(i)
-      if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
-        return false
-      }
+      if (c != ' ' && c != '\t' && c != '\n' && c != '\r') return false
       i += 1
     }
     true
   }
 
-  def guessProp: Unicode = {
-    if (size0 != -2) {
-      if (util.isAscii(str)) {
-        size0 = -2
-      }
-    }
+  def guessProp = {
+    if (size0 != -2) if (util.isAscii(str)) size0 = -2
     this
   }
 
 
-  override def length: Int = size
+  override def length
 
-  override def size: Int = {
-    if (size0 == -2) {
-      return str.length
-    } else if (size0 < 0) {
-      size0 = str.codePointCount(0, str.length)
-    }
+    = size
+
+  override def size
+
+    = {
+    if (size0 == -2) return str.length else if (size0 < 0) size0 = str.codePointCount(0, str.length)
     size0
   }
 
@@ -178,42 +173,32 @@ case class Unicode(var str: String) extends Seq[Int] {
   private var lastCodePointIndex = -1
   private var size0 = -1
 
-  override def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
+  override def apply(i: Int)
 
-  override def head: Int = apply(0)
+    = str.codePointAt(toStringPosition(i))
 
-  def fromStringPosition(i: Int): Int = {
-    if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
-      i
-    } else {
-      val index = if (lastCodePointIndex == -1 || i < lastCharIndex) {
-        str.codePointCount(0, i)
-      } else {
-        str.codePointCount(lastCharIndex, i) + lastCodePointIndex
-      }
-      lastCharIndex = i
-      lastCodePointIndex = index
-      index
-    }
+  override def head
+
+    = apply(0)
+
+  def fromStringPosition(i: Int) = if (noSurrogatePairBeforeAndAtCodePointIndex(i)) i else {
+    val index = if (lastCodePointIndex == -1 || i < lastCharIndex) str.codePointCount(0, i) else str.codePointCount(lastCharIndex, i) + lastCodePointIndex
+    lastCharIndex = i
+    lastCodePointIndex = index
+    index
   }
 
-  def toStringPosition(i: Int): Int = {
-    if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
-      i
-    } else {
-      val index = if (lastCodePointIndex == -1 || i * 2 <= lastCodePointIndex) {
-        str.offsetByCodePoints(0, i)
-      } else {
-        str.offsetByCodePoints(lastCharIndex, i - lastCodePointIndex)
-      }
-      lastCharIndex = index
-      lastCodePointIndex = i
-      index
-    }
+  def toStringPosition(i: Int) = if (noSurrogatePairBeforeAndAtCodePointIndex(i)) i else {
+    val index = if (lastCodePointIndex == -1 || i * 2 <= lastCodePointIndex) str.offsetByCodePoints(0, i) else str.offsetByCodePoints(lastCharIndex, i - lastCodePointIndex)
+    lastCharIndex = index
+    lastCodePointIndex = i
+    index
   }
 
 
-  override def iterator: Iterator[Int] = new Iterator[Int] {
+  override def iterator
+
+    = new Iterator[Int] {
     var i = 0
     override def hasNext: Boolean = i != str.length
 
@@ -224,69 +209,58 @@ case class Unicode(var str: String) extends Seq[Int] {
     }
   }
 
-  private def noSurrogatePairBeforeAndAtCodePointIndex(pos: Int): Boolean = {
-    if (size0 == -2) {
-      true
-    } else {
-      if (size0 != -1) {
-        if (size0 == str.length) {
-          return true
-        }
-      }
+  private def noSurrogatePairBeforeAndAtCodePointIndex(pos: Int)
+
+    = {
+    if (size0 == -2) true else {
+      if (size0 != -1) if (size0 == str.length) return true
       lastCharIndex == lastCodePointIndex && pos < lastCodePointIndex
     }
   }
 
-  def before(b: Int): Iterator[(Int, Unicode)] =
-    if (size0 == -2) {
-      new Iterator[(Int, Unicode)] {
-        if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
+  def before(b: Int) =
+    if (size0 == -2) new Iterator[(Int, Unicode)] {
+      if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
 
-        var i = b
+      var i = b
 
-        override def hasNext: Boolean = i > 0
+      override def hasNext: Boolean = i > 0
 
-        override def next(): (Int, Unicode) = {
-          if (i - 2 >= 0 && str.charAt(i - 2) == 0x0d && str.charAt(i - 1) == 0x0a) {
-            i -= 2
-            (i, Unicode(str.substring(i, i + 2)))
-          } else {
-            i -= 1
-            (i, Unicode(str.substring(i, i + 1)))
-          }
+      override def next(): (Int, Unicode) = if (i - 2 >= 0 && str.charAt(i - 2) == 0x0d && str.charAt(i - 1) == 0x0a) {
+          i -= 2
+          (i, Unicode(str.substring(i, i + 2)))
+        } else {
+          i -= 1
+          (i, Unicode(str.substring(i, i + 1)))
+        }
+    } else new Iterator[(Int, Unicode)] {
+      if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
+
+      private val g = graphemes
+
+      private val k = new ArrayBuffer[(Int, Unicode)]()
+
+      {
+        var i = 0
+        while (i < b) {
+          val gg = g.next()
+          k.append(gg)
+          i += gg._2.size
         }
       }
 
-    } else {
-      new Iterator[(Int, Unicode)] {
-        if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
+      private var j = k.size - 1
 
-        private val g = graphemes
+      override def hasNext: Boolean = j >= 0
 
-        private val k = new ArrayBuffer[(Int, Unicode)]()
-
-        {
-          var i = 0
-          while (i < b) {
-            val gg = g.next()
-            k.append(gg)
-            i += gg._2.size
-          }
-        }
-
-        private var j = k.size - 1
-
-        override def hasNext: Boolean = j >= 0
-
-        override def next(): (Int, Unicode) = {
-          val r = k(j)
-          j -= 1
-          r
-        }
+      override def next(): (Int, Unicode) = {
+        val r = k(j)
+        j -= 1
+        r
       }
     }
 
-  def after(b: Int): Iterator[(Int, Unicode)] = new Iterator[(Int, Unicode)] {
+  def after(b: Int) = new Iterator[(Int, Unicode)] {
 
     // LATER implement https://fossies.org/linux/swift-swift/stdlib/public/core/StringCharacterView.swift
     // https://github.com/apple/swift/blob/a4230ab2ad37e37edc9ed86cd1510b7c016a769d/stdlib/public/core/StringGraphemeBreaking.swift#L202
@@ -297,18 +271,16 @@ case class Unicode(var str: String) extends Seq[Int] {
     override def next(): (Int, Unicode) = {
       // from https://github.com/apple/swift/blob/a4230ab2ad37e37edc9ed86cd1510b7c016a769d/stdlib/public/core/StringGraphemeBreaking.swift
       val p = i
-      if (size0 == -2) {
-        if (i + 1 < str.length && str.charAt(i) == 0x0d && str.charAt(i + 1) == 0x0a) {
-          i = i + 2
-          val res = (ii, Unicode(str.substring(p, i)))
-          ii += 2
-          res
-        } else {
-          i += 1
-          val res = (ii, Unicode(str.substring(p, i)))
-          ii += 1
-          res
-        }
+      if (size0 == -2) if (i + 1 < str.length && str.charAt(i) == 0x0d && str.charAt(i + 1) == 0x0a) {
+        i = i + 2
+        val res = (ii, Unicode(str.substring(p, i)))
+        ii += 2
+        res
+      } else {
+        i += 1
+        val res = (ii, Unicode(str.substring(p, i)))
+        ii += 1
+        res
       } else {
         i = GraphemeSplitter.nextBreak(str, p)
         val sub = str.substring(p, i)
@@ -319,7 +291,9 @@ case class Unicode(var str: String) extends Seq[Int] {
     }
   }
 
-  private def toStrList: Seq[String] = {
+  private def toStrList
+
+    = {
     val sp = new ArrayBuffer[String]()
     var i = 0
     while (i < str.length) {
@@ -367,43 +341,43 @@ case class Unicode(var str: String) extends Seq[Int] {
 //    ops
 //  }
 
-  def graphemes: Iterator[(Int, Unicode)] = after(0)
+  def graphemes = after(0)
 
-  def +(j: Unicode): Unicode = Unicode(str + j.str,
+  def +(j: Unicode) = Unicode(str + j.str,
     if (size0 < 0 || j.size0 < 0) -1 else size + j.size, size0 == -2 && j.size0 == -2)
 
 
-  override def toString: String = str
+  override def toString
+
+    = str
 
 
-  override def isEmpty: Boolean = str.isEmpty
-  def slice(r: IntRange): Unicode = {
+  override def isEmpty
+
+    = str.isEmpty
+  def slice(r: IntRange) = {
     val start = toStringPosition(r.start)
     val end = toStringPosition(r.until)
     Unicode(str.substring(start, end), r.size, size0 == -2)
   }
-  def insert(at: Int, u: Unicode): Unicode = {
+  def insert(at: Int, u: Unicode) = {
     if (at < 0 || at > size) throw new IllegalArgumentException("Out of bound")
     val index = toStringPosition(at)
     Unicode(s"${str.substring(0, index)}${u.str}${str.substring(index)}", if (size0 < 0 || u.size0 < 0) -1 else size0 + u.size0, size0 == -2 && u.size0 == -2)
   }
-  def delete(r: IntRange): Unicode = {
-    if (r.size == 0) {
-      this
-    } else {
-      val start = toStringPosition(r.start)
-      val end = toStringPosition(r.until)
-      Unicode(s"${str.substring(0, start)}${str.substring(end)}", if (size0 < 0) -1 else size0 - r.size, size0 == -2)
-    }
+  def delete(r: IntRange) = if (r.size == 0) this else {
+    val start = toStringPosition(r.start)
+    val end = toStringPosition(r.until)
+    Unicode(s"${str.substring(0, start)}${str.substring(end)}", if (size0 < 0) -1 else size0 - r.size, size0 == -2)
   }
 
-  def replace(r: IntRange, unicode: Unicode): Unicode = {
+  def replace(r: IntRange, unicode: Unicode) = {
     val start = toStringPosition(r.start)
     val end = toStringPosition(r.until)
     Unicode(s"${str.substring(0, start)}${unicode.str}${str.substring(end)}", if (size0 < 0 || unicode.size0 < 0) -1 else size0 -r.size + unicode.size0, size0 == -2 && unicode.size == -2)
   }
 
-  def surround(r: IntRange, left: Unicode, right: Unicode): Unicode = {
+  def surround(r: IntRange, left: Unicode, right: Unicode) = {
     val start = toStringPosition(r.start)
     val end = toStringPosition(r.until)
     val s = str.substring(start, end)
@@ -414,15 +388,15 @@ case class Unicode(var str: String) extends Seq[Int] {
     )
   }
 
-  def move(r: IntRange, at: Int): Unicode = {
+  def move(r: IntRange, at: Int) = {
     val s = slice(r)
     delete(r).insert(r.transformAfterDeleted(at).get, s)
   }
 
-  def isDigit: Boolean = str.length == 1 && Character.isDigit(str.charAt(0))
+  def isDigit = str.length == 1 && Character.isDigit(str.charAt(0))
 
-  def asDigit: Int = str.toInt
+  def asDigit = str.toInt
 
 
-  def containsSpace: Boolean = str.contains(" ")
+  def containsSpace = str.contains(" ")
 }

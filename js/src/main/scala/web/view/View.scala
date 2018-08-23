@@ -116,19 +116,20 @@ abstract class View {
 
   def event[T <: Event](ty: String,
     listener: T => Any): Unit = {
-    event(dom, ty, (t: T) => {
-      fpsStart()
-      val res = listener(t)
-      fpsEnd()
-      res
-    })
+    event(dom, ty, listener)
   }
 
   def event[T <: Event](node: EventTarget, ty: String,
     listener: T => Any): Unit = {
+    val li: js.Function1[T, _] =  (t: T) => {
+      fpsStart()
+      val res = listener(t)
+      fpsEnd()
+      res
+    }
     if (des == null) throw new IllegalAccessException("Destroyed!")
-    node.addEventListener(ty, listener)
-    defer(_ => node.removeEventListener(ty, listener))
+    node.addEventListener(ty, li)
+    defer(_ => node.removeEventListener(ty, li))
   }
 
   def focus(): Unit = {
