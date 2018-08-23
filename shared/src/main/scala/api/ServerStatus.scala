@@ -1,4 +1,4 @@
 package api
 
-case class ServerStatus(online: Int) {
+case class ServerStatus(online: Int, offline: Boolean, tempOffline: Boolean) {
 }

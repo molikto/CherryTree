@@ -39,7 +39,7 @@ trait Server extends Api {
     val state = ClientInit(
       document,
       version,
-      ServerStatus(onlineCount + 1)
+      ServerStatus(onlineCount + 1, false, false)
     )
     clients.update(token, ClientInfo(version, System.currentTimeMillis()))
     Right(state)
@@ -101,7 +101,7 @@ trait Server extends Api {
         }
         clients.update(authentication, ClientInfo(version, System.currentTimeMillis()))
         // LATER don't accept conflicting items
-        ClientUpdate(ws, ts.size, version, ServerStatus(onlineCount))
+        ClientUpdate(ws, ts.size, version, ServerStatus(onlineCount, false, false))
       } catch {
         case e: Throwable => throw e
       }

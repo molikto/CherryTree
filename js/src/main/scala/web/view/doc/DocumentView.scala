@@ -107,7 +107,7 @@ class DocumentView(
 
   event("compositionend", (a: CompositionEvent) => {
     // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
-    if (isInserting) editor.disableRemoteStateUpdate(true, false)
+    if (isInserting) editor.disableRemoteStateUpdate(false, false)
     else preventDefault(a)
   })
 
@@ -640,6 +640,18 @@ class DocumentView(
 
   private var mouseDisableWrongSelectionHandler = -1
 
+  private def setFirstContent(other: model.cursor.Node) = {
+    mouseFirstContent = other
+    contentAt(mouseFirstContent).asInstanceOf[Any] match {
+      case r: RichView =>
+        mouseFirstContentRich = r
+        r.markCgAsEditableTempDuringMouseEvents(true)
+      case _ =>
+        editor.focusOn(other, None, false)
+    }
+
+  }
+
   event("mousedown", (a: MouseEvent) => {
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
@@ -677,7 +689,7 @@ class DocumentView(
           case None =>
             down = null
           case Some(m) =>
-            mouseFirstContent = m.other
+            setFirstContent(m.other)
         }
       }
       if (down != null) {
@@ -759,14 +771,7 @@ class DocumentView(
   private def getFirstContentView(a: MouseEvent): Unit = {
     val pc = findParentContent(a.target.asInstanceOf[Node])
     if (pc != null) {
-      mouseFirstContent = pc._1
-      pc._2.asInstanceOf[Any] match {
-        case r: RichView =>
-          mouseFirstContentRich = r
-          r.markCgAsEditableTempDuringMouseEvents(true)
-        case _ =>
-          editor.focusOn(pc._1, None, false)
-      }
+      setFirstContent(pc._1)
     }
   }
 

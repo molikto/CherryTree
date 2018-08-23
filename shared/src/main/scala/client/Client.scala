@@ -72,9 +72,9 @@ class Client(
   /**
     * connection state
     */
-  private val connection_ = ObservableProperty[Option[ServerStatus]](Some(initial.serverStatus))
+  private val connection_ = ObservableProperty[ServerStatus](initial.serverStatus)
 
-  def connection: Observable[Option[ServerStatus]] = connection_
+  def connection: Observable[ServerStatus] = connection_
 
   val errors_ : ObservableProperty[Option[Throwable]] = ObservableProperty(None)
 
@@ -144,6 +144,15 @@ class Client(
   private var flushing = false
   private var updatingState = false
   private def disableRemoteStateUpdate: Boolean = disableForComposition || disableForMouse
+
+  def updateConnectionStatusBasedOnDisableStatus(): Unit = {
+    val before = connection_.get.tempOffline
+    val now = disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null
+    if (before != now) {
+      connection_.modify(_.copy(tempOffline = now))
+    }
+  }
+
   def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit = {
     if (flushing) throw new IllegalStateException("You should not change state will fetching state!!")
     if (forMouse) {
@@ -154,6 +163,7 @@ class Client(
     if (!disableRemoteStateUpdate) {
       flush()
     }
+    updateConnectionStatusBasedOnDisableStatus()
   }
 
   def flushes: Observable[Unit] = flushes_
@@ -251,7 +261,7 @@ class Client(
 
   private def putBackAndMarkNotConnected(head: Int): Unit = {
     requests = head +: requests
-    connection_.update(None)
+    connection_.modify(_.copy(offline = true))
   }
 
   private def request[T](head: Int, a: Future[ErrorT[T]], onSuccess: T => Unit): Unit = {
@@ -266,7 +276,7 @@ class Client(
       case Failure(t) =>
         self.synchronized {
           requesting = false
-          connection_.update(None)
+          connection_.modify(_.copy(offline = true))
           t match {
             case ApiError.ClientVersionIsOlderThanServerCache =>
               // LATER properly handle this!
@@ -283,16 +293,17 @@ class Client(
 
   private var lastRequestTime = 0L
 
-  private def tryTopRequest(): Unit = {
+  private def updateDisableUpdateBecauseLocalNodeDelete(): Boolean = {
     if (disableUpdateBecauseLocalNodeDelete != null) {
       if (System.currentTimeMillis() - disableUpdateBecauseLocalNodeDelete._2 > 5000) {
         disableUpdateBecauseLocalNodeDelete = null
       }
     }
-    if (disableUpdateBecauseLocalNodeDelete != null) {
-      return
-    }
-    if (!requesting) {
+    disableUpdateBecauseLocalNodeDelete != null
+  }
+
+  private def tryTopRequest(): Unit = {
+    if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting) {
       requests match {
         case head :: tail =>
           requests = tail
@@ -348,7 +359,7 @@ class Client(
         assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
         val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
         uncommitted = uc
-        connection_.update(Some(success.serverStatus))
+        connection_.update(success.serverStatus)
         if (wp0.nonEmpty) {
           val (last, from) = operation.Node.apply(wp0, state)
           updateState(
@@ -635,6 +646,7 @@ class Client(
           if (nodes.exists(a => a.content.nonEmpty || a.childs.nonEmpty)) {
             disableUpdateBecauseLocalNodeDelete = (d, System.currentTimeMillis(), nodes, state)
             justDisabled = true
+            updateConnectionStatusBasedOnDisableStatus()
           }
       }
     }
@@ -657,8 +669,9 @@ class Client(
           }
         }
       }
-      if (update.transaction.nonEmpty) {
+      if (update.transaction.nonEmpty && disableUpdateBecauseLocalNodeDelete != null) {
         disableUpdateBecauseLocalNodeDelete = null
+        updateConnectionStatusBasedOnDisableStatus()
       }
     }
     val extra = update.extra match {

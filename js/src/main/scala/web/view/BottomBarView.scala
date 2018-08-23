@@ -1,5 +1,6 @@
 package web.view
 
+import api.ServerStatus
 import client.Client
 import command.Key.KeySeq
 import command.Key
@@ -160,11 +161,16 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   })
 
   observe(client.connection.doOnNext {
-    case Some(e) =>
-      connection.textContent = s"${e.online} user${if (e.online == 1) "" else "s"} online"
-      connection.className = "ct-hint-color"
-    case _ =>
-      connection.textContent = "offline"
-      connection.className = "ct-error-color"
+    case ServerStatus(count, offline, tempOffline) =>
+      if (offline) {
+        connection.textContent = "offline"
+        connection.className = "ct-error-color"
+      } else if (tempOffline) {
+        connection.textContent = "offline"
+        connection.className = "ct-hint-color"
+      } else {
+        connection.textContent = s"$count user${if (count == 1) "" else "s"} online"
+        connection.className = "ct-hint-color"
+      }
   })
 }
