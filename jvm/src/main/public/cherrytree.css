@@ -286,6 +286,7 @@
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjNTU1Yzc1IiBkPSJNMjU2IDhDMTE5IDggOCAxMTkgOCAyNTZzMTExIDI0OCAyNDggMjQ4IDI0OC0xMTEgMjQ4LTI0OFMzOTMgOCAyNTYgOHoiLz48L3N2Zz4= ) /* fas(solid/circle) */;
     order: -1;
     opacity: 0.4;
+    user-select: none;
 }
 
 .ct-d-hold-folded {
@@ -537,6 +538,10 @@ block selection
    color: #b7b419;
 }
 
+
+.ct-cg-atom {
+}
+
 .ct-latex {
  color: #abb2bf;
  display: inline-block;
@@ -566,7 +571,6 @@ block selection
     color: #636e83;
     font-weight:normal;
 }
-
 
 
 .ct-cg-shadow {

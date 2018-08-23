@@ -15,10 +15,11 @@ object View {
 
   def fromDom[T <: View](a: Node): T = a.asInstanceOf[js.Dynamic].ctview.asInstanceOf[T]
 
-  def maybeDom[T <: View](a: Node): Option[T] = {
+  def maybeDom[View](a: Node): Option[View] = {
     val tt = a.asInstanceOf[js.Dynamic].ctview
-    if (tt != js.undefined && tt != null && tt.isInstanceOf[T]) {
-      Some(tt.asInstanceOf[T])
+    //noinspection ComparingUnrelatedTypes
+    if (tt != js.undefined && tt != null) {
+      Some(tt.asInstanceOf[View])
     } else {
       None
     }
@@ -133,6 +134,7 @@ abstract class View {
   def focus(): Unit = {
     dom.focus()
   }
+
 
   def scrollToTop(): Unit =
     dom.scrollTop = 0

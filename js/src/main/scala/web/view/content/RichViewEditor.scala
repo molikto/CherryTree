@@ -271,11 +271,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     throw new Exception("Cannot handle complex input yet, see log for details")
   }
 
-
-//  def readSelection(): IntRange = {
-//    //window.getSelection().anchorNode
-//  }
-
   private def flushSimple(): Unit = {
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode

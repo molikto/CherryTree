@@ -92,6 +92,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
+  def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit =
+    jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
+
+
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
     val el = e.target.asInstanceOf[HTMLElement]
     window.console.log("image loading error")
@@ -137,50 +141,51 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         sp: Frag
       case Text.HTML(c) =>
         val a = span(contenteditable := "false",
-          display := "inline-block",
-          span(EvilChar, contenteditable := false) // don't fuck with my cursor!!!
+          `class` := "ct-cg-atom",
+          span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (c.isBlank) {
-          a.className = ""
           a.appendChild(warningInline("empty inline HTML").render)
         } else {
           try {
-            a.className = "ct-inline-html"
-            val b = span().render
+            val b = span(
+              `class` := "ct-inline-html"
+            ).render
             b.innerHTML = c.str
             a.appendChild(b)
           } catch {
             case err: Throwable =>
-              a.className = ""
               a.appendChild(errorInline("inline HTML error", err).render)
           }
         }
-        a.appendChild(span(EvilChar, contenteditable := false).render)
+        a.appendChild(span(EvilChar).render)
         a: Frag
       case Text.LaTeX(c) =>
-        val a = span(display := "inline-block").render
+        val a = span(
+          contenteditable := "false",
+          `class` := "ct-cg-atom",
+          span(EvilChar)
+        ).render
         if (c.isBlank) {
           a.appendChild(warningInline("empty LaTeX").render)
         } else {
+          val b = span(
+            `class` := "ct-latex"
+          ).render
           try {
-            KaTeX.render(c.str, a)
+            KaTeX.render(c.str, b)
+            a.appendChild(b)
           } catch {
             case err: Throwable =>
               a.appendChild(errorInline("LaTeX error", err).render)
           }
         }
-        span(`class` := "ct-latex",
-          contenteditable := false,
-          display := "inline-block",
-          boxSizing := "border-box",
-          span(EvilChar), // don't fuck with my cursor!!!
-          a,
-          span(EvilChar)
-        )
+        a.appendChild(span(EvilChar).render)
+        a: Frag
       case Text.Code(c) =>
         span(
           cg("`"),
-          code(`class` := "ct-c-code", c.str),
+          span(`class` := "ct-c-code", c.str),
           cg("`")
         )
       case Text.Plain(c) => stringFrag(c.str)
@@ -196,26 +201,49 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
     if (a.parentNode == null) return -1
-    if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) {
+    if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
-    } else if (isValidContainer(a)) {
+    } else if (isValidContainer(a)) { // a node inside a valid container
       if (o == a.childNodes.length) {
         rich.startPosOf(model.cursor.Node.moveBy(cursorOf(a.childNodes(o - 1)), 1))
       } else {
         rich.startPosOf(cursorOf(a.childNodes(o)))
       }
     } else {
-      if (isEnd) {
-        readOffset(a.parentNode, indexOf(a) + 1, isEnd = true)
-      } else {
-        readOffset(a.parentNode, indexOf(a), isEnd = false)
+      a match {
+        case el: raw.Text if el.parentNode.asInstanceOf[HTMLElement].classList.contains("ct-cg") =>
+          val cg = el.parentNode.asInstanceOf[HTMLElement]
+          val sty = cg.parentNode.asInstanceOf[HTMLElement]
+          if (indexOf(cg) == 0) {
+            if (o == 0) {
+              rich.startPosOf(cursorOf(sty))
+            } else {
+              rich.startPosOf(cursorOf(sty)) + 1
+            }
+          } else {
+            val cur = cursorOf(sty)
+            if (o == 0) {
+              rich.startPosOf(cur) + rich(cur).contentSize + 1
+            } else {
+              rich.startPosOf(cur) + rich(cur).size
+            }
+          }
+        case _ =>
+          if (isEnd) {
+            readOffset(a.parentNode, indexOf(a) + 1, isEnd = true)
+          } else {
+            readOffset(a.parentNode, indexOf(a), isEnd = false)
+          }
       }
     }
   }
 
   def readSelectionFromDom(): Option[IntRange] = {
     val sel = window.getSelection()
-    if (sel.rangeCount == 1) {
+    if (sel.rangeCount >= 1) {
+      if (model.debug_selection) {
+        window.console.log("read selection", sel)
+      }
       val range = sel.getRangeAt(0)
       if (range.collapsed) {
         val start = readOffset(range.startContainer, range.startOffset, true)
@@ -236,7 +264,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   def readInsertionPoint(isNode: Node = null): Int = {
     val sel = window.getSelection()
-    if (sel.rangeCount == 1) {
+    if (sel.rangeCount >= 1) {
+      if (model.debug_selection) {
+        window.console.log("read insertion", sel)
+      }
       val range = sel.getRangeAt(0)
       if (root.contains(range.endContainer)) {
         return readOffset(range.endContainer, range.endOffset, true)

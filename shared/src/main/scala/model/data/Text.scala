@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract sealed class Text {
-  protected def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
+  def apply(cur: cursor.Node): Text.Delimited = if (cur.isEmpty) this.asDelimited else throw new NotImplementedError()
   def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
@@ -126,7 +126,6 @@ object Text {
       if (i < size) Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
     }
-    protected override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
@@ -228,7 +227,7 @@ object Text {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
-    protected override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
+    override def apply(cur: cursor.Node): Delimited = if (cur.isEmpty) this else content(cur.head)(cur.tail)
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
       super.quickSearch(p, deli) ||

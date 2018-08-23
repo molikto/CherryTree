@@ -2,6 +2,7 @@ package web.view
 
 import client.Client
 import _root_.doc.DocTransaction
+import client.Client.ViewMessage
 import model.cursor
 import model.cursor.Node
 import org.scalajs.dom.raw._
@@ -120,8 +121,9 @@ class QuickSearchDialog(val client: Client,
         return
       }
     }
+    val noZoom = model.cursor.Node.contains(client.state.zoom, n) && !client.state.viewAsHidden(n)
     client.localChange(DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(n, client.state.node(n).content.defaultNormalMode())),
-      zoomAfter = if (model.cursor.Node.contains(client.state.zoom, n) && !client.state.viewAsHidden(n)) None else Some(n)))
+      zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty))
   }
 }

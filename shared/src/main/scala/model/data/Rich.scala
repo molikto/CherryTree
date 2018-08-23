@@ -13,6 +13,11 @@ import scala.util.Random
   */
 case class Rich(text: Seq[Text]) {
 
+  def apply(node: cursor.Node): Delimited = {
+    assert(node.nonEmpty)
+    text(node.head)(node.tail)
+  }
+
   def startPosOf(node: cursor.Node): Int = {
     assert(node.nonEmpty)
     def rec(seq: Seq[Text], cur: cursor.Node): Int = {
@@ -251,19 +256,6 @@ case class Rich(text: Seq[Text]) {
     }
   }
 
-
-  def apply(parent: Seq[Text], cur: cursor.Node): Text = {
-    val a = parent(cur.head)
-    if (cur.size == 1) {
-      a
-    } else {
-      apply(a.asInstanceOf[Text.Formatted].content, cur.tail)
-    }
-  }
-
-  def apply(i: cursor.Node): Text = {
-    apply(text, i)
-  }
 
   def wrappedByCodedContent(pos: Int): Boolean = {
     val bs = befores(pos)

@@ -45,6 +45,7 @@ object Client {
     case class ShowCommandMenu() extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
+    case class ScrollToNodeTop(cur: cursor.Node) extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
     case class CopyToClipboard(a: String) extends ViewMessage
     case class SimulateKeyboardMotion(isUp: Boolean) extends ViewMessage

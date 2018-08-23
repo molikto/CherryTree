@@ -32,6 +32,7 @@ class DocumentView(
   ).render
 
   private val noEditable = div(
+    `class` := "unselectable",
     position := "absolute",
     top := "-30px",
     width := "1000px",
@@ -60,9 +61,13 @@ class DocumentView(
     overflowY := "scroll",
     fakeSelections,
     noEditable,
-    div(height := "36px", display := "block", contenteditable := "false"),
+    div(
+      `class` := "unselectable",
+      height := "36px",  display := "block", contenteditable := "false"),
     rootFrame,
-    div(height := "36px", display := "block", contenteditable := "false")
+    div(
+      `class` := "unselectable",
+      height := "36px", display := "block", contenteditable := "false")
   ).render
 
   private def cancelNoEditableInput(): Any = {
@@ -163,11 +168,23 @@ class DocumentView(
 
   private def flushSelection(): Unit = {
     if (!isFocusedOut) {
-      if (window.getSelection().rangeCount == 1 && window.getSelection().getRangeAt(0) == currentSelection) {
-      } else {
-        window.getSelection().removeAllRanges()
-        window.getSelection().addRange(currentSelection)
+      val sel = window.getSelection()
+      if (sel.rangeCount == 1) {
+        val ran = sel.getRangeAt(0)
+        if (ran == currentSelection) {
+          return
+        } else if (ran.startContainer == currentSelection.startContainer &&
+          ran.startOffset == currentSelection.startOffset &&
+          ran.endContainer == currentSelection.endContainer &&
+          ran.endOffset == currentSelection.endOffset) {
+          return
+        }
       }
+      if (model.debug_selection) {
+        window.console.log("flushing selection", sel)
+      }
+      sel.removeAllRanges()
+      sel.addRange(currentSelection)
     }
   }
 
@@ -589,6 +606,8 @@ class DocumentView(
   }
 
 
+  def scrollToTop(cur: model.cursor.Node): Unit = contentAt(cur).dom.scrollIntoView(true)
+
   /**
     *
     *
@@ -597,49 +616,110 @@ class DocumentView(
     */
 
   private var isRightMouseButton: Boolean = false
-  private var mouseDownTime = -1L
+  private var mouseDown = false
+  private case class Click(t: Long, x: Double, y: Double) {
+    def near(ano: Click, limit: Long): Boolean = {
+      val dx = x - ano.x
+      val dy = y - ano.y
+      dx * dx + dy * dy < 100 && ano.t - t < limit
+    }
+  }
+  private val acientMouseDown = Click(-1L, 0, 0)
+  private var lastMouseDown = acientMouseDown
+  private var oneButLastMouseDown = acientMouseDown
   private var mouseFirstContent: model.cursor.Node = null
+  private var mouseFirstContentRich: RichView = null
   private var mouseSecondContent: model.cursor.Node = null
+  private var clickCount = 0
 
   private var mouseDisableWrongSelectionHandler = -1
   private var mouseFlushSelectionHandler = -1
 
-  def mouseDown = mouseDownTime  > 0
-
   event("mousedown", (a: MouseEvent) => {
-    editor.disableRemoteStateUpdate(true, true)
-    mouseDownTime = System.currentTimeMillis()
-    isRightMouseButton = a.button != 0
-    getFirstContentView(a)
-    if (mouseFlushSelectionHandler != -1) window.clearTimeout(mouseFlushSelectionHandler)
-    mouseDisableWrongSelectionHandler = window.setInterval(() => {
-      if (mouseSecondContent != null) {
-        flushSelection()
+    clearAllPreviousReading()
+    val now = System.currentTimeMillis()
+    if ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac)) {
+      lastMouseDown = acientMouseDown
+      oneButLastMouseDown = acientMouseDown
+      val pc = findParentContent(a.target.asInstanceOf[Node])
+      if (pc != null) {
+        editor.onVisualMode(pc._1, pc._1)
       }
-    }, 8)
+      a.preventDefault()
+    } else {
+      var down = Click(now, a.clientX, a.clientY)
+      if (!lastMouseDown.near(down, 500)) { // single click
+        clickCount = 1
+      } else if (!oneButLastMouseDown.near(down, 600)) { // double click
+        clickCount = 2
+      } else { // triple click
+        val pc = findParentContent(a.target.asInstanceOf[Node])
+        if (pc != null) {
+          val cot = client.state.node(pc._1).content
+          val ran = if (cot.isRich) {
+            val size = cot.asInstanceOf[Content.Rich].size
+            Some(IntRange(0, size))
+          } else {
+            None
+          }
+          editor.focusOn(pc._1, ran, false)
+          a.preventDefault()
+          down = null
+        }
+        clickCount = 3
+      }
+      if (down != null) {
+        editor.disableRemoteStateUpdate(true, true)
+        mouseDown = true
+        oneButLastMouseDown = lastMouseDown
+        lastMouseDown = down
+        isRightMouseButton = a.button != 0
+        getFirstContentView(a)
+        if (mouseFlushSelectionHandler != -1) window.clearTimeout(mouseFlushSelectionHandler)
+        mouseDisableWrongSelectionHandler = window.setInterval(() => {
+          if (mouseSecondContent != null) {
+            flushSelection()
+          }
+        }, 8)
+      }
+    }
   })
 
-  def mouseUpFinal(ev: MouseEvent) = {
-    editor.disableRemoteStateUpdate(false, true)
-    onMouseInteract(ev, 5)
-  }
+
 
   private def endMouseDown(a: MouseEvent, isRight: Boolean): Unit = {
     if (mouseDown) {
-      val duration = System.currentTimeMillis() - mouseDownTime
-      mouseDownTime = -1
+      mouseDown = false
       isRightMouseButton = isRight || a.button != 0
       window.clearInterval(mouseDisableWrongSelectionHandler)
       if (mouseSecondContent == null) {
-        clearAllPreviousReading()
-        var waitTime = 200 - duration
-        if (isRightMouseButton && waitTime < 100) waitTime = 100
-        if (waitTime < 0) waitTime = 0
-        mouseFlushSelectionHandler = window.setTimeout(() => mouseUpFinal(a), waitTime)
+        var waitTime = 0L
+        if (clickCount == 1) {
+          waitTime = 200 - (System.currentTimeMillis() - lastMouseDown.t)
+          if (isRightMouseButton && waitTime < 100) waitTime = 100
+          if (waitTime < 0) waitTime = 0
+        }
+        println("read selection at " + waitTime)
+        def work() = {
+          editor.disableRemoteStateUpdate(false, true)
+          focus()
+          readSelectionAt(a.target.asInstanceOf[Node], 5)
+        }
+        if (waitTime == 0L) {
+          work()
+        } else {
+          mouseFlushSelectionHandler = window.setTimeout(() => work(), waitTime)
+        }
       } else {
         editor.disableRemoteStateUpdate(false, true)
       }
+
       mouseFirstContent = null
+      if (mouseFirstContentRich != null) {
+        mouseFirstContentRich.markCgAsEditableTempDuringMouseEvents(false)
+        mouseFirstContentRich = null
+      }
+
       mouseSecondContent = null
       savedSelectionForLater = null
     }
@@ -655,7 +735,15 @@ class DocumentView(
 
   private def getFirstContentView(a: MouseEvent): Unit = {
     val pc = findParentContent(a.target.asInstanceOf[Node])
-    if (pc != null) mouseFirstContent = pc._1
+    if (pc != null) {
+      mouseFirstContent = pc._1
+      pc._2.asInstanceOf[Any] match {
+        case r: RichView =>
+          mouseFirstContentRich = r
+          r.markCgAsEditableTempDuringMouseEvents(true)
+        case _ =>
+      }
+    }
   }
 
 
@@ -687,11 +775,15 @@ class DocumentView(
               if (savedSelectionForLater != null) {
                 val saved = savedSelectionForLater
                 savedSelectionForLater = null
-                window.getSelection().removeAllRanges()
-                window.getSelection().addRange(saved)
-//                window.setTimeout(() => {
-//                  window.console.log("restore saved ", saved)
-//                }, 0)
+                println("setting saved selection")
+                val sel = window.getSelection()
+                sel.removeAllRanges()
+                sel.addRange(saved)
+                window.setTimeout(() => {
+                  val sel = window.getSelection()
+                  sel.removeAllRanges()
+                  sel.addRange(saved)
+                }, 1)
               }
             }
           }
@@ -702,14 +794,6 @@ class DocumentView(
     }
   })
 
-  private var focusFinder: Int = -1
-
-  private def clearAllPreviousReading(): Unit = {
-    if (focusFinder != -1) {
-      window.clearTimeout(focusFinder)
-      focusFinder = -1
-    }
-  }
 
 
   private def findParentContent(t0: Node): (model.cursor.Node, ContentView.General) = {
@@ -736,30 +820,38 @@ class DocumentView(
     null
   }
 
-  private def readSelectionAt(t: Node, delay: Int): Unit = {
-    if (mouseSecondContent != null) return
-    if (focusFinder == -1) {
-      focusFinder = window.setTimeout(() => {
-        val pc = findParentContent(t)
-        if (pc != null) {
-          val (cur, contentView) = pc
-          val range = contentView.asInstanceOf[Any] match {
-            case r: RichView =>
-              r.readSelectionFromDom()
-            case _ => None
-          }
-          editor.focusOn(cur, range, false)
-        } else {
-          editor.refreshMode()
-        }
-        focusFinder = -1
-      }, delay)
+  private var focusFinder: Int = -1
+
+  private def clearAllPreviousReading(): Unit = {
+    if (focusFinder != -1) {
+      window.clearTimeout(focusFinder)
+      focusFinder = -1
     }
   }
 
-  private def onMouseInteract(a: MouseEvent, i: Int): Unit = {
-    focus()
-    readSelectionAt(a.target.asInstanceOf[Node], i)
+  private def readSelectionAt(t: Node, delay: Int): Unit = {
+    def work() = {
+      val pc = findParentContent(t)
+      if (pc != null) {
+        val (cur, contentView) = pc
+        val range = contentView.asInstanceOf[Any] match {
+          case r: RichView =>
+            r.readSelectionFromDom()
+          case _ => None
+        }
+        editor.focusOn(cur, range, false)
+      } else {
+        editor.refreshMode()
+      }
+      focusFinder = -1
+    }
+    if (delay == 0) {
+      work()
+    } else {
+      focusFinder = window.setTimeout(() => {
+        work()
+      }, delay)
+    }
   }
 
 
