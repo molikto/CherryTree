@@ -730,7 +730,9 @@ class DocumentView(
           if (isRightMouseButton && waitTime < 100) waitTime = 100
           if (waitTime < 0) waitTime = 0
         }
-        if (model.debug_selection) println("read selection at " + waitTime)
+        if (model.debug_selection) {
+          println("read selection at " + waitTime)
+        }
         readSelectionAfterMouseUpWithDelay(waitTime)
       } else {
         editor.disableRemoteStateUpdate(false, true)

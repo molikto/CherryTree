@@ -69,10 +69,12 @@ package object mode {
     case class RichCodeSubMode(override val range: IntRange, code: CodeInside, override val modeBefore: Rich) extends RichSubMode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
       override def breakWhiteSpaceInserts: Boolean = code.breakWhiteSpaceInserts
+      override def end: Int = modeBefore.end
     }
 
     case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
+      override def end: Int = modeBefore.end
     }
 
     case object CodeNormal extends Code with Normal //
