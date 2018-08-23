@@ -86,8 +86,12 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
   private[content] def initEmptyContent(): Unit = {
-    removeAllChild(root)
-    root.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
+    if (root.childNodes.length == 1 && root.textContent == EmptyStr && root.childNodes(0).isInstanceOf[Span]
+      && root.childNodes(0).asInstanceOf[Span].className == "ct-hint-color") {
+    } else {
+      removeAllChild(root)
+      root.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
+    }
   }
 
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
@@ -357,7 +361,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         window.console.log("read selection", sel)
       }
       if (isEmpty) {
-        Some(IntRange(0, 0))
+        return Some(IntRange(0, 0))
       } else {
         val range = sel.getRangeAt(0)
         if (range.collapsed) {
