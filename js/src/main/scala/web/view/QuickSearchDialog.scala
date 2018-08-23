@@ -29,8 +29,9 @@ class QuickSearchDialog(val client: Client,
   ).render
 
 
-  private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code") ++ delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
-  private val specialDesc = s"Special commands: ${special.mkString(" ")}"
+  private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code")
+  private val marks = delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
+  private val specialDesc = s"Special commands: ${(special ++ marks).mkString(" ")}"
 
 
   override protected def headerSize: Int = 1
