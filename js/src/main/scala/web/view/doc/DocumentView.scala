@@ -643,7 +643,7 @@ class DocumentView(
   event("mousedown", (a: MouseEvent) => {
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
-    if ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac)) {
+    if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
       lastMouseDown = acientMouseDown
       oneButLastMouseDown = acientMouseDown
       val pc = findParentContent(a.target.asInstanceOf[Node])
@@ -668,25 +668,38 @@ class DocumentView(
             None
           }
           editor.focusOn(pc._1, ran, false)
-          a.preventDefault()
           down = null
         }
         clickCount = 3
       }
+      if (hasShift) {
+        client.state.mode match {
+          case None =>
+            down = null
+          case Some(m) =>
+            mouseFirstContent = m.other
+        }
+      }
       if (down != null) {
+        clearAllPreviousReading()
+        mouseDisableWrongSelectionHandler = window.setInterval(() => {
+          if (mouseSecondContent != null || (mouseFirstContent != null && mouseFirstContentRich == null)) {
+            val sel = window.getSelection()
+            if (sel.rangeCount > 0) sel.removeAllRanges()
+          }
+        }, 8)
         editor.disableRemoteStateUpdate(true, true)
         mouseDown = true
         oneButLastMouseDown = lastMouseDown
         lastMouseDown = down
         isRightMouseButton = a.button != 0
-        getFirstContentView(a)
-        clearAllPreviousReading()
-        mouseDisableWrongSelectionHandler = window.setInterval(() => {
-          if (mouseSecondContent != null) {
-            val sel = window.getSelection()
-            if (sel.rangeCount > 0) sel.removeAllRanges()
-          }
-        }, 8)
+        if (mouseFirstContent == null) {
+          getFirstContentView(a)
+        } else {
+          handleMaybeSecondContentView(a)
+        }
+      } else {
+        a.preventDefault()
       }
     }
   })
@@ -757,36 +770,40 @@ class DocumentView(
   }
 
 
+  private def handleMaybeSecondContentView(a: MouseEvent) = {
+    val node = a.target.asInstanceOf[Node]
+    val ctt = {
+      val p = findParentContent(node)
+      if (p != null) p._1 else null
+    }
+    val secondContent =
+      if (mouseSecondContent == null) {
+        if (ctt != mouseFirstContent) ctt else null
+      } else if (ctt != null) {
+        ctt
+      } else {
+        mouseSecondContent
+      }
+    if (secondContent != null) {
+      if (secondContent != mouseSecondContent) {
+        mouseSecondContent = secondContent
+        editor.onVisualMode(mouseFirstContent, mouseSecondContent)
+        val sel = window.getSelection()
+        if (sel.rangeCount > 0) sel.removeAllRanges()
+      }
+    } else if (mouseFirstContentRich == null) {
+      val sel = window.getSelection()
+      if (sel.rangeCount > 0) sel.removeAllRanges()
+    }
+  }
+
   event("mouseover", (a: MouseEvent) => {
     if (mouseDown) {
       if (mouseFirstContent == null) {
-        a.preventDefault()
         getFirstContentView(a)
       } else {
-        val node = a.target.asInstanceOf[Node]
-        val ctt = {
-          val p = findParentContent(node)
-          if (p != null) p._1 else null
-        }
-        val secondContent =
-          if (mouseSecondContent == null) {
-            if (ctt != mouseFirstContent) ctt else null
-          } else if (ctt != null) {
-            ctt
-          } else {
-            mouseSecondContent
-          }
-        if (secondContent != null) {
-          if (secondContent != mouseSecondContent) {
-            mouseSecondContent = secondContent
-            editor.onVisualMode(mouseFirstContent, mouseSecondContent)
-            val sel = window.getSelection()
-            if (sel.rangeCount > 0) sel.removeAllRanges()
-          }
-        }
+        handleMaybeSecondContentView(a)
       }
-    } else {
-      a.preventDefault()
     }
   })
 

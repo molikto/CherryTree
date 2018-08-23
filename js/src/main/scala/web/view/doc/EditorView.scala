@@ -54,9 +54,16 @@ trait EditorView extends View {
 
   protected def editor: EditorInterface
 
+  def flushBeforeKeyDown(): Unit = {
+  }
+
+
+  protected var hasShift = false
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
+      flushBeforeKeyDown()
+      hasShift = event.keyCode == 16
       var key = KeyMap.get(event.key).orNull
       if (false) {
       } else {
@@ -91,6 +98,7 @@ trait EditorView extends View {
 
     event( "keyup", (event: KeyboardEvent) => {
       //window.console.log(event)
+      hasShift = false
     })
 
     event( "keypress", (event: KeyboardEvent) => {

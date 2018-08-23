@@ -86,6 +86,7 @@ package object mode {
 
     def inside(a: cursor.Node): Boolean
     def focus: cursor.Node
+    def other: cursor.Node = focus
     def coverage: cursor.Node
   }
 
@@ -107,6 +108,7 @@ package object mode {
       def swap: Visual = Visual(move, fix)
       def inside(zoom: cursor.Node): Boolean = cursor.Node.contains(zoom, fix) && cursor.Node.contains(zoom, move)
       override def focus: cursor.Node = move
+      override def other: cursor.Node = fix
     }
 
 
