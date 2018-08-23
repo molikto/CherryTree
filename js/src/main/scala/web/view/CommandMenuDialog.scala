@@ -18,7 +18,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   ).render
 
   override protected val list = div(
-    maxWidth := "560px",
+    width := "100%",
     maxHeight := "280px",
     minHeight := "0px",
     overflowY := "scroll",
@@ -29,6 +29,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   dom = div(
     `class` := "ct-card",
     div(width := "100%", padding := "6px", search),
+    width := "480px",
     list
   ).render
 

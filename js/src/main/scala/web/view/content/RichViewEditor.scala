@@ -25,12 +25,15 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     * selection
     */
 
-  private var rangeGlowing: Boolean = false
-  private var rangeSelection: Range = null
+  private var fakeRangeGlowing: Boolean = false
+  private var fakeRangeSelection: Range = null
 
   override def selectionRect: Rect = {
-    web.view.toRect(if (rangeSelection != null) {
-      rangeSelection.getBoundingClientRect()
+    web.view.toRect(if (fakeRangeSelection != null) {
+      fakeRangeSelection.getBoundingClientRect()
+    } else if (pmode.isInstanceOf[model.mode.Content.RichSubMode]) {
+      val atom = contentView.rich.after(pmode.asInstanceOf[model.mode.Content.RichSubMode].range.start)
+      contentView.nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement].getBoundingClientRect()
     } else if (documentView.hasSelection) {
       documentView.selection.getBoundingClientRect()
     } else {
@@ -41,18 +44,18 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
 
   override def refreshRangeSelection(): Unit = {
-    if (rangeSelection != null) {
-      setRangeSelection(rangeSelection, false)
+    if (fakeRangeSelection != null) {
+      setRangeSelection(fakeRangeSelection, false)
     }
   }
 
 
   private def clearRangeSelection(): Unit = {
     if (web.debug_fakeSelection) {
-      if (rangeSelection != null) {
+      if (fakeRangeSelection != null) {
         removeAllChild(documentView.fakeSelections)
       }
-      rangeSelection = null
+      fakeRangeSelection = null
     } else {
       documentView.endSelection()
     }
@@ -63,7 +66,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       clearRangeSelection()
       val dom = documentView.fakeSelections
       val p = dom.getBoundingClientRect()
-      rangeSelection = range
+      fakeRangeSelection = range
       val rects = range.getClientRects()
       val ar = new ArrayBuffer[Rect]()
       for (i <- 0 until rects.length) {
@@ -333,14 +336,14 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
-    rangeGlowing = true
+    fakeRangeGlowing = true
     val (r1,_) = nonEmptySelectionToDomRange(fix.merge(move))
     setRangeSelection(r1, fromUser)
   }
 
 
   private def clearNormalMode(): Unit = {
-    rangeGlowing = false
+    fakeRangeGlowing = false
     clearRangeSelection()
     clearFormattedNodeHighlight()
   }
@@ -442,7 +445,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     }
     aa match {
       case sub: mode.Content.RichSubMode =>
-        updateViewMode(sub.modeBefore, true)
+        updateViewMode(sub.modeBefore, false)
         sub match {
           case mode.Content.RichAttributeSubMode(range, mode) =>
             if (editor == null) {

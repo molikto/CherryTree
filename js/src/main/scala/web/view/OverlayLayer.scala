@@ -77,7 +77,7 @@ trait MountedOverlay[ANCHOR <: OverlayAnchor] extends OverlayT[ANCHOR] {
       dom.style.left = view.left.toString + "px"
       dom.style.top = view.top.toString + "px"
       if (model.debug_view) {
-        window.console.log("shown mounted at ", view.left, view.top)
+        println(s"shown mounted at $rec, $view, $bounding")
       }
     }
   }
