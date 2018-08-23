@@ -8,7 +8,7 @@ import model.data.{Atom, SpecialChar}
 import model.{data, mode, operation}
 import model.range.IntRange
 
-class RichVisual extends CommandCategory("text visual mode") {
+class RichVisual extends CommandCategory("rich text: visual mode") {
 
 
   new OverrideCommand {
@@ -28,7 +28,7 @@ class RichVisual extends CommandCategory("text visual mode") {
   }
 
   new Command {
-    override val description: String = "enter text visual mode"
+    override val description: String = "enter/exit text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
     override def available(a: DocState): Boolean = a.isNonEmptyRichNormalOrVisual
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

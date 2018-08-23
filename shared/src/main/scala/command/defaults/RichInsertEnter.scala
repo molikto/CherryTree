@@ -8,7 +8,7 @@ import model.data.Rich
 import model.range.IntRange
 import model.{cursor, operation}
 
-class RichInsertEnter extends CommandCategory("ways to start insert text") {
+class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
 
 
   // DIFFERENCE: currently not repeatable

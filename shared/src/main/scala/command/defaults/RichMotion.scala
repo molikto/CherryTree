@@ -7,7 +7,7 @@ import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
 
-class RichMotion extends CommandCategory("move cursor inside text") {
+class RichMotion extends CommandCategory("rich text: basic cursor motion") {
 
 
 

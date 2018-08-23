@@ -9,7 +9,7 @@ import model.{cursor, mode, operation, range}
 import model.data.{Rich, SpecialChar, Text, Unicode}
 import model.range.IntRange
 
-class RichInsert extends CommandCategory("when in insert mode") {
+class RichInsert extends CommandCategory("rich text: insert mode") {
 
 
   trait RichInsertCommand extends Command {

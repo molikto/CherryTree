@@ -44,7 +44,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
-  leftPanel = new LeftPanelSwitcher(client, enableResizePanel).attachTo(this)
+  leftPanel = new LeftPanelSwitcher(client, () => this, enableResizePanel).attachTo(this)
+
 
   dom.appendChild(panelSplitter)
 
@@ -52,6 +53,10 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     a.handleSelector = "#ctTopPanelSplitter"
     a.resizeHeight = false
   }))
+
+  override def focus(): Unit = {
+    overlayLayer.focus()
+  }
 
   private def enableResizePanel(enable: Boolean): Unit = {
     if (enable) {

@@ -73,6 +73,6 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
   override def onSelected(t: Command): Unit = {
-    client.runTextual(t)
+    client.runTextualIfAvailable(t)
   }
 }

@@ -8,7 +8,7 @@ import model.data.{Atom, Unicode}
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
-class RichDelete extends CommandCategory("delete text") {
+class RichDelete extends CommandCategory("rich text: delete") {
 
 
   // LATER

@@ -6,7 +6,7 @@ import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
 import model.range
 
-class RichTextObject extends CommandCategory("text object motion") {
+class RichTextObject extends CommandCategory("rich text: text object motion") {
 
   // TODO sentence quote
   //v_as     N  as        Select "a sentence"

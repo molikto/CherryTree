@@ -63,7 +63,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "quick search in current viewport"
 
-    override def defaultKeys: Seq[KeySeq] = Seq(Key("o").copyWithMod.copy(shift = true))
+    override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
 
     override protected def available(a: DocState): Boolean = true
 
@@ -75,7 +75,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "quick search in whole document"
 
-    override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
+    override def defaultKeys: Seq[KeySeq] = Seq(Key("o").copyWithMod.copy(shift = true))
 
     override protected def available(a: DocState): Boolean = true
 
@@ -89,7 +89,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override protected def available(a: DocState): Boolean = a.mode.nonEmpty
     override def emptyAsFalseInInsertMode: Boolean = true
 
-    override val description: String = "show contextual command menu. these commands is extra commands not bounded to any keys"
+    override val description: String = "show contextual command menu"
     override def defaultKeys: Seq[KeySeq] = Seq(":", Key.Ctrl + ";")
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
@@ -116,7 +116,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
   // LATER we only support url and title attribute now, no need to worry about future
   new Command {
-    override val description: String = "edit attributes"
+    override val description: String = "edit link/image attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
@@ -132,27 +132,20 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
   new Command {
-    override val description: String = "edit code"
+    override val description: String = "edit source code"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority: Int = 1
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       t.text.isCodedAtomic
-    })
+    }) || a.isCodeNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.isRich((cur, _, t) => {
         return a.editCode(t)
       })
+      if (a.isCodeNormal) {
+        return DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
+      }
       DocTransaction.empty
-    }
-  }
-
-  new Command {
-    override val description: String = "edit source code"
-    override def priority: Int = 1
-    override def defaultKeys: Seq[KeySeq] = Seq(Enter)
-    override protected def available(a: DocState): Boolean = a.isCodeNormal
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
     }
   }
 

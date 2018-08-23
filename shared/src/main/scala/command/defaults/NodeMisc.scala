@@ -13,24 +13,13 @@ import scala.collection.mutable.ArrayBuffer
 class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
-    override val description: String = "reset content to: code"
-    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asRichNormalOrVisual._1
-      DocTransaction(
-        Seq(operation.Node.Replace(cur, data.Content.Code.empty)),
-        Some(a.copyContentMode(mode.Content.CodeNormal)))
-    }
-  }
-
-
-  new TextualCommand {
     override val description: String = "copy node link"
     override protected def available(a: DocState): Boolean = a.isNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asNormal._1).refOfThis()))
     }
   }
+
 
   new TextualCommand {
     override val description: String = "fold all direct children"
@@ -53,6 +42,17 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   new TextualCommand {
+    override val description: String = "reset content to: code"
+    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asRichNormalOrVisual._1
+      DocTransaction(
+        Seq(operation.Node.Replace(cur, data.Content.Code.empty)),
+        Some(a.copyContentMode(mode.Content.CodeNormal)))
+    }
+  }
+
+  new TextualCommand {
     override val description: String = "reset content to: rich text"
     override protected def available(a: DocState): Boolean = a.isCodeNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
@@ -63,6 +63,8 @@ class NodeMisc extends CommandCategory("node: misc") {
         Some(a.copyContentMode(mode.Content.RichNormal(rich.rangeBeginning))))
     }
   }
+
+
 
   class ContentStyleCommand(desc: String, to: Option[data.Node.ContentType]) extends TextualCommand {
     override val description: String = s"content style: $desc"

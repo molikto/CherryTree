@@ -6,7 +6,7 @@ import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{cursor, operation, range}
 
-class NodeMove extends CommandCategory("move nodes around") {
+class NodeMove extends CommandCategory("node: move") {
 
 
   // LATER

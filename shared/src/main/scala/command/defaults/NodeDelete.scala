@@ -8,7 +8,7 @@ import model.{cursor, operation, range}
 import model.range.IntRange
 import register.Registerable
 
-class NodeDelete extends CommandCategory("deleting nodes") {
+class NodeDelete extends CommandCategory("node: delete") {
 
   private val message = ". if the deleted node is immediately inserted back to the document within 5 seconds," +
     " this is considered a node movement," +

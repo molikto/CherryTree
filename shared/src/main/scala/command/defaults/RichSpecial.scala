@@ -9,7 +9,7 @@ import model.data.{apply => _, _}
 import model.range.IntRange
 import model.{cursor, data, mode, operation}
 
-class RichSpecial extends CommandCategory("text format") {
+class RichSpecial extends CommandCategory("rich text: format") {
 
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {

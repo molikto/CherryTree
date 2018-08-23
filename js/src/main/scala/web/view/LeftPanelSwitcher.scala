@@ -6,7 +6,7 @@ import command.Key
 import scalatags.JsDom.all._
 import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 
-class LeftPanelSwitcher(private val cl: Client, enable: Boolean => Unit) extends UnselectableView {
+class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean => Unit) extends UnselectableView {
 
 
   private val container = div(
@@ -74,7 +74,7 @@ class LeftPanelSwitcher(private val cl: Client, enable: Boolean => Unit) extends
     current = if (active == quickAccess) {
       new TocPanel().attachToNode(container)
     } else if (active == commands) {
-      new CommandListPanel(cl).attachToNode(container)
+      new CommandListPanel(cl, doc).attachToNode(container)
     } else if (active == undoHistory) {
       new UndoHistoryPanel(cl).attachToNode(container)
     } else {

@@ -28,6 +28,10 @@
     user-select: text;
 }
 
+.hide-children > div {
+   display: none;
+}
+
 .ct-scroll {
   overflow-y: scroll;
   overflow-x: hidden;
@@ -75,8 +79,11 @@
 
 .ct-panel {
   background: #1f2328;
-  color: #969ca5;
+  color: #b7bac0;
 }
+/*
+  color: #969ca5;
+*/
 
 .ct-input-label {
   font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
@@ -231,6 +238,18 @@
 }
 .ct-tabs > span:hover {
     background: #58617444;
+}
+
+.ct-flat-selectable:hover {
+    background: #58617444;
+}
+
+.ct-flat-disabled {
+    opacity: 0.4;
+}
+
+.ct-flat-disabled:hover {
+    background: #00000000 !important;
 }
 
 .ct-tab-selected {

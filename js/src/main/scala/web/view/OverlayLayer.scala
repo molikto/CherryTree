@@ -198,6 +198,9 @@ class OverlayLayer(val parent: HTMLElement, base: View) extends View {
   }
 
 
+  override def focus(): Unit = {
+    showingOverlay.lastOption.getOrElse(base).focus()
+  }
 
   private def dismiss(): Unit = {
     clicker.removeEventListener("click", clickEvent)

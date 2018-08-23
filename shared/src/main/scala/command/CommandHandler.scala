@@ -137,11 +137,13 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
 
 
-  def runTextual(command: Command): Unit = {
-    clearPreviousCommand()
-    buffer.append(IdentifiedCommand(None, command, Seq.empty))
-    tryComplete(false)
-    commandBufferUpdates_.onNext(buffer)
+  def runTextualIfAvailable(command: Command): Unit = {
+    if (command.available(state, this)) {
+      clearPreviousCommand()
+      buffer.append(IdentifiedCommand(None, command, Seq.empty))
+      tryComplete(false)
+      commandBufferUpdates_.onNext(buffer)
+    }
   }
 
   private var scheduledComplete: Cancelable = null
@@ -264,6 +266,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     localChange(res)
     !c.emptyAsFalseInInsertMode || res != DocTransaction.empty
   }
+
 
   private def clearPreviousCommand(): Unit = {
     buffer.lastOption match {

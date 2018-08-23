@@ -8,7 +8,7 @@ import doc.{DocState, DocTransaction}
 import model.cursor
 import model.cursor.Node
 
-class NodeMotion extends CommandCategory("move among notes") {
+class NodeMotion extends CommandCategory("node: motion") {
 
 
 

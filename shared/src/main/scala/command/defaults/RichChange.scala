@@ -8,7 +8,7 @@ import model.data.{apply => _, _}
 import model.range.IntRange
 import model.{cursor, mode, operation}
 
-class RichChange extends CommandCategory("change text") {
+class RichChange extends CommandCategory("rich text: change") {
 
   new Command {
     override val description: String = "delete all and go to insert"
