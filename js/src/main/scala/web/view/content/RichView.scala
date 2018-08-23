@@ -253,12 +253,15 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         if (start >= 0 && end >= 0) {
           if (start != end) {
             val a = rich.after(start).nodeCursor
-            val node = nodeAt(a).asInstanceOf[HTMLElement]
+            val node = elementParent(nodeAt(a))
             if (model.debug_selection) {
               val r1 = node.getBoundingClientRect()
               val left = r1.left
               val right = r1.right
-              val rect = range.getBoundingClientRect()
+              var rect = range.getBoundingClientRect()
+              if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
+                rect = elementParent(range.startContainer).getBoundingClientRect()
+              }
               val c = (rect.left + rect.right) / 2
               window.console.log("finding insertion point for atomic", node, left, right, c)
               if (Math.abs(left - c) < Math.abs(right - c)) {

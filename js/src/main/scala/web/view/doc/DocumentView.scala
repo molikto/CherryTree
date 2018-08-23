@@ -683,7 +683,8 @@ class DocumentView(
         clearAllPreviousReading()
         mouseDisableWrongSelectionHandler = window.setInterval(() => {
           if (mouseSecondContent != null) {
-            flushSelection()
+            val sel = window.getSelection()
+            if (sel.rangeCount > 0) sel.removeAllRanges()
           }
         }, 8)
       }
@@ -705,9 +706,10 @@ class DocumentView(
           if (waitTime < 0) waitTime = 0
         }
         println("read selection at " + waitTime)
-        readSelectionAfterMoouseUpWithDelay(waitTime)
+        readSelectionAfterMouseUpWithDelay(waitTime)
       } else {
         editor.disableRemoteStateUpdate(false, true)
+        flushSelection()
       }
 
       mouseDown = false
@@ -761,8 +763,9 @@ class DocumentView(
         a.preventDefault()
         getFirstContentView(a)
       } else {
+        val node = a.target.asInstanceOf[Node]
         val ctt = {
-          val p = findParentContent(a.target.asInstanceOf[Node])
+          val p = findParentContent(node)
           if (p != null) p._1 else null
         }
         val secondContent =
@@ -774,10 +777,11 @@ class DocumentView(
             mouseSecondContent
           }
         if (secondContent != null) {
-          a.preventDefault()
           if (secondContent != mouseSecondContent) {
             mouseSecondContent = secondContent
             editor.onVisualMode(mouseFirstContent, mouseSecondContent)
+            val sel = window.getSelection()
+            if (sel.rangeCount > 0) sel.removeAllRanges()
           }
         }
       }
@@ -821,7 +825,7 @@ class DocumentView(
     }
   }
 
-  private def readSelectionAfterMoouseUpWithDelay(delay: Int): Unit = {
+  private def readSelectionAfterMouseUpWithDelay(delay: Int): Unit = {
     def work() = {
       editor.disableRemoteStateUpdate(false, true)
       focus()

@@ -17,6 +17,13 @@ package object view {
   val EmptyStr = "∅"
   def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
 
+  def elementParent(a: Node): HTMLElement = {
+    a match {
+      case element: HTMLElement => element
+      case _ => elementParent(a.parentNode)
+    }
+  }
+
   def removeAllChild(a: HTMLElement): Unit = {
     a.innerHTML = ""
   }
