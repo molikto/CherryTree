@@ -45,6 +45,8 @@ abstract class CommandHandler extends Settings with CommandInterface {
   )
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 
+  private val insertModeCommands = commands.filter(_.emptyAsFalseInInsertMode)
+
   val commandsByCategory: Seq[(String, Seq[Command])] = defaultCategories.map(a => (a.name, a.commands))
 
   //  private val status =  BehaviorSubject[CommandStatus](CommandStatus.Empty)
@@ -90,7 +92,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
   def parseCommand(key: Key, mergeForStrong: Boolean = true): Unit = {
     var removeForStrong: Part = null
-    val (ks, cs) = buffer.lastOption match {
+    val (ks, cs0) = buffer.lastOption match {
       case Some(Part.UnidentifiedCommand(kks, ccs)) =>
         buffer.remove(buffer.size - 1)
         (kks, ccs)
@@ -98,6 +100,11 @@ abstract class CommandHandler extends Settings with CommandInterface {
         removeForStrong = buffer.remove(buffer.size - 1)
         (kks, others)
       case _ => (Seq.empty, keyToCommand.getOrElse(key, Seq.empty))
+    }
+    val cs = if (isInsertOverride) {
+      cs0.filter(_.emptyAsFalseInInsertMode)
+    } else {
+      cs0
     }
     val kk = ks :+ key
     val ac = cs.filter(a => a.keys.exists(_.startsWith(kk)) && a.available(state, this))
@@ -275,9 +282,18 @@ abstract class CommandHandler extends Settings with CommandInterface {
     }
   }
 
+  private var isInsertOverride = false
+
   def keyDown(key: Key): Boolean = {
-    if ((!enableModal || state.isInsert) && key.isSimpleGrapheme) {
-      return false
+    isInsertOverride = false
+    if (!enableModal || state.isInsert) {
+      if (key.isSimpleGrapheme) {
+        if (!state.isInsert || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
+          return false
+        } else {
+          isInsertOverride = true
+        }
+      }
     }
     clearPreviousCommand()
     buffer.lastOption match {

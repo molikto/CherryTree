@@ -268,7 +268,7 @@ trait Undoer extends UndoerInterface with Settings {
       Some(zz)
     }
     DocTransaction(tt,
-      Some(if (currentDoc.isInsert) oldDocAsNowForModes.mode0 else convertInsertMode(applied.node, oldDocAsNowForModes.mode0)),
+      Some(if (currentDoc.isInsert || !enableModal) oldDocAsNowForModes.mode0 else convertInsertMode(applied.node, oldDocAsNowForModes.mode0)),
       zoomAfter = zzz,
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }

@@ -13,7 +13,6 @@ class UndoRedo extends CommandCategory("undo & redo") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "z")
     override def defaultKeys: Seq[KeySeq] = Seq("u")
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
-    override def emptyAsFalseInInsertMode: Boolean = true
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       commandState.undo(a)
@@ -24,7 +23,6 @@ class UndoRedo extends CommandCategory("undo & redo") {
     override val description: String = "redo"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Seq(Key(Grapheme("z"), shift = true).copyWithMod))
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "r")
-    override def emptyAsFalseInInsertMode: Boolean = true
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       commandState.redo(a)

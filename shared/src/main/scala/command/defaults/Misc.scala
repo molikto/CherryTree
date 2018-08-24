@@ -95,30 +95,12 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
   val commandMenu = new Command {
     override protected def available(a: DocState): Boolean = a.mode.nonEmpty
-    override def emptyAsFalseInInsertMode: Boolean = true
 
     override val description: String = "show contextual command menu"
     override def defaultKeys: Seq[KeySeq] = Seq(":", Key.Ctrl + ";")
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      val av = if (a.isInsert) {
-        key match {
-          case None => true
-          case Some(Seq(k)) => k.meta || k.control
-          case _ => false
-        }
-      } else {
-        true
-      }
-      if (av) {
-//        a.mode.get match {
-//          case model.mode.Node.Visual(fix, move) =>
-//          case model.mode.Node.Content(cur, c) =>
-//        }
-        DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
-      } else {
-        DocTransaction.empty
-      }
+      DocTransaction.message(Client.ViewMessage.ShowCommandMenu())
     }
   }
 

@@ -19,6 +19,7 @@ abstract class Command {
   def hardcodeKeys: Seq[KeySeq] = Seq.empty
   def defaultKeys: Seq[KeySeq]
   def emptyAsFalseInInsertMode: Boolean = false
+  def maybeInsertModeGrapheme(u: Unicode): Boolean = false
 
   def repeatable: Boolean = false
   def needsChar: Boolean = false
