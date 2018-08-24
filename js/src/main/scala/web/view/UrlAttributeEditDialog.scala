@@ -61,7 +61,7 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
     if (url != urlStart || title != titleStart) {
       anchor.editor.onAttributeModified(Unicode(urlInput.value), Unicode(titleInput.value))
     }
-    anchor.editor.exitSubMode()
+    anchor.editor.onExitSubMode()
     super.onDismiss()
   }
 

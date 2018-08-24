@@ -102,6 +102,7 @@ object Content extends DataObject[Content] {
   case class Code(unicode: Unicode, lang: String) extends Content {
 
     protected override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
+    protected override def defaultInsertMode(): mode.Content = mode.Content.CodeNormal
 
     val ty = CodeType.parse(lang)
 
@@ -109,7 +110,6 @@ object Content extends DataObject[Content] {
 
     override def size: Int = unicode.size
 
-    protected override def defaultInsertMode(): mode.Content = mode.Content.CodeNormal
   }
 
   object Code {

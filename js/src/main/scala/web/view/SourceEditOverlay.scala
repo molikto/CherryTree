@@ -257,7 +257,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override protected def onDismiss(): Unit = {
     val opt = this.opt
     super.onDismiss()
-    opt.editor.exitSubMode()
+    opt.editor.onExitSubMode()
     codeMirror.setValue("")
     if (isInnerInsert) {
       CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")

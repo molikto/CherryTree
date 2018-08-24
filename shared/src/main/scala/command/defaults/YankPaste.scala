@@ -60,11 +60,11 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   new Command {
     override val description: String = "yank to line end"
     override val defaultKeys: Seq[KeySeq] = Seq("Y")
-    override def available(a: DocState): Boolean = a.isRichNormal
+    override def available(a: DocState): Boolean = a.isRich
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (c, rich, normal) = a.asRichNormal
-      commandState.yank(Registerable.Text(rich.copyTextualRange(IntRange(normal.range.start, rich.size))), isDelete = false)
+      val (c, rich, normal) = a.asRich
+      commandState.yank(Registerable.Text(rich.copyTextualRange(IntRange(normal.merged.start, rich.size))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -78,7 +78,11 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
       a.mode match {
         case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(fix, _))) =>
           commandState.yank(Registerable.Text(a.rich(pos).copyTextualRange(v.merged)), isDelete = false)
-          DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
+          if (enableModal) {
+            DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
+          } else {
+            DocTransaction.empty
+          }
         case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal)) =>
           commandState.yank(Registerable.Unicode(a.node(pos).content.asInstanceOf[data.Content.Code].unicode), isDelete = false)
           DocTransaction.empty
@@ -177,7 +181,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
       val op = operation.Rich.insert(selection.until, frag)
       val rg = Rich(frag).rangeEnd.moveBy(selection.until)
-      (Seq(op), mode.Content.RichNormal(rg))
+      (Seq(op), mode.Content.RichNormal(rg).collapse(enableModal))
     }
   }
 
@@ -194,7 +198,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
       val op = operation.Rich.insert(selection.start, frag)
       val rg = Rich(frag).rangeEnd.moveBy(selection.start)
-      (Seq(op), mode.Content.RichNormal(rg))
+      (Seq(op), mode.Content.RichNormal(rg).collapse(enableModal))
     }
   }
 }

@@ -12,7 +12,7 @@ import monix.reactive.Observable
 trait SourceEditInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
-  def exitSubMode(): Unit
+  def onExitSubMode(): Unit
   def onSourceEditorCommandBuffer(a: String): Unit
   def onSourceEditorUndo(): Unit
   def onSourceEditorRedo(): Unit
@@ -28,8 +28,8 @@ trait RichEditInterface {
 trait EditorInterface extends SourceEditInterface with RichEditInterface {
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit
 
-  def refreshMode(): Unit
-  def focusOn(cur: Node, range: Option[IntRange], viewUpdated: Boolean): Boolean
+  def onRefreshMode(): Unit
+  def onFocusOn(cur: Node, range: Option[IntRange], viewUpdated: Boolean): Boolean
   def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
   def flushes: Observable[Unit]
   def flush(): Unit

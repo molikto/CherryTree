@@ -3,7 +3,6 @@ package util
 
 import model.data.{Unicode, UnicodeData}
 import utest._
-import util.diff.{Operation, OperationType}
 
 object StringDiffTests extends TestSuite {
 
@@ -19,10 +18,10 @@ object StringDiffTests extends TestSuite {
     val str1 = Unicode(data.toSeq.flatten.mkString(""))
     val str2 = Unicode(data.toSet.toSeq.flatten.mkString(""))
 
-    'strDiff - {
-      val diff = str1.diff(str2)
-      assert(model.operation.Unicode.apply(diff, str1) == str2)
-    }
+//    'strDiff - {
+//      val diff = str1.diff(str2)
+//      assert(model.operation.Unicode.apply(diff, str1) == str2)
+//    }
 
   }
 }

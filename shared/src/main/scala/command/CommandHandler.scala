@@ -284,7 +284,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
   private var isInsertOverride = false
 
-  def keyDown(key: Key): Boolean = {
+  protected def keyDown(key: Key): Boolean = {
     isInsertOverride = false
     val bufferBefore = if (key.control || key.meta) buffer.clone() else null
     if (!enableModal || state.isInsert) {

@@ -94,7 +94,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def apply(a: DocState, enableModal: Boolean): DocState = {
       val (m0, bm) = a.mode0 match {
         case c: mode.Node.Content if c.node == at =>
-          val (m, f) = content.transform(a.node(at).content, c.a)
+          val (m, f) = content.transform(a.node(at).content, c.a, enableModal)
           (mode.Node.Content(at, m), f || a.badMode)
         case _ => (a.mode0, a.badMode)
       }

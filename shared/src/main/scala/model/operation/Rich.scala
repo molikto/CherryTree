@@ -93,11 +93,11 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
   }._2)
 
 
-  def transformRich(d: data.Rich, a: mode.Content.Rich): (mode.Content.Rich, Boolean) = {
+  def transformRich(d: data.Rich, a: mode.Content.Rich, enableModal: Boolean): (mode.Content.Rich, Boolean) = {
     val maybeBad = u.foldLeft((a, false)) {
       (s, u) => u.transformRichMaybeBad(s)
     }
-    if (maybeBad._2) {
+    if (maybeBad._2 && enableModal) {
       val m = maybeBad._1 match {
         case mode.Content.RichInsert(i) =>
           model.mode.Content.RichNormal(apply(d).rangeAfter(i))

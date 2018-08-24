@@ -48,7 +48,17 @@ package object mode {
 
       override def focus: IntRange = range
       override def merged: IntRange = range
-      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): RichNormal = copy(range = r)
+      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): Rich =
+        if (enableModal) {
+          copy(range = r)
+        } else {
+          if (range.start <= range.start) {
+            RichInsert(range.start)
+          } else {
+            RichInsert(range.until)
+          }
+        }
+
       override def end: Int = range.until
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends Rich {

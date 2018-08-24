@@ -65,6 +65,10 @@ class Client(
   with InputRuler
   with DocInterface { self =>
 
+  def debug_unmarkTempDisableMode() = {
+    state_ = state_.copy(badMode = false)
+  }
+
 
   protected def lockObject: AnyRef  = self
   def debug_authentication: Authentication.Token = authentication
@@ -92,11 +96,11 @@ class Client(
 
   private var subscription: Cancelable = null
 
-  def start(): Unit = {
+  def start(): Unit = this.synchronized {
     subscription = Observable.interval(1000.millis).doOnNext(_ => sync()).subscribe()
   }
 
-  def stop(): Unit = {
+  def stop(): Unit = this.synchronized {
     if (subscription != null) {
       subscription.cancel()
       subscription = null
@@ -146,7 +150,8 @@ class Client(
   private var updatingState = false
   private def disableRemoteStateUpdate: Boolean = disableForComposition || disableForMouse
 
-  def updateConnectionStatusBasedOnDisableStatus(): Unit = {
+  private def updateConnectionStatusBasedOnDisableStatus(): Unit = {
+    flushInner()
     val before = connection_.get.tempOffline
     val now = disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null
     if (before != now) {
@@ -154,22 +159,19 @@ class Client(
     }
   }
 
-  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit = {
+  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit = this.synchronized {
     if (flushing) throw new IllegalStateException("You should not change state will fetching state!!")
     if (forMouse) {
       disableForMouse = disable
     } else {
       disableForComposition = disable
     }
-    if (!disableRemoteStateUpdate) {
-      flush()
-    }
     updateConnectionStatusBasedOnDisableStatus()
   }
 
   def flushes: Observable[Unit] = flushes_
 
-  def flush(): Unit = {
+  private def flushInner(): Unit = {
     if (!disableRemoteStateUpdate) {
       flushing = true
       flushes_.onNext(Unit)
@@ -179,6 +181,10 @@ class Client(
       })
       disabledStateUpdates.clear()
     }
+  }
+
+  def flush(): Unit = this.synchronized {
+    flushInner()
   }
 
 
@@ -197,6 +203,7 @@ class Client(
     from: Seq[(DocState, operation.Node)],
     viewAdded: Seq[(DocState, operation.Node)],
     ty: Undoer.Type,
+    trace: Throwable = null,
     viewUpdated: Boolean = false,
     editorUpdated: Boolean = false,
     fromUser: Boolean = false,
@@ -215,6 +222,8 @@ class Client(
 //      println("client update mode: " + a.mode)
     }
     val zoomPrev = state.zoomId
+
+
     updatingState = true
     val docBefore = state
     state_ = a
@@ -225,7 +234,7 @@ class Client(
       scheduledUpdateTempMode = Observable.delay({
         if (model.debug_view) println("updating temp mode")
         lockObject.synchronized {
-          updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local)
+          updateState(state_.copy(badMode = false), Seq.empty, Seq.empty, Undoer.Local, trace = trace)
         }
       }).delaySubscription(2.seconds).subscribe()
     }
@@ -237,7 +246,6 @@ class Client(
       localStorage.set(docId + ".zoom1", zoomNow)
     }
 
-    assert(enableModal || !state_.isRichNormal, "you should not in modal mode now!")
 
     onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert)
@@ -253,6 +261,36 @@ class Client(
 //        insertingFlusher = null
 //      }
 //    }
+
+    if (model.debug_view) {
+      if (enableModal || !state_.copy(badMode = false).isRichNormal) {
+
+      } else {
+        if (trace != null) {
+          trace.printStackTrace()
+        }
+        assert(false, s"you should not in modal mode now! ${state_.mode0}")
+      }
+      state_.mode0 match {
+        case model.mode.Node.Content(cur, r) =>
+          if (state_.node(cur).content.isRich) {
+            if (!state_.copy(badMode = false).isRich) {
+              if (trace != null) {
+                trace.printStackTrace()
+              }
+              assert(state_.isRich, s"inconsistent state ${state_.mode0} ${state_.badMode} ${vv.map(_._2)}")
+            }
+          } else {
+            if (!state_.copy(badMode = false).isCode) {
+              if (trace != null) {
+                trace.printStackTrace()
+              }
+              assert(state_.isCode, s"inconsistent state ${state_.mode0} ${state_.badMode} ${vv.map(_._2)}")
+            }
+          }
+        case _ =>
+      }
+    }
   }
   def state: DocState = state_
 
@@ -346,7 +384,7 @@ class Client(
     * update committed, committed version, uncommited, state
     */
   private def updateFromServer(success: ClientUpdate): Unit = {
-    if (disableRemoteStateUpdate) {
+    if (disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null) {
       disabledStateUpdates.append(success)
     } else {
       try {
@@ -379,7 +417,7 @@ class Client(
   }
 
 
-  override def exitSubMode(): Unit = {
+  override def onExitSubMode(): Unit = {
     sourceEditorCommandBuffer.update("")
     state.mode match {
       case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichSubMode)) =>
@@ -438,12 +476,12 @@ class Client(
     }
   }
 
-  override def refreshMode(): Unit = {
+  override def onRefreshMode(): Unit = {
     if (model.debug_selection) println(s"refresh mode")
     updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
-  override def focusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
+  override def onFocusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
     state.mode match {
@@ -504,7 +542,7 @@ class Client(
         val rich = state.node(cur).rich
         val op = model.operation.Node.rich(cur, ope)
         val after = ope(rich)
-        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(if (positionBefore >= 0) positionBefore else md.end))
+        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(if (positionBefore >= 0) positionBefore else md.end), enableModal)
         if (model.debug_selection) {
           println("rich text change to selection ", aft)
         }
@@ -574,7 +612,7 @@ class Client(
   }
 
 
-  val sourceEditorCommandBuffer = ObservableProperty("")
+  private val sourceEditorCommandBuffer = ObservableProperty("")
   def sourceEditorCommands: Observable[String] = sourceEditorCommandBuffer
 
   def onSourceEditorCommandBuffer(a: String): Unit = {
@@ -641,7 +679,7 @@ class Client(
     }.foreach(t => localChange(t))
   }
 
-  def applyFolds(folded0: DocState,
+  private def applyFolds(folded0: DocState,
     unfold0: Set[cursor.Node],
     toggle0: Set[cursor.Node]
   ): (Map[String, Boolean], Map[cursor.Node, Boolean]) = {
@@ -670,6 +708,13 @@ class Client(
     if (debug_view) {
      // println(update)
     }
+
+    val extra = update.extra match {
+      case e@Some(_) => e
+      case _ if !isSmartInsert => extraInputRuleOperation(state_, update.transaction)
+      case _ => None
+    }
+
     // for a delete of a non empty node, we disable sync from server for sometime
     // during this time, if the next local change is an insert, we try to merge them as a move
     var viewAdd : Seq[(DocState, operation.Node)] = Seq.empty
@@ -709,11 +754,6 @@ class Client(
         updateConnectionStatusBasedOnDisableStatus()
       }
     }
-    val extra = update.extra match {
-      case e@Some(_) => e
-      case _ if !isSmartInsert => extraInputRuleOperation(state_, update.transaction)
-      case _ => None
-    }
     val (last0, from) = operation.Node.apply(update.transaction, state, enableModal)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
     val toMode: model.mode.Node = update.mode.getOrElse(last0.mode0 match {
@@ -741,7 +781,7 @@ class Client(
         viewUpdated = update.viewUpdated,
         editorUpdated = update.editorUpdated,
         fromUser = true,
-        userFolds = ch)
+        userFolds = ch, trace = update0.trace)
       if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
       self.sync()
     }

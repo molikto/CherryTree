@@ -110,7 +110,11 @@ object ClientTests extends TestSuite  {
         val count = 1000
         for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
-          clients(j).localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
+          val c = clients(j)
+          c.synchronized {
+            c.debug_unmarkTempDisableMode()
+            c.localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
+          }
         }
         waitAssertStateSyncBetweenClientsAndServer()
       }
@@ -119,7 +123,11 @@ object ClientTests extends TestSuite  {
         val count = 1000
         for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
-          clients(j).localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+          val c = clients(j)
+          c.synchronized {
+            c.debug_unmarkTempDisableMode()
+            c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+          }
         }
         waitAssertStateSyncBetweenClientsAndServer()
       }
@@ -129,8 +137,9 @@ object ClientTests extends TestSuite  {
         /**
           * current limitation: only commands with out needs
           */
-        def performAHumanAction(c: Client) = {
+        def performAHumanAction(ith: Int, c: Client) = {
           if (c.state.isRichInsert) {
+            c.debug_unmarkTempDisableMode()
             c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), -1)
           }
           val avs = c.commands.filter(a => a.available(c.state, c) && !a.needsStuff)
@@ -143,9 +152,11 @@ object ClientTests extends TestSuite  {
                 c,
                 if (Random.nextBoolean()) None else ccc.keys.headOption, None, None)
               try {
+                c.debug_unmarkTempDisableMode()
                 c.localChange(trans)
               } catch {
                 case e: Throwable =>
+                  println("action " + ith)
                   println(c.state)
                   println(ccc.description)
                   println(trans)
@@ -160,10 +171,12 @@ object ClientTests extends TestSuite  {
           }
         }
 
-        for (_ <- 0 until 1000) {
+        for (j <- 0 until 1000) {
           for (c <- clients) {
             for (i <- 0 until Random.nextInt(5)) {
-              performAHumanAction(c)
+              c.synchronized {
+                performAHumanAction(j, c)
+              }
             }
           }
         }

@@ -635,7 +635,7 @@ class DocumentView(
         mouseFirstContentRich = r
         r.markCgAsEditableTempDuringMouseEvents(true)
       case _ =>
-        editor.focusOn(other, None, false)
+        editor.onFocusOn(other, None, false)
     }
 
   }
@@ -673,7 +673,7 @@ class DocumentView(
           } else {
             None
           }
-          editor.focusOn(pc._1, ran, false)
+          editor.onFocusOn(pc._1, ran, false)
           down = null
         }
         clickCount = 3
@@ -754,7 +754,7 @@ class DocumentView(
         clearAllPreviousReading() // if mouseup is before us
         val ct = contentOfHold(element)
         endMouseDown(a, false, false)
-        editor.focusOn(cursorOf(ct), None, false)
+        editor.onFocusOn(cursorOf(ct), None, false)
         showCommandMenu()
       case _ =>
     }
@@ -859,9 +859,9 @@ class DocumentView(
             flushSelection()
             None
         }
-        editor.focusOn(cur, range, false)
+        editor.onFocusOn(cur, range, false)
       } else {
-        editor.refreshMode()
+        editor.onRefreshMode()
       }
       focusFinder = -1
     }

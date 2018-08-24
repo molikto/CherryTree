@@ -10,7 +10,7 @@ import scala.util.Random
 abstract sealed class Content extends Operation[data.Content] {
   override type This = Content
 
-  private [model] def transform(d: data.Content, m: mode.Content): (mode.Content, Boolean)
+  private [model] def transform(d: data.Content, m: mode.Content, enableModal: Boolean): (mode.Content, Boolean)
 }
 
 object Content extends OperationObject[data.Content, Content] {
@@ -26,7 +26,7 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(d: data.Content, m: mode.Content): (mode.Content, Boolean) = (m, false)
+    override def transform(d: data.Content, m: mode.Content, enableModal: Boolean): (mode.Content, Boolean) = (m, false)
 
     override def reverse(d: data.Content): Content = copy(op = op.reverse(d.asInstanceOf[data.Content.Code].unicode))
 
@@ -48,7 +48,7 @@ object Content extends OperationObject[data.Content, Content] {
       }
     }
 
-    override def transform(d: data.Content, m: mode.Content): (mode.Content, Boolean) = (m, false)
+    override def transform(d: data.Content, m: mode.Content, enableModal: Boolean): (mode.Content, Boolean) = (m, false)
 
     override def reverse(d: data.Content): Content = CodeLang(d.asInstanceOf[data.Content.Code].lang)
 
@@ -65,12 +65,12 @@ object Content extends OperationObject[data.Content, Content] {
     override def apply(d: data.Content): data.Content = {
       d match {
         case c: data.Content.Rich => c.copy(content = op(c.content))
-        case _ => throw new IllegalStateException("Not applicable operation")
+        case _ => throw new IllegalStateException(s"Not applicable operation $op")
       }
     }
 
-    override def transform(d: data.Content, m: mode.Content): (mode.Content, Boolean) = m match {
-      case b: mode.Content.Rich => op.transformRich(d.asInstanceOf[model.data.Content.Rich].content, b)
+    override def transform(d: data.Content, m: mode.Content, enableModal: Boolean): (mode.Content, Boolean) = m match {
+      case b: mode.Content.Rich => op.transformRich(d.asInstanceOf[model.data.Content.Rich].content, b, enableModal)
       case _ => throw new IllegalStateException("What")
     }
 
