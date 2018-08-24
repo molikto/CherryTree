@@ -504,7 +504,10 @@ class Client(
         val rich = state.node(cur).rich
         val op = model.operation.Node.rich(cur, ope)
         val after = ope(rich)
-        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(positionBefore))
+        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(if (positionBefore >= 0) positionBefore else md.end))
+        if (model.debug_selection) {
+          println("rich text change to selection ", aft)
+        }
         val pos = aft.end
         val mdAfter = md match {
           case _: mode.Content.RichInsert => mode.Content.RichInsert(pos)
