@@ -14,7 +14,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
   new OverrideCommand {
     override val description: String = "select all"
     override val hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "a")
-    override def available(a: DocState): Boolean = true
+    override def available(a: DocState): Boolean = a.isRich
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.mode match {
         case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) =>

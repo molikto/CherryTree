@@ -27,17 +27,25 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
   }
 
   new RichInsertCommand with OverrideCommand {
+
+    override def available(a: DocState): Boolean = if (!enableModal) a.isRich else super.available(a)
+
     override val description: String = "delete text before cursor"
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (cursor, content, insert) = a.asRichInsert
-      if (insert.pos > 0) {
-        DocTransaction(
-          Seq(operation.Node.rich(cursor, operation.Rich.deleteOrUnwrapAt(content, content.rangeBefore(insert.pos).start))),
-          None) // we don't explicitly set mode, as insert mode transformation is always correct
-      } else {
-        joinWithPrevious(a)
+      val (cur, rich, mode) = a.asRich
+      mode match {
+        case model.mode.Content.RichInsert(i) =>
+          if (i > 0) {
+            DocTransaction(
+              Seq(operation.Node.rich(cur, operation.Rich.deleteOrUnwrapAt(rich, rich.rangeBefore(i).start))),
+              None) // we don't explicitly set mode, as insert mode transformation is always correct
+          } else {
+            joinWithPrevious(a)
+          }
+        case v: model.mode.Content.RichVisual =>
+          deleteRichNormalRange(a, commandState, cur, v.merged, true, noHistory = true)
       }
     }
   }

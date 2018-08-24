@@ -112,7 +112,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       rich.insideUrlAttributed(t.range.until).nonEmpty
     })
-    override def actDoubleClick: Boolean = true
+    override def actDoubleClick: Boolean = !enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, rich, t) = a.asRichAtom
       val text = rich.insideUrlAttributed(t.range.until).get
@@ -127,7 +127,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       t.text.isCodedAtomic
     }) || a.isCodeNormal
-    override def actDoubleClick: Boolean = true
+    override def actDoubleClick: Boolean = !enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       if (a.isCodeNormal) {
         DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
@@ -147,7 +147,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
       rich.befores(t.range.until).exists(_.isStartWithAttribute(UrlAttribute))
     })
-    override def actDoubleClick: Boolean = true
+    override def actDoubleClick: Boolean = !enableModal
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, t0) = a.asRichAtom

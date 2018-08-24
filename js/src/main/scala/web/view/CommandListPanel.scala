@@ -43,6 +43,9 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
             marginBottom := "8px",
             {
               val h = h4(
+                display := "flex",
+                flexDirection := "row",
+                alignItems := "center",
                 `class` := "ct-flat-selectable",
                 marginLeft := "-6px",
                 marginRight := "-6px",
@@ -51,7 +54,9 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                 paddingRight := "6px",
                 paddingTop := "4px",
                 paddingBottom := "4px",
-                name).render
+                i(`class` := "ct-general-hold"),
+                div(marginLeft := "4px", name)
+                ).render
               h.addEventListener("click", onPanelClick)
               h: Frag
             },

@@ -8,7 +8,7 @@ import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
 import settings.Settings
 
-class RichMotion extends CommandCategory("rich text: basic cursor motion") {
+class RichMotion extends CommandCategory("rich text: cursor motion") {
 
 
 
