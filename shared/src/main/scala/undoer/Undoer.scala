@@ -193,9 +193,9 @@ trait Undoer extends UndoerInterface with Settings {
           val node = nodeNow(n).rich
           model.mode.Content.RichNormal(if (node.isEmpty) IntRange(0, 0) else node.rangeAfter(pos))
         case sub@model.mode.Content.RichCodeSubMode(node, a, content) =>
-          sub.copy(code = sub.code.copy(mode = "normal"))
+          sub.copy(code = sub.code.copy(mode = if (enableModal) "normal" else "insert"))
         case sub: model.mode.Content.CodeInside =>
-          sub.copy(mode = "normal")
+          sub.copy(mode = if (enableModal) "normal" else "insert")
         case a => a
       })
       case _ => throw new IllegalArgumentException("That is impossible")

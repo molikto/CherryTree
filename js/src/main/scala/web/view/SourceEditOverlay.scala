@@ -143,7 +143,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.lineWrapping = true
       a.showCursorWhenSelecting = true
       // LATER wait for CodeMirorr to udpate... hope VIM support is fixed
-
       //a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
       val mod = if (model.isMac) "Cmd" else "Ctrl"
@@ -152,17 +151,24 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           a.updateDynamic(s"$mod-Z")((a: js.Dynamic) => doUndo())
           a.updateDynamic(s"Shift-${mod}-Z")((a: js.Dynamic) => doRedo())
           a.updateDynamic(s"${mod}-Y")((a: js.Dynamic) => {})
+//          if (!enableModal) {
+//            a.updateDynamic(s"<Esc>")((a: js.Dynamic) => {
+//              dismiss()
+//            })
+//          }
         })
       )
     }))
-    CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
-      doRedo()
-    })
-    CodeMirror.Vim.defineAction("outterUndo", (cm: js.Dynamic, opt: js.Dynamic) => {
-      doUndo()
-    })
-    CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
-    CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
+    if (enableModal) {
+      CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
+        doRedo()
+      })
+      CodeMirror.Vim.defineAction("outterUndo", (cm: js.Dynamic, opt: js.Dynamic) => {
+        doUndo()
+      })
+      CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
+      CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
+    }
 
     codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = codeHeight
 
@@ -172,26 +178,42 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       vs.item(i).classList.add("ct-scroll")
     }
 
-    CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
-      if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
-        dismiss()
-      }
-    })
+    if (enableModal) {
+      CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
+        if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
+          dismiss()
+        }
+      })
 
 
-    CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
-      if (!dismissed) {
-        val mm = e.mode.asInstanceOf[String]
-        val isNormal = mm == "normal"
-        isInnerInsert = mm == "insert"
-        if (!isNormal) isInnerNormal = false
-        else window.setTimeout(() => {
-          if (!dismissed) isInnerNormal = true
-        }, 0)
-        modeStr = mm
-        flush()
-      }
-    })
+      CodeMirror.on(codeMirror, "vim-mode-change", (e: js.Dynamic) => {
+        if (!dismissed) {
+          val mm = e.mode.asInstanceOf[String]
+          val isNormal = mm == "normal"
+          isInnerInsert = mm == "insert"
+          if (!isNormal) isInnerNormal = false
+          else window.setTimeout(() => {
+            if (!dismissed) isInnerNormal = true
+          }, 0)
+          modeStr = mm
+          flush()
+        }
+      })
+
+      CodeMirror.on(codeMirror, "vim-keypress", (key: js.Dynamic)  => {
+        if (!dismissed) {
+          if (key.asInstanceOf[String] == "<Esc>") {
+            keys = ""
+          } else {
+            keys = keys + key
+          }
+          opt.editor.onSourceEditorCommandBuffer(keys)
+        }
+      })
+      CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
+        keys = ""
+      })
+    }
 
     CodeMirror.on(codeMirror, "cursorActivity", (e: js.Dynamic) => {
       if (!dismissed) {
@@ -200,19 +222,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     })
 
 
-    CodeMirror.on(codeMirror, "vim-keypress", (key: js.Dynamic)  => {
-      if (!dismissed) {
-        if (key.asInstanceOf[String] == "<Esc>") {
-          keys = ""
-        } else {
-          keys = keys + key
-        }
-        opt.editor.onSourceEditorCommandBuffer(keys)
-      }
-    })
-    CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
-      keys = ""
-    })
 
 
     CodeMirror.on(codeMirror, "changes", (a: js.Dynamic, change: js.Array[js.Dynamic]) => {
@@ -223,7 +232,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         val (from, to, text) = _root_.util.quickDiff(oldVal, newVal)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
-        if (isInnerInsert && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
+        if ((!enableModal || isInnerInsert) && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
           dismiss()
         } else {
           flush() // flush the cursor position
@@ -259,8 +268,10 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     super.onDismiss()
     opt.editor.onExitSubMode()
     codeMirror.setValue("")
-    if (isInnerInsert) {
-      CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
+    if (enableModal) {
+      if (isInnerInsert) {
+        CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
+      }
     }
   }
 
@@ -337,11 +348,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     setCodeType(opt.codeType)
     isInnerNormal = true
     isInnerInsert = false
-    if (opt.mode.mode == "insert") {
-      syncModeInner(opt.mode)
-      window.setTimeout(() => {
-        if (!dismissed) CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
-      }, 0)
+    if (enableModal) {
+      if (opt.mode.mode == "insert") {
+        syncModeInner(opt.mode)
+        window.setTimeout(() => {
+          if (!dismissed) CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+        }, 0)
+      }
     }
     modeChanged = false
     modeStr = opt.mode.mode

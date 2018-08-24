@@ -8,6 +8,7 @@ import model.data.{CodeType, Unicode}
 import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.reactive.Observable
+import settings.Settings
 
 trait SourceEditInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
@@ -25,7 +26,7 @@ trait RichEditInterface {
   def onExternalPasteInRichEditor(a: Unicode)
 }
 
-trait EditorInterface extends SourceEditInterface with RichEditInterface {
+trait EditorInterface extends SourceEditInterface with RichEditInterface with Settings {
   def onDoubleClick(): Unit
 
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit

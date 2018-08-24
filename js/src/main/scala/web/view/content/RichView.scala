@@ -214,7 +214,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   /**
     * the only allowed operation is inserting/deleting plain text in a node (after normalize)
     */
-  private[content] def normalizeAndDiffForInsertEvent(): Option[operation.Rich] = {
+  private[content] def diffForSingleRangeDeleteThenInsert(): Option[operation.Rich] = {
     val bf = new ArrayBuffer[(Int, Int, Unicode)]
     def diffAndSyncContainer(text: Seq[Text], dom: NodeList, i: Int): Unit = {
       println(text)
@@ -317,7 +317,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
     if (a.parentNode == null) return -1
-    if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
+
+    val ret = if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
       if (o == a.childNodes.length) {
@@ -352,6 +353,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
           }
       }
     }
+    if (model.debug_selection) {
+      window.console.log("read offset", a, o, isEnd, ret)
+    }
+    ret
   }
 
   def readSelectionFromDom(): Option[IntRange] = {

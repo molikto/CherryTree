@@ -219,17 +219,18 @@ case class DocState(
     }
   }
 
-  def editCode(text: Atom): DocTransaction = {
+  def editCode(text: Atom, enableModal: Boolean): DocTransaction = {
     assert(text.text.isCodedAtomic)
-    editCode(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
+    editCode(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize), enableModal)
   }
 
   def editCode(range: IntRange,
-    modeBefore: model.mode.Content.Rich = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich]
+    enableModal: Boolean,
+    modeBefore: model.mode.Content.Rich = mode.get.asInstanceOf[model.mode.Node.Content].a.asInstanceOf[model.mode.Content.Rich],
   ): DocTransaction = {
     DocTransaction(
       copyContentMode(model.mode.Content.RichCodeSubMode(range,
-        CodeInside(if (modeBefore.isInstanceOf[model.mode.Content.RichInsert]) "insert" else "normal", 0),
+        CodeInside(if (!enableModal || modeBefore.isInstanceOf[model.mode.Content.RichInsert]) "insert" else "normal", 0),
         modeBefore)))
   }
 

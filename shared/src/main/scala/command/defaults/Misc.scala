@@ -130,10 +130,10 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def actDoubleClick: Boolean = !enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       if (a.isCodeNormal) {
-        DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
+        DocTransaction(a.copyContentMode(mode.Content.CodeInside(if (enableModal) "normal" else "insert", 0)))
       } else {
         val (_, _, t) = a.asRichAtom
-        a.editCode(t)
+        a.editCode(t, enableModal)
       }
     }
   }
@@ -145,7 +145,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
-      rich.befores(t.range.until).exists(_.isStartWithAttribute(UrlAttribute))
+      rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute) && a.textRange.contains(t.range))
     })
     override def actDoubleClick: Boolean = !enableModal
 

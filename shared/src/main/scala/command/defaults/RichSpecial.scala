@@ -60,9 +60,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
         val vms = if (deli == SpecialChar.Image) {
           a.editAttribute(IntRange.len(insert + 1, 0), modeBefore)
         } else if (deli == SpecialChar.LaTeX) {
-          a.editCode(IntRange.len(insert + 1, 0), modeBefore)
+          a.editCode(IntRange.len(insert + 1, 0), enableModal, modeBefore)
         } else if (deli == SpecialChar.HTML) {
-          a.editCode(IntRange.len(insert + 1, 0), modeBefore)
+          a.editCode(IntRange.len(insert + 1, 0), enableModal, modeBefore)
         } else {
           DocTransaction(a.copyContentMode(modeBefore))
         }

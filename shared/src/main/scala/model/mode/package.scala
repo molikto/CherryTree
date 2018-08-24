@@ -118,7 +118,7 @@ package object mode {
     }// user's mode is currently taken over by code editor
 
     object CodeInside {
-      val empty = CodeInside("normal", 0)
+      def empty(enableModal: Boolean) = CodeInside(if (enableModal) "normal" else "insert", 0)
     }
   }
 

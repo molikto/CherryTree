@@ -264,7 +264,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   private def flushComplex(): Unit = {
-    normalizeAndDiffForInsertEvent().foreach(c => controller.onRichTextChange(c, affectPosBeforeInput))
+    diffForSingleRangeDeleteThenInsert().foreach(c => controller.onRichTextChange(c, affectPosBeforeInput))
   }
 
   private def flushSimple(): Unit = {
