@@ -155,6 +155,13 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
   private var scheduledComplete: Cancelable = null
 
+
+  def flushBeforeMouseDown(): Unit = {
+    if (scheduledComplete != null) {
+      tryComplete(false)
+    }
+  }
+
   /**
     * boolean means this command is accepted
     */
@@ -295,7 +302,9 @@ abstract class CommandHandler extends Settings with CommandInterface {
     if (!enableModal || state.isInsert) {
       if (key.isSimpleGrapheme) {
         if (!state.isInsert || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
-          if (scheduledComplete != null) tryComplete(false)
+          if (scheduledComplete != null) {
+            tryComplete(false)
+          }
           return false
         } else {
           isInsertOverride = true

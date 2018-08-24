@@ -30,6 +30,7 @@ trait EditorInterface extends SourceEditInterface with RichEditInterface with Se
   def onDoubleClick(): Unit
 
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit
+  def flushBeforeMouseDown()
 
   def onRefreshMode(): Unit
   def onFocusOn(cur: Node, range: Option[IntRange], viewUpdated: Boolean): Boolean

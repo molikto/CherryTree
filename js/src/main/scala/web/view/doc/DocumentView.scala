@@ -647,6 +647,7 @@ class DocumentView(
   }
 
   event(rootFrame, "mousedown", (a: MouseEvent) => {
+    editor.flushBeforeMouseDown()
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
     if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
