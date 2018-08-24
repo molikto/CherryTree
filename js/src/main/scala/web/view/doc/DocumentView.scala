@@ -143,10 +143,13 @@ class DocumentView(
   private var currentSelection: Range = nonEditableSelection
 
 
+
+
   event("blur", (a: FocusEvent) => {
     isFocusedOut = true
     dom.classList.add("ct-window-inactive")
   })
+
 
   override def focus(): Unit = {
     if (isFocusedOut) {
@@ -643,6 +646,12 @@ class DocumentView(
         editor.focusOn(other, None, false)
     }
 
+  }
+
+  override def flushBeforeKeyDown(): Unit = {
+    if (focusFinder != -1) {
+      readSelectionAfterMouseUpWithDelay(0)
+    }
   }
 
   event(rootFrame, "mousedown", (a: MouseEvent) => {
