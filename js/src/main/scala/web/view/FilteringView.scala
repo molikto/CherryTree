@@ -47,7 +47,7 @@ trait FilteringView[P <: Any, T] extends OverlayT[P] {
   }
 
   private val onClick: js.Function1[MouseEvent, _] = e => {
-    val elm = e.target.asInstanceOf[HTMLElement]
+    val elm = e.currentTarget.asInstanceOf[HTMLElement]
     marked = indexOf(elm)
     if (marked >= 0) {
       val m = available(marked)

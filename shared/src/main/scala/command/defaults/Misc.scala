@@ -63,7 +63,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "quick search in current viewport"
 
-    override def defaultKeys: Seq[KeySeq] = Seq(Meta + "o")
+    override def defaultKeys: Seq[KeySeq] = Seq(ModKey + "o")
 
     override protected def available(a: DocState): Boolean = true
 
@@ -75,7 +75,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "quick search in whole document"
 
-    override def defaultKeys: Seq[KeySeq] = Seq(Key("o").copyWithMod.copy(shift = true))
+    override def defaultKeys: Seq[KeySeq] = Seq(shiftMod("o"))
 
     override protected def available(a: DocState): Boolean = true
 

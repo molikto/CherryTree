@@ -70,11 +70,11 @@ trait EditorView extends View {
         // TODO better handling this
         var isCommandOnly = false
         var isCommandShift = false
-        if (key == null && Key.isUnicodeKey(event.key)) {
+        if (key == null) {
           key = Key.Grapheme(model.data.Unicode(event.key))
-          isCommandOnly = "biya".contains(event.key)
-          isCommandShift = "zo".contains(event.key)
         }
+        isCommandOnly = "biya".contains(event.key)
+        isCommandShift = "zo".contains(event.key) || key == Key.Backspace || key == Key.Up || key == Key.Down
         if (key == null) key = Key.Unknown(event.key)
         val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
         // for meta keys, we ignore it, it is mostly browser keys

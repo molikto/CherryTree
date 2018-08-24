@@ -59,6 +59,10 @@ object Key {
   }
 
 
+
+  def shiftMod(a: String): KeySeq  = Key(Grapheme(a)).copyWithMod.copy(shift = true)
+  def shiftMod(a: Key.V): KeySeq  = Key(a).copyWithMod.copy(shift = true)
+
   sealed trait Modifier extends V {
     def +(key: Key): Key
     def +(a: String): KeySeq = defaultAsciiKeysToKeySeq(a).map(this + _)
@@ -68,7 +72,7 @@ object Key {
     def +(key: Key): Key = key.copy(shift = true)
   }
   case object Meta extends Modifier {
-    override def toString: String = if (model.isMac) "Cmd" else "Meta"
+    override def toString: String = if (model.isMac) "⌘" else "Meta"
     def +(key: Key): Key = key.copy(meta = true)
   }
   case object Ctrl extends Modifier {

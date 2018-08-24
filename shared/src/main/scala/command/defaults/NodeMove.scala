@@ -56,13 +56,15 @@ class NodeMove extends CommandCategory("node: move") {
   }
   new MoveCommand {
     override val description: String = "swap with next sibling"
-    override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "j")
+
+
+    override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "j", shiftMod(Down))
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.next(node).map(k => mover.nextOver(k))
   }
   new MoveCommand {
     override val description: String = "swap with previous sibling"
-    override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k")
+    override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k", shiftMod(Up))
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.previous(node)
   }

@@ -1,7 +1,7 @@
 package command.defaults
 
 import command.{CommandCategory, CommandInterface, Key}
-import command.Key.KeySeq
+import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{cursor, mode}
 
@@ -47,6 +47,38 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asNormal._1
       if (c != a.zoom) {
+        DocTransaction(Seq.empty, None, toggleBefore = Set(c))
+      } else {
+        DocTransaction.empty
+      }
+    }
+  }
+
+  new Command {
+    override val description: String = "unfold node"
+    override def defaultKeys: Seq[KeySeq] = Seq(ModKey + Down)
+
+    override protected def available(a: DocState): Boolean = a.isNormal
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val c = a.asNormal._1
+      if (a.viewAsFolded(c)) {
+        DocTransaction(Seq.empty, None, toggleBefore = Set(c))
+      } else {
+        DocTransaction.empty
+      }
+    }
+  }
+
+  new Command {
+    override val description: String = "fold node"
+    override def defaultKeys: Seq[KeySeq] = Seq(ModKey + Up)
+
+    override protected def available(a: DocState): Boolean = a.isNormal
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val c = a.asNormal._1
+      if (c != a.zoom && !a.viewAsFolded(c)) {
         DocTransaction(Seq.empty, None, toggleBefore = Set(c))
       } else {
         DocTransaction.empty

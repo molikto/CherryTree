@@ -1,6 +1,6 @@
 package command.defaults
 
-import command.{CommandCategory, CommandInterface, Motion}
+import command.{CommandCategory, CommandInterface, Key, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Unicode
@@ -35,7 +35,7 @@ class NodeDelete extends CommandCategory("node: delete") {
 
   new Command {
     override val description: String = "delete current node" + message
-    override val defaultKeys: Seq[KeySeq] = Seq("dd") // siblings not lines
+    override val defaultKeys: Seq[KeySeq] = Seq("dd", shiftMod(Backspace)) // siblings not lines
     override def available(a: DocState): Boolean = a.isNormal
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
