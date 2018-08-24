@@ -206,7 +206,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (isSimpleInputType(inputType)) {
-      isComplexInput = false
+      isComplexInput = !isInserting
     } else if (isOtherInputType(inputType)) {
       isComplexInput = true
       val ranges = ev.getTargetRanges().asInstanceOf[js.Array[js.Dynamic]]

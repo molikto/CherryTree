@@ -286,6 +286,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
   def keyDown(key: Key): Boolean = {
     isInsertOverride = false
+    val bufferBefore = if (key.control || key.meta) buffer.clone() else null
     if (!enableModal || state.isInsert) {
       if (key.isSimpleGrapheme) {
         if (!state.isInsert || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
@@ -338,8 +339,14 @@ abstract class CommandHandler extends Settings with CommandInterface {
     }
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
-    commandBufferUpdates_.onNext(buffer)
-    hasExit || res || (enableModal && !state.isRichInsert)
+    val ak = hasExit || res || (enableModal && !state.isRichInsert && (!key.meta && !key.control))
+    if (!ak && bufferBefore != null) {
+      buffer.clear()
+      buffer.appendAll(bufferBefore)
+    } else {
+      commandBufferUpdates_.onNext(buffer)
+    }
+    ak
   }
 
 }
