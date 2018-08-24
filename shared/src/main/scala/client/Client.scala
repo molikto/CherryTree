@@ -508,7 +508,7 @@ class Client(
         val pos = aft.end
         val mdAfter = md match {
           case _: mode.Content.RichInsert => mode.Content.RichInsert(pos)
-          case _ => mode.Content.RichNormal(after.rangeBefore(pos))
+          case _ => if (enableModal) mode.Content.RichNormal(after.rangeBefore(pos)) else mode.Content.RichInsert(pos)
         }
         localChange(DocTransaction(Seq(op), Some(state.copyContentMode(mdAfter))))
       case _ =>
