@@ -82,6 +82,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
     override val description: String = "open a new sibling next to current one and continue in insert mode (currently only works when you are in end of text)"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
+    override def priority: Int = 0
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert

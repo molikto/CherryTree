@@ -26,6 +26,8 @@ abstract class Command {
   def needsMotion: Boolean = false
   def needsStuff = needsMotion || needsChar
 
+  def actDoubleClick: Boolean = false
+
   
   def priority: Int = 0
   // TODO user keymap

@@ -728,6 +728,9 @@ class DocumentView(
           println("read selection at " + waitTime)
         }
         readSelectionAfterMouseUpWithDelay(waitTime)
+        if (clickCount == 2 && !isRightMouseButton) {
+          editor.onDoubleClick()
+        }
       } else {
         editor.disableRemoteStateUpdate(false, true)
         flushSelection()

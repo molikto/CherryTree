@@ -419,6 +419,7 @@ class Client(
   }
 
 
+
   override def onExitSubMode(): Unit = {
     sourceEditorCommandBuffer.update("")
     state.mode match {

@@ -274,6 +274,12 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
 
 
+  def onDoubleClick(): Unit = {
+    val avs = commands.filter(c => c.actDoubleClick && c.available(state, this)).sortBy(-_.priority)
+    avs.headOption.foreach(c => runTextualIfAvailable(c))
+  }
+
+
   private def clearPreviousCommand(): Unit = {
     buffer.lastOption match {
       case Some(_: Part.Finished) => buffer.clear()

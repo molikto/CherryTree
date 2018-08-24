@@ -26,6 +26,8 @@ trait RichEditInterface {
 }
 
 trait EditorInterface extends SourceEditInterface with RichEditInterface {
+  def onDoubleClick(): Unit
+
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit
 
   def onRefreshMode(): Unit
