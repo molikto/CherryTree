@@ -22,8 +22,6 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
 
   private val bf = new ArrayBuffer[(Command, HTMLElement)]
 
-  private val data = client.commandsByCategory.map { case (name, cs) => (name, cs.filter(a => a.description.nonEmpty) )}
-
 
   private val onClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
     val cmd = ev.currentTarget.asInstanceOf[js.Dynamic].command.asInstanceOf[command.Command]
@@ -36,7 +34,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
   }
 
   val res = div(
-    data.map {
+    client.commandsByCategory.map {
       case (name, commands) =>
         if (commands.isEmpty) {
           div()

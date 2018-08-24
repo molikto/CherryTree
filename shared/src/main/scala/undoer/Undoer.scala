@@ -136,7 +136,7 @@ trait Undoer extends UndoerInterface with Settings {
             remote.docBefore = docBefore
             remote.trans = r
             before.trans = l
-            before.docBefore = operation.Node.apply(r, docBefore)._1
+            before.docBefore = operation.Node.apply(r, docBefore, enableModal)._1
             history(at, before)
             history(at - 1, remote)
             at -= 1
@@ -247,11 +247,11 @@ trait Undoer extends UndoerInterface with Settings {
     val item = history(i)
     // TODO conflicts
     val (tt, pp) = ot.Node.rebaseT(item.reverse, after(i)).t
-    val (applied, afrom) = operation.Node.apply(tt, currentDoc)
+    val (applied, afrom) = operation.Node.apply(tt, currentDoc, enableModal)
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
-    val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore)
+    val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore, enableModal)
     val coverage = oldDocAsNowForModes.mode0.coverage // can only be normal
     val zzz = if (cursor.Node.contains(currentDoc.zoom, coverage) && !currentDoc.viewAsHidden(coverage)) {
       None

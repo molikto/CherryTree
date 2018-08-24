@@ -237,6 +237,8 @@ class Client(
       localStorage.set(docId + ".zoom1", zoomNow)
     }
 
+    assert(enableModal || !state_.isRichNormal, "you should not in modal mode now!")
+
     onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert)
     stateUpdates_.onNext(res)
@@ -362,7 +364,7 @@ class Client(
         uncommitted = uc
         connection_.update(success.serverStatus)
         if (wp0.nonEmpty) {
-          val (last, from) = operation.Node.apply(wp0, state)
+          val (last, from) = operation.Node.apply(wp0, state, enableModal)
           updateState(
             last,
             from,
@@ -709,7 +711,7 @@ class Client(
       case _ if !isSmartInsert => extraInputRuleOperation(state_, update.transaction)
       case _ => None
     }
-    val (last0, from) = operation.Node.apply(update.transaction, state)
+    val (last0, from) = operation.Node.apply(update.transaction, state, enableModal)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
     val toMode: model.mode.Node = update.mode.getOrElse(last0.mode0 match {
       case c@model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode) =>

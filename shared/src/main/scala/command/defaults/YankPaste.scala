@@ -150,6 +150,9 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
               case model.mode.Content.RichVisual(m, f) =>
                 // TODO implement this
                 DocTransaction.empty
+                // TODO implement code mode
+              case _ =>
+                DocTransaction.empty
             }
           } else {
             DocTransaction.empty

@@ -116,7 +116,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
         // different settings of key might override depending on how the key is set
         val sorted = exacts.map(a => (a, a.keyLevel(kk))).sortBy(-_._2)
         if (sorted(1)._2 == sorted.head._2) {
-          errors_.update(Some(new Exception("Multiple commands with same key")))
+          errors_.update(Some(new Exception(s"Multiple commands with same key ${sorted.map(_._1.description)}")))
         }
         exacts = Seq(sorted.head._1)
       }

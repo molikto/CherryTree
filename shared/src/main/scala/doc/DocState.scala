@@ -289,7 +289,9 @@ case class DocState(
       case Some(model.mode.Node.Content(n, c)) =>
         c match {
           case _: model.mode.Content.Code => (n, node(n).content.asInstanceOf[data.Content.Code])
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
+
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
     }
   }

@@ -22,28 +22,15 @@ class NodeMotion extends CommandCategory("node: motion") {
     def move(data: DocState, a: cursor.Node): Option[cursor.Node] = None
     def message: Option[ViewMessage] = None
 
-    override def available(a: DocState): Boolean = a.mode match {
-      case Some(m) => m match {
-        case model.mode.Node.Visual(fix, move) => true
-        case model.mode.Node.Content(n, cc) => cc match {
-          case model.mode.Content.RichNormal(n) => true
-          case model.mode.Content.CodeNormal => true
-          case _ => false
-        }
-      }
-      case None => false
-    }
+    override def available(a: DocState): Boolean = a.mode.nonEmpty
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
       DocTransaction(Seq.empty, Some(a.mode match {
         case Some(m) => m match {
           case v@model.mode.Node.Visual(_, mm) => v.copy(move = act(mm))
-          case kkk@model.mode.Node.Content(n, cc) => cc match {
-            case _: model.mode.Content.Normal =>
-              model.data.Node.defaultMode(a.node, act(n), enableModal)
-            case _ => throw new MatchError("Not allowed")
-          }
+          case kkk@model.mode.Node.Content(n, cc) =>
+            model.data.Node.defaultMode(a.node, act(n), enableModal)
         }
         case None => throw new MatchError("Not allowed")
       }), viewMessagesBefore = message.toSeq)

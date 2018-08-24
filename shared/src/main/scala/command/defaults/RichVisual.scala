@@ -22,6 +22,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
           if (!r.isEmpty) {
             return DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(r.rangeBeginning, r.rangeEnd)))
           }
+        case _ =>
       }
       DocTransaction.empty
     }

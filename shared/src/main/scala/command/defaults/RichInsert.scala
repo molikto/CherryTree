@@ -126,13 +126,6 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
     override def move(rich: Rich, i: Int): Int = rich.rangeBefore(i).start
   }
 
-  // disabled keys!!!!
-  new InsertMovementCommand with OverrideCommand {
-    override val description: String = ""
-    override def hardcodeKeys: Seq[KeySeq] = Seq[KeySeq](Down: KeySeq, Up)
-    override def move(rich: Rich, i: Int): Int = i
-  }
-
   // LATER insert movements
   // moving around:
   //i_<Up>        cursor keys       move cursor left/right/up/down

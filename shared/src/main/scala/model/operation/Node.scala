@@ -20,12 +20,12 @@ abstract sealed class Node extends Operation[data.Node] {
 object Node extends OperationObject[data.Node, operation.Node] {
 
 
-  def apply(transforms: transaction.Node, a: DocState): (DocState, Seq[(DocState, operation.Node)]) = {
+  def apply(transforms: transaction.Node, a: DocState, enableModal: Boolean): (DocState, Seq[(DocState, operation.Node)]) = {
     var aa = a
     val bf = new ArrayBuffer[DocState]()
     bf.append(a)
     for (t <- transforms) {
-      aa = t(aa)
+      aa = t(aa, enableModal)
       bf.append(aa)
     }
     val last = bf.last
