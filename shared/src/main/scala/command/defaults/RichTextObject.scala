@@ -19,7 +19,7 @@ class RichTextObject extends CommandCategory("rich text: text object motion") {
   //v_i`     N  i`        Select "inner backward quoted string"
 
   abstract class RichTextObjectCommand extends Command with command.TextObject {
-    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = commandState.needsMotion && a.isNonEmptyRichNormalOrVisual
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = commandState.needsMotion && a.isRichVisual
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (node, rich, visual) = a.asRichVisual

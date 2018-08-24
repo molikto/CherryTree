@@ -3,10 +3,12 @@ package command
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
 import model.range.IntRange
+import settings.Settings
 
 trait FindCommand extends Command with RichMotion {
 
 
+  def settings: Settings
   def reverse: FindCommand
 
   override def move(commandState: CommandInterface, content: Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] = {
@@ -16,11 +18,11 @@ trait FindCommand extends Command with RichMotion {
   def findGrapheme(a: Rich, r: IntRange, char: Unicode, count: Int, skipCurrent: Boolean): Option[IntRange]
 
   def action(a: DocState, char: Unicode, count: Int, skipCurrent: Boolean): DocTransaction = {
-    val (_, content, mm) = a.asRichNormalOrVisual
+    val (_, content, mm) = a.asRich
     def act(r: IntRange) = findGrapheme(content, mm.focus, char, count, skipCurrent)
     act(mm.focus) match {
       case Some(move) =>
-        DocTransaction(a.copyContentMode(mm.copyWithNewFocus(move)))
+        DocTransaction(a.copyContentMode(mm.copyWithNewFocus(move, settings.enableModal)))
       case None =>
         DocTransaction.empty
     }

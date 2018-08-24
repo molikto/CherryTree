@@ -126,6 +126,17 @@ case class DocState(
     case _ => false
   }
 
+
+  def asRich: (cursor.Node, Rich, model.mode.Content.Rich) = mode match {
+    case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) => (cur, node(cur).rich, rich)
+    case _ => throw new IllegalStateException("not supported")
+  }
+
+  def isNonEmptyRich: Boolean = mode match {
+    case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) => node(cur).content.nonEmpty
+    case _ => false
+  }
+
   def isRich: Boolean = mode match {
     case Some(model.mode.Node.Content(_, rich: model.mode.Content.Rich)) => true
     case _ => false
@@ -226,22 +237,16 @@ case class DocState(
   }
 
   def isRich(a: (cursor.Node, Rich, Atom) => Boolean): Boolean = {
-    if (isRichInsert) {
-      val (cur, rich, nv) = asRichInsert
-      if (rich.isEmpty) false
-      else {
-        val t = rich.after(nv.pos)
-        a(cur, rich, t)
-      }
-    } else if (isRichNormalOrVisual) {
-      val (cur, rich, nv) = asRichNormalOrVisual
-      if (rich.isEmpty) false
-      else {
-        val t = rich.after(nv.focus.start)
-        a(cur, rich, t)
-      }
-    } else {
-      false
+    mode.exists {
+      case model.mode.Node.Content(cur, mode: model.mode.Content.Rich) =>
+        val rich = node(cur).rich
+        if (rich.isEmpty) {
+          false
+        } else {
+          val t = rich.after(mode.focus.start)
+          a(cur, rich, t)
+        }
+      case _ => false
     }
   }
 
@@ -338,19 +343,6 @@ case class DocState(
         c match {
           case nor@model.mode.Content.RichNormal(r) => (n, content, r.start, r.until)
           case v@model.mode.Content.RichInsert(m) => (n, content, m, -1)
-          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-        }
-      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
-    }
-  }
-
-  def asRichNormalOrVisual: (cursor.Node, Rich, model.mode.Content.RichNormalOrVisual) = {
-    mode match {
-      case Some(o@model.mode.Node.Content(n, c)) =>
-        val content = rich(n)
-        c match {
-          case nor@model.mode.Content.RichNormal(r) => (n, content, nor)
-          case v@model.mode.Content.RichVisual(fix, m) => (n, content, v)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

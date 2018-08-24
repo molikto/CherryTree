@@ -84,49 +84,41 @@ class DocumentView(
     }, 100)
   }
 
-  event(noEditable, "compositionstart", (a: CompositionEvent) => {
-    cancelNoEditableInput()
-  })
-
-  event(noEditable, "compositionupdate", (a: CompositionEvent) => {
-    cancelNoEditableInput()
-  })
-
-  event(noEditable, "compositionend", (a: CompositionEvent) => {
-    cancelNoEditableInput()
-  })
-
   event("compositionstart", (a: CompositionEvent) => {
+    if (a.target == noEditable) cancelNoEditableInput()
+    flushBeforeKeyDown()
     if (isInserting) editor.disableRemoteStateUpdate(true, false)
     else preventDefault(a)
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
+    if (a.target == noEditable) cancelNoEditableInput()
+    flushBeforeKeyDown()
     if (!isInserting) preventDefault(a)
   })
 
   event("compositionend", (a: CompositionEvent) => {
+    if (a.target == noEditable) cancelNoEditableInput()
+    flushBeforeKeyDown()
     // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
     if (isInserting) editor.disableRemoteStateUpdate(false, false)
     else preventDefault(a)
   })
 
   event("beforeinput", (a: Event) => {
+    flushBeforeKeyDown()
+    if (currentSelection == nonEditableSelection) {
+      cancelNoEditableInput()
+    }
     if (activeContent != null) {
       activeContentEditor.beforeInputEvent(a)
     }
   })
 
   event("input", (a: Event) => {
+    flushBeforeKeyDown()
     if (activeContent != null) {
       activeContentEditor.inputEvent(a)
-    }
-  })
-
-
-  event("beforeinput", (ev: Event) => {
-    if (currentSelection == nonEditableSelection) {
-      cancelNoEditableInput()
     }
   })
 

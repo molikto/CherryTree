@@ -16,19 +16,21 @@ package object mode {
   object Content {
     sealed abstract class Rich extends Content {
       def end: Int
+      def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich
+      def focus: IntRange
+      def merged: IntRange
     }
     sealed abstract class Code extends Content
     sealed trait NormalOrVisual extends Content
     sealed trait Normal extends NormalOrVisual
 
-    sealed abstract class RichNormalOrVisual extends Rich with NormalOrVisual {
-      def copyWithNewFocus(range: IntRange): RichNormalOrVisual
-      def focus: IntRange
-      def merged: IntRange
-    }
     case class RichInsert(pos: Int) extends Rich {
       override def breakWhiteSpaceInserts: Boolean = true
       override def end: Int = pos
+
+      override def focus: IntRange = IntRange(pos, pos)
+      override def merged: IntRange = focus
+      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): Rich = if (r.start < pos) RichInsert(r.start) else RichInsert(r.until)
     }
     /**
       * second parameter is a range because selection is not just one codepoint
@@ -38,7 +40,7 @@ package object mode {
       *
       * empty selection is only valid when document is empty
       */
-    case class RichNormal(range: IntRange) extends RichNormalOrVisual with Normal {
+    case class RichNormal(range: IntRange) extends Rich with Normal {
       assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
 
@@ -46,17 +48,28 @@ package object mode {
 
       override def focus: IntRange = range
       override def merged: IntRange = range
-      override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
+      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): RichNormal = copy(range = r)
       override def end: Int = range.until
     }
-    case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
+    case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
+      assert(fix.nonEmpty && move.nonEmpty)
+
       def collapse(enableModal: Boolean): Rich = if (enableModal) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
 
       def swap: RichVisual = RichVisual(move, fix)
       def moveEnd = if (move.start > fix.start) move.until else move.start
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
-      override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
+      override def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich =
+        if (enableModal) {
+          copy(move = range)
+        } else {
+          if (range.start <= merged.start) {
+            RichInsert(merged.start)
+          } else {
+            RichInsert(merged.until)
+          }
+        }
       override def end: Int = merged.until
     }
 
@@ -68,6 +81,10 @@ package object mode {
       def modeBefore: Rich
       def copyWithRange(range: IntRange, rich: Rich): RichSubMode
 
+
+      override def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich = modeBefore.copyWithNewFocus(range, enableModal)
+      override def focus: IntRange = modeBefore.focus
+      override def merged: IntRange = modeBefore.merged
     }
 
     // we assume that code will always have delimitation 1
@@ -75,6 +92,7 @@ package object mode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
       override def breakWhiteSpaceInserts: Boolean = code.breakWhiteSpaceInserts
       override def end: Int = modeBefore.end
+
     }
 
     case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {

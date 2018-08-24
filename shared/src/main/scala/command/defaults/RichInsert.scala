@@ -14,6 +14,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   trait RichInsertCommand extends Command {
     override def available(a: DocState): Boolean = a.isRichInsert
+    override def priority: Int = 10
   }
 
   trait EditCommand extends RichInsertCommand  {
