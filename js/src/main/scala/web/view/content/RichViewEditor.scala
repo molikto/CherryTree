@@ -115,7 +115,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   def removeInsertEmptyTextNode(): Unit = {
     if (extraNode != null) {
-      removeFromChild(extraNode)
+      removeFromParent(extraNode)
       extraNode = null
       assert(insertEmptyTextNode != null)
       insertEmptyTextNode = null
@@ -420,6 +420,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   var pmode: mode.Content.Rich = null
+
 
   override def updateMode(aa: mode.Content.Rich, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
     pmode = aa

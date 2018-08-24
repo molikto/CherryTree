@@ -97,8 +97,9 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
-  def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit =
-    jQ(dom).find(".ct-cg").attr("contenteditable", b.toString)
+  def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit = {
+    jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
+  }
 
 
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
@@ -157,7 +158,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         sp: Frag
       case Text.HTML(c) =>
         val a = span(
-         // contenteditable := "false",
+         contenteditable := "false",
           `class` := "ct-cg-node ct-cg-atom",
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
@@ -179,7 +180,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
         a: Frag
       case Text.LaTeX(c) =>
         val a = span(
-          //contenteditable := "false",
+          contenteditable := "false",
           `class` := "ct-cg-node ct-cg-atom",
           span(EvilChar)
         ).render
@@ -317,7 +318,6 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
     if (a.parentNode == null) return -1
-
     val ret = if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
@@ -429,6 +429,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
   private[content] def cursorOf(t: Node): model.cursor.Node = {
+    if (model.debug_view) {
+      assert(t.isInstanceOf[raw.Text] || t.asInstanceOf[HTMLElement].classList.contains("ct-cg-node"))
+      assert(isValidContainer(t.parentNode))
+    }
     def rec(t: Node): Seq[Int] = {
       if (t.parentNode == root) {
         Seq(indexOf(t, extraNode))

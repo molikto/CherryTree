@@ -637,12 +637,11 @@ class DocumentView(
       case _ =>
         editor.onFocusOn(other, None, false)
     }
-
   }
 
   override def flushBeforeKeyDown(): Unit = {
-    if (focusFinder != -1) {
-      readSelectionAfterMouseUpWithDelay(0)
+    if (focusFinder != null) {
+      readSelectionAfterMouseUpWithDelay(0, focusFinder._2)
     }
   }
 
@@ -728,7 +727,7 @@ class DocumentView(
         if (model.debug_selection) {
           println("read selection at " + waitTime)
         }
-        readSelectionAfterMouseUpWithDelay(waitTime)
+        readSelectionAfterMouseUpWithDelay(waitTime, mouseFirstContentRich)
         if (clickCount == 2 && !isRightMouseButton) {
           editor.onDoubleClick()
         }
@@ -740,7 +739,6 @@ class DocumentView(
       mouseDown = false
       mouseFirstContent = null
       if (mouseFirstContentRich != null) {
-        mouseFirstContentRich.markCgAsEditableTempDuringMouseEvents(false)
         mouseFirstContentRich = null
       }
 
@@ -839,16 +837,16 @@ class DocumentView(
     null
   }
 
-  private var focusFinder: Int = -1
+  private var focusFinder: (Int, RichView) = null
 
   private def clearAllPreviousReading(): Unit = {
-    if (focusFinder != -1) {
-      window.clearTimeout(focusFinder)
-      focusFinder = -1
+    if (focusFinder != null) {
+      window.clearTimeout(focusFinder._1)
+      focusFinder = null
     }
   }
 
-  private def readSelectionAfterMouseUpWithDelay(delay: Int): Unit = {
+  private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView): Unit = {
     def work() = {
       editor.disableRemoteStateUpdate(false, true)
       focus()
@@ -867,14 +865,15 @@ class DocumentView(
       } else {
         editor.onRefreshMode()
       }
-      focusFinder = -1
+      if (richView != null) richView.markCgAsEditableTempDuringMouseEvents(false)
+      focusFinder = null
     }
     if (delay == 0) {
       work()
     } else {
-      focusFinder = window.setTimeout(() => {
+      focusFinder = (window.setTimeout(() => {
         work()
-      }, delay)
+      }, delay), richView)
     }
   }
 
