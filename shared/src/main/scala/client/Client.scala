@@ -126,7 +126,7 @@ class Client(
     }
     DocState(committed,
       zoom,
-      model.mode.Node.Content(zoom, committed(zoom).content.defaultNormalMode()),
+      model.mode.Node.Content(zoom, committed(zoom).content.defaultMode(enableModal)),
       badMode = false, localStorage.get(docId + ".folded0") match {
       case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
         val c = a.split(" ")
@@ -189,7 +189,7 @@ class Client(
 
   def stateUpdates: Observable[DocUpdate] = stateUpdates_
 
-  private var insertingFlusher: Cancelable = null
+  //private var insertingFlusher: Cancelable = null
 
   private var scheduledUpdateTempMode: Cancelable = null
 
@@ -241,16 +241,16 @@ class Client(
     trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert)
     stateUpdates_.onNext(res)
     updatingState = false
-    if (state_.isRichInsert) {
-      if (insertingFlusher == null) {
-        insertingFlusher = Observable.interval(100.millis).doOnNext(_ => flush()).subscribe()
-      }
-    } else {
-      if (insertingFlusher != null) {
-        insertingFlusher.cancel()
-        insertingFlusher = null
-      }
-    }
+//    if (state_.isRichInsert) {
+//      if (insertingFlusher == null) {
+//        insertingFlusher = Observable.interval(100.millis).doOnNext(_ => flush()).subscribe()
+//      }
+//    } else {
+//      if (insertingFlusher != null) {
+//        insertingFlusher.cancel()
+//        insertingFlusher = null
+//      }
+//    }
   }
   def state: DocState = state_
 
@@ -455,25 +455,35 @@ class Client(
       case c@data.Content.Rich(r) =>
         ran match {
           case Some(a) =>
-            if (a.isEmpty) {
-              if (state.isInsert) {
-                mode.Content.RichInsert(a.start)
+            if (enableModal) {
+              if (a.isEmpty) {
+                if (state.isInsert) {
+                  mode.Content.RichInsert(a.start)
+                } else {
+                  mode.Content.RichNormal(r.rangeBefore(a.start))
+                }
               } else {
-                mode.Content.RichNormal(r.rangeBefore(a.start))
+                val r1 = r.rangeAfter(a.start)
+                val r2 = r.rangeBefore(a.until)
+                if (r1 == r2) {
+                  mode.Content.RichNormal(r1)
+                } else {
+                  mode.Content.RichVisual(r1, r2)
+                }
               }
             } else {
-              val r1 = r.rangeAfter(a.start)
-              val r2 = r.rangeBefore(a.until)
-              if (r1 == r2) {
-                mode.Content.RichNormal(r1)
+              if (a.isEmpty) {
+                mode.Content.RichInsert(a.start)
               } else {
+                val r1 = r.rangeAfter(a.start)
+                val r2 = r.rangeBefore(a.until)
                 mode.Content.RichVisual(r1, r2)
               }
             }
           case None =>
-            c.defaultNormalMode()
+            c.defaultMode(enableModal)
         }
-      case c: data.Content.Code => c.defaultNormalMode()
+      case c: data.Content.Code => c.defaultMode(enableModal)
     }
     localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo))))
     true
@@ -610,10 +620,10 @@ class Client(
             operation.Rich.deleteTextualRange(applied, rg.moveBy(unicode.size)) match {
               case Some((a, b, _)) =>
                 DocTransaction(operation.Node.rich(n, op) +: a.map(o => operation.Node.rich(n, o)),
-                  Some(state.copyContentMode(model.mode.Content.RichNormal(b))))
+                  Some(state.copyContentMode(model.mode.Content.RichNormal(b).collapse(enableModal))))
               case None =>
                 DocTransaction(Seq(operation.Node.rich(n, op)),
-                  Some(state.copyContentMode(mode.Content.RichNormal(f.min(m).moveBy(unicode.size)))))
+                  Some(state.copyContentMode(mode.Content.RichNormal(f.min(m).moveBy(unicode.size)).collapse(enableModal))))
             }
           case model.mode.Content.CodeNormal =>
             // LATER paste in code normal
@@ -681,7 +691,7 @@ class Client(
               val os = state_
               val zz = d.r.transformBeforeDeleted(os.zoom)
               val td = disableUpdateBecauseLocalNodeDelete._4
-              state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultNormalMode()))
+              state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
               uncommitted = uncommitted.dropRight(1)
               val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))

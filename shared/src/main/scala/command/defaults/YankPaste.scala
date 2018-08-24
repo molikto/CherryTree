@@ -16,10 +16,10 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   new Command {
     override val description: String = "yank current node (without childs)"
     override val defaultKeys: Seq[KeySeq] = Seq("yy")
-    override def available(a: DocState): Boolean = a.isNormal
+    override def available(a: DocState): Boolean = a.isContent
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val c = a.asNormal._1
+      val c = a.asContent
       val node = a.node(c)
       commandState.yank(Registerable.Node(Seq(node.copy(content = a.node(c).content, childs = Seq.empty)), needsClone = true), isDelete = false)
       DocTransaction.empty
@@ -29,10 +29,10 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   new Command {
     override val description: String = "yank current node"
     override val defaultKeys: Seq[KeySeq] = Seq("yr") // siblings not lines
-    override def available(a: DocState): Boolean = a.isNormal
+    override def available(a: DocState): Boolean = a.isContent
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val c = a.asNormal._1
+      val c = a.asContent
       commandState.yank(Registerable.Node(Seq(a.node(c)), needsClone = true), isDelete = false)
       DocTransaction.empty
     }
@@ -51,7 +51,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             case _ => Seq(a.node)
           }
           commandState.yank(Registerable.Node(ns, needsClone = true), isDelete = false)
-          DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultNormalMode()))
+          DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultMode(enableModal)))
         case _ => throw new IllegalArgumentException("Invalid command")
       }
     }
@@ -109,42 +109,47 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
 
   abstract class PutCommand extends Command {
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node)
     def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cursor = a.asContent
       commandState.retrieveSetRegisterAndSetToCloneNode() match {
         case Some(Registerable.Node(n, range, needsClone)) =>
           if (n.nonEmpty) {
-            val (cursor, normal) = a.asNormal
             val (op, mode) = putNode(a, cursor, if (needsClone) data.Node.cloneNodes(n) else n)
             DocTransaction(op, Some(mode), tryMergeInsertOfDeleteRange = range)
           } else {
             DocTransaction.empty
           }
         case Some(Registerable.Text(n)) =>
-          if (n.nonEmpty) {
-            if (a.isRichNormal) {
-              val (cursor, rich, normal) = a.asRichNormal
-              var canInsert = false
-              if (rich.insideCoded(normal.range.start)) {
-                if (n.size == 1 && n.head.isPlain) {
-                  canInsert = true
-                }
-              } else {
+          def putBeforeAfter(rich: Rich, normal: IntRange) = {
+            var canInsert = false
+            if (rich.insideCoded(normal.start)) {
+              if (n.size == 1 && n.head.isPlain) {
                 canInsert = true
               }
-              // LATER insert serialized format
-              if (canInsert) {
-                val (op, mode) = putText(rich, normal.range, n)
-                DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
-              } else {
-                DocTransaction.empty
-              }
             } else {
-               // TODO implement this
+              canInsert = true
+            }
+            // LATER insert serialized format
+            if (canInsert) {
+              val (op, mode) = putText(rich, normal, n)
+              DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
+            } else {
               DocTransaction.empty
+            }
+          }
+          if (n.nonEmpty) {
+            a.contentMode match {
+              case model.mode.Content.RichNormal(ran) =>
+                putBeforeAfter(a.rich(cursor), ran)
+              case model.mode.Content.RichInsert(i) =>
+                putBeforeAfter(a.rich(cursor), IntRange(i, i))
+              case model.mode.Content.RichVisual(m, f) =>
+                // TODO implement this
+                DocTransaction.empty
             }
           } else {
             DocTransaction.empty
@@ -163,7 +168,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
       val (insertionPoint, _) = insertPointAfter(a, at)
-      (Seq(operation.Node.Insert(insertionPoint, node)), mode.Node.Content(insertionPoint, node.head.content.defaultNormalMode()))
+      (Seq(operation.Node.Insert(insertionPoint, node)), mode.Node.Content(insertionPoint, node.head.content.defaultMode(enableModal)))
     }
 
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
@@ -179,7 +184,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
       val pt = if (at == a.zoom) a.zoom :+ 0 else at
-      (Seq(operation.Node.Insert(pt, node)), mode.Node.Content(pt, node.head.content.defaultNormalMode()))
+      (Seq(operation.Node.Insert(pt, node)), mode.Node.Content(pt, node.head.content.defaultMode(enableModal)))
     }
 
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {

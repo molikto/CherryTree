@@ -16,11 +16,7 @@ class UndoRedo extends CommandCategory("undo & redo") {
     override def emptyAsFalseInInsertMode: Boolean = true
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      if (a.isNormal || key.isEmpty || hardcodeKeys.contains(key.get)) {
-        commandState.undo(a)
-      } else {
-        DocTransaction.empty
-      }
+      commandState.undo(a)
     }
   }
 
@@ -31,11 +27,7 @@ class UndoRedo extends CommandCategory("undo & redo") {
     override def emptyAsFalseInInsertMode: Boolean = true
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      if (a.isNormal || key.isEmpty || hardcodeKeys.contains(key.get)) {
-        commandState.redo(a)
-      } else {
-        DocTransaction.empty
-      }
+      commandState.redo(a)
     }
   }
 

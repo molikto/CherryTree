@@ -28,7 +28,7 @@ class NodeDelete extends CommandCategory("node: delete") {
       } else {
         (r.parent, r.parent)
       }
-      Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultNormalMode()))
+      Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultMode(enableModal)))
     }, tryMergeDeletes = true)
   }
 
@@ -36,12 +36,12 @@ class NodeDelete extends CommandCategory("node: delete") {
   new Command {
     override val description: String = "delete current node" + message
     override val defaultKeys: Seq[KeySeq] = Seq("dd", shiftMod(Backspace)) // siblings not lines
-    override def available(a: DocState): Boolean = a.isNormal
+    override def available(a: DocState): Boolean = a.isContent
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val r = a.asNormal._1
+      val r = a.asContent
       if (r == a.zoom) DocTransaction.empty
-      else deleteNodeRange(a, commandState, model.range.Node(a.asNormal._1)) // we don't allow multiple deletes for now!
+      else deleteNodeRange(a, commandState, model.range.Node(r)) // we don't allow multiple deletes for now!
     }
   }
 

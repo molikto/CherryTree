@@ -5,6 +5,7 @@ import model.cursor.Node
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
+import settings.Settings
 
 
 case class DocState(
@@ -31,9 +32,9 @@ case class DocState(
     if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
   }
 
-  def goTo(cur: Node, mustZoom: Boolean = false): DocTransaction = {
+  def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
-      Some(model.mode.Node.Content(cur, node(cur).content.defaultNormalMode())),
+      Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
       zoomAfter = Some(cur).filter(c => mustZoom || !currentlyVisible(c)))
   }
 
@@ -125,6 +126,16 @@ case class DocState(
     case _ => false
   }
 
+  def isRich: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, rich: model.mode.Content.Rich)) => true
+    case _ => false
+  }
+
+  def isCode: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, rich: model.mode.Content.Code)) => true
+    case _ => false
+  }
+
   def isRichNormalOrVisual: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
     case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => true
@@ -143,6 +154,21 @@ case class DocState(
     case _ => false
   }
 
+
+  def contentMode: model.mode.Content = mode match {
+    case Some(c: model.mode.Node.Content)  => c.a
+    case _ => throw new IllegalStateException("not supported")
+  }
+
+  def asContent: cursor.Node = mode match {
+    case Some(model.mode.Node.Content(cur, _))  => cur
+    case _ => throw new IllegalStateException("not supported")
+  }
+
+  def isContent: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, _))  => true
+    case _ => false
+  }
 
   def isNormal: Boolean = mode match {
     case Some(model.mode.Node.Content(_, a)) if a.isNormal => true
@@ -192,6 +218,11 @@ case class DocState(
 
   def editAttribute(text: Atom): DocTransaction = {
     editAttribute(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
+  }
+
+  def asRichAtom: (cursor.Node, Rich, Atom)  = {
+    isRich((c: cursor.Node, r: Rich, a: Atom) => return (c, r, a))
+    throw new IllegalArgumentException("Not possible")
   }
 
   def isRich(a: (cursor.Node, Rich, Atom) => Boolean): Boolean = {
@@ -253,12 +284,11 @@ case class DocState(
     case _ => throw new MatchError("Not possible")
   }
 
-  def asCodeNormal : (cursor.Node, data.Content.Code) = {
+  def asCode: (cursor.Node, data.Content.Code) = {
     mode match {
       case Some(model.mode.Node.Content(n, c)) =>
         c match {
-          case t@model.mode.Content.CodeNormal => (n, node(n).content.asInstanceOf[data.Content.Code])
-          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+          case _: model.mode.Content.Code => (n, node(n).content.asInstanceOf[data.Content.Code])
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
     }

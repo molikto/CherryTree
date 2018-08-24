@@ -4,6 +4,7 @@ import doc.{DocState, DocTransaction}
 import model.{ot, _}
 import model.data.Node
 import model.range.IntRange
+import settings.Settings
 import undoer.Undoer.Remote
 
 import scala.collection.immutable.Queue
@@ -52,7 +53,7 @@ private[undoer] class HistoryItem(
 /**
   * our undoer is very very hacky!!!
   */
-trait Undoer extends UndoerInterface {
+trait Undoer extends UndoerInterface with Settings {
 
   private var discarded = 0
   private val history_ : ArrayBuffer[HistoryItem] = new ArrayBuffer()
@@ -163,15 +164,12 @@ trait Undoer extends UndoerInterface {
   def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node = {
     modeBefore match {
       case v: model.mode.Node.Visual =>
-        model.mode.Node.Content(v.fix, docBefore(v.fix).content match {
-          case _: data.Content.Code => model.mode.Content.CodeNormal
-          case _: data.Content.Rich => model.mode.Content.RichNormal(docBefore(v.fix).rich.rangeBeginning)
-        })
+        model.mode.Node.Content(v.fix, docBefore(v.fix).content.defaultMode(enableModal))
       case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, {
         def rec(c: model.mode.Content): model.mode.Content = c match {
           // LATER this is also hacky!!!
-          case model.mode.Content.RichVisual(fix, move) =>
-            model.mode.Content.RichNormal(fix)
+          case v@model.mode.Content.RichVisual(fix, move) =>
+            v.collapse(enableModal)
           case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
             rec(modeBefore)
           case sub@model.mode.Content.RichCodeSubMode(range, code, modeBefore) =>

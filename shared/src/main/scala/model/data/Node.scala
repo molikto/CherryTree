@@ -233,8 +233,8 @@ object Node extends DataObject[Node] {
     n.map(_.cloneNode())
   }
 
-  def defaultNormalMode(root: Node, node: cursor.Node): mode.Node.Content = {
-    model.mode.Node.Content(node, root(node).content.defaultNormalMode())
+  def defaultMode(root: Node, node: cursor.Node, enableModal: Boolean): mode.Node.Content = {
+    model.mode.Node.Content(node, root(node).content.defaultMode(enableModal))
   }
 
   val debug_empty = Node("", data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)

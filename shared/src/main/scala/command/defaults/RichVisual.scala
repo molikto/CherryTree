@@ -40,8 +40,8 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
           } else {
             DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(r, r)))
           }
-        case model.mode.Content.RichVisual(fix, move) =>
-          DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
+        case v@model.mode.Content.RichVisual(fix, move) =>
+          DocTransaction(a.copyContentMode(v.collapse(enableModal)))
       }
     }
 

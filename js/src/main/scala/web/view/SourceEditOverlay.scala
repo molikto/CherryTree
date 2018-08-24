@@ -137,7 +137,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.lineNumbers = showLineNumber
       a.styleActiveLine = true
       a.matchBrackets = true
-      a.keyMap = "vim"
+      if (enableModal) {
+        a.keyMap = "vim"
+      }
       a.lineWrapping = true
       a.showCursorWhenSelecting = true
       // LATER wait for CodeMirorr to udpate... hope VIM support is fixed

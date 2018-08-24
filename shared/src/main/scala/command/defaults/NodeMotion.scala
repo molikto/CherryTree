@@ -41,7 +41,7 @@ class NodeMotion extends CommandCategory("node: motion") {
           case v@model.mode.Node.Visual(_, mm) => v.copy(move = act(mm))
           case kkk@model.mode.Node.Content(n, cc) => cc match {
             case _: model.mode.Content.Normal =>
-              model.data.Node.defaultNormalMode(a.node, act(n))
+              model.data.Node.defaultMode(a.node, act(n), enableModal)
             case _ => throw new MatchError("Not allowed")
           }
         }

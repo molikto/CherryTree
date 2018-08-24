@@ -14,10 +14,10 @@ class NodeMove extends CommandCategory("node: move") {
   //indent-row	>
 
   abstract class MoveCommand extends  Command {
-    override def available(a: DocState): Boolean = a.isNormal
+    override def available(a: DocState): Boolean = a.isContent
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val mm = a.asNormal._1
+      val mm = a.asContent
       DocTransaction(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
     }
   }

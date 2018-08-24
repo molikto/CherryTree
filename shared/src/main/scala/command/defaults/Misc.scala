@@ -32,16 +32,24 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
         case Some(m) =>
           m match {
             case model.mode.Node.Visual(fix, move) =>
-              DocTransaction(model.data.Node.defaultNormalMode(a.node, move))
+              DocTransaction(model.data.Node.defaultMode(a.node, move, enableModal))
             case nc@model.mode.Node.Content(n, c) =>
               a.node(n).content match {
                 case model.data.Content.Rich(rich) =>
                   c match {
                     case model.mode.Content.RichInsert(pos) =>
-                      val range = rich.rangeBefore(pos)
-                      DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(range)))
+                      if (enableModal) {
+                        val range = rich.rangeBefore(pos)
+                        DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(range)))
+                      } else {
+                        DocTransaction.empty
+                      }
                     case model.mode.Content.RichVisual(_, move) =>
-                      DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
+                      if (enableModal) {
+                        DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
+                      } else {
+                        DocTransaction.empty
+                      }
                     case _ => DocTransaction.empty
                   }
                 case model.data.Content.Code(_, _) =>
@@ -155,18 +163,18 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
-    override def available(a: DocState): Boolean = a.isRichNormal((rich, t) => {
+    override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
       rich.befores(t.range.until).exists(_.isStartWithAttribute(UrlAttribute))
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (_, rich, t0) = a.asRichNormalAtom
+      val (_, rich, t0) = a.asRichAtom
       val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
       Node.matchNodeRef(url).foreach { uuid =>
         a.lookup(uuid) match {
           case Some(cur) =>
-            return a.goTo(cur)
+            return a.goTo(cur, Misc.this)
           case None =>
             // TODO report error
             return DocTransaction.empty

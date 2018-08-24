@@ -75,7 +75,9 @@ abstract sealed class Content {
   def size: Int
   def nonEmpty: Boolean = !isEmpty
 
-  def defaultNormalMode(): mode.Content.Normal
+  def defaultMode(enableModal: Boolean): mode.Content = if (enableModal) defaultNormalMode() else defaultInsertMode()
+  protected def defaultInsertMode(): mode.Content
+  protected def defaultNormalMode(): mode.Content.Normal
   def isRich: Boolean = isInstanceOf[Content.Rich]
 }
 
@@ -99,13 +101,15 @@ object Content extends DataObject[Content] {
     */
   case class Code(unicode: Unicode, lang: String) extends Content {
 
-    override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
+    protected override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal
 
     val ty = CodeType.parse(lang)
 
     override def isEmpty: Boolean = unicode.isEmpty
 
     override def size: Int = unicode.size
+
+    protected override def defaultInsertMode(): mode.Content = mode.Content.CodeNormal
   }
 
   object Code {
@@ -115,7 +119,9 @@ object Content extends DataObject[Content] {
   case class Rich(content: data.Rich) extends Content {
     override def size: Int = content.size
 
-    override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(content.rangeBeginning)
+    protected override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(content.rangeBeginning)
+
+    protected override def defaultInsertMode(): mode.Content = mode.Content.RichInsert(0)
 
     override def isEmpty: Boolean = content.isEmpty
   }

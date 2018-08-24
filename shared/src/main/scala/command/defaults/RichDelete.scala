@@ -29,7 +29,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
       if (rich.isEmpty) return DocTransaction.empty
       val r = normal.range
       val fr = (1 until count).foldLeft(r) {(r, _) => if (r.until == rich.size) r else rich.rangeAfter(r) }
-      deleteRichNormalRange(a, commandState,pos, r.merge(fr), insert = false)
+      deleteRichNormalRange(a, commandState,pos, r.merge(fr), insert = !enableModal)
     }
 
   }
@@ -45,7 +45,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
       val r = normal.range
       val rr = rich.rangeBefore(r)
       val fr = (1 until count).foldLeft(rr) {(r, _) => rich.rangeBefore(r) }
-      deleteRichNormalRange(a, commandState,pos, rr.merge(fr), insert = false)
+      deleteRichNormalRange(a, commandState,pos, rr.merge(fr), insert = !enableModal)
     }
   }
 
@@ -55,7 +55,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
     override def available(a: DocState): Boolean = a.isRichVisual
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.mode match {
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
-        deleteRichNormalRange(a, commandState,pos, v.merged, insert = false)
+        deleteRichNormalRange(a, commandState,pos, v.merged, insert = !enableModal)
       case _ => throw new IllegalArgumentException("Invalid command")
     }
   }
@@ -72,7 +72,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
       if (rich.isEmpty) return DocTransaction.empty
       motion.flatMap(m => {
         m.act(commandState, rich, count, normal.range, grapheme).map(r => {
-          deleteRichNormalRange(a, commandState,cur, r, insert = false)
+          deleteRichNormalRange(a, commandState,cur, r, insert = !enableModal)
         })
       }).getOrElse(DocTransaction.empty)
     }
@@ -90,7 +90,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
 //        val p = model.cursor.Node.parent(c)
 //        Seq(operation.Node.Delete(model.range.Node(p, IntRange(c.last + 1, (c.last + count) min p.size))))
 //      }
-      val deleteFirstLine = deleteRichNormalRange(a, commandState,c, IntRange(normal.range.start, rich.size), insert = false)
+      val deleteFirstLine = deleteRichNormalRange(a, commandState,c, IntRange(normal.range.start, rich.size), insert = !enableModal)
       deleteFirstLine
       //deleteFirstLine.copy(transaction = deleteFirstLine.transaction ++ deleteLines)
     }

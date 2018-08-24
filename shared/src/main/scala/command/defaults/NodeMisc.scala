@@ -14,18 +14,18 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
     override val description: String = "copy node link"
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asNormal._1).refOfThis()))
+      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asContent).refOfThis()))
     }
   }
 
 
   new TextualCommand {
     override val description: String = "fold all direct children"
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asNormal._1
+      val cur = a.asContent
       val tog = a.node(cur).childs.zipWithIndex.map(a => cur :+ a._2).filter(c => !a.folded(c))
       DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
     }
@@ -33,9 +33,9 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
     override val description: String = "unfold all children recursively"
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asNormal._1
+      val cur = a.asContent
       val tog = a.node(cur).allChildrenUuids(cur, a.userFoldedNodes)
       DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
     }
@@ -43,9 +43,9 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
     override val description: String = "reset content to: code"
-    override protected def available(a: DocState): Boolean = a.isRichNormalOrVisual
+    override protected def available(a: DocState): Boolean = a.isRich
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asRichNormalOrVisual._1
+      val cur = a.asContent
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Code.empty)),
         Some(a.copyContentMode(mode.Content.CodeNormal)))
@@ -54,13 +54,13 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   new TextualCommand {
     override val description: String = "reset content to: rich text"
-    override protected def available(a: DocState): Boolean = a.isCodeNormal
+    override protected def available(a: DocState): Boolean = a.isCode
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (cur, code) = a.asCodeNormal
+      val (cur, code) = a.asCode
       val rich = data.Rich(if (code.unicode.isEmpty) Seq.empty else Seq(Text.Plain(code.unicode)))
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Rich(rich))),
-        Some(a.copyContentMode(mode.Content.RichNormal(rich.rangeBeginning))))
+        Some(a.copyContentMode(Content.Rich(rich).defaultMode(enableModal))))
     }
   }
 
@@ -68,19 +68,19 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   class ContentStyleCommand(desc: String, to: Option[data.Node.ContentType]) extends TextualCommand {
     override val description: String = s"content style: $desc"
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.changeContentType(a.asNormal._1, to)
+      a.changeContentType(a.asContent, to)
     }
   }
 
   for (i <- 2 to 6) {
     new ContentStyleCommand(s"heading $i, h$i", Some(data.Node.ContentType.Heading(i))) {
-      override protected def available(a: DocState): Boolean = if (a.isNormal) {
+      override protected def available(a: DocState): Boolean = if (a.isContent) {
         if (i == 1) {
           true
         } else {
-          val cur = a.asNormal._1
+          val cur = a.asContent
           if (cur == cursor.Node.root) {
             false
           } else {
@@ -106,9 +106,9 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   class ChildrenStyleCommand(desc: String, to: Option[data.Node.ChildrenType]) extends TextualCommand {
     override val description: String = s"children style: $desc"
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isContent
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asNormal._1
+      val cur = a.asContent
       DocTransaction(
         Seq(operation.Node.AttributeChange(cur, data.Node.ChildrenType, to)),
         a.mode)
@@ -125,10 +125,10 @@ class NodeMisc extends CommandCategory("node: misc") {
   new TextualCommand {
     override val description: String = "insert rendered Markdown bellow (commonmark)"
 
-    override protected def available(a: DocState): Boolean = a.isCodeNormal && model.parseFromCommonMarkMarkdown != null
+    override protected def available(a: DocState): Boolean = a.isCode && model.parseFromCommonMarkMarkdown != null
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val (cur, _) = a.asNormal
+      val cur = a.asContent
       val str = a.node(cur).content.asInstanceOf[Content.Code].unicode.str
       val node = model.parseFromCommonMarkMarkdown(str)
       DocTransaction(Seq(operation.Node.Insert(cursor.Node.moveBy(cur, 1), Seq(node))), None)

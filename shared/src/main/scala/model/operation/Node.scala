@@ -14,7 +14,7 @@ import scala.util.Random
 abstract sealed class Node extends Operation[data.Node] {
   override type This = Node
 
-  def apply(a: DocState): DocState
+  def apply(a: DocState, enableModal: Boolean): DocState
 }
 
 object Node extends OperationObject[data.Node, operation.Node] {
@@ -51,7 +51,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
   }
   case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       var m= a.mode0
       var zoom = a.zoom
       if (tag == data.Node.ContentType.name &&
@@ -91,7 +91,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     }
 
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       val (m0, bm) = a.mode0 match {
         case c: mode.Node.Content if c.node == at =>
           val (m, f) = content.transform(a.node(at).content, c.a)
@@ -123,10 +123,10 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def toString: String = s"Replace(${at.mkString("-")})"
 
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       val (m0, bm) = a.mode0 match {
         case c: mode.Node.Content if c.node == at =>
-          (mode.Node.Content(at, content.defaultNormalMode()), true)
+          (mode.Node.Content(at, content.defaultMode(enableModal)), true)
         case _ => (a.mode0, a.badMode)
       }
       DocState(apply(a.node), a.zoom, m0, bm, a.userFoldedNodes)
@@ -150,7 +150,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def toString: String = s"Insert(${at.mkString("-")}, ${childs.size})"
 
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       DocState(apply(a.node),
         cursor.Node.transformAfterInserted(at, childs.size, a.zoom),
         transform(a.mode0),
@@ -190,19 +190,19 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       val applied = apply(a.node)
       val (m0, bmm) = a.mode0  match {
         case c@mode.Node.Content(node, _) => r.transformAfterDeleted(node) match {
           case Some(k) => (c.copy(node = k), false)
-          case None => (mode.Node.Content(r.parent, applied(r.parent).content.defaultNormalMode()), true)
+          case None => (mode.Node.Content(r.parent, applied(r.parent).content.defaultMode(enableModal)), true)
         }
         case mode.Node.Visual(fix, move) =>
           (r.transformAfterDeleted(fix), r.transformAfterDeleted(move)) match {
             case (Some(ff), Some(mm)) => (mode.Node.Visual(ff, mm), false)
-            case (Some(ff), None) => (mode.Node.Content(ff, applied(ff).content.defaultNormalMode()), true)
-            case (None, Some(ff))  =>  (mode.Node.Content(ff, applied(ff).content.defaultNormalMode()), true)
-            case (None, None) => (mode.Node.Content(r.parent, applied(r.parent).content.defaultNormalMode()), true)
+            case (Some(ff), None) => (mode.Node.Content(ff, applied(ff).content.defaultMode(enableModal)), true)
+            case (None, Some(ff))  =>  (mode.Node.Content(ff, applied(ff).content.defaultMode(enableModal)), true)
+            case (None, None) => (mode.Node.Content(r.parent, applied(r.parent).content.defaultMode(enableModal)), true)
           }
       }
       DocState(applied,
@@ -239,7 +239,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def apply(d: data.Node): data.Node = d.move(r, to)
 
 
-    override def apply(a: DocState): DocState = {
+    override def apply(a: DocState, enableModal: Boolean): DocState = {
       var zz = r.transformNodeAfterMoved(to, a.zoom)
       val applied = apply(a.node)
       val (m0, bmm) = a.mode0  match {
@@ -252,7 +252,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
             val alt = if (cursor.Node.contains(zz, tt)) tt
             else if (cursor.Node.contains(zz, mm)) mm
             else r.transformNodeAfterMoved(to, r.parent)
-            (mode.Node.Content(alt, applied(alt).content.defaultNormalMode()), true)
+            (mode.Node.Content(alt, applied(alt).content.defaultMode(enableModal)), true)
           }
         case mode.Node.Content(node, b) =>
           val tt = r.transformNodeAfterMoved(to, node)

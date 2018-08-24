@@ -57,7 +57,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
       val (cursor, content, insert) = a.asRichInsert
       if (insert.pos > 0) {
         val r = content.moveLeftWord(insert.pos).map(_.start).getOrElse(0)
-        deleteRichNormalRange(a, commandState,cursor, IntRange(r, insert.pos), insert =true, noHistory = true)
+        deleteRichNormalRange(a, commandState,cursor, IntRange(r, insert.pos), insert = true, noHistory = true)
       } else {
         joinWithPrevious(a)
       }

@@ -276,6 +276,9 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
 
   def keyDown(key: Key): Boolean = {
+    if ((!enableModal || state.isInsert) && key.isSimpleGrapheme) {
+      return false
+    }
     clearPreviousCommand()
     buffer.lastOption match {
       case Some(Part.IdentifiedCommand(k, c, _)) if c.needsChar =>
@@ -320,7 +323,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
     commandBufferUpdates_.onNext(buffer)
-    hasExit || res || !state.isRichInsert
+    hasExit || res || (enableModal && !state.isRichInsert)
   }
 
 }

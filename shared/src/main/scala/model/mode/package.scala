@@ -42,13 +42,18 @@ package object mode {
       assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
 
+      def collapse(enableModal: Boolean): Rich = if (enableModal)  this else RichInsert(range.until)
+
       override def focus: IntRange = range
       override def merged: IntRange = range
       override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
       override def end: Int = range.until
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual {
+      def collapse(enableModal: Boolean): Rich = if (enableModal) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
+
       def swap: RichVisual = RichVisual(move, fix)
+      def moveEnd = if (move.start > fix.start) move.until else move.start
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
       override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)

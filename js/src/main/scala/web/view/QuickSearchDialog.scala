@@ -124,7 +124,7 @@ class QuickSearchDialog(val client: Client,
     }
     val noZoom = model.cursor.Node.contains(client.state.zoom, n) && !client.state.viewAsHidden(n)
     client.localChange(DocTransaction(Seq.empty,
-      Some(model.mode.Node.Content(n, client.state.node(n).content.defaultNormalMode())),
+      Some(model.mode.Node.Content(n, client.state.node(n).content.defaultMode(enableModal))),
       zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty))
   }
 }

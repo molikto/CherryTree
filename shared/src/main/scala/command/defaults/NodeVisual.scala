@@ -32,7 +32,7 @@ class NodeVisual extends CommandCategory("node: visual") {
         case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
           DocTransaction(mode.Node.Visual(at, at))
         case model.mode.Node.Visual(_, move) =>
-          DocTransaction(model.data.Node.defaultNormalMode(a.node, move))
+          DocTransaction(model.data.Node.defaultMode(a.node, move, enableModal))
         case _ => throw new IllegalArgumentException("Wrong branch")
       }
       case None => throw new IllegalArgumentException("Wrong branch")
