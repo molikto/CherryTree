@@ -162,22 +162,26 @@ trait Undoer extends UndoerInterface with Settings {
 
   // all mode is changed to insert mode, then converted back to normal upon redo
   def convertMode(docBefore: Node, modeBefore: mode.Node): mode.Node = {
-    modeBefore match {
-      case v: model.mode.Node.Visual =>
-        model.mode.Node.Content(v.fix, docBefore(v.fix).content.defaultMode(enableModal))
-      case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, {
-        def rec(c: model.mode.Content): model.mode.Content = c match {
-          // LATER this is also hacky!!!
-          case v@model.mode.Content.RichVisual(fix, move) =>
-            v.collapse(enableModal)
-          case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
-            rec(modeBefore)
-          case sub@model.mode.Content.RichCodeSubMode(range, code, modeBefore) =>
-            sub
-          case a => a
-        }
-        rec(a)
-      })
+    if (enableModal) {
+      modeBefore match {
+        case v: model.mode.Node.Visual =>
+          model.mode.Node.Content(v.fix, docBefore(v.fix).content.defaultMode(enableModal))
+        case model.mode.Node.Content(n, a) => model.mode.Node.Content(n, {
+          def rec(c: model.mode.Content): model.mode.Content = c match {
+            // LATER this is also hacky!!!
+            case v@model.mode.Content.RichVisual(fix, move) =>
+              v.collapse(enableModal)
+            case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
+              rec(modeBefore)
+            case sub@model.mode.Content.RichCodeSubMode(range, code, modeBefore) =>
+              sub
+            case a => a
+          }
+          rec(a)
+        })
+      }
+    } else {
+      modeBefore
     }
   }
 
@@ -267,8 +271,14 @@ trait Undoer extends UndoerInterface with Settings {
       }
       Some(zz)
     }
+    val changeZoom = zzz.map(z => applied.copy(zoom = z)).getOrElse(applied)
+    val mode = oldDocAsNowForModes.mode0 match {
+      case model.mode.Node.Visual(a, b) =>
+        model.mode.Node.Visual(changeZoom.notHiddenParent(a), changeZoom.notHiddenParent(b))
+      case a => a
+    }
     DocTransaction(tt,
-      Some(if (currentDoc.isInsert || !enableModal) oldDocAsNowForModes.mode0 else convertInsertMode(applied.node, oldDocAsNowForModes.mode0)),
+      Some(if (currentDoc.isInsert || !enableModal) mode else convertInsertMode(applied.node, mode)),
       zoomAfter = zzz,
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }

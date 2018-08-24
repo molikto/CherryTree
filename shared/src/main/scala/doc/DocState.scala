@@ -71,8 +71,12 @@ case class DocState(
 
   def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
 
-  assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
-  assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
+  def consistencyCheck(): Unit = {
+    assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
+    assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
+    assert(!viewAsHidden(mode0.focus), s"mode hidden $mode0, $zoom")
+    assert(!viewAsHidden(mode0.other), s"mode hidden $mode0, $zoom")
+  }
 
   def folded(a: cursor.Node): Boolean = {
     val no = node(a)
@@ -97,6 +101,16 @@ case class DocState(
   def currentlyVisible(a: Node): Boolean = {
     inViewport(a) && !viewAsHidden(a)
   }
+
+  def notHiddenParent(k: Node): cursor.Node = {
+    var j = k
+    while (j.size >= zoom.size) {
+      if (!viewAsHidden(j)) return j
+      j = cursor.Node.parent(j)
+    }
+    zoom
+  }
+
   def viewAsHidden(k: Node): Boolean = {
     var n = k
     while (n.size > zoom.size) {
@@ -243,8 +257,13 @@ case class DocState(
         if (rich.isEmpty) {
           false
         } else {
-          val t = rich.after(mode.focus.start)
-          a(cur, rich, t)
+          mode match {
+            case model.mode.Content.RichInsert(i) =>
+              i != 0 && i != rich.size && a(cur, rich, rich.after(i)) && a(cur, rich, rich.before(i))
+            case _ =>
+              val t = rich.after(mode.focus.start)
+              a(cur, rich, t)
+          }
         }
       case _ => false
     }

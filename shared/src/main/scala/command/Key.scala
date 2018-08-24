@@ -34,17 +34,6 @@ case class Key(
     sb.append(a.toString)
     sb.mkString("+")
   }
-
-  def withAllModifiers: Seq[KeySeq] = {
-    import Key._
-    val allTrue = copy(shift = true, alt = true, control = true, meta = true)
-    Seq(this,
-      Shift + this, Meta + this, Ctrl + this, Alt + this,
-      copy(shift = true, meta = true), copy(shift = true, control = true), copy(shift = true, meta = true),
-      copy(alt = true, control = true), copy(alt = true, meta = true), copy(control = true, meta = true),
-      allTrue.copy(shift = false), allTrue.copy(alt = false), allTrue.copy(control = false), allTrue.copy(meta = false),
-      allTrue).map(a => Seq(a))
-  }
 }
 
 object Key {
@@ -85,7 +74,6 @@ object Key {
   val ModKey: Modifier = if (model.isMac) Meta else Ctrl
 
   sealed trait V {
-    def withAllModifiers: Seq[KeySeq] = Key(this).withAllModifiers
   }
 
   case object Home extends V

@@ -114,11 +114,9 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     })
     override def actDoubleClick: Boolean = true
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.isRich((cur, rich, t) => {
-        val text = rich.insideUrlAttributed(t.range.until).get
-        return a.editAttribute(text)
-      })
-      DocTransaction.empty
+      val (cur, rich, t) = a.asRichAtom
+      val text = rich.insideUrlAttributed(t.range.until).get
+      a.editAttribute(text)
     }
   }
 
@@ -131,13 +129,12 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     }) || a.isCodeNormal
     override def actDoubleClick: Boolean = true
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.isRich((cur, _, t) => {
-        return a.editCode(t)
-      })
       if (a.isCodeNormal) {
-        return DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
+        DocTransaction(a.copyContentMode(mode.Content.CodeInside("normal", 0)))
+      } else {
+        val (_, _, t) = a.asRichAtom
+        a.editCode(t)
       }
-      DocTransaction.empty
     }
   }
 

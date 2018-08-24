@@ -211,6 +211,7 @@ class Client(
     isSmartInsert: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
+    a.consistencyCheck()
     val vv = viewAdded ++ from
     val res = DocUpdate(a,
       if (vv.isEmpty) Seq.empty else vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)),
