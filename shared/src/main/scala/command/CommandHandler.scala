@@ -295,6 +295,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     if (!enableModal || state.isInsert) {
       if (key.isSimpleGrapheme) {
         if (!state.isInsert || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
+          if (scheduledComplete != null) tryComplete(false)
           return false
         } else {
           isInsertOverride = true

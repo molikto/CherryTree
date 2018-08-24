@@ -140,6 +140,7 @@ object Unicode extends DataObject[Unicode] {
 case class Unicode(var str: String) extends Seq[Int] {
 
   // LATER faster??
+  def contains(p: Unicode): Boolean = str.contains(p.str)
   def containsLowerCase(p: Unicode): Boolean = str.toLowerCase().contains(p.str)
 
   def isBlank: Boolean = {

@@ -39,7 +39,7 @@ class CommandCategory(val name: String) extends Settings {
       else if (deli == SpecialChar.Strong) Seq(ModKey + "b")
       else Seq.empty
 
-    override def maybeInsertModeGrapheme(u: Unicode): Boolean = graphemes.contains(u)
+    override def maybeInsertModeGrapheme(u: Unicode): Boolean = graphemes.exists(a => a.contains(u))
 
     override def defaultKeys: Seq[KeySeq] = Seq.empty
     override def hardcodeKeys: Seq[KeySeq] =

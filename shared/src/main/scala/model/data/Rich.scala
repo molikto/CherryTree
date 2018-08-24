@@ -13,7 +13,7 @@ import scala.util.Random
   */
 case class Rich(text: Seq[Text]) {
 
-  def apply(node: cursor.Node): Delimited = {
+  def apply(node: cursor.Node): Text = {
     assert(node.nonEmpty)
     text(node.head)(node.tail)
   }
@@ -35,7 +35,11 @@ case class Rich(text: Seq[Text]) {
       }
       seq.take(cur.head).map(_.size).sum + remaining
     }
-    rec(text, node)
+    val ret = rec(text, node)
+    if (model.debug_selection) {
+      println(s"start pos of $node $ret")
+    }
+    ret
   }
 
 

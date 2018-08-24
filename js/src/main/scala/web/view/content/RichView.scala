@@ -341,7 +341,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
           } else {
             val cur = cursorOf(sty)
             if (o == 0) {
-              rich.startPosOf(cur) + rich(cur).contentSize + 1
+              rich.startPosOf(cur) + rich(cur).asDelimited.contentSize + 1
             } else {
               rich.startPosOf(cur) + rich(cur).size
             }
