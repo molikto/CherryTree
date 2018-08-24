@@ -16,7 +16,11 @@ trait Server extends Api {
 
   // states, now in single thread fashion
 
-  case class ClientInfo(version: Int, lastSeen: Long)
+  case class ClientInfo(
+    version: Int,
+    lastSeen: Long,
+    lastAccepted: Int,
+    lastWs: Seq[transaction.Node])
 
   private var document = {
     val bs = debugLoad("saved")
@@ -41,7 +45,7 @@ trait Server extends Api {
       version,
       ServerStatus(onlineCount + 1, false, false)
     )
-    clients.update(token, ClientInfo(version, System.currentTimeMillis()))
+    clients.update(token, ClientInfo(version, System.currentTimeMillis(), 0, Seq.empty))
     Right(state)
   }
 
@@ -57,54 +61,46 @@ trait Server extends Api {
 //    }
 //  }
 
+  def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  /**
-    *
-    * @param version current client version
-    * @return
-    */
-  private def checkWriteStateConsistency(authentication: Authentication.Token, version: Int): ErrorT[Seq[transaction.Node]] = synchronized {
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
     clients.get(authentication) match {
       case None =>
         Left(ApiError.InvalidToken)
       case Some(cached) =>
-        val diff = version - cached.version
-         if (diff < 0) {
-           Left(ApiError.ClientVersionIsOlderThanServerCache)
-        } else if (diff > 0) {
-           Left(ApiError.ClientVersionIsHigherThanServerCache)
-        } else {
-          Right(changes.drop(version))
-        }
-    }
-  }
-
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
-    checkWriteStateConsistency(authentication, clientVersion).map { ws =>
-      try {
-        if (debug_model) {
-          assert(debugClientDoc == debugHistoryDocuments(clientVersion))
-        }
-        val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
-        var debugTopDocument = document
-        document = operation.Node.applyT(transformed, document)
-        changes = changes ++ transformed
-        if (transformed.nonEmpty) {
-          debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
-        }
-        if (debug_model) {
-          for (t <- transformed) {
-            debugTopDocument = operation.Node.apply(t, debugTopDocument)
-            debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+        val diff = clientVersion - cached.version
+        if (diff < 0) {
+          if (ts.size >= cached.lastAccepted) {
+            Right(ClientUpdate(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
+          } else {
+            Left(ApiError.ClientVersionIsOlderThanServerCache)
           }
-          assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
+        } else if (diff > 0) {
+          Left(ApiError.ClientVersionIsHigherThanServerCache)
+        } else {
+          val ws = changes.drop(clientVersion)
+          if (debug_model) {
+            assert(debugClientDoc == debugHistoryDocuments(clientVersion))
+          }
+          val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
+          var debugTopDocument = document
+          document = operation.Node.applyT(transformed, document)
+          changes = changes ++ transformed
+          if (transformed.nonEmpty) {
+            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+          }
+          if (debug_model) {
+            for (t <- transformed) {
+              debugTopDocument = operation.Node.apply(t, debugTopDocument)
+              debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+            }
+            assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
+          }
+          val cu = ClientUpdate(ws, ts.size, version, serverStatus)
+          clients.update(authentication, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
+          // LATER don't accept conflicting items
+          Right(cu)
         }
-        clients.update(authentication, ClientInfo(version, System.currentTimeMillis()))
-        // LATER don't accept conflicting items
-        ClientUpdate(ws, ts.size, version, ServerStatus(onlineCount, false, false))
-      } catch {
-        case e: Throwable => throw e
-      }
     }
   }
 }

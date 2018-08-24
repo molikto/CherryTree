@@ -151,7 +151,6 @@ class Client(
   private def disableRemoteStateUpdate: Boolean = disableForComposition || disableForMouse
 
   private def updateConnectionStatusBasedOnDisableStatus(): Unit = {
-    flushInner()
     val before = connection_.get.tempOffline
     val now = disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null
     if (before != now) {
@@ -166,6 +165,7 @@ class Client(
     } else {
       disableForComposition = disable
     }
+    flushInner()
     updateConnectionStatusBasedOnDisableStatus()
   }
 
@@ -174,6 +174,7 @@ class Client(
   private def flushInner(): Unit = {
     if (!disableRemoteStateUpdate) {
       flushing = true
+      // send flush event first to have consistent local state
       flushes_.onNext(Unit)
       flushing = false
       disabledStateUpdates.foreach(a => {
@@ -298,10 +299,8 @@ class Client(
     * request queue
     */
   private var requesting = false
-  private var requests: Seq[Int] = Seq.empty[Int]
 
   private def putBackAndMarkNotConnected(head: Int): Unit = {
-    requests = head +: requests
     connection_.modify(_.copy(offline = true))
   }
 
@@ -315,6 +314,7 @@ class Client(
           tryTopRequest()
         }
       case Failure(t) =>
+        println(t.getMessage)
         self.synchronized {
           requesting = false
           connection_.modify(_.copy(offline = true))
@@ -343,20 +343,25 @@ class Client(
     disableUpdateBecauseLocalNodeDelete != null
   }
 
-  private def tryTopRequest(): Unit = {
-    if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting) {
-      requests match {
-        case head :: tail =>
-          requests = tail
-          val submit = uncommitted
-          if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
-            lastRequestTime = System.currentTimeMillis()
-            request[ClientUpdate](head, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
-              updateFromServer(succsss)
-            })
+  def debug_blockReason = s"$authentication ${disableUpdateBecauseLocalNodeDelete != null} $requesting $disableRemoteStateUpdate"
+
+  private def tryTopRequest(): Boolean = {
+    if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !disableRemoteStateUpdate) {
+      val submit = uncommitted
+      if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
+        lastRequestTime = System.currentTimeMillis()
+        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
+          lockObject.synchronized {
+            flushInner()
+            updateFromServer(succsss)
           }
-        case _ =>
+        })
+        true
+      } else {
+        false
       }
+    } else {
+      false
     }
   }
 
@@ -368,12 +373,8 @@ class Client(
     * sync with remote server
     */
   def sync(): Boolean = self.synchronized {
-    if (requests.isEmpty) {
-      requests = requests :+ 0
-    }
     if (!requesting) {
-      tryTopRequest()
-      true
+      return tryTopRequest()
     } else {
       false
     }
@@ -384,22 +385,23 @@ class Client(
     * update committed, committed version, uncommited, state
     */
   private def updateFromServer(success: ClientUpdate): Unit = {
-    if (disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null) {
+    if (updateDisableUpdateBecauseLocalNodeDelete()) {
+      // ignore it
+    } else if (disableRemoteStateUpdate) {
       disabledStateUpdates.append(success)
     } else {
       try {
         val take = success.acceptedLosersCount
         val winners = success.winners
-        val flatten = operation.Node.merge(winners.flatten, false)
+        // it is ok to flatten the server updates, as what they rebase for is not uploaded to server yet
+        val flatten = operation.Node.merge(winners.flatten)
         val (loser, remaining) = uncommitted.splitAt(take)
         // LATER handle conflict, modal handling of winner deletes loser
         val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(flatten, loser)
         committed = operation.Node.applyT(lp, operation.Node.apply(flatten, committed))
-        val altVersion = committedVersion + winners.size + lp.size
         committedVersion = success.finalVersion
-        assert(altVersion == committedVersion, s"Version wrong! $committedVersion $altVersion ${winners.size} $take")
         val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
-        uncommitted = uc
+        uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
         connection_.update(success.serverStatus)
         if (wp0.nonEmpty) {
           val (last, from) = operation.Node.apply(wp0, state, enableModal)
@@ -408,7 +410,7 @@ class Client(
             from,
             Seq.empty,
             Undoer.Remote)
-      }
+        }
       } catch {
         case e: Exception =>
           throw new Exception(s"Apply update from server failed $success #### $committed", e)
@@ -772,7 +774,8 @@ class Client(
     for (m <- update.viewMessagesBefore) {
       viewMessages_.onNext(m)
     }
-    if (!update.nonTransactional) {
+    val needsSync = !update.nonTransactional
+    if (needsSync) {
       updateState(last,
         from,
         viewAdd,
@@ -783,14 +786,13 @@ class Client(
         fromUser = true,
         userFolds = ch, trace = update0.trace)
       if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
-      self.sync()
     }
     for (m <- update.viewMessagesAfter) {
       viewMessages_.onNext(m)
     }
     extra match {
       case Some(a) => localChange(a, isSmartInsert = true)
-      case None =>
+      case None => if (needsSync) sync()
     }
   }
 

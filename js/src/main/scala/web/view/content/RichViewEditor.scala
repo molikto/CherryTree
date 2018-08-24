@@ -199,6 +199,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   }
 
   // node, before
+  private var pendingFlush = false
   private var isComplexInput = false
   private var affectPosBeforeInput = -1
 
@@ -234,6 +235,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
     if (allowInputType(inputType)) {
+      pendingFlush = true
       controller.flush()
     } else if (!isCompositionInputType(inputType)) {
       refreshDom()
@@ -317,11 +319,14 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     */
 
   override def flush(): Unit = {
-    if (isComplexInput) {
-      flushComplex()
-      isComplexInput = false
-    } else {
-      flushSimple()
+    if (pendingFlush) {
+      pendingFlush = false
+      if (isComplexInput) {
+        flushComplex()
+        isComplexInput = false
+      } else {
+        flushSimple()
+      }
     }
   }
 

@@ -255,7 +255,6 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
 
   private def actAndMarkComplete(c: Command, count: Int, key: Option[KeySeq], char: Option[Unicode], motion: Option[Motion]): Boolean = {
-    flush()
     if (char.isDefined) {
       c match {
         case command: FindCommand =>

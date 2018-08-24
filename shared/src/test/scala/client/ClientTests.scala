@@ -56,16 +56,21 @@ object ClientTests extends TestSuite  {
         if (debug) {
           println("waiting for clients to commit")
         }
-        while (clients.exists(a => a.hasUncommited)) {
-          println("not finished")
+        while (clients.exists(a => {
+          val res = a.hasUncommited
+          if (res) {
+            val sycing = a.sync()
+            println(s"not finished ${a.debug_blockReason} $sycing")
+          }
+          res
+        })) {
           Thread.sleep(100)
         }
         if (debug) {
           println("clients changes finished")
         }
         while (clients.exists(a => a.debug_committedVersion != serverChanges.size)) {
-          println("not updated")
-          clients.foreach(_.sync())
+          println(s"not updated ${clients.forall(_.sync())}")
           Thread.sleep(100)
         }
         if (debug) {
@@ -140,7 +145,14 @@ object ClientTests extends TestSuite  {
         def performAHumanAction(ith: Int, c: Client) = {
           if (c.state.isRichInsert) {
             c.debug_unmarkTempDisableMode()
-            c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), -1)
+            try {
+              c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), -1)
+            } catch {
+              case e: Throwable =>
+                println("action " + ith)
+                println(c.state)
+                throw e
+            }
           }
           val avs = c.commands.filter(a => a.available(c.state, c) && !a.needsStuff)
           if (avs.nonEmpty) {

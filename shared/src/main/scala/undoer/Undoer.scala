@@ -253,7 +253,7 @@ trait Undoer extends UndoerInterface with Settings {
     }
     val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore, enableModal)
     val coverage = oldDocAsNowForModes.mode0.coverage // can only be normal
-    val zzz = if (cursor.Node.contains(currentDoc.zoom, coverage) && !currentDoc.viewAsHidden(coverage)) {
+    val zzz = if (cursor.Node.contains(applied.zoom, coverage) && !applied.viewAsHidden(coverage)) {
       None
     } else {
       var break = false
