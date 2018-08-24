@@ -322,7 +322,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
       if (o == a.childNodes.length) {
-        rich.startPosOf(model.cursor.Node.moveBy(cursorOf(a.childNodes(o - 1)), 1))
+        val cur = cursorOf(a.childNodes(o - 1))
+        rich.startPosOf(cur) + rich(cur).size
       } else {
         rich.startPosOf(cursorOf(a.childNodes(o)))
       }
@@ -479,7 +480,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     * 2. node == parent, int offset, int == -1
     */
   private[content] def posInDom(pos: Int): (Node, Int, Int) = {
-    if (pos == 0) {
+    val ret = if (pos == 0) {
       if (isEmpty) {
         (root, 0, -1)
       } else if (rich.text.head.isPlain) {
@@ -529,6 +530,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
           }
       }
     }
+    if (model.debug_selection) {
+      window.console.log(s"pos $pos in dom", ret._1, ret._2, ret._3)
+    }
+    ret
   }
 
   private[content] def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {

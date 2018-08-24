@@ -124,17 +124,6 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
   //i_<S-Up>      shift-up/down     one screenful backward/forward
   //i_<End>       <End>             cursor after last character in the line
   //i_<Home>      <Home>            cursor to first character in the line
-  new InsertMovementCommand { // DIFFERENCE we added two move, also disabled up/down
-    override val description: String = "move cursor right"
-    override def defaultKeys: Seq[KeySeq] = Seq(Right)
-    override def move(rich: Rich, i: Int): Int = rich.rangeAfter(i).until
-  }
-
-  new InsertMovementCommand {
-    override val description: String = "move cursor left"
-    override def defaultKeys: Seq[KeySeq] = Seq(Left)
-    override def move(rich: Rich, i: Int): Int = rich.rangeBefore(i).start
-  }
 
   // LATER insert movements
   // moving around:

@@ -39,13 +39,15 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand { // DIFFERENCE h + Control is also in Vim, but we don't use this,
     override val description: String = "move left"
-    override val defaultKeys = Seq("h", Backspace, Left)
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Left)
+    override val defaultKeys = Seq("h", Backspace)
     override def move(content: Rich, a: IntRange): (IntRange, Int) = if (a.start == 0) (a, 0) else (content.before(a.start).range, 0)
   }
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand {
     override val description: String = "move right"
-    override val defaultKeys = Seq("l", Right)  // DIFFERENCE space is for smart move
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Right)
+    override val defaultKeys = Seq("l")  // DIFFERENCE space is for smart move
     override def move(content: Rich, a: IntRange): (IntRange, Int)  =  if (a.until == content.size) (a, 1) else (content.after(a.until).range, 0)
   }
 

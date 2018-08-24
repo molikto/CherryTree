@@ -710,7 +710,7 @@ class Client(
   ): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
-     // println(update)
+      println(update)
     }
 
     val extra = update.extra match {

@@ -71,11 +71,48 @@ case class DocState(
 
   def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
 
+
   def consistencyCheck(): Unit = {
+
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
     assert(!viewAsHidden(mode0.focus), s"mode hidden $mode0, $zoom")
     assert(!viewAsHidden(mode0.other), s"mode hidden $mode0, $zoom")
+    if (isRich) {
+      val (cur, rich, mo) = asRich
+      def checkAtomicRichRange(a: IntRange) = {
+        val r1 = rich.afters(a.start).next().range
+        val r2 = rich.befores(a.until).next().range
+        assert(r1 == r2 && a == r1)
+      }
+      def checkAtomicTextRichRange(a: IntRange) = {
+        val r1 = rich.afters(a.start).next()
+        val r2 = rich.befores(a.until).next()
+        assert(r1.textRange == r2.textRange && a == r1.textRange)
+      }
+      def ret(mo: model.mode.Content.Rich): Unit = {
+        mo match {
+          case model.mode.Content.RichVisual(a, b) =>
+            assert(a.nonEmpty)
+            assert(b.nonEmpty)
+            checkAtomicRichRange(a)
+            checkAtomicRichRange(b)
+          case model.mode.Content.RichInsert(i) =>
+            assert(i <= rich.size)
+            if (i != 0 && i != rich.size) {
+              assert(rich.before(i).range.until == rich.after(i).range.start)
+            }
+          case model.mode.Content.RichNormal(i) =>
+            checkAtomicRichRange(i)
+          case model.mode.Content.RichCodeSubMode(r, _, o) =>
+            checkAtomicTextRichRange(r)
+            ret(o)
+          case model.mode.Content.RichAttributeSubMode(r, o) =>
+            checkAtomicTextRichRange(r)
+            ret(o)
+        }
+      }
+    }
   }
 
   def folded(a: cursor.Node): Boolean = {
