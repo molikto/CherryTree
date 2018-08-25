@@ -83,7 +83,9 @@ trait FilteringView[P <: Any, T] extends OverlayT[P] {
     available = Seq.empty
     marked = -1
     while (list.childNodes.length > headerSize) {
-      list.removeChild(list.childNodes(headerSize))
+      val item = list.childNodes(headerSize)
+      destroyItem(item.asInstanceOf[HTMLElement])
+      list.removeChild(item)
     }
     term = ""
     search.value = ""

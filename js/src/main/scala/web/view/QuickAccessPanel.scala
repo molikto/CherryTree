@@ -43,6 +43,7 @@ class QuickAccessPanel(client: Client) extends UnselectableView {
       // no changes
     } else {
       val curParents = zoom.indices.map(l => state.node(zoom.take(l))).toArray
+      //val curParents = state.node(zoom).childs.toArray
       parentDiff.update(curParents)
     }
   }

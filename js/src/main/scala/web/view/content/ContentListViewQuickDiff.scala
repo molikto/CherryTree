@@ -17,6 +17,9 @@ class ContentListViewQuickDiff(val list: HTMLElement) extends NodeQuickDiff {
   override def performChange(index: Int, oldData: Node, newData: Node): Unit = {
     val oldView = viewAt(index)
     if (ContentView.matches(newData.content, oldView)) {
+      if (model.debug_view) {
+        println(s"performing incremental change $index")
+      }
       oldView.updateContent(newData.content)
     } else {
       performDelete(index)
@@ -25,10 +28,12 @@ class ContentListViewQuickDiff(val list: HTMLElement) extends NodeQuickDiff {
   }
 
   override def performAdd(i: Int, data: Node): Unit = {
+    if (model.debug_view) println(s"performing add $i")
     list.insertBefore(web.view.doc.contentViewAndHold(data), domAt(i))
   }
 
   override def performDelete(i: Int): Unit = {
+    if (model.debug_view) println(s"performing delete $i")
     val oldView = viewAt(i)
     oldView.destroy()
     web.view.removeFromParent(domAt(i))
