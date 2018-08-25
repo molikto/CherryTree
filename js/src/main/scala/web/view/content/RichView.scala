@@ -21,17 +21,23 @@ import scala.scalajs.js
 object RichView {
   val EvilChar = "\u200B"
 }
+
+
+/**
+  *
+  *
+  *
+  * THE EMPTY INSERT POINT IS EVIL!!!!!! CHECK YOUR CODE IS PREPARED FOR IT!!!
+  *
+  *
+  */
 class RichView(private[content] var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
   override def contentData = model.data.Content.Rich(rich)
   override def contentData_=(c: model.data.Content.Rich): Unit = {
     rich = c.content
   }
   
-  
-
-
   import RichView._
-
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
@@ -237,7 +243,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
                 it += 1 // match atom
               case a: Text.Coded if !h.classList.contains("ct-cg-atom") =>
                 it += 1 // match code node
-                val str = h.childNodes(1).textContent
+                val str = childNodes(h, 1).textContent
                 if (a.content.str != str) {
                   val base = size + 1
                   val (from, to, text) = util.quickDiff(a.content.str, str)
@@ -245,7 +251,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
                 }
               case a: Text.Formatted if a.isDelimited && !h.classList.contains("ct-cg-atom") =>
                 it += 1
-                diffAndSyncContainer(a.asInstanceOf[Text.Formatted].content, h.childNodes(1).childNodes, size + 1)
+                diffAndSyncContainer(a.asInstanceOf[Text.Formatted].content, childNodes(h, 1).childNodes, size + 1)
             }
           case _ =>
             var str = ""
@@ -316,16 +322,35 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   private def nodeOfContainer(a: Node) =  a.parentNode
 
+
+  def normalizeOffset(a: Node, o: Int): Int = {
+    if (extraNode != null && extraNode.parentNode == a) {
+      if (indexOf(extraNode) <= o) {
+        o - 1
+      } else {
+        o
+      }
+    } else {
+      o
+    }
+  }
+
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
+    readOffsetNormalizedIndex(a, normalizeOffset(a, o), isEnd)
+  }
+
+  /**
+    */
+  private def readOffsetNormalizedIndex(a: Node, o: Int, isEnd: Boolean): Int = {
     if (a.parentNode == null) return -1
     val ret = if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
-      if (o == a.childNodes.length) {
-        val cur = cursorOf(a.childNodes(o - 1))
+      if (o >= childNodesLength(a)) {
+        val cur = cursorOf(childNodes(a, o - 1))
         rich.startPosOf(cur) + rich(cur).size
       } else {
-        rich.startPosOf(cursorOf(a.childNodes(o)))
+        rich.startPosOf(cursorOf(childNodes(a, o)))
       }
     } else {
       a match {
@@ -348,9 +373,9 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
           }
         case _ =>
           if (isEnd) {
-            readOffset(a.parentNode, indexOf(a) + 1, isEnd = true)
+            readOffsetNormalizedIndex(a.parentNode, indexOf(a, extraNode) + 1, isEnd = true)
           } else {
-            readOffset(a.parentNode, indexOf(a), isEnd = false)
+            readOffsetNormalizedIndex(a.parentNode, indexOf(a, extraNode), isEnd = false)
           }
       }
     }
@@ -443,6 +468,33 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     rec(t)
   }
 
+
+  private def childNodes(childArray: Node, j: Int): Node = {
+    var c: Node = null
+    if (extraNode == null || extraNode.parentNode != childArray) {
+      c = childArray.childNodes(j)
+    } else {
+      c = childArray.firstChild
+      if (c == extraNode) c = c.nextSibling
+      var i = 0
+      while (i < j) {
+        c = c.nextSibling
+        if (c != extraNode) {
+          i += 1
+        }
+      }
+    }
+    c
+  }
+
+  private def childNodesLength(a: Node) = {
+    if (extraNode == null || extraNode.parentNode != a) {
+      a.childNodes.length
+    } else {
+      a.childNodes.length - 1
+    }
+  }
+
   private[content] def nodeAt(a: Seq[Int]): Node = nodeAt(root, a)
 
   private[content] var extraNode: raw.Text = null
@@ -451,28 +503,15 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     if (a.isEmpty) {
       parent
     } else {
-      var c: Node = null
       val childArray = nodeChildArray(parent)
-      if (extraNode == null || extraNode.parentNode != childArray) {
-        c = childArray.childNodes(a.head)
-      } else {
-        c = childArray.firstChild
-        if (c == extraNode) c = c.nextSibling
-        var i = 0
-        while (i < a.head) {
-          c = c.nextSibling
-          if (c != extraNode) {
-            i += 1
-          }
-        }
-      }
+      val c = childNodes(childArray, a.head)
       nodeAt(c, a.tail)
     }
   }
 
   private[content] def nodeChildArray(parent: Node): Node = {
     if (parent.isInstanceOf[HTMLSpanElement]) {
-      parent.childNodes(1)
+      childNodes(parent, 1)
     } else {
       parent
     }
