@@ -46,6 +46,8 @@ case class DocState(
       zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
   }
 
+  def focus: Node = mode0.focus
+
 
   def breakWhiteSpaceInserts: Boolean = mode.exists(_.breakWhiteSpaceInserts)
 

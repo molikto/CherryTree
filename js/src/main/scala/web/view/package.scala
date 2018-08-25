@@ -112,17 +112,30 @@ package object view {
     p.top <= c.top && p.left <= c.left && p.right >= c.right && p.bottom >= c.bottom
   }
 
-  def scrollInToViewIfNotVisible(c: ClientRect, scroll: HTMLElement): Unit = {
+  def scrollRectInToViewIfNotVisible(
+    c: ClientRect,
+    scroll: HTMLElement,
+    topCut: Int = 0,
+    bottomCut: Int = 0,
+    toTopCut: Int = 0,
+    toBottomCut: Int = 0
+  ): Unit = {
     val p = scroll.getBoundingClientRect()
-    if (c.top < p.top) {
-      scroll.scrollTop = scroll.scrollTop - (p.top - c.top)
-    } else if (c.bottom > p.bottom) {
-      scroll.scrollTop = scroll.scrollTop + ((c.bottom - p.bottom) min (c.top - p.top))
+    if (c.top < p.top + p.height * topCut / 100) {
+      scroll.scrollTop = scroll.scrollTop - (p.top + p.height * toTopCut / 100 - c.top)
+    } else if (c.bottom > p.bottom - p.height * bottomCut / 100) {
+      scroll.scrollTop = scroll.scrollTop + ((c.bottom - p.bottom + p.height * toBottomCut / 100) min (c.top - p.top - p.height * toTopCut / 100))
     }
   }
 
-  def scrollInToViewIfNotVisible(a: HTMLElement, scroll: HTMLElement): Unit = {
-    scrollInToViewIfNotVisible(a.getBoundingClientRect(), scroll)
+  def scrollInToViewIfNotVisible(
+    a: HTMLElement,
+    scroll: HTMLElement,
+    topCut: Int = 0,
+    bottomCut: Int = 0,
+    toTopCut: Int = 0,
+    toBottomCut: Int = 0): Unit = {
+    scrollRectInToViewIfNotVisible(a.getBoundingClientRect(), scroll, topCut, bottomCut, toTopCut, toBottomCut)
   }
 
   def toRect(rect: ClientRect): Rect = {

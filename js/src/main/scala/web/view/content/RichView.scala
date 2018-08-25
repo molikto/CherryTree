@@ -461,8 +461,15 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
 
   private[content] def cursorOf(t: Node): model.cursor.Node = {
     if (model.debug_view) {
-      assert(t.isInstanceOf[raw.Text] || t.asInstanceOf[HTMLElement].classList.contains("ct-cg-node"))
-      assert(isValidContainer(t.parentNode))
+      if (t.isInstanceOf[raw.Text] || t.asInstanceOf[HTMLElement].classList.contains("ct-cg-node")) {
+      } else {
+        window.console.log("cursor of given wrong kind of data", t)
+        assert(false)
+      }
+      if (!isValidContainer(t.parentNode)) {
+        window.console.log("cursor of have wrong parent", t.parentNode)
+        assert(false)
+      }
     }
     def rec(t: Node): Seq[Int] = {
       if (t.parentNode == root) {

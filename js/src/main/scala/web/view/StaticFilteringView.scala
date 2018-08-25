@@ -40,7 +40,8 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
       for (c <- available.zipWithIndex) {
         val child = renderItem(c._1, c._2)
         child.addEventListener("click", onClick)
-        child.classList.add(if (marked == c._2) "ct-menuitem-selected" else "ct-menuitem-not-selected")
+        child.classList.add("ct-flat-selectable")
+        if (marked == c._2) child.classList.add( "ct-highlight")
         list.appendChild(child)
       }
     }
@@ -98,10 +99,8 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
         marked = newIndex
         val old = list.childNodes(oldIndex + headerSize).asInstanceOf[HTMLElement]
         val n = list.childNodes(newIndex + headerSize).asInstanceOf[HTMLElement]
-        old.classList.remove("ct-menuitem-selected")
-        old.classList.add("ct-menuitem-not-selected")
-        n.classList.add("ct-menuitem-selected")
-        n.classList.remove("ct-menuitem-not-selected")
+        old.classList.remove("ct-highlight")
+        n.classList.add("ct-highlight")
         scrollInToViewIfNotVisible(n, list)
       }
     }

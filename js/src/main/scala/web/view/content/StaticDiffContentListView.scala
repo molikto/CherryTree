@@ -21,7 +21,7 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
 
   private var listData: Array[model.data.Node] = Array.empty
 
-  private var headerSize = 0
+  protected var headerSize = 0
   def addHeader(a: HTMLElement)= {
     headerSize += 1
     list.insertBefore(a, list.childNodes(0))
@@ -34,6 +34,8 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
 
 
   override val useFoldedIcon: Boolean = true
+
+  def size: Int = list.childNodes.length - headerSize
 
   protected override def eq(a: Node, b: Node): Boolean = a.content == b.content && a.attributes == b.attributes
 
@@ -63,5 +65,18 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
     val newData = newData0.toArray
     diff(listData, newData)
     listData = newData
+  }
+
+  def updateFocus(uuid: Option[String], list: HTMLElement): Unit = {
+    (0 until size).foreach(i => {
+      val ct = contentViewFromWithHold(domAt(i))
+      val cu = uuidOf(ct)
+      if (uuid.contains(cu)) {
+        web.view.scrollInToViewIfNotVisible(ct.dom, list, 10, 10, 30, 30)
+        ct.dom.classList.add("ct-highlight")
+      } else {
+        ct.dom.classList.remove("ct-highlight")
+      }
+    })
   }
 }

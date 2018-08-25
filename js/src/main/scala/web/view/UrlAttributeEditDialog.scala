@@ -34,7 +34,7 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
     padding := "6px",
     span("URL", `class` := "ct-input-label"),
     div(width := "100%", urlInput),
-    span("title", `class` := "ct-input-label", paddingTop := "12px"),
+    span("title", `class` := "ct-input-label", marginTop := "4px"),
     div(width := "100%", titleInput),
   ).render
 

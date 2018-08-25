@@ -24,4 +24,11 @@ class StaticDiffTocView(onClick: String => Unit) extends StaticDiffContentListVi
   override def update(newData0: Seq[Node]): Unit = {
     super.update(newData0.filter(a => a.isHeading && !a.isH1))
   }
+
+  override def updateFocus(uuid: Option[String], list: HTMLElement): Unit = {
+    super.updateFocus(uuid, list)
+    (0 until size).foreach(i => {
+      web.view.View.fromDom[StaticDiffTocView](extraViewInFrame(domAt(i))).updateFocus(uuid, list)
+    })
+  }
 }

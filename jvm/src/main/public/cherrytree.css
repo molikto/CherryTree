@@ -105,6 +105,16 @@
   font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
   font-size: 95%;
   color: #ccccccaa;
+  text-transform: uppercase;
+}
+
+
+
+.ct-section-label {
+  font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
+  font-size: 1em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .ct-select {
@@ -156,20 +166,6 @@
 }
 
 
-.ct-menuitem-selected {
-  background: #90a2b922;
-}
-
-.ct-menuitem-not-selected {
-}
-
-.ct-menuitem-not-selected:hover {
-  background: #90a2b911;
-}
-
-
-.ct-menuitem-not-selected {
-}
 
 .ct-kbd {
     padding: .2rem .4rem;
@@ -260,6 +256,16 @@
     background: #58617444;
 }
 
+
+.ct-highlight {
+  background: #90a2b922;
+}
+
+.ct-highlight:hover {
+  background: #90a2b922 !important;
+}
+
+
 .ct-flat-disabled {
     opacity: 0.4;
 }
@@ -313,7 +319,7 @@
     width: 18px;
     height: 18px;
     margin-left: 4px;
-    margin-top: 9px;
+    margin-top: 7px;
     background-size: contain;
     background-repeat: no-repeat;
     background-origin: content-box;
@@ -410,7 +416,7 @@
 }
 
 .ct-d-h2 + .ct-d-hold {
-    margin-top: 18px;
+    margin-top: 20px;
 }
 
 .ct-d-h3 > .ct-rich {

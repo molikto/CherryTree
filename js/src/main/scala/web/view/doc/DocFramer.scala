@@ -6,6 +6,7 @@ import _root_.doc.DocTransaction
 import client.Client.ViewMessage
 import model.cursor
 import model.cursor.Node
+import org.scalajs.dom.raw
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all.{tag, _}
 import settings.Settings
@@ -24,9 +25,10 @@ trait DocFramer {
 
   val useFoldedIcon: Boolean = false
 
-  def contentViewFromWithHold(a: HTMLElement): ContentView.General = {
+  def contentViewFromWithHold(a: raw.Node): ContentView.General = {
     View.fromDom[ContentView.General](a.childNodes(0).childNodes(0))
   }
+
 
   def insertExtraToContentView(a: HTMLElement, b: HTMLElement): Unit = {
     val box = a.childNodes(0)
@@ -35,6 +37,10 @@ trait DocFramer {
 
   def extraViewInFrame(a: HTMLElement): HTMLElement = {
     a.childNodes(0).childNodes(1).asInstanceOf[HTMLElement]
+  }
+
+  def uuidOf(a: ContentView.General): String = {
+    a.dom.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String]
   }
 
   private val onClickListener: js.Function1[Event, _] = (ev: Event) => {
@@ -74,7 +80,10 @@ trait DocFramer {
         `class` := classesFromNodeAttribute(node),
         create(node)
       ),
-      tag("i")(`class` := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded" else "ct-d-hold"))
+      tag("span")(
+        `class` := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded" else "ct-d-hold"),
+        if (docFramerIsSmall >= 2) marginLeft := "-8px" else border := "none"
+      )
     ).render
   }
 
