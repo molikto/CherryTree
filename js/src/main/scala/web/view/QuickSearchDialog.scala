@@ -53,7 +53,7 @@ class QuickSearchDialog(val client: Client,
   ).render
 
 
-  def complexTerm(str: String): Boolean = {
+  private def complexTerm(str: String): Boolean = {
     if (str.isEmpty) {
       false
     } else if (str.length <= 1) {
@@ -94,25 +94,18 @@ class QuickSearchDialog(val client: Client,
 
 
   override def destroyItem(a: HTMLElement): Unit = {
-    View.fromDom[ContentView.General](a.childNodes(0).childNodes(0)).destroy()
+    doc.contentViewFromWithHold(a).destroy()
     super.destroyItem(a)
   }
 
   override def renderItem(t: (model.cursor.Node, String), index: Int): HTMLElement = {
     val node = client.state.node(t._1)
-    div(
-      `class` := "ct-menu-item ",
-      display := "flex",
-      flexDirection := "row",
-      div(
-        `class` := doc.classesFromNodeAttribute(node),
-        ContentView.create(node.content).dom
-      ),
-      tag("i")(`class` := "ct-d-hold")
-    ).render
+    val el = doc.contentViewAndHold(node)
+    el.className = "ct-menu-item"
+    el
   }
 
-  override def onSelected(t:  (model.cursor.Node, String)): Unit = {
+  override def onSelected(t: (model.cursor.Node, String)): Unit = {
     var n = t._1
     if (client.state.node(n).uuid != t._2) {
       val find = client.state.lookup(t._2)

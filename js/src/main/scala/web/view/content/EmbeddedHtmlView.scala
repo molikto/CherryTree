@@ -16,14 +16,13 @@ import web.view._
 
 import scala.scalajs.js
 
-class EmbeddedHtmlView(var contentData: model.data.Content.Code
+class EmbeddedHtmlView(initData: model.data.Content.Code
 ) extends StaticCodeView  {
 
   dom = div(contenteditable := "false").render
 
-  updateContent()
 
-  override def updateContent(): Unit = {
+  protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
     try {
       dom.innerHTML = contentData.unicode.str
     } catch {
@@ -32,4 +31,6 @@ class EmbeddedHtmlView(var contentData: model.data.Content.Code
         dom.appendChild(errorInline("embedded HTML error", error).render)
     }
   }
+
+  updateContent(initData)
 }

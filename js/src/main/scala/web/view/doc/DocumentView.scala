@@ -645,7 +645,7 @@ class DocumentView(
     }
   }
 
-  event(rootFrame, "mousedown", (a: MouseEvent) => {
+  event("mousedown", (a: MouseEvent) => {
     editor.flushBeforeMouseDown()
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
@@ -750,7 +750,7 @@ class DocumentView(
     endMouseDown(a, false, true)
   })
 
-  event(rootFrame, "contextmenu", (a: MouseEvent) => {
+  event("contextmenu", (a: MouseEvent) => {
     endMouseDown(a, true, true)
   })
 
@@ -875,23 +875,23 @@ class DocumentView(
     *
     */
 
-  event(rootFrame, "dragstart", (a: DragEvent) => {
+  event("dragstart", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event(rootFrame, "dragend", (a: DragEvent) => {
+  event("dragend", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event(rootFrame, "dragover", (a: DragEvent) => {
+  event("dragover", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event(rootFrame, "dragenter", (a: DragEvent) => {
+  event("dragenter", (a: DragEvent) => {
     preventDefault(a)
   })
 
-  event(rootFrame, "drop", (a: DragEvent) => {
+  event("drop", (a: DragEvent) => {
     preventDefault(a)
   })
 

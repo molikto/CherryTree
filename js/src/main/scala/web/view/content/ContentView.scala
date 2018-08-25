@@ -11,8 +11,8 @@ import web.view.doc.DocumentView
 
 object ContentView {
   type General = ContentView[data.Content, model.operation.Content]
-  type Code = ContentView[data.Content.Code, model.operation.Content.Code]
-  type Rich = ContentView[data.Content.Rich, model.operation.Content.Rich]
+  trait Code extends ContentView[data.Content.Code, model.operation.Content.Code]
+  trait Rich extends ContentView[data.Content.Rich, model.operation.Content.Rich]
 
   def createFromCode(a: data.Content.Code): Code = {
     a.ty match {
@@ -20,6 +20,14 @@ object ContentView {
         new EmbeddedHtmlView(a)
       case _ =>
         new SourceView(a)
+    }
+  }
+
+  def matches(a: data.Content, v: General): Boolean = {
+    a match {
+      case data.Content.Rich(r) => v.isInstanceOf[Rich]
+      case c: data.Content.Code if v.isInstanceOf[Code] => matches(c.ty, v.asInstanceOf[Code])
+      case _ => false
     }
   }
 
@@ -32,7 +40,7 @@ object ContentView {
 
   def create(a: data.Content, editable: Boolean = false): General = {
     (a match {
-      case data.Content.Rich(r) => new RichView(r)
+      case r: data.Content.Rich => new RichView(r)
       case s: data.Content.Code => if (editable) new WrappedCodeView(s) else  createFromCode(s)
     }).asInstanceOf[General]
   }
@@ -42,13 +50,31 @@ trait ContentView[T <: data.Content, O <: model.operation.Content] extends View 
 
   def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General
 
-  var contentData: T
-  def updateContent(c: T, trans: O, viewUpdated: Boolean): Unit = {
-    contentData = c
+  private var contentData_ : T = null.asInstanceOf[T]
+
+  final def contentData: T = contentData_
+
+  protected def setInitialContent(a: T) = contentData_ = a
+
+  final def updateContent(c: T, trans: O, viewUpdated: Boolean): Unit = {
+    contentData_ = c
+    onUpdateContent(c, trans, viewUpdated)
+  }
+
+  final def updateContent(c: T): Unit = {
+    contentData_ = c
+    onUpdateContent(c)
+  }
+
+  protected def onUpdateContent(c: T, trans: O, viewUpdated: Boolean): Unit = {
     if (!viewUpdated) {
-      updateContent()
+      onUpdateContent(c)
     }
   }
 
-  def updateContent()
+
+
+  protected def onUpdateContent(c: T): Unit = {
+
+  }
 }

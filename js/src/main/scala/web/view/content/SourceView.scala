@@ -16,7 +16,7 @@ import web.view._
 import scala.scalajs.js
 
 class SourceView(
-  var contentData: model.data.Content.Code
+  initData: model.data.Content.Code
 ) extends StaticCodeView {
 
   // background := "#304148",
@@ -31,12 +31,8 @@ class SourceView(
     "").render
   dom = div(contenteditable := "false", preCode, remainingView).render
 
-  override def updateContent() {
+  protected override def onUpdateContent(contentData: model.data.Content.Code) {
     removeAllChild(preCode)
-    updateCodeMirror()
-  }
-
-  def updateCodeMirror(): Unit = {
     val lines = contentData.unicode.str.lines
     val look = lines.take(5).toVector
     val remaining = lines.size
@@ -51,7 +47,5 @@ class SourceView(
     }
   }
 
-  updateCodeMirror()
-
-
+  updateContent(initData)
 }

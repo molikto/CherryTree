@@ -93,6 +93,10 @@ abstract class View {
     * ALSO make sure you destroy child dom attachments!!!
     */
   def destroy(): Unit = {
+    if (!attached) {
+      window.console.log(dom_)
+      throw new IllegalStateException("destroying not attached node!")
+    }
     des.reverse.foreach(_.apply())
     dom_.parentNode.removeChild(dom_)
     des = null

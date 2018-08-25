@@ -488,6 +488,14 @@ class Client(
   override def onFocusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
+    state.mode match {
+      case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
+        if (cur == c && ran.isEmpty) {
+          localChange(DocTransaction(state.mode0))
+          return true
+        }
+      case _ =>
+    }
     val mo = state.node(c).content match {
       case c@data.Content.Rich(r) =>
         ran match {

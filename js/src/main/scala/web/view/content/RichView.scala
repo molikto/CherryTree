@@ -31,12 +31,10 @@ object RichView {
   *
   *
   */
-class RichView(private[content] var rich: model.data.Rich) extends ContentView[model.data.Content.Rich, operation.Content.Rich] {
-  override def contentData = model.data.Content.Rich(rich)
-  override def contentData_=(c: model.data.Content.Rich): Unit = {
-    rich = c.content
-  }
-  
+class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
+
+  def rich: Rich = contentData.content
+
   import RichView._
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
@@ -61,6 +59,8 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
   dom = p(`class` := "ct-rich").render
 
+  updateContent(initData)
+
   private[content] def root: HTMLElement = dom
 
   private[content] var previousMode = if (isEmpty) -2 else -1
@@ -79,7 +79,6 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
     }
   }
 
-  initDom()
 
   private[content] def clearDom(): Unit = {
     setPreviousModeToEmpty()
@@ -224,7 +223,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   private[content] def diffForSingleRangeDeleteThenInsert(): Option[operation.Rich] = {
     val bf = new ArrayBuffer[(Int, Int, Unicode)]
     def diffAndSyncContainer(text: Seq[Text], dom: NodeList, i: Int): Unit = {
-      println(text)
+      println(s"diff and sync text $text")
       window.console.log(dom)
       var it = 0
       var id = 0
@@ -605,15 +604,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
 
-  override def updateContent(): Unit = {
+  protected override def onUpdateContent(dat: model.data.Content.Rich): Unit = {
     refreshDom()
   }
-
-  override def updateContent(data: model.data.Content.Rich, c: operation.Content.Rich, viewUpdated: Boolean): Unit = {
-    rich = data.content
-    if (!viewUpdated) {
-      updateContent()
-    }
-  }
-
 }

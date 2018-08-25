@@ -27,11 +27,13 @@ class CodeViewEditor(
 
   private var editing: CoveringSourceEditDialog = null
 
+  private var contentData: model.data.Content.Code = contentView.contentData
+
   def removeEditor(): Unit = {
     if (editing != null) {
       editing.dismiss()
       if (changedInsideEditor) {
-        contentView.updateContent()
+        contentView.updateContent(contentData)
         changedInsideEditor = false
       }
       editing = null
@@ -39,8 +41,7 @@ class CodeViewEditor(
   }
 
   override def updateContent(c: model.data.Content.Code, m: Option[model.mode.Content.Code], trans: model.operation.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
-    contentView.contentData = c
-    contentView.codeView.contentData = c
+    contentData = c
     if (editing == null) {
       contentView.updateContent(c, trans, viewUpdated)
     } else {

@@ -6,6 +6,7 @@ import org.scalajs.dom
 import org.scalajs.dom.raw.{HTMLDivElement, HTMLElement}
 import org.scalajs.dom._
 import _root_.util.Rect
+import scalatags.jsdom.Frag
 
 import scala.scalajs.js
 
@@ -128,5 +129,11 @@ package object view {
     Rect(rect.left, rect.top, rect.width, rect.height)
   }
 
+  implicit def viewToFrag(v: View): Frag = {
+    new Frag {
+      override def render: Node = v.dom
+      override def applyTo(b: dom.Element) = v.attachToNode(b)
+    }
+  }
 
 }

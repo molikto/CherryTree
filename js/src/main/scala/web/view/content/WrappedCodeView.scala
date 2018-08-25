@@ -20,17 +20,18 @@ import scala.scalajs.js
 
 
 class WrappedCodeView(
-  override var contentData: model.data.Content.Code
+  initData: model.data.Content.Code
 ) extends ContentView.Code {
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
+  setInitialContent(initData)
 
-  private[content] var codeView: ContentView.Code = ContentView.createFromCode(contentData)
+  private[content] var codeView: ContentView.Code = ContentView.createFromCode(initData)
 
-  override def updateContent(): Unit = {
+  protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
-      codeView.updateContent()
+      codeView.updateContent(contentData)
     } else {
       codeView.destroy()
       codeView = ContentView.createFromCode(contentData)
@@ -44,9 +45,7 @@ class WrappedCodeView(
     super.destroy()
   }
 
-  override def updateContent(c: model.data.Content.Code, trans: operation.Content.Code, viewUpdated: Boolean): Unit = {
-    codeView.contentData = c
-    contentData = c
+  protected override def onUpdateContent(c: model.data.Content.Code, trans: operation.Content.Code, viewUpdated: Boolean): Unit = {
     if (ContentView.matches(c.ty, codeView)) {
       codeView.updateContent(c, trans, viewUpdated)
     } else {

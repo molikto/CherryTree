@@ -1,7 +1,34 @@
 package web.view
 
+import org.scalajs.dom.raw.HTMLElement
+
+import client.Client
+import _root_.doc.DocTransaction
+import client.Client.ViewMessage
+import model.cursor
+import model.cursor.Node
+import org.scalajs.dom.raw._
+import scalatags.JsDom.all.{tag, _}
+import settings.Settings
+import web.view.content.ContentView
+
 package object doc {
 
+
+  def contentViewFromWithHold(a: HTMLElement): ContentView.General = {
+    View.fromDom[ContentView.General](a.childNodes(0).childNodes(0))
+  }
+  def contentViewAndHold(node: model.data.Node): HTMLElement = {
+    div(
+      display := "flex",
+      flexDirection := "row",
+      div(
+        `class` := doc.classesFromNodeAttribute(node),
+        ContentView.create(node.content)
+      ),
+      tag("i")(`class` := "ct-d-hold")
+    ).render
+  }
 
   def classesFromNodeAttribute(node: model.data.Node): String = {
     "ct-d-box " + (node.attribute(model.data.Node.ContentType).map {

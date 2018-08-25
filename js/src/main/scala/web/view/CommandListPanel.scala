@@ -40,6 +40,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
           div()
         } else {
           div(
+            `class` := "hide-children",
             marginBottom := "8px",
             {
               val h = h4(
