@@ -258,7 +258,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
   }
   private def markUnknownPattern(): Boolean = {
     buffer.append(Part.UnknownPatternMark)
-    true
+    false
   }
 
   private def actAndMarkComplete(c: Command, count: Int, key: Option[KeySeq], char: Option[Unicode], motion: Option[Motion]): Boolean = {
@@ -354,10 +354,11 @@ abstract class CommandHandler extends Settings with CommandInterface {
     }
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
-    val ak = hasExit || res || (enableModal && !state.isRichInsert && (!key.meta && !key.control))
+    val ak = hasExit || res || (enableModal && !state.isRichInsert && !key.meta && !key.control)
     if (!ak && bufferBefore != null) {
       buffer.clear()
       buffer.appendAll(bufferBefore)
+      return false
     } else {
       commandBufferUpdates_.onNext(buffer)
     }

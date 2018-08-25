@@ -2,13 +2,14 @@ package util
 
 trait QuickDiff[T] {
 
-  def diffId(t: T): Any
+  protected def idEq(t: T, b: T): Boolean
+  protected def eq(a: T, b: T): Boolean
 
-  def performChange(index: Int, oldData: T, newData: T)
+  protected def performChange(index: Int, oldData: T, newData: T)
 
-  def performAdd(i: Int, data: T)
+  protected def performAdd(i: Int, data: T)
 
-  def performDelete(i: Int)
+  protected def performDelete(i: Int)
 
   def diff(oldVal: Array[T], newVal: Array[T]) = {
     var start = 0
@@ -17,8 +18,8 @@ trait QuickDiff[T] {
     while (start < newEnd && start < oldEnd && {
       val old = oldVal(start)
       val new_ = newVal(start)
-      val sameId = diffId(old) == diffId(new_)
-      if (sameId && old != new_) {
+      val sameId = idEq(old, new_)
+      if (sameId && !eq(old, new_)) {
         performChange(start, old, new_)
       }
       sameId
@@ -28,8 +29,8 @@ trait QuickDiff[T] {
     while (oldEnd > start && newEnd > start && {
       val old = oldVal(oldEnd - 1)
       val new_ = newVal(newEnd - 1)
-      val sameId = diffId(old) == diffId(new_)
-      if (sameId && old != new_) {
+      val sameId = idEq(old, new_)
+      if (sameId && !eq(old, new_)) {
         performChange(oldEnd - 1, old, new_)
       }
       sameId

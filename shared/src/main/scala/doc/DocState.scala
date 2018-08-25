@@ -1,5 +1,6 @@
 package doc
 
+import client.Client.ViewMessage
 import model.{cursor, data, mode, operation, transaction}
 import model.cursor.Node
 import model.data.{Atom, Rich}
@@ -36,6 +37,13 @@ case class DocState(
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
       zoomAfter = Some(cur).filter(c => mustZoom || !currentlyVisible(c)))
+  }
+
+  def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
+    val noZoom = model.cursor.Node.contains(zoom, n) && !viewAsHidden(n)
+    DocTransaction(Seq.empty,
+      Some(model.mode.Node.Content(n, node(n).content.defaultMode(enableModal))),
+      zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
   }
 
 

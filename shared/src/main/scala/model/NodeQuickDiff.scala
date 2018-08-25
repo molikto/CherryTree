@@ -4,5 +4,5 @@ import model.data.Node
 import util.QuickDiff
 
 trait NodeQuickDiff extends QuickDiff[data.Node] {
-  override def diffId(t: Node): Any = t.uuid
+  protected override def idEq(t: Node, b: Node): Boolean = t.uuid == b.uuid
 }

@@ -23,7 +23,7 @@ class DocumentView(
   private val client: DocInterface,
   override protected val editor: EditorInterface,
   val windowRoot: HTMLElement
-) extends EditorView {
+) extends EditorView with DocFramer {
 
 
   private val rootFrame = div(
@@ -607,7 +607,10 @@ class DocumentView(
   }
 
 
-  def scrollToTop(cur: model.cursor.Node): Unit = contentAt(cur).dom.scrollIntoView(true)
+  def scrollToTop(cur: model.cursor.Node): Unit = {
+    contentAt(cur).dom.scrollIntoView(true)
+    dom.scrollTop  = Math.max(0, dom.scrollTop - 10)
+  }
 
   private var isRightMouseButton: Boolean = false
   private var mouseDown = false

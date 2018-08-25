@@ -9,13 +9,14 @@ import org.scalajs.dom.raw._
 import scalatags.JsDom.all.{tag, _}
 import settings.Settings
 import web.view.content.ContentView
+import web.view.doc.DocFramer
 
 
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
   val coveringElement: HTMLElement
-) extends FilteringView[Boolean, (model.cursor.Node, String)]
-  with UnselectableView with Settings {
+) extends StaticFilteringView[Boolean, (model.cursor.Node, String)]
+  with UnselectableView with Settings with DocFramer {
 
 
   override def show(t: Boolean): Unit = {
@@ -93,16 +94,13 @@ class QuickSearchDialog(val client: Client,
   }
 
 
-  override def destroyItem(a: HTMLElement): Unit = {
-    doc.contentViewFromWithHold(a).destroy()
-    super.destroyItem(a)
-  }
+  override val docFramerIsSmall: Int = 1
 
   override def renderItem(t: (model.cursor.Node, String), index: Int): HTMLElement = {
     val node = client.state.node(t._1)
-    val el = doc.contentViewAndHold(node)
-    el.className = "ct-menu-item"
-    el
+    val ct = contentViewAndHold(node)
+    ct.classList.add("ct-menu-item")
+    ct
   }
 
   override def onSelected(t: (model.cursor.Node, String)): Unit = {
@@ -115,9 +113,6 @@ class QuickSearchDialog(val client: Client,
         return
       }
     }
-    val noZoom = model.cursor.Node.contains(client.state.zoom, n) && !client.state.viewAsHidden(n)
-    client.localChange(DocTransaction(Seq.empty,
-      Some(model.mode.Node.Content(n, client.state.node(n).content.defaultMode(enableModal))),
-      zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty))
+    client.localChange(client.state.zoomTo(n, client.enableModal))
   }
 }

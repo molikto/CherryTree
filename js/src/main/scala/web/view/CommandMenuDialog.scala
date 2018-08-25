@@ -8,7 +8,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import web.view.doc.DocumentView
 
-class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends  FilteringView[OverlayAnchor, command.Command]  with MountedOverlay[OverlayAnchor] {
+class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) extends  StaticFilteringView[OverlayAnchor, command.Command]  with MountedOverlay[OverlayAnchor] {
 
   focusOutDismiss = true
 

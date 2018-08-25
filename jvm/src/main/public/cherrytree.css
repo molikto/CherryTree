@@ -386,12 +386,12 @@
 
 
 .ct-d-h1 > .ct-rich {
-  font-size: 2.5rem;
+  font-size: 2.5em;
   font-weight: 500;
 }
 
 .ct-d-folded > .ct-d-h1 > .ct-rich {
-  font-size: 18px;
+  font-size: 1em;
 }
 
 .ct-d-h1 + .ct-d-hold {
@@ -405,7 +405,7 @@
 }
 
 .ct-d-h2 > .ct-rich  {
-  font-size: 2rem;
+  font-size: 2em;
   font-weight: 500;
 }
 
@@ -414,7 +414,7 @@
 }
 
 .ct-d-h3 > .ct-rich {
-  font-size: 1.75rem;
+  font-size: 1.75em;
   font-weight: 500;
 }
 
@@ -423,7 +423,7 @@
 }
 
 .ct-d-h4 > .ct-rich {
-  font-size: 1.5rem;
+  font-size: 1.5em;
   font-weight: 500;
 }
 
@@ -432,7 +432,7 @@
 }
 
 .ct-d-h5 > .ct-rich {
-  font-size: 1.25rem;
+  font-size: 1.25em;
   font-weight: 500;
 }
 
@@ -441,7 +441,7 @@
 }
 
 .ct-d-h6 > .ct-rich {
-  font-size: 1rem;
+  font-size: 1em;
   font-weight: 500;
 }
 
@@ -449,6 +449,45 @@
     margin-top: 6px;
 }
 
+
+.ct-d-hs1 > .ct-rich {
+  font-size: 1.75em;
+  font-weight: 500;
+}
+
+.ct-d-hs1 + .ct-d-hold {
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48cGF0aCBmaWxsPSIjNTU1Yzc1IiBkPSJNNDQ4IDM2MFYyNGMwLTEzLjMtMTAuNy0yNC0yNC0yNEg5NkM0MyAwIDAgNDMgMCA5NnYzMjBjMCA1MyA0MyA5NiA5NiA5NmgzMjhjMTMuMyAwIDI0LTEwLjcgMjQtMjR2LTE2YzAtNy41LTMuNS0xNC4zLTguOS0xOC43LTQuMi0xNS40LTQuMi01OS4zIDAtNzQuNyA1LjQtNC4zIDguOS0xMS4xIDguOS0xOC42ek0xMjggMTM0YzAtMy4zIDIuNy02IDYtNmgyMTJjMy4zIDAgNiAyLjcgNiA2djIwYzAgMy4zLTIuNyA2LTYgNkgxMzRjLTMuMyAwLTYtMi43LTYtNnYtMjB6bTAgNjRjMC0zLjMgMi43LTYgNi02aDIxMmMzLjMgMCA2IDIuNyA2IDZ2MjBjMCAzLjMtMi43IDYtNiA2SDEzNGMtMy4zIDAtNi0yLjctNi02di0yMHptMjUzLjQgMjUwSDk2Yy0xNy43IDAtMzItMTQuMy0zMi0zMiAwLTE3LjYgMTQuNC0zMiAzMi0zMmgyODUuNGMtMS45IDE3LjEtMS45IDQ2LjkgMCA2NHoiLz48L3N2Zz4= ) /* fas(solid/book) */ !important;
+    padding: 2px;
+
+    margin-top: 16px;
+}
+
+.ct-d-hs2 > .ct-rich {
+  font-size: 1.5em;
+  font-weight: 500;
+}
+
+.ct-d-hs2 + .ct-d-hold {
+    margin-top: 13px;
+}
+
+.ct-d-hs3 > .ct-rich {
+  font-size: 1.25em;
+  font-weight: 500;
+}
+
+.ct-d-hs3 + .ct-d-hold {
+    margin-top: 9px;
+}
+
+.ct-d-hss > .ct-rich {
+  font-size: 1m;
+  font-weight: 500;
+}
+
+.ct-d-hss + .ct-d-hold {
+    margin-top: 6px;
+}
 
 
 

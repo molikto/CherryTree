@@ -10,7 +10,7 @@ import web.view.doc.DocumentView
 
 import scala.scalajs.js
 
-trait FilteringView[P <: Any, T] extends OverlayT[P] {
+trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
 
 
   protected def search: HTMLInputElement
@@ -56,7 +56,7 @@ trait FilteringView[P <: Any, T] extends OverlayT[P] {
     }
   }
 
-  def destroyItem(a: HTMLElement): Unit = {
+  private def destroyItem(a: HTMLElement): Unit = {
     a.removeEventListener("click", onClick)
     a.parentNode.removeChild(a)
   }
@@ -85,7 +85,6 @@ trait FilteringView[P <: Any, T] extends OverlayT[P] {
     while (list.childNodes.length > headerSize) {
       val item = list.childNodes(headerSize)
       destroyItem(item.asInstanceOf[HTMLElement])
-      list.removeChild(item)
     }
     term = ""
     search.value = ""

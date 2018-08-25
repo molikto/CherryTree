@@ -29,10 +29,17 @@ object View {
 
   if (model.debug_view) {
     window.setInterval(() => {
-      for (v <- views) {
+      var i = 0
+      while (i < views.size) {
+        val v = views(i)
         if (v.dom_ != null && v.attached && !document.body.contains(v.dom_) && !v.destroyed) {
-          window.console.log(v.dom)
-          throw new IllegalStateException("View detached but not destroyed")
+          if (v.needsDestroy) {
+            window.console.log(v.dom)
+            throw new IllegalStateException("View detached but not destroyed")
+          }
+          views.remove(i)
+        } else {
+          i += 1
         }
       }
     }, 3000)
@@ -67,14 +74,14 @@ abstract class View {
   }
 
 
-  def attachToNode(a: Node, before: HTMLElement = null) : View = {
+  def attachToNode(a: Node, before: Node = null) : View = {
     if (destroyed) throw new IllegalStateException("Not supported")
     attached = true
     a.insertBefore(dom, before)
     onAttach()
     this
   }
-  def attachTo(a: View, before: HTMLElement = null): View = {
+  def attachTo(a: View, before: Node = null): View = {
     if (destroyed) throw new IllegalStateException("Not supported")
     attached = true
     a.dom.insertBefore(dom, before)
@@ -87,6 +94,8 @@ abstract class View {
   }
 
   def destroyed: Boolean = des == null
+
+  def needsDestroy: Boolean = des != null && des.nonEmpty
 
   /**
     * will also remove from parent

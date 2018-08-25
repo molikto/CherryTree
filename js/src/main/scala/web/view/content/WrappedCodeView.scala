@@ -27,7 +27,7 @@ class WrappedCodeView(
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
   setInitialContent(initData)
 
-  private[content] var codeView: ContentView.Code = ContentView.createFromCode(initData)
+  private var codeView: ContentView.Code = ContentView.createFromCode(initData)
 
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
