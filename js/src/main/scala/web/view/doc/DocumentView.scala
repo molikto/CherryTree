@@ -750,18 +750,6 @@ class DocumentView(
     endMouseDown(a, false, true)
   })
 
-  event(rootFrame, "click", (a: MouseEvent) => {
-    a.target match {
-      case element: HTMLElement if element.className.contains("ct-d-hold") =>
-        clearAllPreviousReading() // if mouseup is before us
-        val ct = contentOfHold(element)
-        endMouseDown(a, false, false)
-        editor.onFocusOn(cursorOf(ct), None, false)
-        showCommandMenu()
-      case _ =>
-    }
-  })
-
   event(rootFrame, "contextmenu", (a: MouseEvent) => {
     endMouseDown(a, true, true)
   })
@@ -858,7 +846,6 @@ class DocumentView(
           case r: RichView =>
             r.readSelectionFromDom()
           case _ => None
-            flushSelection()
             None
         }
         editor.onFocusOn(cur, range, false)

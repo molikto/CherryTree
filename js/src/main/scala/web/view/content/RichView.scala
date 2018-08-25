@@ -336,7 +336,11 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   }
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
-    readOffsetNormalizedIndex(a, normalizeOffset(a, o), isEnd)
+    if (a == extraNode) {
+      readOffsetNormalizedIndex(a.parentNode, indexOf(a), isEnd)
+    } else {
+      readOffsetNormalizedIndex(a, normalizeOffset(a, o), isEnd)
+    }
   }
 
   /**
