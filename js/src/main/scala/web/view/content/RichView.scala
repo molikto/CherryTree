@@ -324,7 +324,7 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
 
 
   def normalizeOffset(a: Node, o: Int): Int = {
-    if (extraNode != null && extraNode.parentNode == a) {
+    if (extraNode != null && extraNode.parentNode == a.parentNode) {
       if (indexOf(extraNode) <= o) {
         o - 1
       } else {
@@ -342,7 +342,10 @@ class RichView(private[content] var rich: model.data.Rich) extends ContentView[m
   /**
     */
   private def readOffsetNormalizedIndex(a: Node, o: Int, isEnd: Boolean): Int = {
-    if (a.parentNode == null) return -1
+    if (a.parentNode == null) {
+      if (model.debug_view) println("what??? empty read offset")
+      return -1
+    }
     val ret = if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
