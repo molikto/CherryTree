@@ -10,7 +10,12 @@ import model.{cursor, mode, operation}
 
 class RichChange extends CommandCategory("rich text: change") {
 
+  trait Command extends super.Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+  }
+
   new Command {
+
     override val description: String = "delete all and go to insert"
     override def defaultKeys: Seq[KeySeq] = Seq("cc", "S")
     override protected def available(a: DocState): Boolean = a.isRichNormal
@@ -51,7 +56,7 @@ class RichChange extends CommandCategory("rich text: change") {
 
 
 
-  new NeedsCharCommand {
+  new NeedsCharCommand with Command {
     override val description: String = "change char under the cursor"
     override def defaultKeys: Seq[KeySeq] = Seq("r") // DIFFERENCE command merged, also not avaliable in visual node mode, only single char accepted now
     override def available(a: DocState): Boolean = a.isRichNormal((_, p) => !p.special)

@@ -14,11 +14,11 @@ class CommandCategory(val name: String) extends Settings {
 
   val commands = new ArrayBuffer[command.Command]()
 
-  abstract class Command extends command.Command {
+  trait Command extends command.Command {
     commands.append(this)
     override def category: String = name
   }
-  abstract class TextualCommand extends Command {
+  trait TextualCommand extends Command {
     override def defaultKeys: Seq[KeySeq] = Seq.empty
   }
 

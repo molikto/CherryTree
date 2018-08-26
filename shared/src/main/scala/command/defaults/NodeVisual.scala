@@ -17,6 +17,7 @@ class NodeVisual extends CommandCategory("node: visual") {
   // gv       gv           start highlighting on previous visual area
 
   new Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "enter/exit node visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("V", Ctrl + "V") // DIFFERENCE merged two command
     override def available(a: DocState): Boolean = a.mode match {
@@ -42,6 +43,7 @@ class NodeVisual extends CommandCategory("node: visual") {
 
 
   new Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNodeVisual
