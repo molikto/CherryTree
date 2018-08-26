@@ -220,17 +220,17 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
   /**
     * the only allowed operation is inserting/deleting plain text in a node (after normalize)
     */
-  private[content] def diffForSingleRangeDeleteThenInsert(): Option[operation.Rich] = {
+  private[content] def diffForPlainDeleteInsert(): Option[operation.Rich] = {
     val bf = new ArrayBuffer[(Int, Int, Unicode)]
-    def diffAndSyncContainer(text: Seq[Text], dom: NodeList, i: Int): Unit = {
+    def diffAndSyncContainer(text: Seq[Text], dom: Node, i: Int): Unit = {
       println(s"diff and sync text $text")
       window.console.log(dom)
       var it = 0
       var id = 0
       var size = i
-      while (it < text.size && id < dom.length) {
+      while (it < text.size && id < childNodesLength(dom)) {
         val t = text(it)
-        val d = dom(id)
+        val d = childNodes(dom, id)
         d match {
           case h: HTMLElement if h.classList.contains("ct-cg-node") =>
             id += 1
@@ -250,13 +250,13 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
                 }
               case a: Text.Formatted if a.isDelimited && !h.classList.contains("ct-cg-atom") =>
                 it += 1
-                diffAndSyncContainer(a.asInstanceOf[Text.Formatted].content, childNodes(h, 1).childNodes, size + 1)
+                diffAndSyncContainer(a.asInstanceOf[Text.Formatted].content, childNodes(h, 1), size + 1)
             }
           case _ =>
             var str = ""
             var cont = true
-            while (cont && id < dom.length) {
-              val d = dom(id)
+            while (cont && id < childNodesLength(dom)) {
+              val d = childNodes(dom, id)
               d match {
                 case h: HTMLElement if h.classList.contains("ct-cg-node") =>
                   cont = false
@@ -288,10 +288,10 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
           throw new Exception("Not handled")
         }
       }
-      if (id < dom.length) {
+      if (id < childNodesLength(dom)) {
         var str = ""
-        while (id < dom.length) {
-          val d = dom(id)
+        while (id < childNodesLength(dom)) {
+          val d = childNodes(dom, id)
           d match {
             case h: HTMLElement if h.classList.contains("ct-cg-node") =>
               throw new Exception("not hanlded")
@@ -304,7 +304,7 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
         bf.append((size, size, Unicode(str))) // a insert
       }
     }
-    diffAndSyncContainer(rich.text, dom.childNodes, 0)
+    diffAndSyncContainer(rich.text, dom, 0)
     if (model.debug_view) {
       println(bf)
     }

@@ -31,7 +31,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
         DocTransaction.empty
       } else {
         def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) => move(content, rr)._1 }
-        DocTransaction(a.copyContentMode(m.copyWithNewFocus(act(m.merged), enableModal)))
+        DocTransaction(a.copyContentMode(m.copyWithNewFocus(act(m.focus), enableModal)))
       }
     }
   }

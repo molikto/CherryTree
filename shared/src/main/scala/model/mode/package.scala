@@ -62,7 +62,7 @@ package object mode {
       override def end: Int = range.until
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
-      assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)))
+      assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)), s"wrong rich visual mode $fix $move")
 
       def collapse(enableModal: Boolean): Rich = if (enableModal) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
 
