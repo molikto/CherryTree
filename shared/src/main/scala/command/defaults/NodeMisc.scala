@@ -96,7 +96,8 @@ class NodeMisc extends CommandCategory("node: misc") {
     }
   }
 
-  new ContentStyleCommand(s"article, heading 1, h1", Some(data.Node.ContentType.Heading(1)))
+  // evil char to affect sorting!
+  new ContentStyleCommand(s"\u200Bheading 1, h1, article", Some(data.Node.ContentType.Heading(1)))
 
   new ContentStyleCommand("cite", Some(data.Node.ContentType.Cite))
 

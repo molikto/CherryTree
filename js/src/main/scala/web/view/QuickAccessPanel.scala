@@ -12,12 +12,13 @@ import web.view.content.{StaticDiffContentListView, StaticDiffTocView}
 
 import scala.concurrent.Future
 
-class QuickAccessPanel(client: Client) extends UnselectableView {
+class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView {
 
   private def onClick(uuid: String): Unit = {
     client.state.lookup(uuid) match {
       case Some(cur) =>
         client.localChange(client.state.zoomTo(cur, client.enableModal))
+        doc().focus()
       case _ =>
     }
   }

@@ -33,8 +33,8 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
     `class` := "ct-card unselectable",
     padding := "6px",
     span("URL", `class` := "ct-input-label"),
-    div(width := "100%", urlInput),
-    span("title", `class` := "ct-input-label", marginTop := "4px"),
+    div(width := "100%", urlInput, marginBottom := "6px"),
+    span("title", `class` := "ct-input-label"),
     div(width := "100%", titleInput),
   ).render
 

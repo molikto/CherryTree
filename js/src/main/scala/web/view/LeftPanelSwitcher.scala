@@ -72,7 +72,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   private def create(): Unit = {
     current = if (active == quickAccess) {
-      new QuickAccessPanel(cl).attachToNode(container)
+      new QuickAccessPanel(cl, doc).attachToNode(container)
     } else if (active == commands) {
       new CommandListPanel(cl, doc).attachToNode(container)
     } else if (active == undoHistory) {
