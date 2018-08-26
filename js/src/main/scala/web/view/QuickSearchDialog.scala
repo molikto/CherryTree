@@ -9,7 +9,7 @@ import org.scalajs.dom.raw._
 import scalatags.JsDom.all.{tag, _}
 import settings.Settings
 import web.view.content.ContentView
-import web.view.doc.DocFramer
+import web.view.doc.{DocFramer, EditorView}
 
 
 class QuickSearchDialog(val client: Client,
@@ -93,6 +93,21 @@ class QuickSearchDialog(val client: Client,
     }
   }
 
+
+  override def onKeyDown(ev: KeyboardEvent): Boolean = {
+    val key = Seq(EditorView.extractKey(ev))
+    if (client.miscCommands.quickSearchDocument.keys.contains(key) && opt) {
+      opt = false
+      update()
+      true
+    } else if (client.miscCommands.quickSearchViewport.keys.contains(key) && !opt) {
+      opt = true
+      update()
+      true
+    } else {
+      false
+    }
+  }
 
   override val docFramerIsSmall: Int = 1
 

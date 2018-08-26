@@ -109,6 +109,8 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
   var focusOutDismiss = false
 
 
+  def onKeyDown(ev: KeyboardEvent): Boolean = false
+
   override def onAttach(): Unit = {
 
     event(search, "input", (ev: Event) => {
@@ -142,17 +144,21 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
           ev.preventDefault()
           mark(-1)
         case _ =>
-          if (term.isEmpty) {
-            val nt = ev.key
-            if (nt.length == 1 && Character.isDigit(nt.charAt(0))) {
-              val n = nt.toInt
-              if (n < available.size) {
-                ev.preventDefault()
-                val command = available(n)
-                dismiss()
-                onSelected(command)
+          if (!onKeyDown(ev)) {
+            if (term.isEmpty) {
+              val nt = ev.key
+              if (nt.length == 1 && Character.isDigit(nt.charAt(0))) {
+                val n = nt.toInt
+                if (n < available.size) {
+                  ev.preventDefault()
+                  val command = available(n)
+                  dismiss()
+                  onSelected(command)
+                }
               }
             }
+          } else {
+            ev.preventDefault()
           }
       }
     })

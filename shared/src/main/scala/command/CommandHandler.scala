@@ -21,7 +21,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
   self: Client =>
 
 
-  private val miscCommands = new defaults.Misc(this)
+  val miscCommands = new defaults.Misc(this)
 
   private val defaultCategories =  Seq(
     miscCommands,
@@ -44,6 +44,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.Scroll(),
   )
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
+
 
   private val insertModeCommands = commands.filter(_.emptyAsFalseInInsertMode)
 

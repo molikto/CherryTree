@@ -12,6 +12,14 @@ import scala.scalajs.js
 
 object EditorView {
 
+  def extractKey(event: KeyboardEvent): Key = {
+    var key = KeyMap.get(event.key).orNull
+    if (key == null) {
+      key = Key.Grapheme(model.data.Unicode(event.key))
+    }
+    if (key == null) key = Key.Unknown(event.key)
+    Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
+  }
 }
 trait EditorView extends View {
 
@@ -63,7 +71,7 @@ trait EditorView extends View {
 
   protected var hasShift = false
 
-  def systemHandleArrowKey: Boolean
+  def systemHandleArrowKey: Boolean = false
 
   override def onAttach(): Unit = {
     super.onAttach()
@@ -71,17 +79,12 @@ trait EditorView extends View {
       if (!event.asInstanceOf[js.Dynamic].isComposing.asInstanceOf[Boolean]) {
         flushBeforeKeyDown()
         hasShift = event.keyCode == 16
-        var key = KeyMap.get(event.key).orNull
-        val isArrow = key == Key.Up || key == Key.Down
+        val kk = EditorView.extractKey(event)
+        val isArrow = kk.a == Key.Up || kk.a == Key.Down
         if (systemHandleArrowKey && isArrow) {
           postFlushSelectionOnArrowKey()
         } else {
-          if (key == null) {
-            key = Key.Grapheme(model.data.Unicode(event.key))
-          }
-          if (key == null) key = Key.Unknown(event.key)
-          val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-          if (!key.isInstanceOf[Key.Modifier]) {
+          if (!kk.a.isInstanceOf[Key.Modifier]) {
             if (editor.onKeyDown(kk)) preventDefault(event)
           }
         }
