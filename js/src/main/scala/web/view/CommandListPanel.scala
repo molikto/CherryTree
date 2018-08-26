@@ -70,9 +70,10 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                   paddingTop := "5px",
                   paddingBottom := "5px",
                   Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
+                  if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double"), " ") else Seq.empty[Frag] : Frag,
                   c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
-                  Some(span(tag("kbd")(`class` := "ct-kbd2", "char"), " ")).filter(_ => c.needsChar),
-                  Some(span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ")).filter(_ => c.needsMotion),
+                  if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ") else Seq.empty[Frag] : Frag,
                   c.description)
               ).render
               dom.asInstanceOf[js.Dynamic].command = c.asInstanceOf[scala.scalajs.js.Any]

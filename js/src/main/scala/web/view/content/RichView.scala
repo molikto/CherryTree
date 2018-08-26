@@ -224,8 +224,8 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
   private def nodeOfContainer(a: Node) =  a.parentNode
 
 
-  def normalizeOffset(a: Node, o: Int): Int = {
-    if (extraNode != null && extraNode.parentNode == a.parentNode) {
+  private def normalizeOffset(parentNode: Node, o: Int): Int = {
+    if (extraNode != null && extraNode.parentNode == parentNode) {
       if (indexOf(extraNode) <= o) {
         o - 1
       } else {

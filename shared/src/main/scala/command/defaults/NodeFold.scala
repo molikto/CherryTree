@@ -12,7 +12,7 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
     override def defaultKeys: Seq[KeySeq] = Seq(Key.Enter)
 
 
-    override def priority: Int = 1
+    override def priority: Int = 0
 
     override protected def available(a: DocState): Boolean = a.isContent
 

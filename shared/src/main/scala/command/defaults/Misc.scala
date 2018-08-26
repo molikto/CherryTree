@@ -147,7 +147,6 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
       rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute) && a.textRange.contains(t.range))
     })
-    override def actDoubleClick: Boolean = !enableModal
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, t0) = a.asRichAtom

@@ -95,15 +95,15 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
 
 
-    override def priority: Int = 0
+    override def priority: Int = 1
 
     override def available(a: DocState): Boolean = super.available(a)
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
-      if (node != a.zoom && insert.pos == rich.size) {
+      if (insert.pos == rich.size) {
         val mover = a.mover()
-        val n = mover.firstChild(node).getOrElse(mover.nextOver(node))
+        val n = mover.firstChild(node).getOrElse(if (node == a.zoom) node :+ 0 else mover.nextOver(node))
         DocTransaction(
           Seq(operation.Node.Insert(n, Seq(model.data.Node.create())))
           , Some(model.mode.Node.Content(n, model.mode.Content.RichInsert(0))))
