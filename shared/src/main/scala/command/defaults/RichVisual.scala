@@ -12,6 +12,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
 
 
   new OverrideCommand {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "select all"
     override val hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "a")
     override def available(a: DocState): Boolean = a.isRich
@@ -29,6 +30,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
   }
 
   new Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "enter/exit text visual mode"
     override val defaultKeys: Seq[KeySeq] = Seq("v")
     override def available(a: DocState): Boolean = a.isNonEmptyRich
@@ -49,6 +51,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
   }
 
   new Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isRichVisual
