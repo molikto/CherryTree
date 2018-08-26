@@ -156,7 +156,10 @@ class DocumentView(
     if (isFocusedOut) {
       isFocusedOut = false
       dom.classList.remove("ct-window-inactive")
-      dom.focus()
+      if (model.debug_scroll) {
+        println("focusing on document")
+      }
+      // setting the selection is enough to get focus
       flushSelection()
     }
   }
@@ -192,6 +195,9 @@ class DocumentView(
       sel.addRange(currentSelection)
       if (dom.scrollTop != oldTop) {
         dom.scrollTop = oldTop
+        if (model.debug_scroll) {
+          window.console.log("resetting scroll by selection change", dom.scrollTop, oldTop)
+        }
       }
     }
   }
@@ -295,7 +301,7 @@ class DocumentView(
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
   private var previousNodeMove: HTMLElement = null
 
-  private def updateNodeVisual(v: model.mode.Node.Visual): Unit = {
+  private def updateNodeVisual(v: model.mode.Node.Visual, fromUser: Boolean): Unit = {
     val newVisual = new ArrayBuffer[Element]()
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
@@ -312,7 +318,7 @@ class DocumentView(
       if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
       previousNodeMove = newMove
       previousNodeMove.classList.add("ct-node-visual-move")
-      if (mouseSecondContent == null) { // don't scroll for mouse
+      if (fromUser && mouseSecondContent == null) { // don't scroll for mouse
         if (v.move == currentZoom) {
           scrollToTop()
         } else {
@@ -474,7 +480,7 @@ class DocumentView(
           allowCompositionInput = false
           removeActiveContentEditor()
           endSelection()
-          updateNodeVisual(v)
+          updateNodeVisual(v, fromUser)
       }
     }
     duringStateUpdate = false
