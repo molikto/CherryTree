@@ -11,7 +11,7 @@ import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.view.doc.DocumentView
+import web.view.doc.{AbstractDocumentView, DocumentView}
 import web.view.{EmptyStr, removeAllChild, theme}
 import web.view._
 
@@ -23,7 +23,7 @@ class WrappedCodeView(
   initData: model.data.Content.Code
 ) extends ContentView.Code {
 
-  override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
+  override def createEditor(documentView: AbstractDocumentView, controller: EditorInterface): ContentViewEditor.General =
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
   setInitialContent(initData)
 

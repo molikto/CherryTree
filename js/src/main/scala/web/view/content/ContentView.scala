@@ -6,7 +6,7 @@ import util.Rect
 import view.EditorInterface
 import web.view.View
 import web.view.content.ContentViewEditor.General
-import web.view.doc.DocumentView
+import web.view.doc.{AbstractDocumentView, DocumentView}
 
 
 object ContentView {
@@ -51,7 +51,7 @@ object ContentView {
 
 trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
 
-  def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General
+  def createEditor(documentView: AbstractDocumentView, controller: EditorInterface): ContentViewEditor.General
 
   def tempEditableTempDuringSelectionChange(editable: Boolean): Unit = {}
 

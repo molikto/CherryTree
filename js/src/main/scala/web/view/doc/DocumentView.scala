@@ -21,9 +21,8 @@ import scala.scalajs.js
 
 class DocumentView(
   private val client: DocInterface,
-  override protected val editor: EditorInterface,
-  val windowRoot: HTMLElement
-) extends EditorView with DocFramer {
+  override protected val editor: EditorInterface
+) extends AbstractDocumentView with EditorView with DocFramer {
 
 
   private val rootFrame = div(
@@ -609,10 +608,6 @@ class DocumentView(
 
 
 
-  var sourceEditor: CoveringSourceEditDialog = null
-  var commandMenu: CommandMenuDialog = null
-  var attributeEditor: UrlAttributeEditDialog = null
-  var inlineEditor : InlineCodeDialog = null
 
 
 

@@ -11,7 +11,7 @@ import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.view.doc.DocumentView
+import web.view.doc.{AbstractDocumentView, DocumentView}
 import web.view.{EmptyStr, removeAllChild, theme}
 import web.view._
 
@@ -19,7 +19,7 @@ import scala.scalajs.js
 
 
 class CodeViewEditor(
-  val documentView: DocumentView,
+  val documentView: AbstractDocumentView,
   val controller: EditorInterface,
   override val contentView: WrappedCodeView)
   extends ContentViewEditor[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code](contentView) {
