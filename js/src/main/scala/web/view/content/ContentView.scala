@@ -40,7 +40,10 @@ object ContentView {
 
   def create(a: data.Content, editable: Boolean = false): General = {
     (a match {
-      case r: data.Content.Rich => new RichView(r)
+      case r: data.Content.Rich =>
+        val v = new RichView(r)
+        if (editable) v.dom.style.cursor = "text"
+        v
       case s: data.Content.Code => if (editable) new WrappedCodeView(s) else  createFromCode(s)
     }).asInstanceOf[General]
   }

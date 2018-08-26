@@ -54,6 +54,18 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   private var previousFocus: Option[String] = None
   private var previousNearestHeading: Option[String] = None
 
+
+  /**
+    * will also remove from parent
+    * ALSO make sure you destroy child dom attachments!!!
+    */
+  override def destroy(): Unit = {
+    if (scheduledUpdate != -1) {
+      window.clearTimeout(scheduledUpdate)
+    }
+    super.destroy()
+  }
+
   def renderState(emptyDataChange: Boolean): Unit = {
     val zoom = state.zoom
     val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading)
