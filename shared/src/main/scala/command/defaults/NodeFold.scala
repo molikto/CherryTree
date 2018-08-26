@@ -11,6 +11,9 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
     override val description: String = "zoom into node"
     override def defaultKeys: Seq[KeySeq] = Seq(Key.Enter)
 
+
+    override def priority: Int = 1
+
     override protected def available(a: DocState): Boolean = a.isContent
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
