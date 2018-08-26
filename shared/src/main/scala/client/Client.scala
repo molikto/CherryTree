@@ -540,44 +540,25 @@ class Client(
     localChange(DocTransaction(model.mode.Node.Visual(mouseFirstContent, node)))
   }
 
-
   override def onDeleteCurrentSelectionAndStartInsert(): Unit = {
     localChange(state.mode match {
-      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
-        command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true)
+      case Some(model.mode.Node.Content(pos, rich: model.mode.Content.Rich)) =>
+        rich match {
+          case v: model.mode.Content.RichVisual =>
+            command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true)
+          case a => DocTransaction(state.copyContentMode(model.mode.Content.RichInsert(a.focus.start)))
+        }
       case _ => throw new IllegalArgumentException("Invalid command")
     })
   }
 
-  override def onRichTextChange(ope: Rich, positionBefore: Int): Unit = {
-    import model._
-    state.mode match {
-      case Some(mode.Node.Content(cur, md: mode.Content.Rich)) =>
-        val rich = state.node(cur).rich
-        val op = model.operation.Node.rich(cur, ope)
-        val after = ope(rich)
-        val (aft, _) = ope.transformRich(rich, mode.Content.RichInsert(if (positionBefore >= 0) positionBefore else md.end), enableModal)
-        if (model.debug_selection) {
-          println("rich text change to selection ", aft)
-        }
-        val pos = aft.end
-        val mdAfter = md match {
-          case _: mode.Content.RichInsert => mode.Content.RichInsert(pos)
-          case _ => if (enableModal) mode.Content.RichNormal(after.rangeBefore(pos)) else mode.Content.RichInsert(pos)
-        }
-        localChange(DocTransaction(Seq(op), Some(state.copyContentMode(mdAfter))))
-      case _ =>
-        throw new IllegalStateException("Not allowed")
-    }
-  }
-
-  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int): Unit = {
+  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, backToNormal: Boolean, domInsertion: Int): model.mode.Content.Rich = {
     import model._
     state.mode match {
       case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
         val before = state.node(cur).rich
         val afterSize = before.size + (end - start) + unicode.size
-        val m = if (rich.isInstanceOf[mode.Content.RichInsert]) {
+        val m = if (rich.isInstanceOf[mode.Content.RichInsert] && !backToNormal) {
           if (domInsertion >= 0 && domInsertion <= afterSize) {
             mode.Content.RichInsert(domInsertion)
           } else {
@@ -619,7 +600,8 @@ class Client(
         localChange(
           DocTransaction(Seq(operation.Node.rich(cur, operation.Rich.replacePlain(start, end, unicode))),
             Some(state.copyContentMode(m)),
-            viewUpdated = true))
+            viewUpdated = true, editorUpdated = true))
+        m
       case _ => throw new IllegalStateException("Not supported")
     }
 

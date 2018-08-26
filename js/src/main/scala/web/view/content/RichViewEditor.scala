@@ -191,65 +191,48 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       inputType == "insertFromComposition"
   }
 
-  private def isOtherInputType(inputType: String) = {
+  private def isReplacementInputType(inputType: String) = {
     inputType == "insertReplacementText"
   }
 
   private def allowInputType(inputType: String) = {
-    isSimpleInputType(inputType) || isOtherInputType(inputType)
+    isSimpleInputType(inputType) || isReplacementInputType(inputType)
   }
 
   // node, before
   private var pendingFlush = false
-  private var isComplexInput = false
-  private var affectPosBeforeInput = -1
-
-  def tryDeleteCurrentSelectionAndGoToInsert(): Unit = {
-    if (pmode.isInstanceOf[RichVisual]) {
-      if (model.debug_view) {
-        println("deleting selected range because start dictation")
-      }
-      controller.onDeleteCurrentSelectionAndStartInsert()
-    }
-  }
+  private var goBackToNormalAfterFlush = false
+  private var domModifiedInBeforeEvent = false
 
   override def beforeInputEvent(a: Event): Unit = {
-    val ev = a.asInstanceOf[js.Dynamic]
-    val inputType = ev.inputType.asInstanceOf[String]
-    if (isSimpleInputType(inputType)) {
-      isComplexInput = !isInserting
-    } else if (isOtherInputType(inputType)) {
-      isComplexInput = true
-      val ranges = ev.getTargetRanges().asInstanceOf[js.Array[js.Dynamic]]
-      val range = ranges(ranges.length - 1)
-      val endNode = range.endContainer.asInstanceOf[raw.Node]
-      val endOffset = range.endOffset.asInstanceOf[Int]
-      if (endNode.isInstanceOf[raw.Text]) {
-        affectPosBeforeInput = readOffset(endNode, endOffset, true)
-      } else {
-        affectPosBeforeInput = -1
-      }
-      if (model.debug_view) {
-        window.console.log(a, ev.getTargetRanges(), affectPosBeforeInput)
-      }
-    } else if (!isCompositionInputType(inputType)) {
-      window.console.log("unknown input event", a)
-      if (a.cancelable) {
-        a.preventDefault()
-      }
+    if (previousMode == 2 || previousMode == 3) {
+      // don't allow input in normal mode
+      a.preventDefault()
     } else {
-      tryDeleteCurrentSelectionAndGoToInsert()
+      pendingFlush = true
+      goBackToNormalAfterFlush = previousMode == 1 && controller.enableModal
+      domModifiedInBeforeEvent = previousMode == 1
+      if (domModifiedInBeforeEvent) {
+        controller.onDeleteCurrentSelectionAndStartInsert()
+      }
     }
   }
 
 
+  override def compositionEndEvent(): Unit = {
+    pendingFlush = true
+    controller.flush()
+  }
+
   override def inputEvent(a: Event): Unit = {
-    val ev = a.asInstanceOf[js.Dynamic]
-    val inputType = ev.inputType.asInstanceOf[String]
-    if (allowInputType(inputType)) {
-      pendingFlush = true
-      controller.flush()
-    } else if (!isCompositionInputType(inputType)) {
+    if (pendingFlush) {
+      if (!isCompositionInputType(a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String])) {
+        controller.flush()
+        assert(!pendingFlush)
+      } else {
+        pendingFlush = false
+      }
+    } else {
       refreshDom()
     }
   }
@@ -275,72 +258,51 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     center.textContent
   }
 
-  private def flushComplex(): Unit = {
-    diffForPlainDeleteInsert().foreach(c => controller.onRichTextChange(c, affectPosBeforeInput))
-  }
+  override def flush(): Unit = {
+    if (!pendingFlush) return
 
-  private def flushSimple(): Unit = {
+    pendingFlush = false
+
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode
-      if (node.parentNode == null) {
-        flushComplex()
+      val tc = node.textContent
+      assert(tc.startsWith(RichView.EvilChar))
+      assert(tc.endsWith(RichView.EvilChar))
+      val str = tc.substring(1, tc.length - 1)
+      if (str.length > 0) {
+        node.textContent = str
+        insertNonEmptyTextNode = (node, str, pos)
         insertEmptyTextNode = null
-      } else {
-        val tc = node.textContent
-        assert(tc.startsWith(RichView.EvilChar))
-        assert(tc.endsWith(RichView.EvilChar))
-        val str = tc.substring(1, tc.length - 1)
-        if (str.length > 0) {
-          node.textContent = str
-          insertNonEmptyTextNode = (node, str, pos)
-          insertEmptyTextNode = null
-          extraNode = null
-          controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), -1)
-        }
+        extraNode = null
+        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), goBackToNormalAfterFlush, -1)
+      } else if (goBackToNormalAfterFlush) {
+        removeInsertEmptyTextNode()
       }
     } else if (insertNonEmptyTextNode != null) {
       val (node, oldContent, pos) = insertNonEmptyTextNode
-      if (node.parentNode == null) {
-        insertNonEmptyTextNode = null
-        flushComplex()
-      } else {
-        val newContent = mergeTextsFix(node)
-        val (from, to, text) = util.quickDiff(oldContent, newContent)
-        val insertionPoint = readPlainInsertionPointBeforeFlush()
-        if (from != to || !text.isEmpty) {
-          if (model.debug_view) {
-            //          window.console.log(node)
-            //          window.console.log(node.parentNode)
-            //          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
-          }
-          insertNonEmptyTextNode = (node, newContent, pos)
-          controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), insertionPoint)
-          if (!isInserting) insertNonEmptyTextNode = null
+      val newContent = mergeTextsFix(node)
+      val (from, to, text) = util.quickDiff(oldContent, newContent)
+      val insertionPoint = if (domModifiedInBeforeEvent) -1 else readPlainInsertionPointBeforeFlush()
+      if (from != to || !text.isEmpty) {
+        if (model.debug_view) {
+          //          window.console.log(node)
+          //          window.console.log(node.parentNode)
+          //          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
+        }
+        insertNonEmptyTextNode = (node, newContent, pos)
+        val mode = controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), goBackToNormalAfterFlush, insertionPoint)
+        mode match {
+          case model.mode.Content.RichInsert(i) if insertionPoint == i =>
+          case _ =>
+            updateMode(mode, false, false, false)
         }
       }
-    }
-  }
-
-  /**
-    *
-    * mode rendering
-    *
-    * in mode rendering we always assume the content is rendered correctly
-    *
-    *
-    */
-
-  override def flush(): Unit = {
-    if (pendingFlush) {
-      pendingFlush = false
-      if (isComplexInput) {
-        flushComplex()
-        isComplexInput = false
-      } else {
-        flushSimple()
+      if (goBackToNormalAfterFlush) {
+        insertNonEmptyTextNode = null
       }
     }
   }
+
 
   private def clearInsertionMode(): Unit = {
     documentView.endSelection()

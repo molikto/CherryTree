@@ -71,54 +71,63 @@ class DocumentView(
   ).render
 
   private def cancelNoEditableInput(): Any = {
-    window.setTimeout(() => {
-      if (model.debug_view) println("cancelled illegal input")
-      noEditable.textContent = RichView.EvilChar
-      if (currentSelection == nonEditableSelection) {
-        val sel = window.getSelection()
-        if (sel.anchorNode != nonEditableSelection.startContainer) {
-          sel.removeAllRanges()
-          sel.addRange(nonEditableSelection)
-        }
-      }
-    }, 100)
+    noEditable.textContent = RichView.EvilChar
+    val sel = window.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(nonEditableSelection)
   }
 
+  private var duringValidComposition = false
+
   event("compositionstart", (a: CompositionEvent) => {
-    if (a.target == noEditable) cancelNoEditableInput()
     flushBeforeKeyDown()
-    if (isInserting) editor.disableRemoteStateUpdate(true, false)
-    else preventDefault(a)
+    if (a.target == noEditable) {
+    } else {
+      if (allowCompositionInput) {
+        editor.onDeleteCurrentSelectionAndStartInsert()
+        editor.disableRemoteStateUpdate(true, false)
+        duringValidComposition = true
+      } else {
+        a.preventDefault()
+        duringValidComposition = false
+      }
+    }
   })
 
   event("compositionupdate", (a: CompositionEvent) => {
-    if (a.target == noEditable) cancelNoEditableInput()
     flushBeforeKeyDown()
-    if (!isInserting) preventDefault(a)
+    if (duringValidComposition) editor.disableRemoteStateUpdate(true, false)
   })
 
   event("compositionend", (a: CompositionEvent) => {
-    if (a.target == noEditable) cancelNoEditableInput()
     flushBeforeKeyDown()
-    // LATER Note that while every composition only has one compositionstart event, it may have several compositionend events.
-    if (isInserting) editor.disableRemoteStateUpdate(false, false)
-    else preventDefault(a)
+    if (duringValidComposition) editor.disableRemoteStateUpdate(false, false)
+    duringValidComposition = false
+    if (activeContent != null) {
+      activeContentEditor.compositionEndEvent()
+    }
   })
 
   event("beforeinput", (a: Event) => {
     flushBeforeKeyDown()
-    if (currentSelection == nonEditableSelection) {
-      cancelNoEditableInput()
-    }
-    if (activeContent != null) {
-      activeContentEditor.beforeInputEvent(a)
+    if (a.target == noEditable) {
+    } else {
+      //window.console.log("before input ", a)
+      if (activeContent != null) {
+        activeContentEditor.beforeInputEvent(a)
+      }
     }
   })
 
   event("input", (a: Event) => {
     flushBeforeKeyDown()
-    if (activeContent != null) {
-      activeContentEditor.inputEvent(a)
+    if (a.target == noEditable) {
+      cancelNoEditableInput()
+    } else {
+      //window.console.log("input ", a)
+      if (activeContent != null) {
+        activeContentEditor.inputEvent(a)
+      }
     }
   })
 
@@ -437,19 +446,23 @@ class DocumentView(
   def simulateKeyboardMotion(isUp: Boolean): Unit = {
   }
 
-  var isInserting = false
+  var allowCompositionInput = false
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true
     m match {
       case None =>
-        isInserting = false
+        allowCompositionInput = false
         removeActiveContentEditor()
         endSelection()
         clearNodeVisual()
       case Some(mk) => mk match {
         case model.mode.Node.Content(at, aa) =>
-          isInserting = aa.isInstanceOf[RichInsert]
+          allowCompositionInput = aa match {
+            case _: model.mode.Content.RichInsert => true
+            case _: model.mode.Content.RichVisual => true
+            case _ => false
+          }
           clearNodeVisual()
           val current = contentAt(at)
           if (current != activeContent) {
@@ -458,7 +471,7 @@ class DocumentView(
           }
           activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
         case v@model.mode.Node.Visual(_, _) =>
-          isInserting = false
+          allowCompositionInput = false
           removeActiveContentEditor()
           endSelection()
           updateNodeVisual(v)

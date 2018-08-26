@@ -3,7 +3,7 @@ package view
 import command.Key
 import doc.DocTransaction
 import model.cursor.Node
-import model.{cursor, operation}
+import model.{cursor, mode, operation}
 import model.data.{CodeType, Unicode}
 import model.mode.Content.CodeInside
 import model.range.IntRange
@@ -20,8 +20,7 @@ trait SourceEditInterface {
 }
 
 trait RichEditInterface {
-  def onRichTextChange(ope: operation.Rich, positionBefore: Int): Unit
-  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int)
+  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int): mode.Content.Rich
   def onAttributeModified(url: Unicode, title: Unicode)
   def onExternalPasteInRichEditor(a: Unicode)
   def onDeleteCurrentSelectionAndStartInsert(): Unit
