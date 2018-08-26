@@ -1,9 +1,9 @@
-package web.ui.panels
+package web.ui.panel
 
 import client.Client
 import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all.{a, _}
-import web.view.{UnselectableView, View, indexOf, theme}
+import web.view.{UnselectableView, View, indexOf}
 
 class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean => Unit) extends UnselectableView {
 
@@ -94,7 +94,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   dom = div(
     flex := "0 0 auto",
-    background := theme.bottomBarBackground,
+    `class` := "ct-panel",
     minWidth := minWidthOpen,
     width := "350px",
     height := "100%",

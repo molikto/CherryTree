@@ -1,17 +1,11 @@
-package web.ui.content
+package web.ui.dialog
 
 import model.NodeQuickDiff
-import model.data.{Content, Node}
+import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
-import web.view.View
-import client.Client
-import command.{Command, Key}
 import scalatags.JsDom.all._
-import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 import web.ui.doc.DocFramer
-
-import scala.collection.mutable.ArrayBuffer
-import scala.scalajs.js
+import web.view.View
 
 
 class StaticDiffContentListView(override val onClick: String => Unit) extends View with NodeQuickDiff with DocFramer {

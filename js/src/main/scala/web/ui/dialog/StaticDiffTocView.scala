@@ -1,8 +1,7 @@
-package web.ui.content
+package web.ui.dialog
 
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
-import web.view.View
 
 class StaticDiffTocView(onClick: String => Unit) extends StaticDiffContentListView(onClick) {
 

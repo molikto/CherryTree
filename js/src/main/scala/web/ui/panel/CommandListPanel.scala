@@ -1,4 +1,4 @@
-package web.ui.panels
+package web.ui.panel
 
 import client.Client
 import command.{Command, Key}

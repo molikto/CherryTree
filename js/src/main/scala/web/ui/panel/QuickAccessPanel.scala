@@ -1,9 +1,10 @@
-package web.ui.panels
+package web.ui.panel
 
 import client.Client
 import org.scalajs.dom._
 import scalatags.JsDom.all._
-import web.ui.content.{StaticDiffContentListView, StaticDiffTocView}
+import web.ui.content.StaticDiffTocView
+import web.ui.dialog.{StaticDiffContentListView, StaticDiffTocView}
 import web.view.{UnselectableView, View}
 
 class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView {

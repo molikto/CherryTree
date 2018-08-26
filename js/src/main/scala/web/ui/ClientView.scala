@@ -9,7 +9,7 @@ import scalatags.JsDom.all._
 import web.ui.dialog._
 import web.view.{OverlayLayer, View}
 import web.ui.doc.{DocumentView, DocumentView2, EditorView}
-import web.ui.panels.LeftPanelSwitcher
+import web.ui.panel.LeftPanelSwitcher
 
 import scala.scalajs._
 
