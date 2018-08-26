@@ -11,8 +11,14 @@ import model.{cursor, operation}
 class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
 
 
+  trait Command extends super.Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+  }
+
   // DIFFERENCE: currently not repeatable
   new Command {
+
+
     override val description: String = "open a line bellow"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isContent
