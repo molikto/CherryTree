@@ -14,7 +14,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   trait RichInsertCommand extends Command {
     override def available(a: DocState): Boolean = a.isRichInsert
-    override def priority: Int = 10
+    override def priority(key: KeySeq): Int = 2
   }
 
   trait EditCommand extends RichInsertCommand  {
@@ -93,9 +93,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
     override val description: String = "open a new sibling if at text end"
     // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
-
-
-    override def priority: Int = 1
+    override def priority(key: KeySeq): Int = 1
 
     override def available(a: DocState): Boolean = super.available(a)
 

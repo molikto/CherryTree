@@ -108,7 +108,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "edit link/image attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
-    override def priority: Int = 2
+    override def priority(key: KeySeq): Int = 2
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       rich.insideUrlAttributed(t.range.until).nonEmpty
     })
@@ -123,7 +123,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   new Command {
     override val description: String = "edit source code"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
-    override def priority: Int = 2
+    override def priority(key: KeySeq): Int = 2
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       t.text.isCodedAtomic
     }) || a.isCodeNormal

@@ -121,7 +121,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
       var exacts = ac.filter(_.keys.contains(kk))
       if (exacts.size > 1) {
         // different settings of key might override depending on how the key is set
-        val sorted = exacts.map(a => (a, a.keyLevel(kk))).sortBy(-_._2)
+        val sorted = exacts.map(a => (a, a.priority(kk))).sortBy(-_._2)
         if (sorted(1)._2 == sorted.head._2) {
           errors_.update(Some(new Exception(s"Multiple commands with same key ${sorted.map(_._1.description)}")))
         }
@@ -282,7 +282,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
 
   def onDoubleClick(): Unit = {
-    val avs = commands.filter(c => c.actDoubleClick && c.available(state, this)).sortBy(-_.priority)
+    val avs = commands.filter(c => c.actDoubleClick && c.available(state, this)).sortBy(-_.priority(Seq.empty))
     avs.headOption.foreach(c => runTextualIfAvailable(c))
   }
 

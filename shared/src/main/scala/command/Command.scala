@@ -29,17 +29,12 @@ abstract class Command {
   def actDoubleClick: Boolean = false
 
   
-  def priority: Int = 0
-  // TODO user keymap
-  def keyLevel(c: KeySeq): Int = {
-    ( if (defaultKeys.contains(c)) {
+  def priority(c: KeySeq): Int = if (defaultKeys.contains(c)) {
       1
-    } else if (hardcodeKeys.contains(c)) {
+  } else {
       0
-    } else {
-      -1
-    }) + priority
   }
+
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
   protected def available(a: DocState): Boolean = throw new NotImplementedError(description)

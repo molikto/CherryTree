@@ -19,7 +19,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
     override def emptyAsFalseInInsertMode: Boolean = true
 
 
-    override def priority: Int = (if (keys.isEmpty) 4 else 0) + super.priority
+    override def priority(key: KeySeq): Int = if (key.isEmpty) 4 else 0
 
     override def available(a: DocState): Boolean =
       a.isRichNormalOrInsert && {
