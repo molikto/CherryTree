@@ -29,10 +29,11 @@ sealed trait Atom {
     case _ => false
   }
 
-  def isAtomicWithAttribute(c: SpecialChar): Boolean = this match {
-    case a: Atom.Marked  =>a.text.asDelimited.delimitation.attributes.contains(c)
+  def isWithAttribute(c: SpecialChar): Boolean = this match {
+    case a: Atom if a.text.isDelimited => a.text.asDelimited.delimitation.attributes.contains(c)
     case _ => false
   }
+
 
   def isStartWithAttribute(c: SpecialChar): Boolean = this match {
     case a: Atom.Special => a.a == a.text.delimitation.start && a.text.delimitation.attributes.contains(c)

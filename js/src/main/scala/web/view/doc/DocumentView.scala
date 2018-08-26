@@ -649,9 +649,9 @@ class DocumentView(
     contentAt(mouseFirstContent).asInstanceOf[Any] match {
       case r: RichView =>
         mouseFirstContentRich = r
-        r.markCgAsEditableTempDuringMouseEvents(true)
+        r.tempEditableTempDuringSelectionChange(true)
       case _ =>
-        editor.onFocusOn(other, None, false)
+        editor.onFocusOn(other, None, true, false)
     }
   }
 
@@ -659,6 +659,16 @@ class DocumentView(
     if (focusFinder != null) {
       readSelectionAfterMouseUpWithDelay(0, focusFinder._2)
     }
+  }
+
+  override def postFlushSelectionOnArrowKey(): Unit = {
+    if (currentSelection != nonEditableSelection) {
+      currentSelection.collapse(false)
+      flushSelection()
+    }
+    editor.disableRemoteStateUpdate(true, true)
+    clearAllPreviousReading()
+    readSelectionAfterMouseUpWithDelay(1, null)
   }
 
   event("mousedown", (a: MouseEvent) => {
@@ -689,7 +699,7 @@ class DocumentView(
           } else {
             None
           }
-          editor.onFocusOn(pc._1, ran, false)
+          editor.onFocusOn(pc._1, ran, true, false)
           down = null
         }
         clickCount = 3
@@ -850,25 +860,40 @@ class DocumentView(
     }
   }
 
+
+  override def systemHandleArrowKey: Boolean = selection != nonEditableSelection
+
   private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView): Unit = {
     def work() = {
       editor.disableRemoteStateUpdate(false, true)
       focus()
       val sel = window.getSelection()
-      val pc = if (sel != null && sel.rangeCount > 0) findParentContent(sel.anchorNode) else null
-      if (pc != null) {
-        val (cur, contentView) = pc
-        val range = contentView.asInstanceOf[Any] match {
-          case r: RichView =>
-            r.readSelectionFromDom()
-          case _ => None
-            None
+      if (sel != null && sel.rangeCount > 0) {
+        val pc = findParentContent(sel.anchorNode)
+        if (pc != null) {
+          val cc = findParentContent(sel.focusNode)
+          if (cc == null || cc._1 == pc._1) {
+            val (cur, contentView) = pc
+            val range = contentView.asInstanceOf[Any] match {
+              case r: RichView =>
+                r.readSelectionFromDom() match {
+                  case Some(res) =>
+                    editor.onFocusOn(cur, Some(res._1), res._2, false)
+                  case _ => editor.onFocusOn(cur, None, true, false)
+                }
+              case w: WrappedCodeView =>
+                editor.onFocusOn(cur, None, true, false)
+            }
+          } else {
+            editor.onVisualMode(pc._1, cc._1)
+          }
+        } else {
+          editor.onRefreshMode()
         }
-        editor.onFocusOn(cur, range, false)
       } else {
         editor.onRefreshMode()
       }
-      if (richView != null) richView.markCgAsEditableTempDuringMouseEvents(false)
+      if (richView != null) richView.tempEditableTempDuringSelectionChange(false)
       focusFinder = null
     }
     if (delay == 0) {

@@ -50,6 +50,8 @@ trait ContentView[T <: data.Content, O <: model.operation.Content] extends View 
 
   def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General
 
+  def tempEditableTempDuringSelectionChange(editable: Boolean): Unit = {}
+
   private var contentData_ : T = null.asInstanceOf[T]
 
   final def contentData: T = contentData_

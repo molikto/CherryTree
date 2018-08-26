@@ -240,11 +240,11 @@ case class Rich(text: Seq[Text]) {
   }
 
 
-  def insideUrlAttributed(pos: Int): Option[Atom] = {
-    if (pos >= 0 && before(pos).isAtomicWithAttribute(UrlAttribute)) {
-      Some(before(pos))
+  def insideUrlAttributed(pos: Atom): Option[Atom] = {
+    if (pos.isWithAttribute(UrlAttribute)) {
+      Some(pos)
     } else {
-      befores(pos).find(a => a.isStartWithAttribute(UrlAttribute) && (a.textRange.contains(pos) || a.textTotalIndex + a.text.size == pos))
+      befores(pos.range.start).find(a => a.isStartWithAttribute(UrlAttribute) && a.textRange.contains(pos.range))
     }
   }
   def insideCoded(pos: Int, deli: SpecialChar.Delimitation): Boolean = {

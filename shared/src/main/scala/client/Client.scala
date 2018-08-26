@@ -486,7 +486,7 @@ class Client(
     updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
-  override def onFocusOn(c: Node, ran: Option[IntRange], viewUpdated: Boolean): Boolean = {
+  override def onFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
     state.mode match {
@@ -514,7 +514,7 @@ class Client(
                 if (r1 == r2) {
                   mode.Content.RichNormal(r1)
                 } else {
-                  mode.Content.RichVisual(r1, r2)
+                  mode.Content.RichVisual(r1, r2).swap(leftIsAnchor)
                 }
               }
             } else {
@@ -523,7 +523,7 @@ class Client(
               } else {
                 val r1 = r.rangeAfter(a.start)
                 val r2 = r.rangeBefore(a.until)
-                mode.Content.RichVisual(r1, r2)
+                mode.Content.RichVisual(r1, r2).swap(leftIsAnchor)
               }
             }
           case None =>

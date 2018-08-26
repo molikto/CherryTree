@@ -9,7 +9,7 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
 
   new Command {
     override val description: String = "zoom into node"
-    override def defaultKeys: Seq[KeySeq] = Seq(Key.Enter)
+    override def defaultKeys: Seq[KeySeq] = Seq(Enter, Shift + Enter)
 
 
     override def priority(key: KeySeq): Int = 0

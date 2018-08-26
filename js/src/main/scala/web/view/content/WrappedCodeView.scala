@@ -29,6 +29,11 @@ class WrappedCodeView(
 
   private var codeView: ContentView.Code = ContentView.createFromCode(initData)
 
+
+  override def tempEditableTempDuringSelectionChange(editable: Boolean): Unit = {
+    //dom.contentEditable = editable.toString
+  }
+
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
     if (ContentView.matches(contentData.ty, codeView)) {
       codeView.updateContent(contentData)
@@ -56,6 +61,11 @@ class WrappedCodeView(
   }
 
   dom = div(
+    position := "relative",
+    span(
+      position := "absolute",
+      RichView.EvilChar, // so we can get selection during evil time!
+    )
   ).render
 
   override def onAttach(): Unit = {

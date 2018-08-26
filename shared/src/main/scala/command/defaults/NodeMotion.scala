@@ -41,7 +41,7 @@ class NodeMotion extends CommandCategory("node: motion") {
     override val description: String = "move up"
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Up)
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Up, Shift + Up)
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
 
 
@@ -52,7 +52,7 @@ class NodeMotion extends CommandCategory("node: motion") {
 
   new NodeMotionCommand {
     override val description: String = "move down"
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Down)
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Down, Shift + Down)
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
 //    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
 //      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(false))

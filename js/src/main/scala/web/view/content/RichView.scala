@@ -5,7 +5,7 @@ import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, Node, NodeList, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, MouseEvent, Node, NodeList, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom
 import scalatags.JsDom.all._
@@ -102,7 +102,7 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
   private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
-  def markCgAsEditableTempDuringMouseEvents(b: Boolean): Unit = {
+  override def tempEditableTempDuringSelectionChange(b: Boolean): Unit = {
     jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
   }
 
@@ -293,14 +293,14 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
     ret
   }
 
-  def readSelectionFromDom(): Option[IntRange] = {
+  def readSelectionFromDom(): Option[(IntRange, Boolean)] = {
     val sel = window.getSelection()
     if (sel.rangeCount >= 1) {
       if (model.debug_selection) {
         window.console.log("read selection", sel)
       }
       if (isEmpty) {
-        return Some(IntRange(0, 0))
+        return Some((IntRange(0, 0), true))
       } else {
         val range = sel.getRangeAt(0)
         if (range.collapsed) {
@@ -314,27 +314,38 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
               val left = r1.left
               val right = r1.right
               var rect = range.getBoundingClientRect()
-              if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
-                rect = elementParent(range.startContainer).getBoundingClientRect()
-              }
-              val c = (rect.left + rect.right) / 2
-              if (model.debug_selection) {
-                window.console.log("finding insertion point for atomic", node, left, right, c)
-              }
-              if (Math.abs(left - c) < Math.abs(right - c)) {
-                return Some(IntRange(start, start))
+              val c = if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
+                if (range.startOffset < range.startContainer.childNodes.length) {
+                  rect = elementParent(range.startContainer.childNodes(range.startOffset)).getBoundingClientRect()
+                  (rect.left + rect.right) / 2
+                } else {
+                  rect = elementParent(range.startContainer).getBoundingClientRect()
+                  rect.right
+                }
               } else {
-                return Some(IntRange(end, end))
+                (rect.left + rect.right) / 2
+              }
+              if (model.debug_selection) {
+                window.console.log("finding insertion point for atomic", node, range, left, right, c)
+              }
+              if (Math.abs(left - c) <= Math.abs(right - c)) {
+                return Some((IntRange(start, start), true))
+              } else {
+                return Some((IntRange(end, end), true))
               }
             } else {
-              return Some(IntRange(start, start))
+              return Some((IntRange(start, start), true))
             }
           }
         } else {
-          val start = readOffset(range.startContainer, range.startOffset, false)
-          val end = readOffset(range.endContainer, range.endOffset, true)
-          if (start >= 0 && end >= 0) {
-            return Some(IntRange(start, end))
+          def isStart(a: Node, b: Int) = a == range.startContainer && b == range.startOffset
+          val moveIsEnd = !isStart(sel.focusNode, sel.focusOffset)
+          val fix = readOffset(sel.anchorNode, sel.anchorOffset, !moveIsEnd)
+          val move = readOffset(sel.focusNode, sel.focusOffset, moveIsEnd)
+          if (moveIsEnd) {
+            return Some((IntRange(fix, move), true))
+          } else {
+            return Some((IntRange(move, fix), false))
           }
         }
       }

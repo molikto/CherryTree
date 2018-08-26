@@ -110,12 +110,12 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority(key: KeySeq): Int = 2
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
-      rich.insideUrlAttributed(t.range.until).nonEmpty
+      rich.insideUrlAttributed(t).nonEmpty
     })
     override def actDoubleClick: Boolean = !enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, rich, t) = a.asRichAtom
-      val text = rich.insideUrlAttributed(t.range.until).get
+      val text = rich.insideUrlAttributed(t).get
       a.editAttribute(text)
     }
   }
@@ -145,7 +145,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
-      rich.befores(t.range.until).exists(a => a.isStartWithAttribute(UrlAttribute) && a.textRange.contains(t.range))
+      rich.insideUrlAttributed(t).nonEmpty
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

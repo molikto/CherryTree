@@ -58,8 +58,13 @@ trait EditorView extends View {
   }
 
 
+  def postFlushSelectionOnArrowKey(): Unit = {
+  }
 
   protected var hasShift = false
+
+  def systemHandleArrowKey: Boolean
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
@@ -67,13 +72,18 @@ trait EditorView extends View {
         flushBeforeKeyDown()
         hasShift = event.keyCode == 16
         var key = KeyMap.get(event.key).orNull
-        if (key == null) {
-          key = Key.Grapheme(model.data.Unicode(event.key))
-        }
-        if (key == null) key = Key.Unknown(event.key)
-        val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-        if (!key.isInstanceOf[Key.Modifier]) {
-          if (editor.onKeyDown(kk)) preventDefault(event)
+        val isArrow = key == Key.Up || key == Key.Down
+        if (systemHandleArrowKey && isArrow) {
+          postFlushSelectionOnArrowKey()
+        } else {
+          if (key == null) {
+            key = Key.Grapheme(model.data.Unicode(event.key))
+          }
+          if (key == null) key = Key.Unknown(event.key)
+          val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
+          if (!key.isInstanceOf[Key.Modifier]) {
+            if (editor.onKeyDown(kk)) preventDefault(event)
+          }
         }
       }
     })

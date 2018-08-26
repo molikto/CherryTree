@@ -67,6 +67,7 @@ package object mode {
       def collapse(enableModal: Boolean): Rich = if (enableModal) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
 
       def swap: RichVisual = RichVisual(move, fix)
+      def swap(leftIsAnchor: Boolean): RichVisual = if (leftIsAnchor) this else swap
       def moveEnd = if (move.start > fix.start) move.until else move.start
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
