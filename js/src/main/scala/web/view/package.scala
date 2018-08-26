@@ -15,7 +15,6 @@ package object view {
 
 
 
-  val EmptyStr = "∅"
   def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
 
   def elementParent(a: Node): HTMLElement = {
@@ -70,43 +69,6 @@ package object view {
     }
   }
 
-
-  // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
-  val KeyMap: Map[String, Key.V] = {
-    import Key._
-    Map(
-      "Home" -> Home,
-      "End" -> End,
-      "ArrowLeft" -> Left,
-      "ArrowRight" -> Right,
-      "ArrowUp" -> Up,
-      "ArrowDown" -> Down,
-      "Enter" -> Enter,
-      "PageDown" -> PageDown,
-      "PageUp" -> PageUp,
-      "Backspace" -> Backspace,
-      "Tab" -> Tab,
-      "Escape" -> Escape,
-      "Shift" -> Shift,
-      "Meta" -> Meta,
-      "Control" -> Ctrl,
-      "Delete" -> Delete,
-      "Alt" -> Alt
-    )
-  }
-
-  val jQ: js.Dynamic = js.Dynamic.global.jQuery
-
-  val CodeMirror: js.Dynamic = js.Dynamic.global.CodeMirror
-
-  val KaTeX = window.asInstanceOf[js.Dynamic].katex
-
-
-
-  def svgSourceToBackgroundStr(svg: String): String = {
-    val encoded = window.btoa(svg)
-    "url(data:image/svg+xml;base64," + encoded + ")"
-  }
 
   def contains(p: ClientRect, c: ClientRect): Boolean = {
     p.top <= c.top && p.left <= c.left && p.right >= c.right && p.bottom >= c.bottom

@@ -1,7 +1,5 @@
 package web.view
 
-import client.Client
-import command.Key
 import org.scalajs.dom.raw._
 import org.scalajs.dom.window
 import scalatags.JsDom.all._
