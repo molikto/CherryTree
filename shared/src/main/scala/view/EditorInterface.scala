@@ -20,10 +20,11 @@ trait SourceEditInterface {
 }
 
 trait RichEditInterface {
-  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int): mode.Content.Rich
+  def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int, mergeWithPrevious: Boolean): mode.Content.Rich
   def onAttributeModified(url: Unicode, title: Unicode)
   def onExternalPasteInRichEditor(a: Unicode)
-  def onDeleteCurrentSelectionAndStartInsert(): Unit
+  // returns if there is any data change
+  def onDeleteCurrentSelectionAndStartInsert(): Boolean
 }
 
 trait EditorInterface extends SourceEditInterface with RichEditInterface with Settings {

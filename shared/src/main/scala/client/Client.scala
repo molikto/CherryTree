@@ -209,6 +209,7 @@ class Client(
     editorUpdated: Boolean = false,
     fromUser: Boolean = false,
     isSmartInsert: Boolean = false,
+    mergeWithPreviousLocal: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
     a.consistencyCheck()
@@ -250,7 +251,7 @@ class Client(
 
 
     onBeforeUpdateUpdateCommandState(state_)
-    trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert)
+    trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert, mergeWithPreviousLocal)
     stateUpdates_.onNext(res)
     updatingState = false
 //    if (state_.isRichInsert) {
@@ -540,19 +541,24 @@ class Client(
     localChange(DocTransaction(model.mode.Node.Visual(mouseFirstContent, node)))
   }
 
-  override def onDeleteCurrentSelectionAndStartInsert(): Unit = {
-    localChange(state.mode match {
+  override def onDeleteCurrentSelectionAndStartInsert(): Boolean = {
+    state.mode match {
       case Some(model.mode.Node.Content(pos, rich: model.mode.Content.Rich)) =>
         rich match {
           case v: model.mode.Content.RichVisual =>
-            command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true)
-          case a => DocTransaction(state.copyContentMode(model.mode.Content.RichInsert(a.focus.start)))
+            val trans = command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true, noHistory = true)
+            val ret = trans.transaction.nonEmpty
+            localChange(trans)
+            ret
+          case a =>
+            localChange(DocTransaction(state.copyContentMode(model.mode.Content.RichInsert(a.focus.start))))
+            false
         }
       case _ => throw new IllegalArgumentException("Invalid command")
-    })
+    }
   }
 
-  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, backToNormal: Boolean, domInsertion: Int): model.mode.Content.Rich = {
+  override def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, backToNormal: Boolean, domInsertion: Int, mergeWithPrevious: Boolean): model.mode.Content.Rich = {
     import model._
     state.mode match {
       case Some(mode.Node.Content(cur, rich: mode.Content.Rich)) =>
@@ -600,7 +606,7 @@ class Client(
         localChange(
           DocTransaction(Seq(operation.Node.rich(cur, operation.Rich.replacePlain(start, end, unicode))),
             Some(state.copyContentMode(m)),
-            viewUpdated = true, editorUpdated = true))
+            viewUpdated = true, editorUpdated = true), mergeWithPreviousLocal = mergeWithPrevious)
         m
       case _ => throw new IllegalStateException("Not supported")
     }
@@ -698,7 +704,8 @@ class Client(
 
   def localChange(
     update0: DocTransaction,
-    isSmartInsert: Boolean = false
+    isSmartInsert: Boolean = false,
+    mergeWithPreviousLocal: Boolean = false
   ): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
@@ -778,7 +785,9 @@ class Client(
         viewUpdated = update.viewUpdated,
         editorUpdated = update.editorUpdated,
         fromUser = true,
-        userFolds = ch, trace = update0.trace)
+        userFolds = ch, trace = update0.trace,
+        mergeWithPreviousLocal = mergeWithPreviousLocal
+      )
       if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
     }
     for (m <- update.viewMessagesAfter) {

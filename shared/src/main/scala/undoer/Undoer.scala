@@ -207,7 +207,7 @@ trait Undoer extends UndoerInterface with Settings {
 
 
   // local change consists of local, undo, redo
-  def trackUndoerChange(docBefore: DocState, docAfter: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean): Unit = {
+  def trackUndoerChange(docBefore: DocState, docAfter: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean, mergeWithPreviousLocal: Boolean): Unit = {
     def putIn(): Unit = {
       val newItem = new HistoryItem(trans, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), ty)
       append(newItem)
@@ -229,7 +229,14 @@ trait Undoer extends UndoerInterface with Settings {
             previousIsExtra = false
             compatHistory(true)
           }
-          putIn()
+          if (mergeWithPreviousLocal) {
+            lastOption match {
+              case Some(a) if a.ty == Local => a.trans = a.trans ++ trans
+              case _ => putIn()
+            }
+          } else {
+            putIn()
+          }
           if (!isExtra) {
             compatHistory(true)
           } else {

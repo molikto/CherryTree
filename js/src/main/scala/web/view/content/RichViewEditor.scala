@@ -211,10 +211,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     } else {
       pendingFlush = true
       goBackToNormalAfterFlush = previousMode == 1 && controller.enableModal
-      domModifiedInBeforeEvent = previousMode == 1
-      if (domModifiedInBeforeEvent) {
-        controller.onDeleteCurrentSelectionAndStartInsert()
-      }
+      domModifiedInBeforeEvent = previousMode == 1 && controller.onDeleteCurrentSelectionAndStartInsert()
     }
   }
 
@@ -233,6 +230,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         pendingFlush = false
       }
     } else {
+      if (model.debug_view) window.console.log("unknown input event", a)
       refreshDom()
     }
   }
@@ -274,7 +272,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
         insertNonEmptyTextNode = (node, str, pos)
         insertEmptyTextNode = null
         extraNode = null
-        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), goBackToNormalAfterFlush, -1)
+        controller.onInsertRichTextAndViewUpdated(pos, pos, Unicode(str), goBackToNormalAfterFlush, -1, domModifiedInBeforeEvent)
       } else if (goBackToNormalAfterFlush) {
         removeInsertEmptyTextNode()
       }
@@ -290,7 +288,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
           //          println(s"old content $oldContent new content $newContent, $from, $to, $text, $insertionPoint")
         }
         insertNonEmptyTextNode = (node, newContent, pos)
-        val mode = controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), goBackToNormalAfterFlush, insertionPoint)
+        val mode = controller.onInsertRichTextAndViewUpdated(pos + from, pos + to, Unicode(text), goBackToNormalAfterFlush, insertionPoint, domModifiedInBeforeEvent)
         mode match {
           case model.mode.Content.RichInsert(i) if insertionPoint == i =>
           case _ =>

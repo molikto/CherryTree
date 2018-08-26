@@ -11,14 +11,21 @@ package object util extends ObservablePropertyImplicits  {
   var debug_fpsView: String => Unit = null
 
   private var debug_fpsStartTime = 0L
+  private var debug_fpsLastEnd = 0L
 
   def fpsStart(): Unit = {
-    debug_fpsStartTime = System.currentTimeMillis()
+    if (debug_fpsView != null) {
+      val t = System.currentTimeMillis()
+      if (t - debug_fpsLastEnd > 10) {
+        debug_fpsStartTime = t
+      }
+    }
   }
 
   def fpsEnd(): Unit = {
-    val time = System.currentTimeMillis() - debug_fpsStartTime
     if (debug_fpsView != null) {
+      debug_fpsLastEnd = System.currentTimeMillis()
+      val time = debug_fpsLastEnd - debug_fpsStartTime
       if (time > 1) {
         debug_fpsView(time.toString)
       }
