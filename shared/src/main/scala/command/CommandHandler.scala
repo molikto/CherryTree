@@ -149,7 +149,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     if (command.available(state, this)) {
       clearPreviousCommand()
       buffer.append(IdentifiedCommand(None, command, Seq.empty))
-      tryComplete(false)
+      assert(tryComplete(false))
       commandBufferUpdates_.onNext(buffer)
     }
   }
@@ -302,7 +302,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val bufferBefore = if (key.control || key.meta) buffer.clone() else null
     if (!enableModal || state.isInsert) {
       if (key.isSimpleGrapheme) {
-        if (!state.isInsert || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
+        if ((enableModal && !state.isInsert) || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
           if (scheduledComplete != null) {
             tryComplete(false)
           }

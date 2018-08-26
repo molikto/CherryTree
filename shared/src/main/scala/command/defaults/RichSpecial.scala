@@ -134,6 +134,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
 
 
   abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
+
+    override def emptyAsFalseInInsertMode: Boolean = true
+
     override def available(a: DocState): Boolean = {
       if (a.isRichVisual) {
         val (node, rich, visual) = a.asRichVisual

@@ -47,7 +47,7 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
     }
   }
 
-  private val onClick: js.Function1[MouseEvent, _] = e => {
+  private val onClick: js.Function1[MouseEvent, _] = (e: MouseEvent) => {
     val elm = e.currentTarget.asInstanceOf[HTMLElement]
     marked = indexOf(elm) - headerSize
     if (marked >= 0) {
@@ -121,7 +121,13 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
 
     event(dom, "focusout", (ev: FocusEvent) => {
       if (focusOutDismiss) {
-        dismiss()
+        ev.relatedTarget match {
+          case h: HTMLElement =>
+            if (!dom.contains(h)) {
+              dismiss()
+            }
+          case _ =>
+        }
       }
     })
 
