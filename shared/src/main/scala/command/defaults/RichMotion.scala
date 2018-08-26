@@ -13,11 +13,13 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
 
   trait RichMotionCommand extends Command with command.RichMotion {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrVisual || commandState.needsMotion
   }
 
 
   trait InsertRichMotionCommand extends Command with command.RichMotion {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRich || commandState.needsMotion
   }
 
@@ -97,6 +99,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
   abstract class FindCommand extends RichMotionCommand with NeedsCharCommand with command.FindCommand {
 
     override def settings: Settings = RichMotion.this
+
 
     protected def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange]
     def skip(a: Rich, range: IntRange): IntRange = range

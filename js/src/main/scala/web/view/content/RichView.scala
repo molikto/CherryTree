@@ -237,20 +237,34 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
   }
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
-    if (a == extraNode) {
-      readOffsetNormalizedIndex(a.parentNode, indexOf(a), isEnd)
+    val head = document.getElementsByTagName("head").item(0)
+    if (dom.contains(a)) {
+      if (a == extraNode) {
+        readOffsetNormalizedIndex(a.parentNode, indexOf(a), isEnd)
+      } else {
+        readOffsetNormalizedIndex(a, normalizeOffset(a, o), isEnd)
+      }
+    } else if (a.contains(dom)) {
+      var pp: Node = dom
+      while (pp.parentNode != a) {
+        pp = pp.parentNode
+      }
+      if (model.debug_selection) window.console.log("read offset contained", pp, indexOf(pp), a, o)
+      if (indexOf(pp) <= o) 0 else rich.size
     } else {
-      readOffsetNormalizedIndex(a, normalizeOffset(a, o), isEnd)
+      if ((dom.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) != 0) {
+        if (model.debug_selection) window.console.log("read offset node before")
+        0
+      } else {
+        if (model.debug_selection) window.console.log("read offset node after")
+        rich.size
+      }
     }
   }
 
   /**
     */
   private def readOffsetNormalizedIndex(a: Node, o: Int, isEnd: Boolean): Int = {
-    if (a.parentNode == null) {
-      if (model.debug_view) println("what??? empty read offset")
-      return -1
-    }
     val ret = if (a.isInstanceOf[raw.Text] && isValidContainer(a.parentNode)) { // a text node inside a valid container
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
@@ -306,36 +320,34 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
         if (range.collapsed) {
           val start = readOffset(range.startContainer, range.startOffset, false)
           val end = readOffset(range.endContainer, range.endOffset, true)
-          if (start >= 0 && end >= 0) {
-            if (start != end) {
-              val a = rich.after(start).nodeCursor
-              val node = elementParent(nodeAt(a))
-              val r1 = node.getBoundingClientRect()
-              val left = r1.left
-              val right = r1.right
-              var rect = range.getBoundingClientRect()
-              val c = if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
-                if (range.startOffset < range.startContainer.childNodes.length) {
-                  rect = elementParent(range.startContainer.childNodes(range.startOffset)).getBoundingClientRect()
-                  (rect.left + rect.right) / 2
-                } else {
-                  rect = elementParent(range.startContainer).getBoundingClientRect()
-                  rect.right
-                }
-              } else {
+          if (start != end) {
+            val a = rich.after(start).nodeCursor
+            val node = elementParent(nodeAt(a))
+            val r1 = node.getBoundingClientRect()
+            val left = r1.left
+            val right = r1.right
+            var rect = range.getBoundingClientRect()
+            val c = if (rect.width == 0 && rect.left == 0 && rect.top == 0 && rect.height == 0) {
+              if (range.startOffset < range.startContainer.childNodes.length) {
+                rect = elementParent(range.startContainer.childNodes(range.startOffset)).getBoundingClientRect()
                 (rect.left + rect.right) / 2
-              }
-              if (model.debug_selection) {
-                window.console.log("finding insertion point for atomic", node, range, left, right, c)
-              }
-              if (Math.abs(left - c) <= Math.abs(right - c)) {
-                return Some((IntRange(start, start), true))
               } else {
-                return Some((IntRange(end, end), true))
+                rect = elementParent(range.startContainer).getBoundingClientRect()
+                rect.right
               }
             } else {
-              return Some((IntRange(start, start), true))
+              (rect.left + rect.right) / 2
             }
+            if (model.debug_selection) {
+              window.console.log("finding insertion point for atomic", node, range, left, right, c)
+            }
+            if (Math.abs(left - c) <= Math.abs(right - c)) {
+              return Some((IntRange(start, start), true))
+            } else {
+              return Some((IntRange(end, end), true))
+            }
+          } else {
+            return Some((IntRange(start, start), true))
           }
         } else {
           def isStart(a: Node, b: Int) = a == range.startContainer && b == range.startOffset
@@ -343,9 +355,9 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
           val fix = readOffset(sel.anchorNode, sel.anchorOffset, !moveIsEnd)
           val move = readOffset(sel.focusNode, sel.focusOffset, moveIsEnd)
           if (moveIsEnd) {
-            return Some((IntRange(fix, move), true))
+            return Some((IntRange(fix, Math.max(fix, move)), true))
           } else {
-            return Some((IntRange(move, fix), false))
+            return Some((IntRange(move, Math.max(move, fix)), false))
           }
         }
       }
@@ -364,9 +376,7 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
           window.console.log("read insertion", sel)
         }
         val range = sel.getRangeAt(0)
-        if (root.contains(range.endContainer)) {
-          return readOffset(range.endContainer, range.endOffset, true)
-        }
+        return readOffset(range.endContainer, range.endOffset, true)
       }
     }
     -1

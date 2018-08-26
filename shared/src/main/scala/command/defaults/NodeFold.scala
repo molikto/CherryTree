@@ -9,7 +9,7 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
 
   new Command {
     override val description: String = "zoom into node"
-    override def defaultKeys: Seq[KeySeq] = Seq(Enter, Shift + Enter)
+    override def defaultKeys: Seq[KeySeq] = Seq(Enter, ModKey + ".")
 
 
     override def showInCommandMenu(modal: Boolean): Boolean = !modal
@@ -25,7 +25,7 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
 
   new Command {
     override val description: String = "zoom into parent"
-    override def defaultKeys: Seq[KeySeq] = Seq("[")
+    override def defaultKeys: Seq[KeySeq] = Seq("[", ModKey + ",")
 
     override def showInCommandMenu(modal: Boolean): Boolean = false
 
