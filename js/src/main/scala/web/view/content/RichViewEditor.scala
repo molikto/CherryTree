@@ -218,14 +218,13 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
 
   override def compositionEndEvent(): Unit = {
     pendingFlush = true
-    controller.flush()
+    flush()
   }
 
   override def inputEvent(a: Event): Unit = {
     if (pendingFlush) {
       if (!isCompositionInputType(a.asInstanceOf[js.Dynamic].inputType.asInstanceOf[String])) {
-        controller.flush()
-        assert(!pendingFlush)
+        flush()
       } else {
         pendingFlush = false
       }

@@ -290,7 +290,6 @@
 .ct-document-view-root {
   color: #abb2bf;
   outline: 0px solid transparent;
-  cursor: text;
 }
 
 .ct-document-view-color {
@@ -504,6 +503,7 @@
     padding-right: 4px;
     padding-top: 2px;
     padding-bottom: 2px;
+    cursor: text;
 }
 
 

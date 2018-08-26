@@ -184,10 +184,6 @@ class Client(
     }
   }
 
-  def flush(): Unit = this.synchronized {
-    flushInner()
-  }
-
 
 
   private val disabledStateUpdates = ArrayBuffer[ClientUpdate]()

@@ -867,6 +867,21 @@ class DocumentView(
   }
 
 
+  event("click", (a: MouseEvent) => {
+    a.target match {
+      case element: HTMLElement if element.className.contains("ct-d-hold") =>
+        clearAllPreviousReading() // if mouseup is before us
+        val ct = contentOfHold(element)
+        endMouseDown(a, false, false)
+        editor.onFocusOn(cursorOf(ct), None, true, false)
+        showCommandMenu()
+      case _ =>
+    }
+  })
+
+
+
+
   override def systemHandleArrowKey: Boolean = selection != nonEditableSelection
 
   private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView): Unit = {

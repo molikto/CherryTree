@@ -6,7 +6,7 @@ import model.data.{SpecialChar, Unicode}
 
 trait Settings {
 
-  val enableModal: Boolean = true
+  val enableModal: Boolean = false
   /**
     * these are settings??
     */
