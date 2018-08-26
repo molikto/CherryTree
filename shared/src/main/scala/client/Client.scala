@@ -540,6 +540,15 @@ class Client(
     localChange(DocTransaction(model.mode.Node.Visual(mouseFirstContent, node)))
   }
 
+
+  override def onDeleteCurrentSelectionAndStartInsert(): Unit = {
+    localChange(state.mode match {
+      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(_, _))) =>
+        command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true)
+      case _ => throw new IllegalArgumentException("Invalid command")
+    })
+  }
+
   override def onRichTextChange(ope: Rich, positionBefore: Int): Unit = {
     import model._
     state.mode match {

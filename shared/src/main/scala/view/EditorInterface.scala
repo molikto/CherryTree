@@ -24,9 +24,11 @@ trait RichEditInterface {
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, domInsertion: Int)
   def onAttributeModified(url: Unicode, title: Unicode)
   def onExternalPasteInRichEditor(a: Unicode)
+  def onDeleteCurrentSelectionAndStartInsert(): Unit
 }
 
 trait EditorInterface extends SourceEditInterface with RichEditInterface with Settings {
+
   def onDoubleClick(): Unit
 
   def onVisualMode(mouseFirstContent: Node, node: Node): Unit

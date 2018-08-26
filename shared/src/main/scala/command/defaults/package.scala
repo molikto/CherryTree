@@ -7,7 +7,7 @@ import register.Registerable
 
 package object defaults {
 
-  private[defaults] def deleteRichNormalRange(a: DocState, commandState: CommandInterface, pos: cursor.Node, r: IntRange, insert: Boolean, noHistory: Boolean = false): DocTransaction = {
+  def deleteRichNormalRange(a: DocState, commandState: CommandInterface, pos: cursor.Node, r: IntRange, insert: Boolean, noHistory: Boolean = false): DocTransaction = {
     val rich = a.rich(pos)
     if (!noHistory) {
       commandState.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = true)

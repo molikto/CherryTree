@@ -3,6 +3,7 @@ package web.view.content
 import model._
 import model.data._
 import model.mode.Content
+import model.mode.Content.RichVisual
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom
@@ -203,6 +204,15 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
   private var isComplexInput = false
   private var affectPosBeforeInput = -1
 
+  def tryDeleteCurrentSelectionAndGoToInsert(): Unit = {
+    if (pmode.isInstanceOf[RichVisual]) {
+      if (model.debug_view) {
+        println("deleting selected range because start dictation")
+      }
+      controller.onDeleteCurrentSelectionAndStartInsert()
+    }
+  }
+
   override def beforeInputEvent(a: Event): Unit = {
     val ev = a.asInstanceOf[js.Dynamic]
     val inputType = ev.inputType.asInstanceOf[String]
@@ -227,6 +237,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       if (a.cancelable) {
         a.preventDefault()
       }
+    } else {
+      tryDeleteCurrentSelectionAndGoToInsert()
     }
   }
 

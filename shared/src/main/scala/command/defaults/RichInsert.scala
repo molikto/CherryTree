@@ -46,6 +46,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
           }
         case v: model.mode.Content.RichVisual =>
           deleteRichNormalRange(a, commandState, cur, v.merged, true, noHistory = true)
+        case _ => throw new IllegalStateException("Not supported mode")
       }
     }
   }
