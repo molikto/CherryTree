@@ -35,6 +35,8 @@ abstract class Command {
       0
   }
 
+  def showInCommandMenu(modal: Boolean): Boolean = if (modal) keys.isEmpty else  keys.forall(_.exists(_.isSimpleGrapheme))
+
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
   protected def available(a: DocState): Boolean = throw new NotImplementedError(description)

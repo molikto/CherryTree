@@ -12,6 +12,9 @@ import register.Registerable
 
 class YankPaste extends CommandCategory("registers, yank and paste") {
 
+  abstract class Command extends super.Command {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+  }
 
   new Command {
     override val description: String = "yank current node (without childs)"

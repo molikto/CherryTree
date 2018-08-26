@@ -46,14 +46,12 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     }
   }))
 
-  private val commands =
-    if (client.enableModal) client.commands.filter(_.keys.isEmpty)
-    else client.commands.filter(a => a.keys.forall(_.exists(_.isSimpleGrapheme)))
+  private val commands = client.commands.filter(_.showInCommandMenu(client.enableModal))
 
   override def data(term: String): Seq[Command] = {
     commands.filter(a =>
       util.matchCommandSearch(a.description, term) &&
-        a.available(client.state, client)).sortBy(a => (if (a.keys.isEmpty) 0 else 1, -a.priority(Seq.empty), a.description))
+        a.available(client.state, client)).sortBy(a => (if (a.keys.isEmpty) 1 else 0, -a.priority(Seq.empty), a.description))
   }
 
 

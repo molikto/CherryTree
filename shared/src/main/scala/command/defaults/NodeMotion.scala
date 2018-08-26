@@ -12,12 +12,15 @@ class NodeMotion extends CommandCategory("node: motion") {
 
 
 
+
   /**
     * CTRL-M and <CR>)
     * _     N  _            down N-1 lines, on the first non-blank character
     */
   // LATER these
   abstract class NodeMotionCommand extends Command {
+
+    override def showInCommandMenu(modal: Boolean): Boolean = false
     override def repeatable: Boolean = true
     def move(data: DocState, a: cursor.Node): Option[cursor.Node] = None
     def message: Option[ViewMessage] = None

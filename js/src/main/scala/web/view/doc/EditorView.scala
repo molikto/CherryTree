@@ -80,7 +80,7 @@ trait EditorView extends View {
         flushBeforeKeyDown()
         hasShift = event.keyCode == 16
         val kk = EditorView.extractKey(event)
-        val isArrow = kk.a == Key.Up || kk.a == Key.Down
+        val isArrow = (kk.a == Key.Up || kk.a == Key.Down) && !kk.meta && !kk.control
         if (systemHandleArrowKey && isArrow) {
           postFlushSelectionOnArrowKey()
         } else {
