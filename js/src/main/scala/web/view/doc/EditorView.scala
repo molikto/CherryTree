@@ -58,23 +58,20 @@ trait EditorView extends View {
   }
 
 
+
   protected var hasShift = false
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
-      flushBeforeKeyDown()
-      hasShift = event.keyCode == 16
-      var key = KeyMap.get(event.key).orNull
-      if (false) {
-      } else {
-        // TODO better handling this
+      if (!event.asInstanceOf[js.Dynamic].isComposing.asInstanceOf[Boolean]) {
+        flushBeforeKeyDown()
+        hasShift = event.keyCode == 16
+        var key = KeyMap.get(event.key).orNull
         if (key == null) {
           key = Key.Grapheme(model.data.Unicode(event.key))
         }
         if (key == null) key = Key.Unknown(event.key)
         val kk = Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-        // for meta keys, we ignore it, it is mostly browser keys
-        // for modifier keys, we also ignore them
         if (!key.isInstanceOf[Key.Modifier]) {
           if (editor.onKeyDown(kk)) preventDefault(event)
         }

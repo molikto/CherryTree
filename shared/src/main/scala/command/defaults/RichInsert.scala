@@ -30,7 +30,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
     override def available(a: DocState): Boolean = if (!enableModal) a.isRich else super.available(a)
 
-    override val description: String = "delete text before cursor"
+    override val description: String = "delete text before cursor / delete node if empty"
     override val hardcodeKeys: Seq[KeySeq] = (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
@@ -41,8 +41,10 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
             DocTransaction(
               Seq(operation.Node.rich(cur, operation.Rich.deleteOrUnwrapAt(rich, rich.rangeBefore(i).start))),
               None) // we don't explicitly set mode, as insert mode transformation is always correct
+          } else if (rich.isEmpty && cur != a.zoom) {
+            deleteNodeRange(a, commandState, model.range.Node(cur), enableModal, goUp = true)
           } else {
-            joinWithPrevious(a)
+            DocTransaction.empty
           }
         case v: model.mode.Content.RichVisual =>
           deleteRichNormalRange(a, commandState, cur, v.merged, true, noHistory = true)

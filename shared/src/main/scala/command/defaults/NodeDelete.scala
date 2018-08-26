@@ -14,23 +14,6 @@ class NodeDelete extends CommandCategory("node: delete") {
     " this is considered a node movement," +
     " and causes less conflicts when editing collaboratively"
 
-  def deleteNodeRange(a: DocState, commandState: CommandInterface, rr: range.Node): DocTransaction = {
-
-    val parent = a.node(rr.parent)
-    val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
-    commandState.yank(Registerable.Node(a.node(rr), from = Some(rr), needsClone = false), isDelete = true)
-    DocTransaction(Seq(operation.Node.Delete(r)), {
-      val (nowPos, toPos) = if (a.node.get(r.until).isDefined) {
-        (r.until, r.start)
-      } else if (r.childs.start > 0) {
-        val p = r.parent :+ (r.childs.start - 1)
-        (p, p)
-      } else {
-        (r.parent, r.parent)
-      }
-      Some(model.mode.Node.Content(toPos, a.node(nowPos).content.defaultMode(enableModal)))
-    }, tryMergeDeletes = true)
-  }
 
 
   new Command {
@@ -41,7 +24,7 @@ class NodeDelete extends CommandCategory("node: delete") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val r = a.asContent
       if (r == a.zoom) DocTransaction.empty
-      else deleteNodeRange(a, commandState, model.range.Node(r)) // we don't allow multiple deletes for now!
+      else deleteNodeRange(a, commandState, model.range.Node(r), enableModal) // we don't allow multiple deletes for now!
     }
   }
 
@@ -53,7 +36,7 @@ class NodeDelete extends CommandCategory("node: delete") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       a.mode match {
         case Some(v@model.mode.Node.Visual(_, _)) =>
-          v.minimalRange.map(r => deleteNodeRange(a, commandState, r)).getOrElse(DocTransaction.empty)
+          v.minimalRange.map(r => deleteNodeRange(a, commandState, r, enableModal)).getOrElse(DocTransaction.empty)
         case _ => throw new IllegalArgumentException("Invalid command")
       }
     }
