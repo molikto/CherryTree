@@ -80,7 +80,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     var t = System.currentTimeMillis()
     if (t - previousUpdateTime < 1000) {
       if (scheduledUpdate == -1) {
-        window.setTimeout(() => {
+        scheduledUpdate = window.setTimeout(() => {
           scheduledUpdate = -1
           renderState(false)
         }, previousUpdateTime + 1100 - t)
