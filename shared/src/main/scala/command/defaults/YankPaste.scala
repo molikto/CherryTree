@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client
-import command.{CommandCategory, CommandInterface, Motion}
+import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Motion}
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.cursor.Node
@@ -15,6 +15,24 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
   abstract class Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
+  }
+
+  new Command {
+    override val description: String = "use register following for next delete, yank or put"
+    override def defaultKeys: Seq[KeySeq] = Seq("\"")
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
+    override def needsChar: Boolean = true
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      if (grapheme.nonEmpty) {
+        val str = grapheme.get.str
+        if (str.length == 1) {
+          commandState.setRegister(str.charAt(0))
+        }
+      }
+      DocTransaction.empty
+    }
   }
 
   new TextualCommand {
