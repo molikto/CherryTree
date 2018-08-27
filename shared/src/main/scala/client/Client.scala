@@ -44,6 +44,7 @@ object Client {
   object ViewMessage {
     case class VisitUrl(url: String) extends ViewMessage
     case class ShowCommandMenu() extends ViewMessage
+    case class ShowRegisters() extends ViewMessage
     case object ScrollToTop extends ViewMessage
     case object ScrollToBottom extends ViewMessage
     case class ScrollToNodeTop(cur: cursor.Node) extends ViewMessage
@@ -685,7 +686,7 @@ class Client(
       if (state.isContent) {
         val pset = set
         set = '*'
-        val command = if (getRegisterable.exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
+        val command = if (getRegisterable().exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
         localChange(command.action(state, 1, this, None, None, None))
         set = pset
       }

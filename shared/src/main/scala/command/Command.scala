@@ -20,6 +20,7 @@ abstract class Command {
   def defaultKeys: Seq[KeySeq]
   def emptyAsFalseInInsertMode: Boolean = false
   def maybeInsertModeGrapheme(u: Unicode): Boolean = false
+  def textCommand: Seq[String] = Seq.empty
 
   def repeatable: Boolean = false
   def needsChar: Boolean = false

@@ -1,5 +1,6 @@
 package command.defaults
 
+import client.Client
 import command.{CommandCategory, CommandInterface, Motion}
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
@@ -14,6 +15,17 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
   abstract class Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
+  }
+
+  new TextualCommand {
+    override val description: String = "registers"
+    override protected def available(a: DocState): Boolean = true
+
+    override def textCommand: Seq[String] = Seq("reg")
+
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      DocTransaction.message(Client.ViewMessage.ShowRegisters())
+    }
   }
 
   new Command {

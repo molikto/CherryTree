@@ -2,8 +2,9 @@ package web.ui.doc
 
 import org.scalajs.dom
 import org.scalajs.dom.raw.HTMLElement
+import util.Rect
 import web.view._
-import web.ui.dialog.{CommandMenuDialog, CoveringSourceEditDialog, InlineCodeDialog, UrlAttributeEditDialog}
+import web.ui.dialog._
 
 abstract class AbstractDocumentView extends View {
 
@@ -21,6 +22,30 @@ abstract class AbstractDocumentView extends View {
 
   var sourceEditor: CoveringSourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
+  var registersDialog: RegistersDialog = null
   var attributeEditor: UrlAttributeEditDialog = null
   var inlineEditor : InlineCodeDialog = null
+
+  def selectionRect: Rect
+
+  def refreshMounted(): Unit = {
+    attributeEditor.refresh()
+    inlineEditor.refresh()
+    commandMenu.refresh()
+    registersDialog.refresh()
+  }
+
+
+
+  private val commandMenuAnchor = new OverlayAnchor {
+    override def rect: Rect = selectionRect
+  }
+
+  def showCommandMenu(): Unit = {
+    commandMenu.show(commandMenuAnchor)
+  }
+
+  def showRegisters(): Unit = {
+    registersDialog.show(commandMenuAnchor)
+  }
 }

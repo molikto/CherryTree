@@ -591,11 +591,6 @@ class DocumentView2(
     }))
   }
 
-  def refreshMounted(): Unit = {
-    attributeEditor.refresh()
-    inlineEditor.refresh()
-    commandMenu.refresh()
-  }
 
   event(window, "resize", (a: MouseEvent) => {
     refreshMounted()
@@ -604,21 +599,6 @@ class DocumentView2(
 
 
   observe(editor.flushes.doOnNext(_ => if (activeContent != null) activeContentEditor.flush()))
-
-
-
-
-
-
-
-
-  private val commandMenuAnchor = new OverlayAnchor {
-    override def rect: Rect = selectionRect
-  }
-
-  def showCommandMenu(): Unit = {
-    commandMenu.show(commandMenuAnchor)
-  }
 
 
   def scrollToTop(cur: model.cursor.Node): Unit = {

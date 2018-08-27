@@ -91,12 +91,14 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
+    val registers: RegistersDialog = new RegistersDialog(client, overlayLayer)
     val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(overlayLayer, docView.dom)
     val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
     val latexEditor: InlineCodeDialog = new InlineCodeDialog(overlayLayer)
 
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu
+    docView.registersDialog = registers
     docView.attributeEditor = attributeEditor
     docView.inlineEditor = latexEditor
   }
@@ -134,6 +136,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       window.open(url)
     case Client.ViewMessage.ShowCommandMenu() =>
       docView.showCommandMenu()
+    case Client.ViewMessage.ShowRegisters() =>
+      docView.showRegisters()
     case Client.ViewMessage.QuickSearch(viewport) =>
       quickSearch.show(viewport)
     case Client.ViewMessage.ScrollToTop =>

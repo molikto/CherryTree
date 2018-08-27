@@ -72,6 +72,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                   paddingBottom := "5px",
                   Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
                   if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double"), " ") else Seq.empty[Frag] : Frag,
+                  c.textCommand.map(a => span(tag("kbd")(`class` := "ct-kbd", ":" + a), " ")),
                   c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
                   if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char"), " ") else Seq.empty[Frag] : Frag,
                   if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ") else Seq.empty[Frag] : Frag,

@@ -32,14 +32,25 @@ trait RegisterHandler extends RegisterInterface {
     }
   }
 
-  protected def getRegisterable: Option[Registerable] = if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
-    named.get(set)
-  } else if (set >= '0' && set <= '9') {
-    zeroToNine(set - '0')
-  } else if (set == '*') {
-    Option(system)
-  } else {
-    Option(default)
+  def registerables: Seq[(Int, Option[Registerable])] =
+      Seq(('"'.toInt, Option(default)), ('*'.toInt, Option(system))) ++
+        ('a' to 'z').map(i => (i.toInt, named.get(i))) ++
+        ('A' to 'Z').map(i => (i.toInt, named.get(i))) ++
+      zeroToNine.zipWithIndex.map(a => (a._2 + '0', a._1))
+
+
+  def currentRegister: Char = if (set == -1) '"' else set.toChar
+  protected def getRegisterable(set0: Int = -1): Option[Registerable] = {
+    val set = if (set0 == -1) this.set else set0
+    if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
+      named.get(set)
+    } else if (set >= '0' && set <= '9') {
+      zeroToNine(set - '0')
+    } else if (set == '*') {
+      Option(system)
+    } else {
+      Option(default)
+    }
   }
   /**
     * if in current register there is a fresh deleted node, we will mark this as needs clone
@@ -52,7 +63,7 @@ trait RegisterHandler extends RegisterInterface {
     } else {
       register
     }
-    val reg = getRegisterable
+    val reg = getRegisterable(set)
     reg match {
       case Some(r@Registerable.Node(a, info, needsClone)) if !needsClone =>
         val give = r.copy()
