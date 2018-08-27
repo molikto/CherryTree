@@ -673,6 +673,7 @@ class Client(
         case Some(h) =>
           done = true
           yank(Registerable.Unicode(Unicode("HTML")), false, '*')
+        case _ =>
       }
     }
     if (!done) {
@@ -680,6 +681,7 @@ class Client(
         case Some(h) =>
           done = true
           yank(Registerable.Unicode(Unicode(h)), false, '*')
+        case _ =>
       }
     }
     if (done) {
