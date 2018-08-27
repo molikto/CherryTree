@@ -648,7 +648,8 @@ class Client(
         (None, Some(a.str), None)
       case Registerable.Node(a, _, _) =>
         previousCopyId = Random.nextInt().toString
-        (Some(model.data.Node.toHtml(a)), None, Some(previousCopyId))
+        val html = model.data.Node.toHtml(a)
+        (Some(html), Some(html): Option[String], Some(previousCopyId))
       case Registerable.Text(a) =>
         previousCopyId = Random.nextInt().toString
         (Some(Text.toHtml(a)), Some(Text.toPlain(a)), Some(previousCopyId))
@@ -685,7 +686,6 @@ class Client(
         val pset = set
         set = '*'
         val command = if (getRegisterable.exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
-        retrieveSetRegisterAndSetToCloneNode()
         localChange(command.action(state, 1, this, None, None, None))
         set = pset
       }

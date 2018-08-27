@@ -388,15 +388,14 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
 
     override def toScalaTags: Frag = code(content.str)
-
-    override def toPlainScalaTags: Frag = content.str
+    override def toPlainScalaTags: Frag = raw(content.str)
   }
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
 
     override def toScalaTags: Frag = code(`class` := "latex", content.str)
 
-    override def toPlainScalaTags: Frag = content.str
+    override def toPlainScalaTags: Frag = raw(content.str)
   }
 
   case class HTML(content: Unicode) extends Coded with Atomic {
@@ -420,7 +419,7 @@ object Text {
 
     override def toScalaTags: Frag = img(src := url.str, title := tit.str)
 
-    override def toPlainScalaTags: Frag = url.str
+    override def toPlainScalaTags: Frag = raw(url.str)
   }
 
 
@@ -432,7 +431,7 @@ object Text {
     override def size: Int = unicode.size
 
     override def toScalaTags: Frag = unicode.str
-    override def toPlainScalaTags: Frag = toScalaTags
+    override def toPlainScalaTags: Frag = raw(unicode.str)
 
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)

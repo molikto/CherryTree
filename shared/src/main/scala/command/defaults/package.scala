@@ -33,7 +33,7 @@ package object defaults {
         val data = Registerable.Text(a.rich(pos).copyTextualRange(v.merged))
         commandState.yank(data, isDelete = isDelete, register = reg)
         val trans = if (isDelete) {
-          deleteRichNormalRange(a, commandState, pos, v.merged, enableModal, noHistory = true)
+          deleteRichNormalRange(a, commandState, pos, v.merged, !enableModal, noHistory = true)
         } else {
           if (enableModal) {
             DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))

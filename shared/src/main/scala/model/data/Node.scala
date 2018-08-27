@@ -144,32 +144,43 @@ case class Node (
   }
 
 
-
-  def toScalaTags: Frag = {
+  def toScalaTags(hasWrapper: Boolean): Frag = {
     def contentWithoutP = content match {
-          case Content.Rich(t) => Text.toScalaTags(t.text)
-          case Content.Code(u, lang) => pre(u.str)
-        }
+      case Content.Rich(t) => Text.toScalaTags(t.text)
+      case c@Content.Code(u, lang) =>
+        if (c.ty == Embedded.HTML) raw(u.str)
+        else pre(u.str)
+    }
     def children: Frag = attribute(ChildrenType) match {
       case Some(ChildrenType.Paragraphs) =>
         childs.map(_.toScalaTags)
       case Some(ChildrenType.OrderedList) =>
-        ol(childs.map(a => li(a.toScalaTags)))
+        if (childs.isEmpty) Seq.empty[Frag]: Frag
+        else ol(childs.map(a => li(a.toScalaTags(true))))
       case _ =>
-        ul(childs.map(a => li(a.toScalaTags)))
+        if (childs.isEmpty) Seq.empty[Frag]: Frag
+        else ul(childs.map(a => li(a.toScalaTags(true))))
     }
     attribute(ContentType) match {
       case Some(ContentType.Heading(h)) =>
-         Seq(tag(s"h$h")(contentWithoutP), children)
+        Seq(tag(s"h$h")(contentWithoutP), children)
       case Some(ContentType.Cite) =>
         blockquote(
           children,
           cite(contentWithoutP)
         )
       case Some(ContentType.Br) =>
-        br
-      case _ => p(contentWithoutP)
+        Seq(br, children)
+      case _ =>
+        if (hasWrapper)
+          Seq(contentWithoutP, children)
+        else
+          Seq(p(contentWithoutP), children)
     }
+  }
+
+  def toScalaTags: Frag = {
+    toScalaTags(false)
   }
 }
 
