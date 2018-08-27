@@ -4,8 +4,9 @@ import java.util.UUID
 
 import doc.DocTransaction
 import model._
-import model.data.Node.ContentType
+import Node.{ChildrenType, ContentType}
 import model.range.IntRange
+import scalatags.Text.all._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -28,7 +29,7 @@ case class Node (
   def count: Int = 1 + childs.map(_.count).sum
   def size: Int = content.size + childs.map(_.size).sum
 
-  def lookup(_2: String, currentCur: cursor.Node = cursor.Node.root): Option[cursor.Node] = {
+  def lookup(_2: String, currentCur: model.cursor.Node = model.cursor.Node.root): Option[model.cursor.Node] = {
     if (uuid == _2) {
       Some(currentCur)
     } else {
@@ -43,21 +44,21 @@ case class Node (
   }
 
 
-  private def filter0(cur: cursor.Node, a: Node => Boolean, bf: ArrayBuffer[cursor.Node]): Unit = {
+  private def filter0(cur: model.cursor.Node, a: Node => Boolean, bf: ArrayBuffer[model.cursor.Node]): Unit = {
     if (a(this)) bf.append(cur)
     childs.zipWithIndex.foreach(pair => {
       pair._1.filter0(cur :+ pair._2, a, bf)
     })
   }
 
-  def filter(cur: cursor.Node, a: Node => Boolean): Seq[cursor.Node] = {
-    val bf = new ArrayBuffer[cursor.Node]()
+  def filter(cur: model.cursor.Node, a: Node => Boolean): Seq[model.cursor.Node] = {
+    val bf = new ArrayBuffer[model.cursor.Node]()
     filter0(cur, a, bf)
     bf
   }
 
 
-  def lastDefined(a: cursor.Node): cursor.Node = {
+  def lastDefined(a: model.cursor.Node): model.cursor.Node = {
     var len = a.length
     while (len >= 0) {
       val can = a.take(len)
@@ -66,7 +67,7 @@ case class Node (
       }
       len -= 1
     }
-    cursor.Node.root
+    model.cursor.Node.root
   }
 
   def isH1: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
@@ -75,7 +76,7 @@ case class Node (
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)
 
 
-  def allChildrenUuids(cur: cursor.Node, in: Map[String, Boolean]): Seq[cursor.Node] = {
+  def allChildrenUuids(cur: model.cursor.Node, in: Map[String, Boolean]): Seq[model.cursor.Node] = {
     childs.zipWithIndex.flatMap(c => {
       val cs = c._1.allChildrenUuids(cur :+ c._2, in)
       if (in.get(c._1.uuid).contains(true)) cs :+ (cur :+ c._2) else cs
@@ -107,7 +108,7 @@ case class Node (
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
 
-  def map(c: cursor.Node, transform: Node => Node): Node = {
+  def map(c: model.cursor.Node, transform: Node => Node): Node = {
     if (c.isEmpty) {
       transform(this)
     } else {
@@ -115,10 +116,10 @@ case class Node (
     }
   }
 
-  def get(a: cursor.Node): Option[Node] =
+  def get(a: model.cursor.Node): Option[Node] =
     if (a.isEmpty) Some(this) else if (a.head >= childs.size) None else childs(a.head).get(a.tail)
 
-  def apply(c: cursor.Node): Node = if (c.isEmpty) this else childs(c.head)(c.tail)
+  def apply(c: model.cursor.Node): Node = if (c.isEmpty) this else childs(c.head)(c.tail)
 
   def apply(r: range.Node): Seq[Node] = this(r.parent)(r.childs)
 
@@ -134,21 +135,51 @@ case class Node (
     copy(childs = childs.patch(i, cs, 0))
   }
 
-  def insert(c: cursor.Node, cs: Seq[Node]): data.Node =
+  def insert(c: model.cursor.Node, cs: Seq[Node]): Node =
     map(model.cursor.Node.parent(c), a => a.insert(c.last, cs))
 
-  def move(r: range.Node, at: cursor.Node): data.Node = {
+  def move(r: range.Node, at: model.cursor.Node): Node = {
     val a = this(r)
     delete(r).insert(r.transformAfterDeleted(at).get, a)
   }
 
 
 
-
-
+  def toScalaTags: Frag = {
+    def contentWithoutP = content match {
+          case Content.Rich(t) => Text.toScalaTags(t.text)
+          case Content.Code(u, lang) => pre(u.str)
+        }
+    def children: Frag = attribute(ChildrenType) match {
+      case Some(ChildrenType.Paragraphs) =>
+        childs.map(_.toScalaTags)
+      case Some(ChildrenType.OrderedList) =>
+        ol(childs.map(a => li(a.toScalaTags)))
+      case _ =>
+        ul(childs.map(a => li(a.toScalaTags)))
+    }
+    attribute(ContentType) match {
+      case Some(ContentType.Heading(h)) =>
+         Seq(tag(s"h$h")(contentWithoutP), children)
+      case Some(ContentType.Cite) =>
+        blockquote(
+          children,
+          cite(contentWithoutP)
+        )
+      case Some(ContentType.Br) =>
+        br
+      case _ => p(contentWithoutP)
+    }
+  }
 }
 
 object Node extends DataObject[Node] {
+  def toHtml(a: Seq[Node]): String =
+    if (a.isEmpty) ""
+    else if (a.size == 1) a.head.toScalaTags.render
+    else ul(a.map(a => li(a.toScalaTags))).render
+
+
   def matchNodeRef(url: String): Option[String] = if (url.startsWith(NodeRefScheme)) Some(url.substring(NodeRefScheme.length + "node?node=".length)) else None
 
   def nodeRefRelative(nodeId: String): String = {
@@ -233,13 +264,13 @@ object Node extends DataObject[Node] {
     n.map(_.cloneNode())
   }
 
-  def defaultMode(root: Node, node: cursor.Node, enableModal: Boolean): mode.Node.Content = {
+  def defaultMode(root: Node, node: model.cursor.Node, enableModal: Boolean): mode.Node.Content = {
     model.mode.Node.Content(node, root(node).content.defaultMode(enableModal))
   }
 
-  val debug_empty = Node("", data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
+  val debug_empty = Node("", Content.Rich(Rich.empty), Map.empty, Seq.empty)
 
-  def create(): Node =  Node(UUID.randomUUID().toString, data.Content.Rich(data.Rich.empty), Map.empty, Seq.empty)
+  def create(): Node =  Node(UUID.randomUUID().toString, Content.Rich(Rich.empty), Map.empty, Seq.empty)
 
 
   val pickler: Pickler[Node] = new Pickler[Node] {
@@ -279,7 +310,7 @@ object Node extends DataObject[Node] {
       case 3 => 2
       case _ => 1
     }
-    data.Node(r.nextInt.toString, data.Content.random(r),
+    Node(r.nextInt.toString, Content.random(r),
       Map.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }

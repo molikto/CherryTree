@@ -74,6 +74,7 @@ trait EditorView extends View {
 
   def systemHandleArrowKey: Boolean = false
 
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
@@ -111,30 +112,33 @@ trait EditorView extends View {
       */
 
     event( "copy", (a: ClipboardEvent) => {
-      window.console.log(a)
+      copyCut(a, false)
       preventDefault(a)
     })
 
     event( "cut", (a: ClipboardEvent) => {
-      window.console.log(a)
+      copyCut(a, true)
       preventDefault(a)
     })
 
+    def copyCut(a: ClipboardEvent, isCut: Boolean) = {
+      val (html, plain, ct) = editor.onExternalCopyCut(isCut)
+      a.clipboardData.clearData()
+      html.foreach(d => a.clipboardData.setData("text/html", d))
+      plain.foreach(d => a.clipboardData.setData("text/plain", d))
+      ct.foreach(d => a.clipboardData.setData("text/cherrytree", d))
+    }
+
     event( "paste", (a: ClipboardEvent) => {
       preventDefault(a)
-      window.console.log(a.clipboardData)
       if (a.clipboardData != null) {
         val html = a.clipboardData.getData("text/html")
-//        if (html != null) {
-//          // LATER copy paste html
-//          console.log(html)
-//        } else {
-//        }
         val plain = a.clipboardData.getData("text/plain")
-        if (plain != null) {
-          editor.onExternalPasteInRichEditor(Unicode(plain))
+        val ct = a.clipboardData.getData("text/cherrytree")
+        if (html != null) {
+          window.console.log(html)
         }
-        // LATER ProseMirror capturePaste...
+        editor.onExternalPasteInRichEditor(Option(html), Option(plain), Option(ct))
       }
     })
   }

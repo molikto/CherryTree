@@ -22,7 +22,6 @@ trait SourceEditInterface {
 trait RichEditInterface {
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int, mergeWithPrevious: Boolean): mode.Content.Rich
   def onAttributeModified(url: Unicode, title: Unicode)
-  def onExternalPasteInRichEditor(a: Unicode)
   // returns if there is any data change
   def onDeleteCurrentSelectionAndStartInsert(): Boolean
 }
@@ -39,4 +38,8 @@ trait EditorInterface extends SourceEditInterface with RichEditInterface with Se
   def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
   def flushes: Observable[Unit]
   def onKeyDown(k: Key): Boolean
+
+  def onExternalPasteInRichEditor(html: Option[String], plain: Option[String], ct: Option[String])
+  // returns
+  def onExternalCopyCut(isCut: Boolean): (Option[String], Option[String], Option[String])
 }

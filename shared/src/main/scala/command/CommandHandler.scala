@@ -3,6 +3,7 @@ package command
 import client.Client
 import command.Key._
 import command.Part.IdentifiedCommand
+import command.defaults.YankPaste
 import doc.{DocState, DocTransaction}
 import model.data.{SpecialChar, Unicode}
 import model.range.IntRange
@@ -11,6 +12,7 @@ import monix.reactive.Observable
 import monix.reactive.subjects._
 import register.{RegisterHandler, Registerable}
 import settings.Settings
+
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 
@@ -22,6 +24,8 @@ abstract class CommandHandler extends Settings with CommandInterface {
 
 
   val miscCommands = new defaults.Misc(this)
+  val yankPaste = new defaults.YankPaste()
+
 
   private val defaultCategories =  Seq(
     miscCommands,
@@ -39,7 +43,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeDelete(),
     new defaults.NodeFold(),
     new defaults.NodeMisc(),
-    new defaults.YankPaste(),
+    yankPaste,
     new defaults.UndoRedo(),
     new defaults.Scroll(),
   )

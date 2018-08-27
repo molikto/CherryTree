@@ -1,20 +1,14 @@
 package web.ui.content
 
 import model._
-import model.data.{Content, _}
+import model.data._
 import model.mode.Content.CodeInside
-import model.operation.Content
-import model.range.IntRange
-import monix.execution.Cancelable
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLElement, HTMLSpanElement, Node, Range}
-import org.scalajs.dom.{document, raw, window}
-import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.ui.doc.AbstractDocumentView
 import web.view._
 import web.ui._
-import web.ui.dialog.{CoveringSourceEditDialog, SourceEditOption}
+import web.ui.dialog._
 
 import scala.scalajs.js
 

@@ -42,25 +42,6 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   }
 
   new Command {
-    override val description: String = "yank selected nodes"
-    override val defaultKeys: Seq[KeySeq] = Seq("y")
-    override def available(a: DocState): Boolean = a.isNodeVisual
-
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.mode match {
-        case Some(v@model.mode.Node.Visual(fix, _)) =>
-          val ns = v.minimalRange match {
-            case Some(k) => a.node(k)
-            case _ => Seq(a.node)
-          }
-          commandState.yank(Registerable.Node(ns, needsClone = true), isDelete = false)
-          DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultMode(enableModal)))
-        case _ => throw new IllegalArgumentException("Invalid command")
-      }
-    }
-  }
-
-  new Command {
     override val description: String = "yank to line end"
     override val defaultKeys: Seq[KeySeq] = Seq("Y")
     override def available(a: DocState): Boolean = a.isRich
@@ -73,24 +54,12 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   }
 
   new Command {
-    override val description: String = "yank selected text"
+    override val description: String = "yank selection"
     override val defaultKeys: Seq[KeySeq] = Seq("y")
-    override def available(a: DocState): Boolean = a.isRichVisual || a.isCodeNormal
+    override def available(a: DocState): Boolean = a.isVisual || a.isCodeNormal
 
-    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      a.mode match {
-        case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(fix, _))) =>
-          commandState.yank(Registerable.Text(a.rich(pos).copyTextualRange(v.merged)), isDelete = false)
-          if (enableModal) {
-            DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
-          } else {
-            DocTransaction.empty
-          }
-        case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal)) =>
-          commandState.yank(Registerable.Unicode(a.node(pos).content.asInstanceOf[data.Content.Code].unicode), isDelete = false)
-          DocTransaction.empty
-        case _ => throw new IllegalArgumentException("Invalid command")
-      }
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      yankSelection(a, commandState, enableModal, false, -1)._1
     }
   }
 
@@ -115,6 +84,8 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   }
 
 
+
+
   abstract class PutCommand extends Command {
     override protected def available(a: DocState): Boolean = a.isContent
 
@@ -122,6 +93,41 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cursor = a.asContent
+      def putTextInRich(n: Seq[Text]) = {
+        def putBeforeAfter(rich: Rich, normal: IntRange) = {
+          var canInsert = false
+          if (rich.insideCoded(normal.start)) {
+            if (n.size == 1 && n.head.isPlain) {
+              canInsert = true
+            }
+          } else {
+            canInsert = true
+          }
+          // LATER insert serialized format
+          val (op, mode) = putText(rich, normal, if (canInsert) n else Seq(Text.Plain(Unicode(Text.toPlain(n)))))
+          DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
+        }
+        if (n.nonEmpty) {
+          def byMode(amode: model.mode.Content): DocTransaction = {
+            amode match {
+              case model.mode.Content.RichNormal(ran) =>
+                putBeforeAfter(a.rich(cursor), ran)
+              case model.mode.Content.RichInsert(i) =>
+                putBeforeAfter(a.rich(cursor), IntRange(i, i))
+              case v@model.mode.Content.RichVisual(m, f) =>
+                val trans = deleteRichNormalRange(a, commandState, cursor, v.merged, insert = true, noHistory = true)
+                val docAfter = model.operation.Node.apply(trans.transaction, a, enableModal)._1
+                val t2 = byMode(docAfter.contentMode)
+                t2.copy(transaction =  trans.transaction ++ t2.transaction)
+              case _ =>
+                DocTransaction.empty
+            }
+          }
+          byMode(a.contentMode)
+        } else {
+          DocTransaction.empty
+        }
+      }
       commandState.retrieveSetRegisterAndSetToCloneNode() match {
         case Some(Registerable.Node(n, range, needsClone)) =>
           if (n.nonEmpty) {
@@ -131,48 +137,15 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             DocTransaction.empty
           }
         case Some(Registerable.Text(n)) =>
-          def putBeforeAfter(rich: Rich, normal: IntRange) = {
-            var canInsert = false
-            if (rich.insideCoded(normal.start)) {
-              if (n.size == 1 && n.head.isPlain) {
-                canInsert = true
-              }
-            } else {
-              canInsert = true
-            }
-            // LATER insert serialized format
-            if (canInsert) {
-              val (op, mode) = putText(rich, normal, n)
-              DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
-            } else {
-              DocTransaction.empty
-            }
-          }
-          if (n.nonEmpty) {
-            a.contentMode match {
-              case model.mode.Content.RichNormal(ran) =>
-                putBeforeAfter(a.rich(cursor), ran)
-              case model.mode.Content.RichInsert(i) =>
-                putBeforeAfter(a.rich(cursor), IntRange(i, i))
-              case model.mode.Content.RichVisual(m, f) =>
-                // TODO implement this
-                DocTransaction.empty
-                // TODO implement code mode
-              case _ =>
-                DocTransaction.empty
-            }
-          } else {
-            DocTransaction.empty
-          }
+          putTextInRich(n)
         case Some(Registerable.Unicode(n)) =>
-          // TODO implement this
-          DocTransaction.empty
+          putTextInRich(Seq(Text.Plain(n)))
         case None => DocTransaction.empty
       }
     }
   }
 
-  new PutCommand {
+  val putAfter = new PutCommand {
     override val description: String = "put after"
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
@@ -188,7 +161,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     }
   }
 
-  new PutCommand {
+  val putBefore = new PutCommand {
     override val description: String = "put before"
     override def defaultKeys: Seq[KeySeq] = Seq("P")
 

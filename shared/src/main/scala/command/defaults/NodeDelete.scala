@@ -23,8 +23,7 @@ class NodeDelete extends CommandCategory("node: delete") {
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val r = a.asContent
-      if (r == a.zoom) DocTransaction.empty
-      else deleteNodeRange(a, commandState, model.range.Node(r), enableModal) // we don't allow multiple deletes for now!
+      deleteNodeRange(a, commandState, model.range.Node(r), enableModal) // we don't allow multiple deletes for now!
     }
   }
 

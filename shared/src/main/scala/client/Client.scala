@@ -17,7 +17,7 @@ import command.Key.KeySeq
 import model.ot.Rebased
 import util._
 import model._
-import model.data.{CodeType, SpecialChar, Unicode}
+import model.data.{CodeType, SpecialChar, Text, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
 import model.cursor.Node
@@ -25,7 +25,7 @@ import model.mode.Content.CodeInside
 import model.operation.Rich
 import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
-import register.RegisterHandler
+import register.{RegisterHandler, Registerable}
 import undoer.Undoer
 import view.EditorInterface
 
@@ -637,45 +637,61 @@ class Client(
     }
   }
 
+  private var previousCopyId: String = ""
+
+  // html, plain, and ct
+  def onExternalCopyCut(isCut: Boolean): (Option[String], Option[String], Option[String]) = {
+    val (trans, data) = defaults.yankSelection(state, this, enableModal, isCut, reg = '*')
+    localChange(trans)
+    data.map {
+      case Registerable.Unicode(a) =>
+        (None, Some(a.str), None)
+      case Registerable.Node(a, _, _) =>
+        previousCopyId = Random.nextInt().toString
+        (Some(model.data.Node.toHtml(a)), None, Some(previousCopyId))
+      case Registerable.Text(a) =>
+        previousCopyId = Random.nextInt().toString
+        (Some(Text.toHtml(a)), Some(Text.toPlain(a)), Some(previousCopyId))
+    }.getOrElse((None, None, None))
+  }
 
 
   /**
     * currently code editors system copy/paste is not handled by this
     */
-  override def onExternalPasteInRichEditor(unicode: Unicode): Unit = {
-    state.mode.map {
-      case model.mode.Node.Content(n, c) =>
-        def insert(a: Int): operation.Node = operation.Node.rich(n, operation.Rich.insert(a, unicode))
-        c match {
-          case model.mode.Content.RichNormal(r) =>
-            DocTransaction(Seq(insert(r.start)),
-              Some(state.copyContentMode(mode.Content.RichNormal(r.moveBy(unicode.size)))))
-          case model.mode.Content.RichInsert(pos) =>
-            DocTransaction(Seq(insert(pos)),
-              Some(state.copyContentMode(mode.Content.RichInsert(pos + unicode.size))))
-          case model.mode.Content.RichVisual(f, m) =>
-            val rg = f.merge(m)
-            val rich = state.rich(n)
-            val op = operation.Rich.insert(rg.start, unicode)
-            val applied = op(rich)
-            operation.Rich.deleteTextualRange(applied, rg.moveBy(unicode.size)) match {
-              case Some((a, b, _)) =>
-                DocTransaction(operation.Node.rich(n, op) +: a.map(o => operation.Node.rich(n, o)),
-                  Some(state.copyContentMode(model.mode.Content.RichNormal(b).collapse(enableModal))))
-              case None =>
-                DocTransaction(Seq(operation.Node.rich(n, op)),
-                  Some(state.copyContentMode(mode.Content.RichNormal(f.min(m).moveBy(unicode.size)).collapse(enableModal))))
-            }
-          case model.mode.Content.CodeNormal =>
-            // LATER paste in code normal
-            DocTransaction.empty
-          case _ =>
-            throw new IllegalStateException("not handled by me")
-        }
-      case model.mode.Node.Visual(fix, move) =>
-        DocTransaction.empty
-    }.foreach(t => localChange(t))
+  override def onExternalPasteInRichEditor(html: Option[String], plain: Option[String], ct: Option[String]): Unit = {
+    var done = false
+    ct match {
+      case Some(a) if a == previousCopyId =>
+        done = true
+      case _ =>
+    }
+    if (!done) {
+      html match {
+        case Some(h) =>
+          done = true
+          yank(Registerable.Unicode(Unicode("HTML")), false, '*')
+      }
+    }
+    if (!done) {
+      plain match {
+        case Some(h) =>
+          done = true
+          yank(Registerable.Unicode(Unicode(h)), false, '*')
+      }
+    }
+    if (done) {
+      if (state.isContent) {
+        val pset = set
+        set = '*'
+        val command = if (getRegisterable.exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
+        retrieveSetRegisterAndSetToCloneNode()
+        localChange(command.action(state, 1, this, None, None, None))
+        set = pset
+      }
+    }
   }
+
 
   private def applyFolds(folded0: DocState,
     unfold0: Set[cursor.Node],

@@ -7,8 +7,8 @@ import scala.collection.mutable.ArrayBuffer
 
 trait RegisterInterface {
   def setRegister(a: Int): Unit
-  def yank(registerable: Registerable, isDelete: Boolean): Unit
-  def retrieveSetRegisterAndSetToCloneNode(): Option[Registerable]
+  def yank(registerable: Registerable, isDelete: Boolean, register: Int = -1): Unit
+  def retrieveSetRegisterAndSetToCloneNode(register: Int = -1): Option[Registerable]
 }
 
 
@@ -16,32 +16,43 @@ trait RegisterHandler extends RegisterInterface {
   private var default: Registerable = null
   private val named = mutable.Map[Int, Registerable]()
   private var zeroToNine = (0 until 10).map(_ => None : Option[Registerable]).toBuffer
-  private var set: Int = -1
+  protected var set: Int = -1
+
+  private var system: Registerable = null
 
   override def setRegister(a: Int): Unit = {
     if ((a >= 'a' && a <= 'z') || (a >= 'A' && a<= 'Z')) {
       set = a
     } else if (a >= '0' && a <= '9') {
       set = a
+    } else if (a == '*') {
+      set = '*'
     } else {
       set = -1
     }
   }
 
-
+  protected def getRegisterable: Option[Registerable] = if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
+    named.get(set)
+  } else if (set >= '0' && set <= '9') {
+    zeroToNine(set - '0')
+  } else if (set == '*') {
+    Option(system)
+  } else {
+    Option(default)
+  }
   /**
     * if in current register there is a fresh deleted node, we will mark this as needs clone
     */
-  override def retrieveSetRegisterAndSetToCloneNode(): Option[Registerable] = {
-    val reg =
-      if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
-        named.get(set)
-      } else if (set >= '0' && set <= '9') {
-        zeroToNine(set - '0')
-      } else {
-        Option(default)
-      }
-    set = -1
+  override def retrieveSetRegisterAndSetToCloneNode(register: Int = -1): Option[Registerable] = {
+    val set = if (register == -1) {
+      val s = this.set
+      this.set = -1
+      s
+    } else {
+      register
+    }
+    val reg = getRegisterable
     reg match {
       case Some(r@Registerable.Node(a, info, needsClone)) if !needsClone =>
         val give = r.copy()
@@ -53,7 +64,12 @@ trait RegisterHandler extends RegisterInterface {
 
   }
 
-  override def yank(registerable: Registerable, isDelete: Boolean): Unit = {
+  override def yank(registerable: Registerable, isDelete: Boolean, register: Int = -1): Unit = {
+    var set = register
+    if (set == -1) {
+      set = this.set
+      this.set = -1
+    }
     var defaultHistory = true
     if (set == -1) {
       default = registerable
@@ -62,8 +78,10 @@ trait RegisterHandler extends RegisterInterface {
     } else if (set >= '0' && set <= '9') {
       defaultHistory = false
       zeroToNine(set - '0') = Some(registerable)
+    } else if (set == '*') {
+      defaultHistory = false
+      system = registerable
     }
-    set = -1
     if (defaultHistory) {
       if (!isDelete) {
         zeroToNine(0) = Some(registerable)

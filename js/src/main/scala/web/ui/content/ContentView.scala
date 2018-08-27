@@ -2,10 +2,8 @@ package web.ui.content
 
 import model.data
 import model.data.{Embedded, SourceCode}
-import util.Rect
 import view.EditorInterface
 import web.view.View
-import web.ui.content.ContentViewEditor.General
 import web.ui.doc.{AbstractDocumentView, DocumentView}
 
 

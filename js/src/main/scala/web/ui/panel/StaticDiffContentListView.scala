@@ -1,4 +1,4 @@
-package web.ui.dialog
+package web.ui.panel
 
 import model.NodeQuickDiff
 import model.data.Node

@@ -94,7 +94,6 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   new RichInsertCommand with OverrideCommand {
     override val description: String = "open a new sibling if at text end"
-    // TODO what to do on enter?
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
     override def priority(key: KeySeq): Int = 1
 

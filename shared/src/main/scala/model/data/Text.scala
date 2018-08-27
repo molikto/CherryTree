@@ -3,13 +3,18 @@ package model.data
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
+import scalatags.Text
 import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
+import scalatags.Text.all._
 
 
 abstract sealed class Text {
-  def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
+  def toScalaTags: Frag
+  def toPlainScalaTags: Frag
+
+  def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
   def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
@@ -25,9 +30,9 @@ abstract sealed class Text {
   private[data] def serialize(buffer: UnicodeWriter)
   def size: Int
 
-  def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
-  def atoms(myCursor: cursor.Node, myIndex: Int): Iterator[Atom] = after(myCursor, myIndex, 0)
-  def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
+  def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
+  def atoms(myCursor: model.cursor.Node, myIndex: Int): Iterator[Atom] = after(myCursor, myIndex, 0)
+  def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
 }
 
 /**
@@ -36,6 +41,12 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+
+  private[data] def toScalaTags(a: Seq[Text]): Frag = a.map(_.toScalaTags): Frag
+  private[data] def toPlainScalaTags(a: Seq[Text]): Frag = a.map(_.toPlainScalaTags): Frag
+  def toHtml(a: Seq[Text]): String = toScalaTags(a).render
+  def toPlain(a: Seq[Text]): String = toPlainScalaTags(a).render
+
   def quickSearch(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
     text.exists(_.quickSearch(p, deli))
   }
@@ -54,7 +65,7 @@ object Text {
     Text.parseAll(new UnicodeReader(buffer.toUnicode))
   }
 
-  private[data] def before(myCursor: cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) =
+  private[data] def before(myCursor: model.cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) =
     if (a.isEmpty) Iterator.empty
     else {
       new Iterator[Atom] {
@@ -89,7 +100,7 @@ object Text {
       }
     }
 
-  private[data] def after(myCursor: cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) = if (a.isEmpty) Iterator.empty
+  private[data] def after(myCursor: model.cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) = if (a.isEmpty) Iterator.empty
   else {
     new Iterator[Atom] {
       private var i = 0 // candidate
@@ -122,14 +133,14 @@ object Text {
   }
 
   sealed trait Atomic extends Text {
-    final override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
+    final override def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i < size) Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
     }
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
-    final override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
+    final override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i == size)
         Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
@@ -227,7 +238,9 @@ object Text {
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
-    override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
+    override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
+
+    override def toPlainScalaTags: Frag = Text.toScalaTags(content)
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
       super.quickSearch(p, deli) ||
@@ -237,7 +250,7 @@ object Text {
       content.foreach(_.serialize(buffer))
     }
 
-    override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+    override def after(myCursor: model.cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Formatted.this.size) 1 else 2
       var it: Iterator[Atom] = null
       override def hasNext: Boolean = i < 2
@@ -258,7 +271,7 @@ object Text {
       }
     }
 
-    override def before(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+    override def before(myCursor: model.cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == Formatted.this.size) 2 else if (b > 1) 1 else if (b > 0) 0 else -1
       var it: Iterator[Atom] = null
       override def hasNext: Boolean = i >= 0
@@ -285,21 +298,27 @@ object Text {
 
   case class Emphasis(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Emphasis
+
+    override def toScalaTags: Frag = em(Text.toScalaTags(content))
   }
   case class Strong(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Strong
+    override def toScalaTags: Frag = strong(Text.toScalaTags(content))
   }
 
   case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.StrikeThrough
+    override def toScalaTags: Frag = del(Text.toScalaTags(content))
   }
-  case class Link(content: Seq[Text], url: Unicode, title: Unicode = Unicode.empty) extends Formatted {
+  case class Link(content: Seq[Text], url: Unicode, tit: Unicode = Unicode.empty) extends Formatted {
     def isNodeRef: Boolean = url.str.startsWith(Node.NodeRefScheme)
+    override def toScalaTags: Frag = a(Text.toScalaTags(content), href := url.str, title := tit.str)
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content), s" (${url.str})": Frag)
 
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
     override def attribute(i: SpecialChar): Unicode =
       if (i == UrlAttribute) url
-      else if (i == TitleAttribute) title
+      else if (i == TitleAttribute) tit
       else throw new IllegalArgumentException("Not here")
   }
 
@@ -308,7 +327,7 @@ object Text {
     def delimitation: SpecialChar.Delimitation
     override def contentSize: Int = content.size
 
-    //override def apply(cur: cursor.Node): Text = if (cur.isEmpty) this else if (cur == Se
+    //override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else if (cur == Se
 
     override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
       buffer.put(content)
@@ -317,7 +336,7 @@ object Text {
     override def quickSearch(p: Unicode, deli: settings.SpecialKeySettings): Boolean =
       super.quickSearch(p, deli) || content.containsLowerCase(p)
 
-    override def after(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+    override def after(myCursor: model.cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
       var it: Iterator[Atom] = null
       override def hasNext: Boolean = i < 2
@@ -339,7 +358,7 @@ object Text {
     }
 
 
-    override def before(myCursor: cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
+    override def before(myCursor: model.cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == Coded.this.size) 2 else if (b > 1) 1 else if (b > 0) 0 else -1
       var it: Iterator[Atom] = null
       override def hasNext: Boolean = i >= 0
@@ -367,13 +386,24 @@ object Text {
   }
   case class Code(content: Unicode) extends Coded {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
+
+    override def toScalaTags: Frag = code(content.str)
+
+    override def toPlainScalaTags: Frag = content.str
   }
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
+
+    override def toScalaTags: Frag = code(`class` := "latex", content.str)
+
+    override def toPlainScalaTags: Frag = content.str
   }
 
   case class HTML(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.HTML
+    override def toScalaTags: Frag = raw(content.str)
+
+    override def toPlainScalaTags: Frag = toScalaTags
   }
 
 
@@ -384,9 +414,13 @@ object Text {
   }
 
 
-  case class Image(url: Unicode, title: Unicode = Unicode.empty) extends DelimitedEmpty with Atomic {
+  case class Image(url: Unicode, tit: Unicode = Unicode.empty) extends DelimitedEmpty with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
-    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else if (i == TitleAttribute) title else throw new IllegalArgumentException("Not here")
+    override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else if (i == TitleAttribute) tit else throw new IllegalArgumentException("Not here")
+
+    override def toScalaTags: Frag = img(src := url.str, title := tit.str)
+
+    override def toPlainScalaTags: Frag = url.str
   }
 
 
@@ -397,6 +431,9 @@ object Text {
     assert(!unicode.isEmpty)
     override def size: Int = unicode.size
 
+    override def toScalaTags: Frag = unicode.str
+    override def toPlainScalaTags: Frag = toScalaTags
+
     private[model] override def serialize(buffer: UnicodeWriter): Unit = {
       buffer.put(unicode)
     }
@@ -405,7 +442,8 @@ object Text {
       unicode.containsLowerCase(p)
     }
 
-    override def after(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
-    override def before(myCursor: cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
+    override def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
+    override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
+
   }
 }

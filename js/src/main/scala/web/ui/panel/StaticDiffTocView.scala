@@ -1,4 +1,4 @@
-package web.ui.dialog
+package web.ui.panel
 
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
