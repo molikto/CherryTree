@@ -2,7 +2,7 @@
 git filter-branch -f \
     --prune-empty \
     --tag-name-filter cat \
-    --tree-filter 'rm -f $FILE' \
+    --tree-filter 'rm -f jvm/saved' \
     -- --all
 git for-each-ref --format="%(refname)" refs/original/ | xargs -n 1 git update-ref -d
 git reflog expire --expire=now --all && git gc --prune=now --aggressive
