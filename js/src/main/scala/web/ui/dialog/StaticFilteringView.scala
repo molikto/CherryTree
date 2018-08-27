@@ -75,8 +75,8 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
   override def show(t: P): Unit = {
     marked = -1
     search.value = ""
-    update()
     super.show(t)
+    update() // need to be here, we have a check
   }
 
   override protected def onDismiss(): Unit = {
