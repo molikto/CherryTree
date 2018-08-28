@@ -42,6 +42,7 @@ object ClientInitializerView {
         }
       }
       model.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
+      model.parseFromHtml = web.util.parseFromHtml
 
     }
   }

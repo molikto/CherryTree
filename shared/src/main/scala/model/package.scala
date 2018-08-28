@@ -1,5 +1,6 @@
 import boopickle._
 import client.LocalStorage
+import register.Registerable
 
 package object model extends Picklers {
 
@@ -9,6 +10,7 @@ package object model extends Picklers {
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
   var parseFromCommonMarkMarkdown: String => data.Node = null
+  var parseFromHtml: String => Registerable = null
 
   var oldDocVersion = false
   val debug_view = true
