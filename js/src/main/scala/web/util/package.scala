@@ -214,7 +214,7 @@ package object util {
           case "HR" =>
             buffer.append(data.Node.create().attribute(data.Node.ContentType, data.Node.ContentType.Hr))
             c = c.nextSibling
-          case "OL" | "UL" => // LATER support dash list
+          case "OL" | "UL" =>
             val b = new ArrayBuffer[data.Node]()
             var cc = c.firstChild
             while (cc != null) {
@@ -390,6 +390,7 @@ package object util {
           case "thematic_break" =>
             assert(c.firstChild == null)
             buffer.append(data.Node.create().attribute(data.Node.ContentType, data.Node.ContentType.Hr))
+            c = c.next
           case "list" => // LATER support dash list
             val b = new ArrayBuffer[data.Node]()
             var cc = c.firstChild
