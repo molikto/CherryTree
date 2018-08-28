@@ -25,15 +25,15 @@ trait RegisterHandler extends RegisterInterface {
       set = a
     } else if (a >= '0' && a <= '9') {
       set = a
-    } else if (a == '*') {
-      set = '*'
+//    } else if (a == '*') { // this can only be got from Client.set = '*'
+//      set = '*'
     } else {
       set = -1
     }
   }
 
   def registerables: Seq[(Int, Option[Registerable])] =
-      Seq(('"'.toInt, Option(default)), ('*'.toInt, Option(system))) ++
+      Seq(('"'.toInt, Option(default))) ++
         ('a' to 'z').map(i => (i.toInt, named.get(i))) ++
         ('A' to 'Z').map(i => (i.toInt, named.get(i))) ++
       zeroToNine.zipWithIndex.map(a => (a._2 + '0', a._1))
