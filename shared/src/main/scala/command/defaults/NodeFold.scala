@@ -91,4 +91,25 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
       }
     }
   }
+
+
+  new TextualCommand {
+    override val description: String = "fold all direct children"
+    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asContent
+      val tog = a.node(cur).childs.zipWithIndex.map(a => cur :+ a._2).filter(c => !a.folded(c))
+      DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "unfold all children recursively"
+    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asContent
+      val tog = a.node(cur).allChildrenUuids(cur, a.userFoldedNodes)
+      DocTransaction(Seq.empty, None, toggleBefore = tog.toSet)
+    }
+  }
 }
