@@ -16,12 +16,14 @@ release build with `sbt assembly` for the jar. more info here: https://github.co
 
 ## read the code?
 
-* `model`: abstract and pure functions
+* `shared/.../model`: abstract and pure functions
     * `data`: data object definition, serialization
     * `cursor`: data type for cursor inside data
     * `range`: data type for range inside data, from left to right style
     * `operation`: operation definition on data
     * `conflict`, `transaction`: helper definitions
     * `ot` operational transformation for operations
-* `server`: abstract server implementation
-* `web` the web client
+* `shared/.../client`: abstract client
+    * `shared/.../undoer`, etc.: part of client functionality separated out
+* `jvm`: abstract server implementation
+* `js` the web client

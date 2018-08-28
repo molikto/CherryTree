@@ -526,24 +526,24 @@ block selection
 
 
 ::selection {
-    background: #cc7233aa;
+    background: #a56dafaa;
 }
 
 ::selection:window-inactive {
-  background: #cc723366;
+  background: #a56daf66;
 }
 
 
 .ct-selection {
     background: #58617488;
-    border-bottom: 2px solid #cc7233;
+    border-bottom: 2px solid #a56daf;
     margin-bottom: -2px;
 }
 
 
 .ct-window-inactive .ct-selection {
     background: #58617466;
-    border-bottom: 2px solid #cc723388;
+    border-bottom: 2px solid #a56daf88;
     margin-bottom: -2px;
 }
 
@@ -551,12 +551,12 @@ block selection
     position: absolute;
     background: #58617488;
     z-index: -1;
-    border-bottom: 2px solid #cc7233;
+    border-bottom: 2px solid #a56daf;
 }
 
 .ct-window-inactive .ct-rich-selection {
     background: #58617466;
-    border-bottom: 2px solid #cc723388;
+    border-bottom: 2px solid #a56daf88;
 }
 
 .ct-node-visual {
@@ -568,28 +568,28 @@ block selection
 }
 
 .cm-fat-cursor .CodeMirror-cursor {
-    background-color: #cc7233cc;
+    background-color: #a56dafcc;
 }
 
 .cm-animate-fat-cursor {
-    background-color: #cc7233cc;
+    background-color: #a56dafcc;
 }
 
 .cm-fat-cursor-mark {
-    background-color: #cc7233cc;
+    background-color: #a56dafcc;
 }
 
 /*
 .ct-window-inactive .cm-fat-cursor .CodeMirror-cursor {
-    background-color: #cc723388;
+    background-color: #a56daf88;
 }
 
 .ct-window-inactive .cm-animate-fat-cursor {
-    background-color: #cc723388;
+    background-color: #a56daf88;
 }
 
 .ct-window-inactive .cm-fat-cursor-mark {
-    background-color: #cc723388;
+    background-color: #a56daf88;
 }
 */
 
@@ -597,13 +597,16 @@ block selection
 
 .ct-node-visual-move {
   outline-offset: -2px;
-  outline: 2px solid #cc7233;
+  outline: 2px solid #a56daf;
 }
 
 .ct-window-inactive .ct-node-visual-move {
   outline-offset: -2px;
-  outline: 2px solid #cc723388;
+  outline: 2px solid #a56daf88;
 }
+
+
+
 
 .ct-c-code {
     font-style: normal;
