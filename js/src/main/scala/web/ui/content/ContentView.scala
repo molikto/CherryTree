@@ -1,7 +1,10 @@
 package web.ui.content
 
 import model.data
+import model.data.Node.ContentType
 import model.data.{Embedded, SourceCode}
+import org.scalajs.dom.raw
+import org.scalajs.dom.raw.HTMLElement
 import view.EditorInterface
 import web.view.View
 import web.ui.doc.{AbstractDocumentView, DocumentView}
@@ -21,10 +24,34 @@ object ContentView {
     }
   }
 
-  def matches(a: data.Content, v: General): Boolean = {
-    a match {
-      case data.Content.Rich(r) => v.isInstanceOf[Rich]
-      case c: data.Content.Code if v.isInstanceOf[Code] => matches(c.ty, v.asInstanceOf[Code])
+
+  def findParentContent(t0: raw.Node, dom: HTMLElement, editable: Boolean): ContentView.General = {
+    var t = t0
+    while (t != null && t != dom) {
+      View.maybeDom[View](t) match {
+        case Some(a)  =>
+          val contentView: ContentView.General = a match {
+            case view: RichView =>
+              view.asInstanceOf[ContentView.General]
+            case view: WrappedCodeView =>
+              view.asInstanceOf[ContentView.General]
+            case _ =>
+              null
+          }
+          if (contentView != null) {
+            return contentView
+          }
+        case _ =>
+      }
+      t = t.parentNode
+    }
+    null
+  }
+
+  def matches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
+    (a, v.asInstanceOf[Any]) match {
+      case (data.Content.Rich(r), v: RichView)  => contentType.contains(ContentType.Hr) == v.isHr
+      case (c: data.Content.Code, v: Code) => matches(c.ty, v)
       case _ => false
     }
   }
@@ -36,10 +63,10 @@ object ContentView {
     }
   }
 
-  def create(a: data.Content, editable: Boolean = false): General = {
+  def create(a: data.Content, contentType: Option[ContentType], editable: Boolean = false): General = {
     (a match {
       case r: data.Content.Rich =>
-        val v = new RichView(r)
+        val v = new RichView(r, contentType.contains(ContentType.Hr))
         if (editable) v.dom.style.cursor = "text"
         v
       case s: data.Content.Code => if (editable) new WrappedCodeView(s) else  createFromCode(s)

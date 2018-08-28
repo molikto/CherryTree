@@ -82,7 +82,7 @@ class NodeMisc extends CommandCategory("node: misc") {
 
   new ContentStyleCommand("cite", Some(data.Node.ContentType.Cite))
 
-  new ContentStyleCommand("br", Some(data.Node.ContentType.Br))
+  new ContentStyleCommand("hr", Some(data.Node.ContentType.Hr))
 
   new ContentStyleCommand("clear", None)
 
@@ -98,9 +98,9 @@ class NodeMisc extends CommandCategory("node: misc") {
   }
 
   new ChildrenStyleCommand("paragraphs", Some(data.Node.ChildrenType.Paragraphs))
-  new ChildrenStyleCommand("ordered list", Some(data.Node.ChildrenType.OrderedList))
-  new ChildrenStyleCommand("unordered list", Some(data.Node.ChildrenType.UnorderedList))
-  new ChildrenStyleCommand("dash list", Some(data.Node.ChildrenType.DashList))
+  new ChildrenStyleCommand("ordered list, ol", Some(data.Node.ChildrenType.OrderedList))
+  new ChildrenStyleCommand("unordered list, ul", Some(data.Node.ChildrenType.UnorderedList))
+  new ChildrenStyleCommand("dash list, dl", Some(data.Node.ChildrenType.DashList))
 
 
 

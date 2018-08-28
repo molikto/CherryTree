@@ -11,6 +11,7 @@ import scalatags.JsDom
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
+import web.ui
 import web.ui.doc.{AbstractDocumentView, DocumentView}
 import web.view._
 import web.ui.content.ContentViewEditor.General
@@ -19,9 +20,6 @@ import web.ui._
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-object RichView {
-  val EvilChar = "\u200B"
-}
 
 
 /**
@@ -32,11 +30,11 @@ object RichView {
   *
   *
   */
-class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
+class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends ContentView.Rich {
+
+  private val emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
 
   def rich: Rich = contentData.content
-
-  import RichView._
 
   override def createEditor(documentView: AbstractDocumentView, controller: EditorInterface): ContentViewEditor.General =
     new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
@@ -58,7 +56,7 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
     *
     */
 
-  dom = p(`class` := "ct-rich").render
+  dom = p(`class` := (if (isHr) "ct-rich-hr ct-rich" else "ct-rich")).render
 
   updateContent(initData)
 
@@ -92,11 +90,11 @@ class RichView(initData: model.data.Content.Rich) extends ContentView.Rich {
   }
 
   private[content] def initEmptyContent(): Unit = {
-    if (root.childNodes.length == 1 && root.textContent == EmptyStr && root.childNodes(0).isInstanceOf[Span]
+    if (root.childNodes.length == 1 && root.textContent == emptyStr && root.childNodes(0).isInstanceOf[Span]
       && root.childNodes(0).asInstanceOf[Span].className == "ct-hint-color") {
     } else {
       removeAllChild(root)
-      root.appendChild(span(`class` := "ct-hint-color", EmptyStr).render)
+      root.appendChild(span(`class` := "ct-hint-color", emptyStr).render)
     }
   }
 

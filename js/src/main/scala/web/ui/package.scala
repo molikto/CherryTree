@@ -8,6 +8,7 @@ import org.scalajs.dom._
 package object ui {
 
   val EmptyStr = "∅"
+  val EvilChar =  "\u200B"
 
 
   // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key/Key_Values
