@@ -159,7 +159,7 @@ class DocumentView(
         println("focusing on document")
       }
       // setting the selection is enough to get focus
-      flushSelection()
+      flushSelection(true)
     }
   }
 
@@ -172,18 +172,20 @@ class DocumentView(
     }
   })
 
-  private def flushSelection(): Unit = {
+  private def flushSelection(force: Boolean = false): Unit = {
     if (!isFocusedOut) {
       val sel = window.getSelection()
-      if (sel.rangeCount == 1) {
-        val ran = sel.getRangeAt(0)
-        if (ran == currentSelection) {
-          return
-        } else if (ran.startContainer == currentSelection.startContainer &&
-          ran.startOffset == currentSelection.startOffset &&
-          ran.endContainer == currentSelection.endContainer &&
-          ran.endOffset == currentSelection.endOffset) {
-          return
+      if (!force) {
+        if (sel.rangeCount == 1) {
+          val ran = sel.getRangeAt(0)
+          if (ran == currentSelection) {
+            return
+          } else if (ran.startContainer == currentSelection.startContainer &&
+            ran.startOffset == currentSelection.startOffset &&
+            ran.endContainer == currentSelection.endContainer &&
+            ran.endOffset == currentSelection.endOffset) {
+            return
+          }
         }
       }
       if (model.debug_selection) {

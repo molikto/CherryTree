@@ -1,6 +1,6 @@
 package command.defaults
 
-import command.{CommandCategory, CommandInterface, Key, Motion}
+import command._
 import client.Client
 import client.Client.ViewMessage
 import command.Key._
@@ -86,7 +86,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
 
     override val description: String = s"change to a ${deli.name}"
 
-    override def available(a: DocState): Boolean = keys.nonEmpty && a.isRichNormal((_, p) => p.special)
+
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean =
+      keys.nonEmpty && a.isRichNormal((_, p) => p.special) && !commandState.needsMotion
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (cursor, content, in) = a.asRichNormalAtom
