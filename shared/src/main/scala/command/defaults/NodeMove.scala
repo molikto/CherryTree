@@ -4,6 +4,7 @@ import client.Client
 import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.range.IntRange
 import model.{cursor, operation, range}
 
 class NodeMove extends CommandCategory("node: move") {
@@ -67,5 +68,21 @@ class NodeMove extends CommandCategory("node: move") {
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "k", shiftMod(Up))
     override def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node] =
       mover.previous(node)
+  }
+
+  new TextualCommand {
+    override val description: String = "unwrap"
+    override def available(a: DocState): Boolean = a.isContent
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val mm = a.asContent
+      val n = a.node(mm)
+      if (n.childs.isEmpty) {
+        DocTransaction.empty
+      } else {
+        DocTransaction(Seq(
+          operation.Node.Move(range.Node(mm, IntRange(0, n.childs.size)), cursor.Node.moveBy(mm, 1))
+        ), None)
+      }
+    }
   }
 }

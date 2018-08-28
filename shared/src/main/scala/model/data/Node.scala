@@ -281,7 +281,8 @@ object Node extends DataObject[Node] {
 
   val debug_empty = Node("", Content.Rich(Rich.empty), Map.empty, Seq.empty)
 
-  def create(): Node =  Node(UUID.randomUUID().toString, Content.Rich(Rich.empty), Map.empty, Seq.empty)
+  def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID().toString, content, Map.empty, Seq.empty)
+
 
 
   val pickler: Pickler[Node] = new Pickler[Node] {

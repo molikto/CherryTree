@@ -638,7 +638,7 @@ class Client(
     }
   }
 
-  private var previousCopyId: String = ""
+  private var previousCopyId: String = Random.nextInt().toString
 
   // html, plain, and ct
   def onExternalCopyCut(isCut: Boolean): (Option[String], Option[String], Option[String]) = {
@@ -670,9 +670,9 @@ class Client(
     }
     if (!done) {
       html match {
-        case Some(h) =>
+        case Some(h) if h.nonEmpty && model.parseFromHtml != null =>
           done = true
-          yank(Registerable.Unicode(Unicode("HTML")), false, '*')
+          yank(model.parseFromHtml(h), false, '*')
         case _ =>
       }
     }
