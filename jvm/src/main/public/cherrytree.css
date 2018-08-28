@@ -526,24 +526,24 @@ block selection
 
 
 ::selection {
-    background: #a56dafaa;
+    background: #bb71c3aa;
 }
 
 ::selection:window-inactive {
-  background: #a56daf66;
+  background: #bb71c366;
 }
 
 
 .ct-selection {
     background: #58617488;
-    border-bottom: 2px solid #a56daf;
+    border-bottom: 2px solid #bb71c3;
     margin-bottom: -2px;
 }
 
 
 .ct-window-inactive .ct-selection {
     background: #58617466;
-    border-bottom: 2px solid #a56daf88;
+    border-bottom: 2px solid #bb71c388;
     margin-bottom: -2px;
 }
 
@@ -551,12 +551,12 @@ block selection
     position: absolute;
     background: #58617488;
     z-index: -1;
-    border-bottom: 2px solid #a56daf;
+    border-bottom: 2px solid #bb71c3;
 }
 
 .ct-window-inactive .ct-rich-selection {
     background: #58617466;
-    border-bottom: 2px solid #a56daf88;
+    border-bottom: 2px solid #bb71c388;
 }
 
 .ct-node-visual {
@@ -568,28 +568,28 @@ block selection
 }
 
 .cm-fat-cursor .CodeMirror-cursor {
-    background-color: #a56dafcc;
+    background-color: #bb71c3cc;
 }
 
 .cm-animate-fat-cursor {
-    background-color: #a56dafcc;
+    background-color: #bb71c3cc;
 }
 
 .cm-fat-cursor-mark {
-    background-color: #a56dafcc;
+    background-color: #bb71c3cc;
 }
 
 /*
 .ct-window-inactive .cm-fat-cursor .CodeMirror-cursor {
-    background-color: #a56daf88;
+    background-color: #bb71c388;
 }
 
 .ct-window-inactive .cm-animate-fat-cursor {
-    background-color: #a56daf88;
+    background-color: #bb71c388;
 }
 
 .ct-window-inactive .cm-fat-cursor-mark {
-    background-color: #a56daf88;
+    background-color: #bb71c388;
 }
 */
 
@@ -597,12 +597,12 @@ block selection
 
 .ct-node-visual-move {
   outline-offset: -2px;
-  outline: 2px solid #a56daf;
+  outline: 2px solid #bb71c3;
 }
 
 .ct-window-inactive .ct-node-visual-move {
   outline-offset: -2px;
-  outline: 2px solid #a56daf88;
+  outline: 2px solid #bb71c388;
 }
 
 
