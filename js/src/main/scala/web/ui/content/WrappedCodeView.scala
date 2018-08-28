@@ -11,6 +11,7 @@ import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
+import web.ui
 import web.ui.doc.{AbstractDocumentView, DocumentView}
 import web.ui._
 import web.view._
@@ -64,7 +65,7 @@ class WrappedCodeView(
     position := "relative",
     span(
       position := "absolute",
-      RichView.EvilChar, // so we can get selection during evil time!
+      ui.EvilChar, // so we can get selection during evil time!
     )
   ).render
 

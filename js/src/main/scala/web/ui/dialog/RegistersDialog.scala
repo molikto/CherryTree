@@ -2,6 +2,7 @@ package web.ui.dialog
 
 import client.Client
 import command.Command
+import model.data.Node.ContentType
 import model.data.Rich
 import org.scalajs.dom.raw._
 import register.Registerable
@@ -78,17 +79,17 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
         marginLeft := "10px",
         t._2.map {
           case Registerable.Unicode(u) => code(`class` := "ct-c-code", u)
-          case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), false) : Frag
+          case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, false) : Frag
           case Registerable.Node(a, _, _) =>
             if (a.isEmpty) "": Frag
             else {
               val count = a.map(_.count).sum
               if (count == 1) {
-                ContentView.create(a.head.content): Frag
+                ContentView.create(a.head.content, a.head.contentType): Frag
               } else {
                 div(
                   s"$count nodes",
-                  ContentView.create(a.head.content)
+                  ContentView.create(a.head.content, a.head.contentType)
                 )
               }
             }

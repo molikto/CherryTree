@@ -104,6 +104,8 @@ case class Node (
   def attribute[T](a: NodeTag[T]): Option[T] = attributes.get(a.name).filter(_.nonEmpty).map(a.parse)
   def attribute(a: String): String = attributes.getOrElse(a, "")
 
+  def contentType: Option[ContentType] = attribute(ContentType)
+
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
@@ -157,6 +159,9 @@ case class Node (
       case Some(ChildrenType.OrderedList) =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
         else ol(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
+      case Some(ChildrenType.DashList) =>
+        if (childs.isEmpty) Seq.empty[Frag]: Frag
+        else ul(`class` := "dashed", childs.map(a => li(a.toScalaTags(hasWrapper = true))))
       case _ =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
         else ul(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
@@ -169,8 +174,8 @@ case class Node (
           children,
           cite(contentWithoutP)
         )
-      case Some(ContentType.Br) =>
-        Seq(br, children)
+      case Some(ContentType.Hr) =>
+        Seq(hr, children)
       case _ =>
         if (hasWrapper)
           Seq(contentWithoutP, children)
@@ -248,8 +253,8 @@ object Node extends DataObject[Node] {
       override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
       override def toString: String = "cite"
     }
-    case object Br extends ContentType {
-      override def toString: String = "br"
+    case object Hr extends ContentType {
+      override def toString: String = "hr"
     }
     case class Heading(i: Int) extends ContentType {
       override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
@@ -262,13 +267,13 @@ object Node extends DataObject[Node] {
     override private[model] def parse(a: String) =
       if (a.startsWith("h")) Heading(a.substring(1).toInt)
       else if (a == "cite") Cite
-      else if (a == "br") Br
+      else if (a == "br") Hr // history reason
       else throw new IllegalStateException("Not possible")
 
     override private[model] def serialize(t: ContentType) = t match {
       case Heading(a) => "h" + a
       case Cite => "cite"
-      case Br => "br"
+      case Hr => "br"  // history reason
     }
   }
   def cloneNodes(n: Seq[Node]): Seq[Node] = {

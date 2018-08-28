@@ -13,6 +13,7 @@ import org.scalajs.dom.{ClientRect, document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
+import web.ui
 import web.ui.doc.{AbstractDocumentView, DocumentView}
 import web.view.{Overlay, _}
 import web.ui.dialog.{InlineCodeDialog, UrlAttributeEditDialog}
@@ -133,7 +134,7 @@ class RichViewEditor(val documentView: AbstractDocumentView, val controller: Edi
   private def updateInsertCursorAt(pos: Int): (Node, Int) = {
 
     def createTempEmptyInsertTextNode(node: Node, i: Int, pos: Int): Unit = {
-      val extra = document.createTextNode(s"${RichView.EvilChar}${RichView.EvilChar}")
+      val extra = document.createTextNode(s"${ui.EvilChar}${ui.EvilChar}")
       extraNode = extra
       insertEmptyTextNode = (extra, pos)
       val before = if (i == node.childNodes.length) null else node.childNodes(i)
@@ -264,8 +265,8 @@ class RichViewEditor(val documentView: AbstractDocumentView, val controller: Edi
     if (insertEmptyTextNode != null) {
       val (node, pos) = insertEmptyTextNode
       val tc = node.textContent
-      assert(tc.startsWith(RichView.EvilChar))
-      assert(tc.endsWith(RichView.EvilChar))
+      assert(tc.startsWith(ui.EvilChar))
+      assert(tc.endsWith(ui.EvilChar))
       val str = tc.substring(1, tc.length - 1)
       if (str.length > 0) {
         node.textContent = str

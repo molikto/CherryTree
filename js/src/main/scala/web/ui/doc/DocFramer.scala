@@ -6,6 +6,7 @@ import _root_.doc.DocTransaction
 import client.Client.ViewMessage
 import model.cursor
 import model.cursor.Node
+import model.data.Node.ContentType
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all.{tag, _}
@@ -49,7 +50,7 @@ trait DocFramer {
   }
 
   private def create(a: model.data.Node): General = {
-    val cv = ContentView.create(a.content)
+    val cv = ContentView.create(a.content, a.contentType)
     if (docFramerExtraClass != "") {
       cv.dom.classList.add(docFramerExtraClass)
     }
@@ -62,7 +63,7 @@ trait DocFramer {
 
   def updateContentViewInsideFrame(a: HTMLElement, data: model.data.Node): Unit = {
     val oldView = contentViewFromWithHold(a)
-    if (ContentView.matches(data.content, oldView)) {
+    if (ContentView.matches(data.content, data.contentType, oldView)) {
       oldView.updateContent(data.content)
     } else {
       oldView.destroy()
@@ -92,9 +93,9 @@ trait DocFramer {
   }
 
   def classesFromNodeAttribute(node: model.data.Node): String = {
-    "ct-d-box " + (node.attribute(model.data.Node.ContentType).map {
+    "ct-d-box " + (node.contentType.map {
       case model.data.Node.ContentType.Cite => "ct-d-cite"
-      case model.data.Node.ContentType.Br => "ct-d-br"
+      case model.data.Node.ContentType.Hr => "ct-d-hr"
       case model.data.Node.ContentType.Heading(j) =>
         if (docFramerIsSmall == 0) {
           if (j > 1) s"ct-d-heading ct-d-h$j" else s"ct-d-h1"

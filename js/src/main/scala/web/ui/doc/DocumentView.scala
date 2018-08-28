@@ -2,6 +2,7 @@ package web.ui.doc
 
 import command.Key
 import doc.{DocInterface, DocState}
+import model.data.Node.ContentType
 import model.{cursor, data, range}
 import model.data.{Node => _, _}
 import model.mode.Content.RichInsert
@@ -13,6 +14,7 @@ import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
+import web.ui
 import web.ui.content._
 import web.view.{OverlayAnchor, _}
 
@@ -35,7 +37,7 @@ class DocumentView(
     position := "absolute",
     top := "-30px",
     width := "1000px",
-    RichView.EvilChar,
+    ui.EvilChar,
     height := "0px").render
 
 
@@ -70,7 +72,7 @@ class DocumentView(
   ).render
 
   private def cancelNoEditableInput(): Any = {
-    noEditable.textContent = RichView.EvilChar
+    noEditable.textContent = ui.EvilChar
     val sel = window.getSelection()
     sel.removeAllRanges()
     sel.addRange(nonEditableSelection)
@@ -408,7 +410,7 @@ class DocumentView(
     parent.insertBefore(box, firstChild)
     val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
-    createContent(root.content).attachToNode(box)
+    createContent(root.content, root.contentType).attachToNode(box)
     val list = div(`class` := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
@@ -426,7 +428,7 @@ class DocumentView(
     val node = client.state.node(cur)
     hold.title =
       Seq(
-        node.attribute(model.data.Node.ContentType).map("content type: " + _.toString).getOrElse(""),
+        node.contentType.map("content type: " + _.toString).getOrElse(""),
         node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
         s"items: ${node.count}",
         s"text size: ${node.content.size}",
@@ -435,8 +437,8 @@ class DocumentView(
   }
 
 
-  private def createContent(c: Content): ContentView.General = {
-    ContentView.create(c, true)
+  private def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
+    ContentView.create(c, contentType, true)
   }
 
 
@@ -488,6 +490,7 @@ class DocumentView(
     flushSelection()
   }
 
+
   // we use onAttach because we access window.setSelection
   override def onAttach(): Unit = {
     super.onAttach()
@@ -523,6 +526,14 @@ class DocumentView(
           //                println(s"current zoom is $currentZoom")
           //                println(s"current trans is ${t._1}")
           //              }
+          def replaceContent(at: model.cursor.Node, c: Content, contentType: Option[ContentType]) = {
+            val previousContent = contentAt(at)
+            val p = previousContent.dom.parentNode
+            val before = previousContent.dom.nextSibling
+            previousContent.destroy()
+            createContent(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
+          }
+
           t match {
             case model.operation.Node.Content(at, c) =>
               val m: Option[model.mode.Content] = s.mode match {
@@ -539,21 +550,16 @@ class DocumentView(
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
               if (inViewport(at)) {
-                val tt = classesFromNodeAttribute(to.node(at)).split(" ").filter(_.nonEmpty)
-                val cl = boxAt(at).classList
-                while (cl.length > 0) {
-                  cl.remove(cl.item(0))
+                val old = to.node(at)
+                if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
+                  replaceContent(at, old.content, to.node(at).contentType)
                 }
-                tt.foreach(cl.add)
+                boxAt(at).className = classesFromNodeAttribute(to.node(at))
                 toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
               }
             case model.operation.Node.Replace(at, c) =>
               if (inViewport(at)) {
-                val previousContent = contentAt(at)
-                val p = previousContent.dom.parentNode
-                val before = previousContent.dom.nextSibling
-                previousContent.destroy()
-                createContent(c).attachToNode(p, before.asInstanceOf[HTMLElement])
+                replaceContent(at, c, to.node(at).contentType)
               }
             case model.operation.Node.Delete(r) =>
               if (inViewport(r.parent)) {
@@ -670,7 +676,7 @@ class DocumentView(
       oneButLastMouseDown = acientMouseDown
       val pc = findParentContent(a.target.asInstanceOf[Node])
       if (pc != null) {
-        editor.onVisualMode(pc._1, pc._1)
+        editor.onVisualMode(pc, pc)
       }
       a.preventDefault()
     } else {
@@ -682,14 +688,14 @@ class DocumentView(
       } else { // triple click
         val pc = findParentContent(a.target.asInstanceOf[Node])
         if (pc != null) {
-          val cot = client.state.node(pc._1).content
+          val cot = client.state.node(pc).content
           val ran = if (cot.isRich) {
             val size = cot.asInstanceOf[Content.Rich].size
             Some(IntRange(0, size))
           } else {
             None
           }
-          editor.onFocusOn(pc._1, ran, true, false)
+          editor.onFocusOn(pc, ran, true, false)
           down = null
         }
         clickCount = 3
@@ -773,7 +779,7 @@ class DocumentView(
   private def getFirstContentView(a: MouseEvent): Unit = {
     val pc = findParentContent(a.target.asInstanceOf[Node])
     if (pc != null) {
-      setFirstContent(pc._1)
+      setFirstContent(pc)
     }
   }
 
@@ -782,7 +788,7 @@ class DocumentView(
     val node = a.target.asInstanceOf[Node]
     val ctt = {
       val p = findParentContent(node)
-      if (p != null) p._1 else null
+      if (p != null) p else null
     }
     val secondContent =
       if (mouseSecondContent == null) {
@@ -817,28 +823,13 @@ class DocumentView(
 
 
 
-  private def findParentContent(t0: Node): (model.cursor.Node, ContentView.General) = {
-    var t = t0
-    while (t != null && t != dom) {
-      View.maybeDom[View](t) match {
-        case Some(a)  =>
-          val contentView: ContentView.General = a match {
-            case view: RichView =>
-              view.asInstanceOf[ContentView.General]
-            case view: WrappedCodeView =>
-              view.asInstanceOf[ContentView.General]
-            case _ =>
-              null
-          }
-          if (contentView != null) {
-            val cur = cursorOf(contentView)
-            return (cur, contentView)
-          }
-        case _ =>
-      }
-      t = t.parentNode
+  private def findParentContent(t0: Node): model.cursor.Node = {
+    val ct = ContentView.findParentContent(t0, dom, true)
+    if (ct != null) {
+      cursorOf(ct)
+    } else {
+      null
     }
-    null
   }
 
   private var focusFinder: (Int, RichView) = null
@@ -877,20 +868,20 @@ class DocumentView(
         val pc = findParentContent(sel.anchorNode)
         if (pc != null) {
           val cc = findParentContent(sel.focusNode)
-          if (cc == null || cc._1 == pc._1) {
-            val (cur, contentView) = pc
-            val range = contentView.asInstanceOf[Any] match {
+          if (cc == null || cc == pc) {
+            val cur = pc
+            val range = contentAt(cur).asInstanceOf[Any] match {
               case r: RichView =>
                 r.readSelectionFromDom() match {
                   case Some(res) =>
                     editor.onFocusOn(cur, Some(res._1), res._2, false)
                   case _ => editor.onFocusOn(cur, None, true, false)
                 }
-              case w: WrappedCodeView =>
+              case w =>
                 editor.onFocusOn(cur, None, true, false)
             }
           } else {
-            editor.onVisualMode(pc._1, cc._1)
+            editor.onVisualMode(pc, cc)
           }
         } else {
           editor.onRefreshMode()
