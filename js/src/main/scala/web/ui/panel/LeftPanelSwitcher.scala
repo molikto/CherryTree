@@ -63,6 +63,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
         client.localStorage.set(".left-panel", "")
         enabledAll(false)
       }
+      doc().focus()
     })
   }
 
