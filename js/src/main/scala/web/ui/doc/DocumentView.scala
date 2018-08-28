@@ -512,6 +512,7 @@ class DocumentView(
         currentZoomId = update.to.zoomId
         currentZoom = update.to.zoom
         insertNodesRec(currentZoom, update.to.node(currentZoom), rootFrame)
+        scrollToTop()
       } else {
         for ((s, t, to) <- update.from) {
           currentZoom = s.zoom

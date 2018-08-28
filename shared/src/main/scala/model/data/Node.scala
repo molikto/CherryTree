@@ -156,10 +156,10 @@ case class Node (
         childs.map(_.toScalaTags)
       case Some(ChildrenType.OrderedList) =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ol(childs.map(a => li(a.toScalaTags(true))))
+        else ol(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
       case _ =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ul(childs.map(a => li(a.toScalaTags(true))))
+        else ul(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
     }
     attribute(ContentType) match {
       case Some(ContentType.Heading(h)) =>
