@@ -12,95 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-class UnicodeParseException(msg: String) extends IllegalStateException(msg) {
-}
 
-
-private[model] class UnicodeWriter {
-
-  private val sb = new StringBuilder()
-
-  private var size = 0
-
-  def put(a: SpecialChar): Unit = {
-    sb.append(Unicode(a))
-    size += 1
-  }
-
-  def put(url: Unicode): Unit = {
-    sb.append(url.str)
-    size += url.size
-  }
-
-  def toUnicode: Unicode = {
-    Unicode(sb.toString(), size, false)
-  }
-}
-
-private[model] class UnicodeReader(a: Unicode) {
-  private val str = a.str
-  private var start = 0
-
-
-  override def toString: String = str
-
-  def isEmpty: Boolean = start >= str.length
-
-  private def isSpecialCodePoint(c: Int) = SpecialChar.special(c)
-
-  def eatOrNotSpecial(): Option[SpecialChar] = {
-    val c = str.codePointAt(start)
-    if (isSpecialCodePoint(c)) {
-      start = str.offsetByCodePoints(start, 1)
-      Some(SpecialChar(c - SpecialCharStart))
-    } else {
-      None
-    }
-  }
-
-  def eat(a: SpecialChar) : Unit = {
-    if (!eatOrFalse(a)) {
-      throw new UnicodeParseException("!!")
-    }
-  }
-
-  def eatOrFalse(a: SpecialChar): Boolean = {
-    if (str.codePointAt(start) == SpecialCharStart + a.id) {
-      start = str.offsetByCodePoints(start, 1)
-      true
-    } else {
-      false
-    }
-  }
-
-  def eatUntilSpecialChar(): Unicode = {
-    var index = start
-    var codePointCount = 0
-    var isASCII = true
-    while (index < str.length && !isSpecialCodePoint({
-      val codepoint = str.codePointAt(index)
-      if (util.isAscii(codepoint)) {
-      } else {
-        isASCII = false
-      }
-      codepoint
-    })) {
-      index = str.offsetByCodePoints(index, 1)
-      codePointCount += 1
-    }
-    val ret = str.substring(start, index)
-    start = index
-    Unicode(ret, codePointCount, isASCII)
-  }
-
-  def eatUntilAndDrop(b: SpecialChar): Unicode = {
-    val a = eatUntilSpecialChar()
-    if (!eatOrFalse(b)) {
-      throw new UnicodeParseException(s"Expecting $b")
-    }
-    a
-  }
-}
 object Unicode extends DataObject[Unicode] {
   override val pickler: boopickle.Pickler[Unicode] = new boopickle.Pickler[Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.str)
@@ -119,14 +31,6 @@ object Unicode extends DataObject[Unicode] {
     val u = Unicode(a)
     u.size0 = if (isAscii) -2 else size
     u
-  }
-
-  def apply(a: SpecialChar): Unicode = {
-    Unicode(new String(Character.toChars(SpecialCharStart + a.id)), 1, false)
-  }
-
-  def specials(a: Seq[SpecialChar]): Unicode = {
-    Unicode(a.map(apply).mkString, a.size, false)
   }
 
   def apply(a: Int): Unicode = {

@@ -53,7 +53,7 @@ sealed trait Atom {
   def special: Boolean = this.isInstanceOf[Atom.Special]
   def special(a: SpecialChar): Boolean = this.isInstanceOf[Atom.Special] && this.asInstanceOf[Atom.Special].a == a
 
-  private[data] def serialize(buffer: UnicodeWriter)
+  private[data] def serialize(buffer: EncodedSeqWriter)
 }
 
 object Atom {
@@ -68,7 +68,7 @@ object Atom {
 
     override def letterLike: Boolean = true
 
-    override private[data] def serialize(buffer: UnicodeWriter): Unit = text.serialize(buffer)
+    override private[data] def serialize(buffer: EncodedSeqWriter): Unit = text.serialize(buffer)
   }
 
   sealed trait Special extends SpecialOrMarked {
@@ -83,7 +83,7 @@ object Atom {
     def another: Special
     override def whitespace: Boolean = true
 
-    override private[data] def serialize(buffer: UnicodeWriter): Unit = {
+    override private[data] def serialize(buffer: EncodedSeqWriter): Unit = {
       if (delimitationStart) {
         buffer.put(a)
       } else {
@@ -129,7 +129,7 @@ object Atom {
 
     override def charNonLetterLike: Boolean = !letterLike && !whitespace
 
-    override private[data] def serialize(buffer: UnicodeWriter): Unit = buffer.put(a)
+    override private[data] def serialize(buffer: EncodedSeqWriter): Unit = buffer.put(a)
   }
   case class PlainGrapheme(override val nodeCursor: cursor.Node, override val totalIndex: Int, override val unicodeIndex: Int, override val a: Unicode, override val text: Text.Plain) extends Grapheme {
 

@@ -18,6 +18,8 @@ case class Rich(text: Seq[Text]) {
     text(node.head)(node.tail)
   }
 
+  private var encodedSeq: EncodedSeq = null
+
   def startPosOf(node: cursor.Node): Int = {
     assert(node.nonEmpty)
     def rec(seq: Seq[Text], cur: cursor.Node): Int = {
@@ -228,7 +230,7 @@ case class Rich(text: Seq[Text]) {
 
 
   // LATER better implementation
-  def subPlain(p: IntRange): Unicode = serialize().slice(p)
+  def subPlain(p: IntRange): Unicode = serialize().sliceAsUnicode(p)
 
   def insideCoded(pos: Int): Boolean = {
     val bs = befores(pos)
@@ -296,11 +298,9 @@ case class Rich(text: Seq[Text]) {
 
   def isEmpty: Boolean = text.isEmpty
 
-  private var serialized: Unicode = null
-
-  private[model] def serialize(): Unicode = {
-    if (serialized == null) serialized = Text.serialize(text)
-    serialized
+  private[model] def serialize(): EncodedSeq = {
+    if (encodedSeq == null) encodedSeq = Text.serialize(text)
+    encodedSeq
   }
 
   def isSubRich(range: IntRange): Option[IntRange] = {
@@ -334,14 +334,16 @@ object Rich extends DataObject[Rich] {
 
   val empty: Rich = Rich(Seq.empty)
 
-  private[model] def parse(unicode: Unicode): Rich = {
-    val reader = new UnicodeReader(unicode)
-    Rich(Text.parseAll(reader))
+  private[model] def parse(unicode: EncodedSeq): Rich = {
+    val reader = new EncodedSeqReader(unicode)
+    val r = Rich(Text.parseAll(reader))
+    r.encodedSeq = unicode
+    r
   }
 
   override val pickler: Pickler[Rich] = new Pickler[Rich] {
-    override def pickle(obj: Rich)(implicit state: PickleState): Unit = Unicode.pickler.pickle(obj.serialize())
-    override def unpickle(implicit state: UnpickleState): Rich = parse(Unicode.pickler.unpickle)
+    override def pickle(obj: Rich)(implicit state: PickleState): Unit = EncodedSeq.pickler.pickle(obj.serialize())
+    override def unpickle(implicit state: UnpickleState): Rich = parse(EncodedSeq.pickler.unpickle)
   }
 
 

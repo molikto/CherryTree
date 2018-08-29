@@ -3,7 +3,6 @@ package model.data
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
-import scalatags.Text
 import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
@@ -27,7 +26,7 @@ abstract sealed class Text {
   def asDelimited: Text.Delimited = this.asInstanceOf[Text.Delimited]
   def asPlain: Text.Plain = this.asInstanceOf[Text.Plain]
 
-  private[data] def serialize(buffer: UnicodeWriter)
+  private[data] def serialize(buffer: EncodedSeqWriter)
   def size: Int
 
   def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom]
@@ -52,17 +51,17 @@ object Text {
   }
 
 
-  private[model] def serialize(text: Seq[Text]): Unicode = {
-    val buffer = new UnicodeWriter()
+  private[model] def serialize(text: Seq[Text]): EncodedSeq = {
+    val buffer = new EncodedSeqWriter()
     text.foreach(_.serialize(buffer))
-    buffer.toUnicode
+    buffer.toEncodedSeq
   }
 
 
   def assemble(atoms: Seq[Atom]): Seq[Text] = {
-    val buffer = new UnicodeWriter()
+    val buffer = new EncodedSeqWriter()
     atoms.foreach(_.serialize(buffer))
-    Text.parseAll(new UnicodeReader(buffer.toUnicode))
+    Text.parseAll(new EncodedSeqReader(buffer.toEncodedSeq))
   }
 
   private[data] def before(myCursor: model.cursor.Node, myIndex: Int, b: Int, a: Seq[Text]) =
@@ -149,7 +148,7 @@ object Text {
 
   def size(content: Seq[Text]): Int = content.map(_.size).sum
 
-  private[model] def parse(reader: UnicodeReader): Text = {
+  private[model] def parse(reader: EncodedSeqReader): Text = {
     reader.eatOrNotSpecial() match {
       case Some(a) => a match { // LATER generic parser
         case EmphasisStart =>
@@ -170,14 +169,14 @@ object Text {
         case HTMLStart =>
           HTML(reader.eatUntilAndDrop(HTMLEnd))
         case kk =>
-          throw new UnicodeParseException(s"Expecting a non-special char or a special start char, but found $kk, reader:\n$reader")
+          throw new EncodedSeqParseException(s"Expecting a non-special char or a special start char, but found $kk, reader:\n$reader")
       }
       case None =>
         Plain(reader.eatUntilSpecialChar())
     }
   }
 
-  private[model] def parseAll(reader: UnicodeReader): Seq[Text] = {
+  private[model] def parseAll(reader: EncodedSeqReader): Seq[Text] = {
     val buffer = new ArrayBuffer[Text]()
     while (!reader.isEmpty) {
       buffer += Text.parse(reader)
@@ -185,7 +184,7 @@ object Text {
     buffer.toVector
   }
 
-  private[model] def parseAll(reader: UnicodeReader, until: SpecialChar): Seq[Text] = {
+  private[model] def parseAll(reader: EncodedSeqReader, until: SpecialChar): Seq[Text] = {
     val buffer = new ArrayBuffer[Text]()
     while (!reader.isEmpty && !reader.eatOrFalse(until)) {
       buffer += Text.parse(reader)
@@ -195,15 +194,15 @@ object Text {
 
   sealed trait Delimited extends Text {
     def contentSize: Int
-    private[model] def serializeContent(buffer: UnicodeWriter): Unit
-    private[model] def serializeAttributes(buffer: UnicodeWriter): Unit  = {
+    private[model] def serializeContent(buffer: EncodedSeqWriter): Unit
+    private[model] def serializeAttributes(buffer: EncodedSeqWriter): Unit  = {
       attributes.foreach(a => {
         buffer.put(a)
         buffer.put(attribute(a))
       })
     }
 
-    final private[model] override def serialize(buffer: UnicodeWriter): Unit = {
+    final private[model] override def serialize(buffer: EncodedSeqWriter): Unit = {
       buffer.put(delimitation.start)
       serializeContent(buffer)
       serializeAttributes(buffer)
@@ -246,7 +245,7 @@ object Text {
       super.quickSearch(p, deli) ||
       Text.quickSearch(content, p, deli)
 
-    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
+    override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {
       content.foreach(_.serialize(buffer))
     }
 
@@ -329,7 +328,7 @@ object Text {
 
     //override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else if (cur == Se
 
-    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {
+    override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {
       buffer.put(content)
     }
 
@@ -409,7 +408,7 @@ object Text {
   sealed trait DelimitedEmpty extends DelimitedT[Unit] {
     override def content: Unit = Unit
     override def contentSize: Int = 0
-    override private[model] def serializeContent(buffer: UnicodeWriter): Unit = {}
+    override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {}
   }
 
 
@@ -433,7 +432,7 @@ object Text {
     override def toScalaTags: Frag = unicode.str
     override def toPlainScalaTags: Frag = raw(unicode.str)
 
-    private[model] override def serialize(buffer: UnicodeWriter): Unit = {
+    private[model] override def serialize(buffer: EncodedSeqWriter): Unit = {
       buffer.put(unicode)
     }
 

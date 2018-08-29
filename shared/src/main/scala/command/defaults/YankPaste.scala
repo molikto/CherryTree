@@ -147,7 +147,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
               case v@model.mode.Content.RichVisual(m, f) =>
                 val trans = deleteRichNormalRange(a, commandState, cursor, v.merged, insert = true, noHistory = true)
                 val docAfter = model.operation.Node.apply(trans.transaction, a, enableModal)._1
-                val t2 = byMode(docAfter.contentMode)
+                val t2 = byMode(docAfter.mode0.asInstanceOf[model.mode.Node.Content].a)
                 t2.copy(transaction =  trans.transaction ++ t2.transaction)
               case _ =>
                 DocTransaction.empty

@@ -18,7 +18,7 @@ package object conflict {
   object Content {
     case class CodeContent(u: Unicode) extends conflict.Content
     case class CodeLang(l: String) extends conflict.Content
-    case class Rich(u: conflict.Paragraph) extends conflict.Content
+    case class Rich(u: conflict.Rich) extends conflict.Content
   }
 
 
@@ -34,6 +34,7 @@ package object conflict {
     case class WinnerMovesLoser() extends Node
   }
 
+  type EncodedSeq = Unicode
 
-  type Paragraph = Unicode
+  type Rich = EncodedSeq
 }
