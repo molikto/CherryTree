@@ -304,10 +304,6 @@
   font-size: 18px;
 }
 
-.ct-d-folded > .ct-d-box > .ct-d-childlist {
-  display: none;
-}
-
 .ct-d-frame {
    display: flex;
    flex-direction: row;
