@@ -12,8 +12,8 @@ package object model extends Picklers {
   var parseFromCommonMarkMarkdown: String => data.Node = null
   var parseFromHtml: String => Registerable = null
 
-  var oldDocVersion = false
-  val debug_view = false
+  var debug_oldDocVersion = false
+  val debug_view = true
   val debug_scroll = debug_view && true
   val debug_model = false
   val debug_selection = debug_view && false

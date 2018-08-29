@@ -192,6 +192,7 @@ object Text {
     buffer.toVector
   }
 
+
   sealed trait Delimited extends Text {
     def contentSize: Int
     private[model] def serializeContent(buffer: EncodedSeqWriter): Unit

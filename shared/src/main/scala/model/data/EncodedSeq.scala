@@ -33,6 +33,8 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
   })
 
 
+  override def toString: String = seq.mkString("^")
+
   private[data] def fragment(i: Int): Any = seq(i)
   private[data] def fragmentSize = seq.size
   lazy val size: Int = {

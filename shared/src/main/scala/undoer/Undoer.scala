@@ -257,12 +257,13 @@ trait Undoer extends UndoerInterface with Settings {
   private def undo(currentDoc: DocState, i: Int, isRedo: Boolean): DocTransaction = {
     val item = history(i)
     // TODO conflicts
-    val (tt, pp) = ot.Node.rebaseT(item.reverse, after(i)).t
+    val aft = after(i)
+    val (tt, pp) = ot.Node.rebaseT(item.reverse, aft).t
     val (applied, afrom) = try {
      operation.Node.apply(tt, currentDoc, enableModal)
     } catch {
       case t: Throwable =>
-        throw new Exception(s"seems reverse is wrong ${item.trans}, ${item.reverse}", t)
+        throw new Exception(s"seems reverse is wrong ${item.trans}, ${item.reverse} $aft", t)
     }
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null

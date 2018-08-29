@@ -309,8 +309,7 @@ object Node extends DataObject[Node] {
     override def unpickle(implicit state: UnpickleState): Node = {
       import state.dec._
       Node(
-        if (oldDocVersion) UUID.randomUUID().toString
-        else readString,
+        readString,
         Content.pickler.unpickle,
         (0 until readInt).map(_ => readString -> readString).toMap,
         (0 until readInt).map(_ => Node.pickler.unpickle))

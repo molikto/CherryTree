@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ClientInitializerView {
 
-  model.oldDocVersion = false
+  model.debug_oldDocVersion = false
 
   private var globalInitialized = false
   def initializeGlobal(): Unit = {
