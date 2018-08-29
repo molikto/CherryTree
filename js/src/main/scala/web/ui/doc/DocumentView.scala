@@ -512,7 +512,7 @@ class DocumentView(
     observe(client.stateUpdates.doOnNext(update => {
       update.foldsBefore.foreach(f => {
         val fr = frameAt(f._1)
-        if (!currentDoc.viewAsHidden(f._1)) toggleHoldRendering(f._1, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), f._2)
+        if (currentDoc.viewAsShown(f._1)) toggleHoldRendering(f._1, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), f._2)
       })
       duringStateUpdate = true
       if (update.to.zoomId != currentZoomId) {
@@ -547,7 +547,7 @@ class DocumentView(
                 case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
                 case _ => None
               }
-              if (!s.viewAsHidden(at)) {
+              if (s.viewAsShown(at)) {
                 val content = contentAt(at)
                 if (content == activeContent) {
                   activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
@@ -556,7 +556,7 @@ class DocumentView(
                 }
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
-              if (!s.viewAsHidden(at)) {
+              if (s.viewAsShown(at)) {
                 val old = to.node(at)
                 if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
                   replaceContent(at, old.content, to.node(at).contentType)
@@ -566,22 +566,22 @@ class DocumentView(
                 toggleHoldRendering(at, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), to.viewAsFolded(at))
               }
             case model.operation.Node.Replace(at, c) =>
-              if (!s.viewAsHidden(at)) {
+              if (s.viewAsShown(at)) {
                 replaceContent(at, c, to.node(at).contentType)
               }
             case model.operation.Node.Delete(r) =>
-              if (!s.viewAsFolded(r.parent)) {
+              if (s.viewAsNotFoleded(r.parent)) {
                 removeNodes(r)
               }
             case model.operation.Node.Insert(at, childs) =>
               val pCur = model.cursor.Node.parent(at)
-              if (!s.viewAsHidden(at)) {
+              if (s.viewAsShown(at)) {
                 val root = childListAt(pCur)
                 insertNodes(pCur, root, at.last, childs)
               }
             case model.operation.Node.Move(range, to) =>
               val toP = model.cursor.Node.parent(to)
-              if (!s.viewAsFolded(range.parent) && !s.viewAsHidden(to)) {
+              if (s.viewAsNotFoleded(range.parent) && s.viewAsShown(to)) {
                 val parent = childListAt(range.parent)
                 val toParent = childListAt(toP)
                 val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
@@ -589,9 +589,9 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
-              } else if (!s.viewAsFolded(range.parent)) {
+              } else if (s.viewAsNotFoleded(range.parent)) {
                 removeNodes(range)
-              } else if (!s.viewAsHidden(to)) {
+              } else if (s.viewAsShown(to)) {
                 val data = s.node(range)
                 val p = model.cursor.Node.parent(to)
                 val root = childListAt(p)

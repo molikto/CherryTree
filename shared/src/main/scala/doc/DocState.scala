@@ -36,11 +36,11 @@ case class DocState(
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
-      zoomAfter = Some(cur).filter(c => mustZoom || !viewAsHidden(c)))
+      zoomAfter = Some(cur).filter(c => mustZoom || viewAsShown(c)))
   }
 
   def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
-    val noZoom = !viewAsHidden(n)
+    val noZoom = viewAsShown(n)
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(n, node(n).content.defaultMode(enableModal))),
       zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
@@ -86,8 +86,8 @@ case class DocState(
 
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
-    assert(!viewAsHidden(mode0.focus), s"mode hidden $mode0, $zoom")
-    assert(!viewAsHidden(mode0.other), s"mode hidden $mode0, $zoom")
+    assert(viewAsShown(mode0.focus), s"mode hidden $mode0, $zoom")
+    assert(viewAsShown(mode0.other), s"mode hidden $mode0, $zoom")
     if (isRich) {
       val (cur, rich, mo) = asRich
       def checkAtomicRichRange(a: IntRange) = {
@@ -134,6 +134,7 @@ case class DocState(
     a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isH1)
   }
 
+  def viewAsNotFoleded(a: cursor.Node): Boolean = inViewport(a) && !viewAsFolded(a)
 
   def viewAsFolded(a: cursor.Node): Boolean = {
     assert(cursor.Node.contains(zoom, a))
@@ -154,11 +155,13 @@ case class DocState(
   def notHiddenParent(k: Node): cursor.Node = {
     var j = k
     while (j.size >= zoom.size) {
-      if (!viewAsHidden(j)) return j
+      if (viewAsShown(j)) return j
       j = cursor.Node.parent(j)
     }
     zoom
   }
+
+  def viewAsShown(k: Node): Boolean = !viewAsHidden(k)
 
   def viewAsHidden(k: Node): Boolean = {
     if (!inViewport(k)) return false
