@@ -352,15 +352,16 @@ class DocumentView(
     a.removeChild(a.childNodes(0))
   }
 
-  private def removeNodes(range: model.range.Node): Unit = {
-    def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
-      for (i <- start until u) {
-        val frame = frameInList(a, i)
-        val ll = childListAt(Seq.empty, rootFrame = frame)
-        destroyContents(ll, 0, ll.children.length)
-        contentAt(Seq.empty, rootFrame = frame).destroy()
-      }
+  private def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
+    for (i <- start until u) {
+      val frame = frameInList(a, i)
+      val ll = childListAt(Seq.empty, rootFrame = frame)
+      destroyContents(ll, 0, ll.children.length)
+      contentAt(Seq.empty, rootFrame = frame).destroy()
     }
+  }
+
+  private def removeNodes(range: model.range.Node): Unit = {
 
     val p = childListAt(range.parent)
     destroyContents(p, range.childs.start, range.childs.until)
@@ -381,19 +382,24 @@ class DocumentView(
 
 
 
-  private def toggleHoldRendering(frame0: Node, hold0: Node, fold: Boolean): Unit = {
+  private def toggleHoldRendering(cur: model.cursor.Node, frame0: Node, childlist: Node, hold0: Node, fold: Boolean): Unit = {
     val hold = hold0.asInstanceOf[HTMLElement]
     val frame = frame0.asInstanceOf[HTMLElement]
+    val cl = if (childlist == null) null else childlist.asInstanceOf[HTMLElement]
     if (fold) {
       if (!frame.classList.contains("ct-d-folded")) {
         frame.classList.add("ct-d-folded")
         hold.classList.add("ct-d-hold-folded")
+        if (cl != null) {
+          destroyContents(cl, 0, cl.childNodes.length)
+          removeAllChild(cl)
+        }
       }
-      removeAllChild(childListAt(Seq.empty, frame0))
     } else {
       if (frame.classList.contains("ct-d-folded")) {
         frame.classList.remove("ct-d-folded")
         hold.classList.remove("ct-d-hold-folded")
+        if (cl != null) insertNodes(cur, cl, 0, currentDoc.node(cur).childs)
       }
     }
   }
@@ -417,9 +423,10 @@ class DocumentView(
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
     hold.addEventListener("mouseover", handleHoverEvent)
-    toggleHoldRendering(parent, hold, cur != currentZoom && client.state.userFoldedNodes.getOrElse(root.uuid, root.isH1))
     box.appendChild(list)
-    if (!currentDoc.viewAsFolded(cur)) insertNodes(cur, list, 0, root.childs)
+    val folded = currentDoc.viewAsFolded(root)
+    toggleHoldRendering(cur, parent, null, hold, folded)
+    if (!folded) insertNodes(cur, list, 0, root.childs)
   }
 
 
@@ -504,7 +511,8 @@ class DocumentView(
 
     observe(client.stateUpdates.doOnNext(update => {
       update.foldsBefore.foreach(f => {
-        if (!currentDoc.viewAsHidden(f._1)) toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
+        val fr = frameAt(f._1)
+        if (currentDoc.visible(f._1)) toggleHoldRendering(f._1, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), f._2)
       })
       duringStateUpdate = true
       if (update.to.zoomId != currentZoomId) {
@@ -539,7 +547,7 @@ class DocumentView(
                 case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
                 case _ => None
               }
-              if (!s.viewAsHidden(at)) {
+              if (s.visible(at)) {
                 val content = contentAt(at)
                 if (content == activeContent) {
                   activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
@@ -548,31 +556,32 @@ class DocumentView(
                 }
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
-              if (!s.viewAsHidden(at)) {
+              if (s.visible(at)) {
                 val old = to.node(at)
                 if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
                   replaceContent(at, old.content, to.node(at).contentType)
                 }
                 boxAt(at).className = classesFromNodeAttribute(to.node(at))
-                toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
+                val fr = frameAt(at)
+                toggleHoldRendering(at, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), to.viewAsFolded(at))
               }
             case model.operation.Node.Replace(at, c) =>
-              if (!s.viewAsHidden(at)) {
+              if (s.visible(at)) {
                 replaceContent(at, c, to.node(at).contentType)
               }
             case model.operation.Node.Delete(r) =>
-              if (!s.viewAsFolded(r.parent)) {
+              if (s.viewAsNotFoldedAndNotHidden(r.parent)) {
                 removeNodes(r)
               }
             case model.operation.Node.Insert(at, childs) =>
               val pCur = model.cursor.Node.parent(at)
-              if (!s.viewAsHidden(pCur)) {
+              if (s.visible(at)) {
                 val root = childListAt(pCur)
                 insertNodes(pCur, root, at.last, childs)
               }
             case model.operation.Node.Move(range, to) =>
               val toP = model.cursor.Node.parent(to)
-              if (!s.viewAsFolded(range.parent) && !s.viewAsHidden(toP)) {
+              if (s.viewAsNotFoldedAndNotHidden(range.parent) && s.visible(to)) {
                 val parent = childListAt(range.parent)
                 val toParent = childListAt(toP)
                 val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
@@ -580,9 +589,9 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
-              } else if (!s.viewAsFolded(range.parent)) {
+              } else if (s.viewAsNotFoldedAndNotHidden(range.parent)) {
                 removeNodes(range)
-              } else if (!s.viewAsHidden(to)) {
+              } else if (s.visible(to)) {
                 val data = s.node(range)
                 val p = model.cursor.Node.parent(to)
                 val root = childListAt(p)
