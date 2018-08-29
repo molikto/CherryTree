@@ -240,7 +240,7 @@ object Text {
     lazy val contentSize: Int = Text.size(content)
     override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
 
-    override def toPlainScalaTags: Frag = Text.toScalaTags(content)
+    override def toPlainScalaTags: Frag = Text.toPlainScalaTags(content)
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
       super.quickSearch(p, deli) ||

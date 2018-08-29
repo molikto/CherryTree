@@ -88,8 +88,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     previousZoom = zoom
     val nearestHeadingCur = zoom.inits.find(l => state.node(l).isH1)
     val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
-    val showParentsOf = nearestHeadingCur.map(_ :+ 0).getOrElse(zoom)
-    parentsView.update(showParentsOf.indices.map(a => state.node(zoom.take(a))))
+    parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
     if (emptyDataChange && previousNearestHeading == nearestHeading.map(_.uuid)) {
       // no toc changes
     } else {
