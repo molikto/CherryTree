@@ -9,7 +9,6 @@ import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
-import web.ui.doc.DocumentView
 import web.view._
 import web.ui._
 

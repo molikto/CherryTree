@@ -16,19 +16,19 @@ trait RegisterHandler extends RegisterInterface {
   private var default: Registerable = null
   private val named = mutable.Map[Int, Registerable]()
   private var zeroToNine = (0 until 10).map(_ => None : Option[Registerable]).toBuffer
-  protected var set: Int = -1
+  protected var curRegister: Int = -1
 
   private var system: Registerable = null
 
   override def setRegister(a: Int): Unit = {
     if ((a >= 'a' && a <= 'z') || (a >= 'A' && a<= 'Z')) {
-      set = a
+      curRegister = a
     } else if (a >= '0' && a <= '9') {
-      set = a
+      curRegister = a
 //    } else if (a == '*') { // this can only be got from Client.set = '*'
 //      set = '*'
     } else {
-      set = -1
+      curRegister = -1
     }
   }
 
@@ -39,9 +39,9 @@ trait RegisterHandler extends RegisterInterface {
       zeroToNine.zipWithIndex.map(a => (a._2 + '0', a._1))
 
 
-  def currentRegister: Char = if (set == -1) '"' else set.toChar
+  def currentRegister: Char = if (curRegister == -1) '"' else curRegister.toChar
   protected def getRegisterable(set0: Int = -1): Option[Registerable] = {
-    val set = if (set0 == -1) this.set else set0
+    val set = if (set0 == -1) this.curRegister else set0
     if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
       named.get(set)
     } else if (set >= '0' && set <= '9') {
@@ -57,8 +57,8 @@ trait RegisterHandler extends RegisterInterface {
     */
   override def retrieveSetRegisterAndSetToCloneNode(register: Int = -1): Option[Registerable] = {
     val set = if (register == -1) {
-      val s = this.set
-      this.set = -1
+      val s = this.curRegister
+      this.curRegister = -1
       s
     } else {
       register
@@ -78,8 +78,8 @@ trait RegisterHandler extends RegisterInterface {
   override def yank(registerable: Registerable, isDelete: Boolean, register: Int = -1): Unit = {
     var set = register
     if (set == -1) {
-      set = this.set
-      this.set = -1
+      set = this.curRegister
+      this.curRegister = -1
     }
     var defaultHistory = true
     if (set == -1) {
