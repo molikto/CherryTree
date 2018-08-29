@@ -375,7 +375,7 @@ class DocumentView(
     contents.zipWithIndex.foreach(a => {
       val frame = div(`class` := "ct-d-frame").render
       list.insertBefore(frame, before)
-      insertNodesRec(parentCur :+ a._2, a._1, frame)
+      insertNodeRec(parentCur :+ a._2, a._1, frame)
     })
   }
 
@@ -389,6 +389,7 @@ class DocumentView(
         frame.classList.add("ct-d-folded")
         hold.classList.add("ct-d-hold-folded")
       }
+      removeAllChild(childListAt(Seq.empty, frame0))
     } else {
       if (frame.classList.contains("ct-d-folded")) {
         frame.classList.remove("ct-d-folded")
@@ -401,10 +402,11 @@ class DocumentView(
 
 
   // this can temp be null during state update
-  private var currentZoom: model.cursor.Node = null
-  private var currentZoomId: String = null
+  private var currentDoc: DocState = null
+  private def currentZoom: model.cursor.Node = currentDoc.zoom
+  private def currentZoomId: String = currentDoc.zoomId
 
-  private def insertNodesRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
+  private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
     val box = div(`class` := classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
@@ -417,7 +419,7 @@ class DocumentView(
     hold.addEventListener("mouseover", handleHoverEvent)
     toggleHoldRendering(parent, hold, cur != currentZoom && client.state.userFoldedNodes.getOrElse(root.uuid, root.isH1))
     box.appendChild(list)
-    insertNodes(cur, list, 0, root.childs)
+    if (!currentDoc.viewAsFolded(cur)) insertNodes(cur, list, 0, root.childs)
   }
 
 
@@ -495,33 +497,30 @@ class DocumentView(
   override def onAttach(): Unit = {
     super.onAttach()
     val DocState(node, zoom, _, _, _) = client.state
-    currentZoom = zoom
-    currentZoomId = client.state.zoomId
-    insertNodesRec(zoom, node(zoom), rootFrame)
+    currentDoc = client.state
+    insertNodeRec(zoom, currentDoc.node(currentDoc.zoom), rootFrame)
 
     updateMode(client.state.mode)
 
     observe(client.stateUpdates.doOnNext(update => {
       update.foldsBefore.foreach(f => {
-        if (inViewport(f._1)) toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
+        if (!currentDoc.viewAsHidden(f._1)) toggleHoldRendering(frameAt(f._1), holdAt(f._1), f._2)
       })
       duringStateUpdate = true
       if (update.to.zoomId != currentZoomId) {
         //          if (cursor.Node.contains(currentZoom, a)) {
         //          } else {
         //            cleanFrame(rootFrame)
-        //            insertNodesRec(update.root(a), rootFrame)
+        //            insertNodeRec(update.root(a), rootFrame)
         //          }
         updateMode(None)
         removeAllNodes()
-        currentZoomId = update.to.zoomId
-        currentZoom = update.to.zoom
-        insertNodesRec(currentZoom, update.to.node(currentZoom), rootFrame)
+        currentDoc = update.to
+        insertNodeRec(currentZoom, update.to.node(currentZoom), rootFrame)
         scrollToTop()
       } else {
         for ((s, t, to) <- update.from) {
-          currentZoom = s.zoom
-          currentZoomId = s.zoomId
+          currentDoc = s
           //              if (model.debug_view) {
           //                println(s"current zoom is $currentZoom")
           //                println(s"current trans is ${t._1}")
@@ -540,7 +539,7 @@ class DocumentView(
                 case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
                 case _ => None
               }
-              if (inViewport(at)) {
+              if (!s.viewAsHidden(at)) {
                 val content = contentAt(at)
                 if (content == activeContent) {
                   activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
@@ -549,7 +548,7 @@ class DocumentView(
                 }
               }
             case model.operation.Node.AttributeChange(at, _, _) =>
-              if (inViewport(at)) {
+              if (!s.viewAsHidden(at)) {
                 val old = to.node(at)
                 if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
                   replaceContent(at, old.content, to.node(at).contentType)
@@ -558,22 +557,22 @@ class DocumentView(
                 toggleHoldRendering(frameAt(at), holdAt(at), to.viewAsFolded(at))
               }
             case model.operation.Node.Replace(at, c) =>
-              if (inViewport(at)) {
+              if (!s.viewAsHidden(at)) {
                 replaceContent(at, c, to.node(at).contentType)
               }
             case model.operation.Node.Delete(r) =>
-              if (inViewport(r.parent)) {
+              if (!s.viewAsFolded(r.parent)) {
                 removeNodes(r)
               }
             case model.operation.Node.Insert(at, childs) =>
               val pCur = model.cursor.Node.parent(at)
-              if (inViewport(pCur)) {
+              if (!s.viewAsHidden(pCur)) {
                 val root = childListAt(pCur)
                 insertNodes(pCur, root, at.last, childs)
               }
             case model.operation.Node.Move(range, to) =>
               val toP = model.cursor.Node.parent(to)
-              if (inViewport(range.parent) && inViewport(toP)) {
+              if (!s.viewAsFolded(range.parent) && !s.viewAsHidden(toP)) {
                 val parent = childListAt(range.parent)
                 val toParent = childListAt(toP)
                 val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
@@ -581,9 +580,9 @@ class DocumentView(
                 nodes.foreach(n => {
                   toParent.insertBefore(n, before)
                 })
-              } else if (inViewport(range.parent)) {
+              } else if (!s.viewAsFolded(range.parent)) {
                 removeNodes(range)
-              } else if (inViewport(to)) {
+              } else if (!s.viewAsHidden(to)) {
                 val data = s.node(range)
                 val p = model.cursor.Node.parent(to)
                 val root = childListAt(p)
@@ -592,8 +591,7 @@ class DocumentView(
           }
         }
       }
-      currentZoom = update.to.zoom
-      currentZoomId = update.to.zoomId
+      currentDoc = update.to
       duringStateUpdate = false
       updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
