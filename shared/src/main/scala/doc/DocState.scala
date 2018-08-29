@@ -36,11 +36,11 @@ case class DocState(
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
-      zoomAfter = Some(cur).filter(c => mustZoom || !currentlyVisible(c)))
+      zoomAfter = Some(cur).filter(c => mustZoom || visible(c)))
   }
 
   def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
-    val noZoom = model.cursor.Node.contains(zoom, n) && !viewAsHidden(n)
+    val noZoom = visible(n)
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(n, node(n).content.defaultMode(enableModal))),
       zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
@@ -86,8 +86,8 @@ case class DocState(
 
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
-    assert(!viewAsHidden(mode0.focus), s"mode hidden $mode0, $zoom")
-    assert(!viewAsHidden(mode0.other), s"mode hidden $mode0, $zoom")
+    assert(visible(mode0.focus), s"mode hidden $mode0, $zoom")
+    assert(visible(mode0.other), s"mode hidden $mode0, $zoom")
     if (isRich) {
       val (cur, rich, mo) = asRich
       def checkAtomicRichRange(a: IntRange) = {
@@ -130,35 +130,55 @@ case class DocState(
     userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
+  /**
+    * you need to ensure when you call this, there is no parenting folded nodes
+    */
+  def viewAsFolded(a: data.Node): Boolean = {
+    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isH1)
+  }
+
+  def viewAsNotFoldedAndNotHidden(a: cursor.Node): Boolean = inViewport(a) && !viewAsFolded(a) && !notVisible(a)
+
+  def viewAsNotFolded(a: cursor.Node): Boolean = inViewport(a) && !viewAsFolded(a)
+
+  /**
+    * you need to ensure when you call this, there is no parenting folded nodes
+    */
   def viewAsFolded(a: cursor.Node): Boolean = {
     assert(cursor.Node.contains(zoom, a))
     val no = node(a)
     a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
+  /**
+    * you need to ensure when you call this, there is no parenting folded nodes
+    */
   def viewAsFolded(a: cursor.Node, default: Boolean): Boolean = {
     assert(cursor.Node.contains(zoom, a))
     val no = node(a)
     a != zoom && userFoldedNodes.getOrElse(no.uuid, default)
   }
 
+  /**
+    * reguardless if there is folded parents
+    */
   def inViewport(a: cursor.Node): Boolean = cursor.Node.contains(zoom, a)
 
 
-  def currentlyVisible(a: Node): Boolean = {
-    inViewport(a) && !viewAsHidden(a)
-  }
 
-  def notHiddenParent(k: Node): cursor.Node = {
+  def visibleParent(k: Node): cursor.Node = {
     var j = k
     while (j.size >= zoom.size) {
-      if (!viewAsHidden(j)) return j
+      if (visible(j)) return j
       j = cursor.Node.parent(j)
     }
     zoom
   }
 
-  def viewAsHidden(k: Node): Boolean = {
+  def visible(k: Node): Boolean = !notVisible(k)
+
+  def notVisible(k: Node): Boolean = {
+    if (!inViewport(k)) return true
     var n = k
     while (n.size > zoom.size) {
       n = cursor.Node.parent(n)

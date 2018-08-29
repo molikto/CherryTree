@@ -264,7 +264,7 @@ trait Undoer extends UndoerInterface with Settings {
     }
     val (oldDocAsNowForModes, _) = operation.Node.apply(pp.flatten, item.docBefore, enableModal)
     val coverage = oldDocAsNowForModes.mode0.coverage // can only be normal
-    val zzz = if (cursor.Node.contains(applied.zoom, coverage) && !applied.viewAsHidden(coverage)) {
+    val zzz = if (cursor.Node.contains(applied.zoom, coverage) && applied.visible(coverage)) {
       None
     } else {
       var break = false
@@ -281,7 +281,7 @@ trait Undoer extends UndoerInterface with Settings {
     val changeZoom = zzz.map(z => applied.copy(zoom = z)).getOrElse(applied)
     val mode = oldDocAsNowForModes.mode0 match {
       case model.mode.Node.Visual(a, b) =>
-        model.mode.Node.Visual(changeZoom.notHiddenParent(a), changeZoom.notHiddenParent(b))
+        model.mode.Node.Visual(changeZoom.visibleParent(a), changeZoom.visibleParent(b))
       case a => a
     }
     DocTransaction(tt,
