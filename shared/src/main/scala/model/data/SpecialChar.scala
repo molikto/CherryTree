@@ -4,9 +4,6 @@ package model.data
 trait SpecialCharTrait extends Enumeration {
   type SpecialChar = Value
 
-  // LATER mmm... this is really hacky really? https://en.wikipedia.org/wiki/Private_Use_Areas
-  private[data] val SpecialCharStart = 0xF0000
-
   private[data] def createSpecialChar(id: Int) = apply(id)
 
 
@@ -24,10 +21,6 @@ trait SpecialCharTrait extends Enumeration {
 }
 
 object SpecialChar {
-  def special(a: Int): Boolean = {
-    a >= SpecialCharStart && a <= SpecialCharStart + 0xFF
-  }
-
 
   private object DelimitationType {
 
@@ -99,15 +92,15 @@ object SpecialChar {
 
     def atomic: Boolean = ty == DelimitationType.CodedAtomic || ty == DelimitationType.Empty
     def coded: Boolean =  ty == DelimitationType.CodedAtomic || ty == DelimitationType.CodedNonAtomic
-    def codedNonAtomic = ty == DelimitationType.CodedNonAtomic
-    def codedAtomic = ty == DelimitationType.CodedAtomic
+    def codedNonAtomic: Boolean = ty == DelimitationType.CodedNonAtomic
+    def codedAtomic: Boolean = ty == DelimitationType.CodedAtomic
 
-    def newSkipSize = attributes.size
-    def newDeliEndSize = newSkipSize + 1
+    def newSkipSize: Int = attributes.size
+    def newDeliEndSize: Int = newSkipSize + 1
     def newDeliStartSize = 1
-    def wrapSizeOffset = newDeliEndSize + 1
+    def wrapSizeOffset: Int = newDeliEndSize + 1
 
-    def emptySize = 2 + attributes.size
+    def emptySize: Int = 2 + attributes.size
   }
 
 }

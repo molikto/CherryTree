@@ -87,7 +87,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   private var active = {
     client.localStorage.get(".left-panel") match {
-      case Some(a) if a.nonEmpty => childs(a.toInt)
+      case Some(a) if a.nonEmpty && a.toInt < childs.size => childs(a.toInt)
       case _ => null
     }
   }

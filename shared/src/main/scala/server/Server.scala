@@ -23,10 +23,11 @@ trait Server extends Api {
     lastWs: Seq[transaction.Node])
 
   private var document = {
+    model.debug_oldDocVersion = true
     val bs = debugLoad("saved")
     val res = if (bs.isEmpty) Node.create()
     else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))
-    model.oldDocVersion = false
+    model.debug_oldDocVersion = false
     res
   }
   private var changes = Seq.empty[transaction.Node]
