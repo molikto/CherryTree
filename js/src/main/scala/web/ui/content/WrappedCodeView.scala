@@ -16,8 +16,6 @@ import web.ui.doc.DocumentView
 import web.ui._
 import web.view._
 
-import scala.scalajs.js
-
 
 
 class WrappedCodeView(
