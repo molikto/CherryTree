@@ -12,7 +12,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.ui
-import web.ui.doc.{AbstractDocumentView, DocumentView}
+import web.ui.doc.DocumentView
 import web.view._
 import web.ui.content.ContentViewEditor.General
 import web.ui._
@@ -36,7 +36,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
 
   def rich: Rich = contentData.content
 
-  override def createEditor(documentView: AbstractDocumentView, controller: EditorInterface): ContentViewEditor.General =
+  override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
 
   /**

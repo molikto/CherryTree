@@ -63,11 +63,11 @@ trait EditorView extends View {
 
   protected def editor: EditorInterface
 
-  def flushBeforeKeyDown(): Unit = {
+  protected def flushBeforeKeyDown(): Unit = {
   }
 
 
-  def postFlushSelectionOnArrowKey(): Unit = {
+  protected def postFlushSelectionOnArrowKey(): Unit = {
   }
 
   protected var hasShift = false

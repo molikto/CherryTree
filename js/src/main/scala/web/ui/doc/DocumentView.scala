@@ -1,36 +1,24 @@
 package web.ui.doc
 
-import command.Key
-import doc.{DocInterface, DocState}
+import doc.DocInterface
+import model.data.Content
 import model.data.Node.ContentType
-import model.{cursor, data, range}
-import model.data.{Node => _, _}
-import model.mode.Content.RichInsert
 import model.range.IntRange
+import org.scalajs.dom
 import org.scalajs.dom.html.Div
-import org.scalajs.dom.raw._
-import org.scalajs.dom.{html, window}
-import org.scalajs.dom.{document, html, window}
-import scalatags.JsDom.all._
+import org.scalajs.dom.{CompositionEvent, DragEvent, Event, FocusEvent, MouseEvent, document, raw, window}
+import org.scalajs.dom.raw.HTMLElement
 import util.Rect
 import view.EditorInterface
+import scalatags.JsDom.all._
 import web.ui
-import web.ui.content._
-import web.view.{OverlayAnchor, _}
+import web.ui.content.{ContentView, ContentViewEditor, RichView}
+import web.view._
+import web.ui.dialog._
 
-import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class DocumentView(
-  private val client: DocInterface,
-  override protected val editor: EditorInterface
-) extends AbstractDocumentView with EditorView with DocFramer {
-
-
-  private val rootFrame = div(
-    `class` := "ct-document-style ct-d-frame",
-    width := "100%"
-  ).render
+abstract class DocumentView extends View with EditorView {
 
   private val noEditable = div(
     `class` := "unselectable",
@@ -41,10 +29,6 @@ class DocumentView(
     height := "0px").render
 
 
-  private val nonEditableSelection = document.createRange()
-
-  nonEditableSelection.setStart(noEditable.childNodes(0), 0)
-  nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
 
   val fakeSelections: Div = div(
     position := "absolute",
@@ -62,14 +46,30 @@ class DocumentView(
     overflowY := "scroll",
     fakeSelections,
     noEditable,
-    div(
-      `class` := "unselectable",
-      height := "36px",  display := "block", contenteditable := "false"),
-    rootFrame,
-    div(
-      `class` := "unselectable",
-      height := "36px", display := "block", contenteditable := "false")
   ).render
+
+  /**
+    * TODO no protected var
+    */
+  protected var duringStateUpdate: Boolean = false
+  protected var allowCompositionInput = false
+
+
+  protected val client: DocInterface
+
+  protected def cursorOf[T <: model.data.Content, O <: model.operation.Content](a: ContentView[T, O]): model.cursor.Node
+  protected def contentAt(a: model.cursor.Node): ContentView.General
+  protected def contentOfHold(a: raw.Node): ContentView.General
+
+  private val nonEditableSelection = document.createRange()
+
+
+  override def onAttach(): Unit = {
+    super.onAttach()
+
+    nonEditableSelection.setStart(noEditable.childNodes(0), 0)
+    nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
+  }
 
   private def cancelNoEditableInput(): Any = {
     noEditable.textContent = ui.EvilChar
@@ -141,8 +141,7 @@ class DocumentView(
     *
     */
   private var isFocusedOut: Boolean = true
-  private var duringStateUpdate: Boolean = false
-  private var currentSelection: Range = nonEditableSelection
+  private var currentSelection: raw.Range = nonEditableSelection
 
 
 
@@ -174,7 +173,7 @@ class DocumentView(
     }
   })
 
-  private def flushSelection(force: Boolean = false): Unit = {
+  protected def flushSelection(force: Boolean = false): Unit = {
     if (!isFocusedOut) {
       val sel = window.getSelection()
       if (!force) {
@@ -205,7 +204,7 @@ class DocumentView(
     }
   }
 
-  def startSelection(range: Range): Unit = {
+  def startSelection(range: raw.Range): Unit = {
     currentSelection = range
   }
 
@@ -217,222 +216,24 @@ class DocumentView(
     nonEditableSelection != currentSelection
   }
 
-  def selection: Range = currentSelection
+  def selection: raw.Range = currentSelection
 
-  private var activeContentEditor: ContentViewEditor.General = null
+  protected var activeContentEditor: ContentViewEditor.General = null
 
-  private def activeContent =
+  protected def activeContent =
     if (activeContentEditor == null || activeContentEditor.contentView.destroyed) null else activeContentEditor.contentView
 
-  private def removeActiveContentEditor(): Unit = {
+  protected def removeActiveContentEditor(): Unit = {
     if (activeContentEditor != null && !activeContentEditor.contentView.destroyed) {
       activeContentEditor.clearMode()
     }
     activeContentEditor = null
   }
 
-  /**
-    *
-    * node list
-    *
-    *
-    */
-  //   frame = rootframe
-  //     box
-  //       content
-  //       child list
-  //         frame...
-  //         frame...
-  //         frame...
-  //     hold
-  //    nonEditable...
 
-  private def inViewport(a: model.cursor.Node): Boolean = currentZoom != null && model.cursor.Node.contains(currentZoom, a)
-
-  private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    if (rootFrame == this.rootFrame) assert(inViewport(at), s"not in viewport $at, current view port is $currentZoom")
-    def rec(a: Node, b: model.cursor.Node): Node = {
-      if (b.isEmpty) a
-      else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
-    }
-    rec(rootFrame, at.drop(currentZoom.size)).asInstanceOf[HTMLElement]
-  }
-
-  private def boxAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
-  }
-
-  private def childListAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    boxAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
-  }
-
-  private def frameInList(parent: HTMLElement, at: Int) = parent.childNodes(at).asInstanceOf[HTMLElement]
-
-
-  private def holdAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
-  }
-
-  private def contentOfHold(a: Node): ContentView.General = View.fromDom(a.previousSibling.firstChild)
-
-  private def contentAt(at: model.cursor.Node, rootFrame: Node = rootFrame): ContentView.General = {
-    val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
-    View.fromDom[ContentView.General](v)
-  }
-
-  def cursorOf[T <: model.data.Content, O <: model.operation.Content](a: ContentView[T, O]): model.cursor.Node = {
-    def rec(a: Node): Seq[Int] = {
-      val frame = a.parentNode.parentNode
-      if (frame == rootFrame) {
-        currentZoom
-      } else {
-        val parent = frame.parentNode.childNodes
-        var i = -1
-        var j = 0
-        while (i < 0 && j < parent.length) {
-          if (frame == parent(j)) {
-            i = j
-          }
-          j += 1
-        }
-        rec(frame.parentNode) :+ i
-      }
-    }
-    rec(a.dom)
-  }
-
-  private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
-  private var previousNodeMove: HTMLElement = null
-
-  private def updateNodeVisual(v: model.mode.Node.Visual, fromUser: Boolean): Unit = {
-    val newVisual = new ArrayBuffer[Element]()
-    val overall = model.cursor.Node.minimalRange(v.fix, v.move)
-    overall match {
-      case None =>
-        val rd = boxAt(currentZoom)
-        newVisual.append(rd)
-      case Some(range) => range.foreach(c => newVisual.append(boxAt(c)))
-    }
-    (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
-    (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
-    previousNodeVisual = newVisual
-    val newMove = boxAt(v.move)
-    if (newMove != previousNodeMove) {
-      if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
-      previousNodeMove = newMove
-      previousNodeMove.classList.add("ct-node-visual-move")
-      if (fromUser && mouseSecondContent == null) { // don't scroll for mouse
-        if (v.move == currentZoom) {
-          scrollToTop()
-        } else {
-          scrollInToViewIfNotVisible(previousNodeMove, dom)
-        }
-      }
-    }
-  }
-
-  private def clearNodeVisual(): Unit = {
-    if (previousNodeMove != null) {
-      for (c <- previousNodeVisual) {
-        c.classList.remove("ct-node-visual")
-      }
-      previousNodeVisual = ArrayBuffer.empty
-      if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
-      previousNodeMove = null
-    }
-  }
-
-
-
-  private def removeAllNodes(): Unit = {
-    val a = rootFrame
-    removeNodes(model.range.Node(currentZoom, IntRange(0, childListAt(currentZoom).childNodes.length)))
-    contentAt(currentZoom).destroy()
-    a.removeChild(a.childNodes(0))
-    a.removeChild(a.childNodes(0))
-  }
-
-  private def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
-    for (i <- start until u) {
-      val frame = frameInList(a, i)
-      val ll = childListAt(Seq.empty, rootFrame = frame)
-      destroyContents(ll, 0, ll.children.length)
-      contentAt(Seq.empty, rootFrame = frame).destroy()
-    }
-  }
-
-  private def removeNodes(range: model.range.Node): Unit = {
-
-    val p = childListAt(range.parent)
-    destroyContents(p, range.childs.start, range.childs.until)
-    for (_ <- range.childs) {
-      // not using correct api here
-      p.removeChild(p.children(range.childs.start))
-    }
-  }
-
-  private def insertNodes(parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
-    val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
-    contents.zipWithIndex.foreach(a => {
-      val frame = div(`class` := "ct-d-frame").render
-      list.insertBefore(frame, before)
-      insertNodeRec(parentCur :+ a._2, a._1, frame)
-    })
-  }
-
-
-
-  private def toggleHoldRendering(cur: model.cursor.Node, frame0: Node, childlist: Node, hold0: Node, fold: Boolean): Unit = {
-    val hold = hold0.asInstanceOf[HTMLElement]
-    val frame = frame0.asInstanceOf[HTMLElement]
-    val cl = if (childlist == null) null else childlist.asInstanceOf[HTMLElement]
-    if (fold) {
-      if (!frame.classList.contains("ct-d-folded")) {
-        frame.classList.add("ct-d-folded")
-        hold.classList.add("ct-d-hold-folded")
-        if (cl != null) {
-          destroyContents(cl, 0, cl.childNodes.length)
-          removeAllChild(cl)
-        }
-      }
-    } else {
-      if (frame.classList.contains("ct-d-folded")) {
-        frame.classList.remove("ct-d-folded")
-        hold.classList.remove("ct-d-hold-folded")
-        if (cl != null) insertNodes(cur, cl, 0, currentDoc.node(cur).childs)
-      }
-    }
-  }
-
-
-
-
-  // this can temp be null during state update
-  private var currentDoc: DocState = null
-  private def currentZoom: model.cursor.Node = currentDoc.zoom
-  private def currentZoomId: String = currentDoc.zoomId
-
-  private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
-    val firstChild = parent.firstChild
-    val box = div(`class` := classesFromNodeAttribute(root)).render
-    parent.insertBefore(box, firstChild)
-    val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
-    parent.insertBefore(hold, firstChild)
-    createContent(root.content, root.contentType).attachToNode(box)
-    val list = div(`class` := "ct-d-childlist").render
-    // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
-    // LATER our doc transaction/fold handling is MESSY!!!
-    hold.addEventListener("mouseover", handleHoverEvent)
-    box.appendChild(list)
-    val folded = currentDoc.viewAsFolded(root)
-    toggleHoldRendering(cur, parent, null, hold, folded)
-    if (!folded) insertNodes(cur, list, 0, root.childs)
-  }
-
-
-  private val handleHoverEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
+  protected val handleHoverEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
     val hold = e.target.asInstanceOf[HTMLElement]
-    val ee = View.fromDom[ContentView.General](hold.previousSibling.firstChild)
+    val ee = contentOfHold(hold)
     val cur = cursorOf(ee)
     val node = client.state.node(cur)
     hold.title =
@@ -446,165 +247,25 @@ class DocumentView(
   }
 
 
-  private def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
+  protected def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
     ContentView.create(c, contentType, true)
   }
 
 
-  def selectionRect: Rect = {
-    if (activeContent != null) {
-      activeContentEditor.selectionRect
-    } else if (previousNodeMove != null) {
-      toRect(previousNodeMove.getBoundingClientRect())
-    } else {
-      toRect(dom.getBoundingClientRect())
-    }
-  }
 
-  def simulateKeyboardMotion(isUp: Boolean): Unit = {
-  }
+  var sourceEditor: CoveringSourceEditDialog = null
+  var commandMenu: CommandMenuDialog = null
+  var registersDialog: RegistersDialog = null
+  var attributeEditor: UrlAttributeEditDialog = null
+  var inlineEditor : InlineCodeDialog = null
 
-  var allowCompositionInput = false
+  def selectionRect: Rect
 
-  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
-    duringStateUpdate = true
-    m match {
-      case None =>
-        allowCompositionInput = false
-        removeActiveContentEditor()
-        endSelection()
-        clearNodeVisual()
-      case Some(mk) => mk match {
-        case model.mode.Node.Content(at, aa) =>
-          allowCompositionInput = aa match {
-            case _: model.mode.Content.RichInsert => true
-            case _: model.mode.Content.RichVisual => true
-            case _ => false
-          }
-          clearNodeVisual()
-          val current = contentAt(at)
-          if (current != activeContent) {
-            removeActiveContentEditor()
-            activeContentEditor = current.createEditor(this, editor)
-          }
-          activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
-        case v@model.mode.Node.Visual(_, _) =>
-          allowCompositionInput = false
-          removeActiveContentEditor()
-          endSelection()
-          updateNodeVisual(v, fromUser)
-      }
-    }
-    duringStateUpdate = false
-    flushSelection()
-  }
-
-
-  // we use onAttach because we access window.setSelection
-  override def onAttach(): Unit = {
-    super.onAttach()
-    val DocState(node, zoom, _, _, _) = client.state
-    currentDoc = client.state
-    insertNodeRec(zoom, currentDoc.node(currentDoc.zoom), rootFrame)
-
-    updateMode(client.state.mode)
-
-    observe(client.stateUpdates.doOnNext(update => {
-      update.foldsBefore.foreach(f => {
-        val fr = frameAt(f._1)
-        if (currentDoc.visible(f._1)) toggleHoldRendering(f._1, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), f._2)
-      })
-      duringStateUpdate = true
-      if (update.to.zoomId != currentZoomId) {
-        //          if (cursor.Node.contains(currentZoom, a)) {
-        //          } else {
-        //            cleanFrame(rootFrame)
-        //            insertNodeRec(update.root(a), rootFrame)
-        //          }
-        updateMode(None)
-        removeAllNodes()
-        currentDoc = update.to
-        insertNodeRec(currentZoom, update.to.node(currentZoom), rootFrame)
-        scrollToTop()
-      } else {
-        for ((s, t, to) <- update.from) {
-          currentDoc = s
-          //              if (model.debug_view) {
-          //                println(s"current zoom is $currentZoom")
-          //                println(s"current trans is ${t._1}")
-          //              }
-          def replaceContent(at: model.cursor.Node, c: Content, contentType: Option[ContentType]) = {
-            val previousContent = contentAt(at)
-            val p = previousContent.dom.parentNode
-            val before = previousContent.dom.nextSibling
-            previousContent.destroy()
-            createContent(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
-          }
-
-          t match {
-            case model.operation.Node.Content(at, c) =>
-              val m: Option[model.mode.Content] = s.mode match {
-                case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
-                case _ => None
-              }
-              if (s.visible(at)) {
-                val content = contentAt(at)
-                if (content == activeContent) {
-                  activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
-                } else {
-                  content.updateContent(to.node(at).content, c, update.viewUpdated)
-                }
-              }
-            case model.operation.Node.AttributeChange(at, _, _) =>
-              if (s.visible(at)) {
-                val old = to.node(at)
-                if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
-                  replaceContent(at, old.content, to.node(at).contentType)
-                }
-                boxAt(at).className = classesFromNodeAttribute(to.node(at))
-                val fr = frameAt(at)
-                toggleHoldRendering(at, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), to.viewAsFolded(at))
-              }
-            case model.operation.Node.Replace(at, c) =>
-              if (s.visible(at)) {
-                replaceContent(at, c, to.node(at).contentType)
-              }
-            case model.operation.Node.Delete(r) =>
-              if (s.viewAsNotFoldedAndNotHidden(r.parent)) {
-                removeNodes(r)
-              }
-            case model.operation.Node.Insert(at, childs) =>
-              val pCur = model.cursor.Node.parent(at)
-              if (s.visible(at)) {
-                val root = childListAt(pCur)
-                insertNodes(pCur, root, at.last, childs)
-              }
-            case model.operation.Node.Move(range, to) =>
-              val toP = model.cursor.Node.parent(to)
-              if (s.viewAsNotFoldedAndNotHidden(range.parent) && s.visible(to)) {
-                val parent = childListAt(range.parent)
-                val toParent = childListAt(toP)
-                val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
-                val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
-                nodes.foreach(n => {
-                  toParent.insertBefore(n, before)
-                })
-              } else if (s.viewAsNotFoldedAndNotHidden(range.parent)) {
-                removeNodes(range)
-              } else if (s.visible(to)) {
-                val data = s.node(range)
-                val p = model.cursor.Node.parent(to)
-                val root = childListAt(p)
-                insertNodes(p, root, to.last, data)
-              }
-          }
-        }
-      }
-      currentDoc = update.to
-      duringStateUpdate = false
-      updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
-      refreshMounted()
-    }))
+  protected def refreshMounted(): Unit = {
+    attributeEditor.refresh()
+    inlineEditor.refresh()
+    commandMenu.refresh()
+    registersDialog.refresh()
   }
 
 
@@ -617,19 +278,24 @@ class DocumentView(
   observe(editor.flushes.doOnNext(_ => if (activeContent != null) activeContentEditor.flush()))
 
 
-
-
-
-
-
-
-  def scrollToTop(cur: model.cursor.Node): Unit = {
-    contentAt(cur).dom.scrollIntoView(true)
-    dom.scrollTop  = Math.max(0, dom.scrollTop - 10)
+  private val commandMenuAnchor = new OverlayAnchor {
+    override def rect: Rect = selectionRect
   }
+
+  def showCommandMenu(): Unit = {
+    commandMenu.show(commandMenuAnchor)
+  }
+
+  def showRegisters(): Unit = {
+    registersDialog.show(commandMenuAnchor)
+  }
+
+
+
 
   private var isRightMouseButton: Boolean = false
   private var mouseDown = false
+  protected def duringMouseMovement: Boolean = mouseDown
   private case class Click(t: Long, x: Double, y: Double) {
     def near(ano: Click, limit: Long): Boolean = {
       val dx = x - ano.x
@@ -658,13 +324,13 @@ class DocumentView(
     }
   }
 
-  override def flushBeforeKeyDown(): Unit = {
+  protected override def flushBeforeKeyDown(): Unit = {
     if (focusFinder != null) {
       readSelectionAfterMouseUpWithDelay(0, focusFinder._2)
     }
   }
 
-  override def postFlushSelectionOnArrowKey(): Unit = {
+  protected override def postFlushSelectionOnArrowKey(): Unit = {
     if (currentSelection != nonEditableSelection) {
       currentSelection.collapse(false)
       flushSelection()
@@ -681,7 +347,7 @@ class DocumentView(
     if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
       lastMouseDown = acientMouseDown
       oneButLastMouseDown = acientMouseDown
-      val pc = findParentContent(a.target.asInstanceOf[Node])
+      val pc = findParentContent(a.target.asInstanceOf[raw.Node])
       if (pc != null) {
         editor.onVisualMode(pc, pc)
       }
@@ -693,7 +359,7 @@ class DocumentView(
       } else if (!oneButLastMouseDown.near(down, 600)) { // double click
         clickCount = 2
       } else { // triple click
-        val pc = findParentContent(a.target.asInstanceOf[Node])
+        val pc = findParentContent(a.target.asInstanceOf[raw.Node])
         if (pc != null) {
           val cot = client.state.node(pc).content
           val ran = if (cot.isRich) {
@@ -775,7 +441,7 @@ class DocumentView(
     }
   }
 
-  event(window, "mouseup", (a: MouseEvent) => {
+  event(org.scalajs.dom.window, "mouseup", (a: MouseEvent) => {
     endMouseDown(a, false, true)
   })
 
@@ -784,7 +450,7 @@ class DocumentView(
   })
 
   private def getFirstContentView(a: MouseEvent): Unit = {
-    val pc = findParentContent(a.target.asInstanceOf[Node])
+    val pc = findParentContent(a.target.asInstanceOf[raw.Node])
     if (pc != null) {
       setFirstContent(pc)
     }
@@ -792,7 +458,7 @@ class DocumentView(
 
 
   private def handleMaybeSecondContentView(a: MouseEvent) = {
-    val node = a.target.asInstanceOf[Node]
+    val node = a.target.asInstanceOf[raw.Node]
     val ctt = {
       val p = findParentContent(node)
       if (p != null) p else null
@@ -830,7 +496,7 @@ class DocumentView(
 
 
 
-  private def findParentContent(t0: Node): model.cursor.Node = {
+  private def findParentContent(t0: raw.Node): model.cursor.Node = {
     val ct = ContentView.findParentContent(t0, dom, true)
     if (ct != null) {
       cursorOf(ct)
@@ -853,7 +519,7 @@ class DocumentView(
     a.target match {
       case element: HTMLElement if element.className.contains("ct-d-hold") =>
         clearAllPreviousReading() // if mouseup is before us
-        val ct = contentOfHold(element)
+      val ct = contentOfHold(element)
         endMouseDown(a, false, false)
         editor.onFocusOn(cursorOf(ct), None, true, false)
         showCommandMenu()

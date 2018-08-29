@@ -8,7 +8,7 @@ import org.scalajs.dom.window
 import scalatags.JsDom.all._
 import web.ui.dialog._
 import web.view.{OverlayLayer, View}
-import web.ui.doc.{DocumentView, DocumentView2, EditorView}
+import web.ui.doc.SimpleLayoutDocumentView
 import web.ui.panel.LeftPanelSwitcher
 
 import scala.scalajs._
@@ -79,7 +79,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   new BottomBarView(client).attachToNode(rightPanel)
 
-  private val docView = new DocumentView(client, client).attachToNode(rightPanel).asInstanceOf[DocumentView]
+  private val docView = new SimpleLayoutDocumentView(client, client).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView]
 
   private val overlayLayer = {
     val o = new OverlayLayer(dom, docView)

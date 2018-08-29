@@ -686,11 +686,11 @@ class Client(
     }
     if (done) {
       if (state.isContent) {
-        val pset = set
-        set = '*'
+        val pset = curRegister
+        curRegister = '*'
         val command = if (getRegisterable().exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
         localChange(command.action(state, 1, this, None, None, None))
-        set = pset
+        curRegister = pset
       }
     }
   }

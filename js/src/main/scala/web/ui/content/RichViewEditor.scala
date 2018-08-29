@@ -14,14 +14,14 @@ import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.ui
-import web.ui.doc.{AbstractDocumentView, DocumentView}
+import web.ui.doc.DocumentView
 import web.view.{Overlay, _}
 import web.ui.dialog.{InlineCodeDialog, UrlAttributeEditDialog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class RichViewEditor(val documentView: AbstractDocumentView, val controller: EditorInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
+class RichViewEditor(val documentView: DocumentView, val controller: EditorInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
 
 
   /**
