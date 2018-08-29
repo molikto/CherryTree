@@ -19,7 +19,7 @@ class NodeDelete extends CommandCategory("node: delete") {
   new Command {
     override val description: String = "delete current node" + message
     override val defaultKeys: Seq[KeySeq] = Seq("dd", shiftMod(Backspace)) // siblings not lines
-    override def available(a: DocState): Boolean = a.isContent
+    override def available(a: DocState): Boolean = a.isContent && a.asContent != cursor.Node.root
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val r = a.asContent

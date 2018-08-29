@@ -150,7 +150,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, t0) = a.asRichAtom
-      val t = rich.befores(t0.range.until).find(_.isStartWithAttribute(UrlAttribute)).get.text.asDelimited
+      val t = rich.insideUrlAttributed(t0).get.text.asDelimited
       val url = t.attribute(model.data.UrlAttribute).str
       Node.matchNodeRef(url).foreach { uuid =>
         a.lookup(uuid) match {

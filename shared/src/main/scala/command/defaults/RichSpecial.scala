@@ -52,10 +52,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
         } else {
           Some(keyU)
         }
-        val wrap = deli.wrap()
-        val k = operation.Rich.insert(insert, wrap)
+        val k = operation.Rich.insert(insert, deli)
         val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
-        val modeBefore = moveSomeInsertMode(if (deli.atomic) wrap.size else 1)
+        val modeBefore = moveSomeInsertMode(if (deli.atomic) deli.emptySize else 1)
         val vms = if (deli == SpecialChar.Image) {
           a.editAttribute(IntRange.len(insert + 1, 0), modeBefore)
         } else if (deli == SpecialChar.LaTeX) {
@@ -68,7 +67,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
         val ret = vms.copy(trans)
         extraInsert match {
           case Some(extra) => DocTransaction(
-            Seq(model.operation.Node.rich(n, operation.Rich.insert(insert, extra))),
+            Seq(model.operation.Node.rich(n, operation.Rich.replacePlain(insert, insert, extra))),
             Some(a.copyContentMode(model.mode.Content.RichInsert(insert + extra.size))),
             extra = Some(ret))
           case None => ret

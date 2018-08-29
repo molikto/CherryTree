@@ -258,7 +258,12 @@ trait Undoer extends UndoerInterface with Settings {
     val item = history(i)
     // TODO conflicts
     val (tt, pp) = ot.Node.rebaseT(item.reverse, after(i)).t
-    val (applied, afrom) = operation.Node.apply(tt, currentDoc, enableModal)
+    val (applied, afrom) = try {
+     operation.Node.apply(tt, currentDoc, enableModal)
+    } catch {
+      case t: Throwable =>
+        throw new Exception(s"seems reverse is wrong ${item.trans}, ${item.reverse}", t)
+    }
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }

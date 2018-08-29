@@ -6,11 +6,11 @@ import model._
 import scala.util.Random
 
 
-object Rich extends Ot[data.Rich, operation.Rich, conflict.Paragraph] {
+object Rich extends Ot[data.Rich, operation.Rich, conflict.Rich] {
 
-  type RebaseResult = Rebased[conflict.Paragraph, (Seq[operation.Rich], Seq[operation.Rich])]
+  type RebaseResult = Rebased[conflict.Rich, (Seq[operation.Rich], Seq[operation.Rich])]
   override def rebase(winner: operation.Rich, loser: operation.Rich): RebaseResult = {
-    val a = ot.Unicode.rebase(winner.u, loser.u)
+    val a = ot.EncodedSeq.rebase(winner.u, loser.u)
     val t1 = a.t._1
     val t2 = a.t._2
     val ww = if (t1.isEmpty) Seq.empty else Seq(operation.Rich(t1, winner.ty))

@@ -80,8 +80,8 @@ object SpecialChar {
 
   //** from inner to outer
   // also inner splits
-  val breakOthersOrderedUnicode: Seq[Unicode] = formatted.map(a => a.startUnicode)
-  val noBreakeeOrderedUnicode: Seq[Unicode] = formattedNonSplittable.map(a => a.startUnicode)
+  val breakOthersOrderedUnicode: Seq[SpecialChar] = formatted.map(a => a.start)
+  val noBreakeeOrderedUnicode: Seq[SpecialChar] = formattedNonSplittable.map(a => a.start)
 
   val starts: Seq[SpecialChar] = all.map(_.start)
   val ends: Seq[SpecialChar] = all.map(_.end)
@@ -95,20 +95,19 @@ object SpecialChar {
     attributes: Seq[SpecialChar] = Seq.empty,
     codeType: CodeType = null
   ) {
-    def wrap(a: Unicode = Unicode.empty): Unicode = Unicode(start) + a + Unicode.specials(attributes :+ end)
+    private[model] def wrap(a: EncodedSeq = EncodedSeq.empty): EncodedSeq = EncodedSeq(start) + a + EncodedSeq(attributes :+ end)
 
     def atomic: Boolean = ty == DelimitationType.CodedAtomic || ty == DelimitationType.Empty
     def coded: Boolean =  ty == DelimitationType.CodedAtomic || ty == DelimitationType.CodedNonAtomic
     def codedNonAtomic = ty == DelimitationType.CodedNonAtomic
     def codedAtomic = ty == DelimitationType.CodedAtomic
 
-    private[model] def startUnicode = Unicode(start)
-    private[model] def endUnicode = Unicode(end)
-
     def newSkipSize = attributes.size
     def newDeliEndSize = newSkipSize + 1
     def newDeliStartSize = 1
     def wrapSizeOffset = newDeliEndSize + 1
+
+    def emptySize = 2 + attributes.size
   }
 
 }

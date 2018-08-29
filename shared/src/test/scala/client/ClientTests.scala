@@ -4,7 +4,7 @@ package client
 import api.{Api, Authentication}
 import doc.DocTransaction
 import model._
-import model.data.{Node, Unicode}
+import model.data.{EncodedSeq, Node, Unicode}
 import model.ot.NodeOps
 import server.Server
 import utest._
@@ -126,7 +126,21 @@ object ClientTests extends TestSuite  {
 
       'randomTwoChangeTransactionSync - {
         val count = 1000
-        for ((_, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+        for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
+          // sadly our tests is not one thread
+          val c = clients(j)
+          c.synchronized {
+            c.debug_unmarkTempDisableMode()
+            c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+          }
+        }
+        waitAssertStateSyncBetweenClientsAndServer()
+      }
+
+      'performanceTwoChangeTransactionSync - {
+        val random = new Random(21321321)
+        val count = 10000
+        for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
           // sadly our tests is not one thread
           val c = clients(j)
           c.synchronized {
@@ -146,7 +160,7 @@ object ClientTests extends TestSuite  {
           if (c.state.isRichInsert) {
             c.debug_unmarkTempDisableMode()
             try {
-              c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), -1)
+              c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), true, -1, false)
             } catch {
               case e: Throwable =>
                 println("action " + ith)

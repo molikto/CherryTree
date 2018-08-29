@@ -13,35 +13,37 @@ import scala.util.Random
 /**
   */
 // LATER a xml like api? basically what we implemented is a OT for xml with finite attributes. but current implementation is actually OK... so maybe later
-case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) extends Operation[data.Rich] {
+case class Rich(private [model] val u: Seq[EncodedSeq], override val ty: Type) extends Operation[data.Rich] {
 
 
   override def toString: String = u.mkString(", ")
 
   def canBeSmartInsert(rich: data.Rich): Option[(data.Unicode, Int, data.Unicode)] = {
-    def doIt(at: Int, unicode: data.Unicode):  Option[(data.Unicode, Int, data.Unicode)]  = {
-      if (unicode.forall(a => !SpecialChar.special(a))) {
-        if (at == 0) {
-          return Some((data.Unicode.empty, at, unicode))
-        }
-        val before = rich.before(at)
-        if (before.text.isCoded && !before.delimitationEnd) {
-          return None
-        } else if (before.text.isPlain) {
-          val g = before.asInstanceOf[Atom.PlainGrapheme]
-          return Some((before.text.asPlain.unicode.slice(IntRange(0, g.unicodeIndex + g.size)), at, unicode))
-        } else {
-          return Some((Rich.returnUnicodeOnNonText, at, unicode))
-        }
+    def doIt(at: Int, unicode: data.EncodedSeq):  Option[(data.Unicode, Int, data.Unicode)]  = {
+      unicode.singleUnicodeOption match {
+        case Some(jj) =>
+          if (at == 0) {
+            return Some((data.Unicode.empty, at, jj))
+          }
+          val before = rich.before(at)
+          if (before.text.isCoded && !before.delimitationEnd) {
+            return None
+          } else if (before.text.isPlain) {
+            val g = before.asInstanceOf[Atom.PlainGrapheme]
+            return Some((before.text.asPlain.unicode.slice(IntRange(0, g.unicodeIndex + g.size)), at, jj))
+          } else {
+            return Some((Rich.returnUnicodeOnNonText, at, jj))
+          }
+        case None =>
+          None
       }
-      None
     }
 
 
     u match {
-      case Seq(Unicode.Insert(at, unicode, _)) =>
+      case Seq(EncodedSeq.Insert(at, unicode, _)) =>
         doIt(at, unicode)
-      case Seq(Unicode.Insert(start, b, _), Unicode.Delete(IntRange(startd, endd))) if startd >= start + b.size =>
+      case Seq(EncodedSeq.Insert(start, b, _), EncodedSeq.Delete(IntRange(startd, endd))) if startd >= start + b.size =>
         doIt(start, b)
       case _ => None
     }
@@ -51,7 +53,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     val range = res._1
     val se = res._2
     to match {
-      case Unicode.Delete(r) =>
+      case EncodedSeq.Delete(r) =>
         if (r.until <= range.start) {
           (range.moveBy(-r.size), se)
         } else if (r.start >= range.until) {
@@ -61,17 +63,17 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else {
           return None
         }
-      case Unicode.Insert(at, a, gl) =>
+      case EncodedSeq.Insert(at, a, gl) =>
         if (at < range.start) {
           (range.moveBy(a.size), se)
         } else if (at >= range.start && at <= range.until) {
-          (IntRange(range.start, range.until + a.size), se :+ Unicode.Insert(at - range.start, a, gl))
+          (IntRange(range.start, range.until + a.size), se :+ Unicode.Insert(at - range.start, a.singleUnicode, gl))
         } else if (at > range.until) {
           res
         } else {
           return None
         }
-      case Unicode.Surround(r, left, right, _) =>
+      case EncodedSeq.Surround(r, left, right, _) =>
         if (r.until < range.start) {
           (range.moveBy(left.size), se)
         } else if (r.start > range.until) {
@@ -81,7 +83,7 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
         } else {
           return None
         }
-      case a@Unicode.ReplaceAtomic(r, unicode) =>
+      case a@EncodedSeq.ReplaceAtomic(r, unicode) =>
         if (r.until < range.start) {
           (range.moveBy(a.sizeDiff), se)
         } else if (r.start > range.until) {
@@ -113,14 +115,14 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
   }
 
   override def apply(d: data.Rich): data.Rich =
-    data.Rich.parse(Unicode.apply(u, d.serialize()))
+    data.Rich.parse(EncodedSeq.apply(u, d.serialize()))
 
   override type This = Rich
 
   override def reverse(d: data.Rich): Rich = {
-    Rich(u.foldLeft((d.serialize(), Seq.empty[operation.Unicode])) { (s, a) =>
+    Rich(u.foldLeft((d.serialize(), Seq.empty[operation.EncodedSeq])) { (s, a) =>
       a match {
-        case k: Unicode.Surround =>
+        case k: EncodedSeq.Surround =>
           val op = k.reverse2
           (k(s._1), op ++ s._2)
         case a =>
@@ -130,22 +132,22 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
     }._2, Type.reverse(ty))
   }
 
-  private def mergeIfSingle(u: Seq[Unicode], before: Seq[Unicode], breakOnWhitespace: Boolean): Option[Rich] = {
+  private def mergeIfSingle(u: Seq[EncodedSeq], before: Seq[EncodedSeq], breakOnWhitespace: Boolean): Option[Rich] = {
     (before, u) match {
-      case (Seq(Unicode.Insert(a0, u0, g0)), Seq(Unicode.Insert(a1, u1, g1))) if a1 == a0 + u0.size && (!breakOnWhitespace || !u1.containsSpace) && g0 == g1 =>
-        Some(Rich(Seq(Unicode.Insert(a0, u0 + u1, g0)), ty))
-      case (Seq(Unicode.Delete(r0)), Seq(Unicode.Delete(r1))) =>
+      case (Seq(EncodedSeq.Insert(a0, u0, g0)), Seq(EncodedSeq.Insert(a1, u1, g1))) if a1 == a0 + u0.size && (!breakOnWhitespace || !u1.containsSpace) && g0 == g1 =>
+        Some(Rich(Seq(EncodedSeq.Insert(a0, u0 + u1, g0)), ty))
+      case (Seq(EncodedSeq.Delete(r0)), Seq(EncodedSeq.Delete(r1))) =>
         if (r1.until == r0.start) {
-          Some(Rich(Seq(Unicode.Delete(r1.start, r0.until)), ty))
+          Some(Rich(Seq(EncodedSeq.Delete(r1.start, r0.until)), ty))
         } else if (r0.start == r1.start) {
-          Some(Rich(Seq(Unicode.Delete(r1.start, r1.until + r0.size)), ty))
+          Some(Rich(Seq(EncodedSeq.Delete(r1.start, r1.until + r0.size)), ty))
         } else {
           None
         }
-      case (Seq(Unicode.Insert(a0, u0, g0)), Seq(Unicode.Insert(a1, u1, g1), Unicode.Delete(r))) if g0 == g1 && (!breakOnWhitespace || !u1.containsSpace) =>
+      case (Seq(EncodedSeq.Insert(a0, u0, g0)), Seq(EncodedSeq.Insert(a1, u1, g1), EncodedSeq.Delete(r))) if g0 == g1 && (!breakOnWhitespace || !u1.containsSpace) =>
         if (a1 >= a0 && a1 < a0 + u0.size && r.start == a1 + u1.size && r.until == a0 + u0.size + u1.size) {
           Some(Rich(Seq(
-            Unicode.Insert(a0, u0.slice(IntRange(0, u0.size - r.size)) + u1,g0)
+            EncodedSeq.Insert(a0, u0.slice(IntRange(0, u0.size - r.size)) + u1,g0)
           ), Type.AddDelete))
         } else {
           None
@@ -158,43 +160,43 @@ case class Rich(private [model] val u: Seq[Unicode], override val ty: Type) exte
 
 
   override def merge(before: Any, whitespace: Boolean): Option[Rich] =
-    mergeIfSingle(Unicode.merge(u), Unicode.merge(before.asInstanceOf[Rich].u), breakOnWhitespace = whitespace)
+    mergeIfSingle(EncodedSeq.merge(u), EncodedSeq.merge(before.asInstanceOf[Rich].u), breakOnWhitespace = whitespace)
 
   override def isEmpty: Boolean = u.forall(_.isEmpty)
 }
 
 object Rich extends OperationObject[data.Rich, Rich] {
   def fromCode(insideStart: Int, uni: Seq[Unicode]): Rich = {
-    Rich(uni.map(_.translate(insideStart)), Type.AddDelete)
+    Rich(uni.map(_.toEncodedSeq.translate(insideStart)), Type.AddDelete)
   }
 
   def replacePlain(seq: Seq[(Int, Int, data.Unicode)]): Rich = {
     Rich(seq.reverse.flatMap(a => replacePlain0(a._1, a._2, a._3)), Type.AddDelete)
   }
 
-  private def replacePlain0(start: Int, end: Int, b: data.Unicode): Seq[operation.Unicode] = {
+  private def replacePlain0(start: Int, end: Int, b: data.Unicode): Seq[operation.EncodedSeq] = {
     if (b.isEmpty) {
-      Seq(Unicode.Delete(start, end))
+      Seq(EncodedSeq.Delete(start, end))
     } else if (start == end) {
-      Seq(Unicode.Insert(start, b))
+      Seq(EncodedSeq.Insert(start, data.EncodedSeq(b)))
     } else {
         Seq(
-          Unicode.Insert(start, b),
-          Unicode.Delete(start + b.size, end + b.size)
+          EncodedSeq.Insert(start, data.EncodedSeq(b)),
+          EncodedSeq.Delete(start + b.size, end + b.size)
         )
     }
   }
 
   def replacePlain(start: Int, end: Int, b: data.Unicode): Rich = {
     if (b.isEmpty) {
-      Rich(Seq(Unicode.Delete(start, end)), Type.Delete)
+      Rich(Seq(EncodedSeq.Delete(start, end)), Type.Delete)
     } else if (start == end) {
-      Rich(Seq(Unicode.Insert(start, b)), Type.Add)
+      Rich(Seq(EncodedSeq.Insert(start, data.EncodedSeq(b))), Type.Add)
     } else {
       Rich(
         Seq(
-          Unicode.Insert(start, b),
-          Unicode.Delete(start + b.size, end + b.size)
+          EncodedSeq.Insert(start, data.EncodedSeq(b)),
+          EncodedSeq.Delete(start + b.size, end + b.size)
         ),
         Type.AddDelete
       )
@@ -216,8 +218,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val text = atom.text.asDelimited
     Rich(
       Seq(
-        Unicode.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(textStart), title),
-        Unicode.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(textStart), url)
+        EncodedSeq.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(textStart), data.EncodedSeq(title)),
+        EncodedSeq.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(textStart), data.EncodedSeq(url))
       ),
       Type.AddDelete)
   }
@@ -227,8 +229,8 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def wrapAsCoded(a: data.Unicode, r: IntRange, deli: SpecialChar.Delimitation): Rich = {
     Rich(
       Seq(
-        Unicode.Insert(r.start, deli.wrap(a)),
-        Unicode.Delete(r.moveBy(r.size + deli.wrapSizeOffset))
+        EncodedSeq.Insert(r.start, deli.wrap(data.EncodedSeq(a))),
+        EncodedSeq.Delete(r.moveBy(r.size + deli.wrapSizeOffset))
       ), Type.AddDelete)
   }
 
@@ -276,7 +278,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   def wrapNonOverlappingOrderedRanges(soc: Seq[IntRange], deli: SpecialChar.Delimitation): operation.Rich = {
     Rich(soc.reverse.map(a => {
-      Unicode.Surround(a, data.Unicode(deli.start), data.Unicode.specials(deli.attributes :+ deli.end))
+      EncodedSeq.Surround(a, data.EncodedSeq(deli.start), data.EncodedSeq(deli.attributes :+ deli.end))
     }), Type.Add)
   }
 
@@ -298,36 +300,36 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def unwrap(start: Int, value: Text.Delimited): operation.Rich = {
     operation.Rich(
       Seq(
-        Unicode.Delete(start + value.contentSize + 1, start + value.size),
-        Unicode.Delete(start, start + 1)
+        EncodedSeq.Delete(start + value.contentSize + 1, start + value.size),
+        EncodedSeq.Delete(start, start + 1)
       ),
       Type.Delete
     )
   }
 
 
-  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => Unicode.Delete(a)).toVector, Type.Delete)
+  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => EncodedSeq.Delete(a)).toVector, Type.Delete)
 
 
   def delete(start: Int, until: Int): Rich = deleteNoneOverlappingOrderedRanges(Seq(IntRange(start, until)))
   def delete(range: IntRange): Rich = deleteNoneOverlappingOrderedRanges(Seq(range))
 
-  def insert(p: Int, unicode: data.Unicode): Rich = Rich(Seq(Unicode.Insert(p, unicode)), Type.Add)
+  def insert(p: Int, unicode: Delimitation): Rich = Rich(Seq(EncodedSeq.Insert(p, unicode.wrap())), Type.Add)
 
-  def insert(p: Int, unicode: Seq[data.Text]): Rich = Rich(Seq(Unicode.Insert(p, Text.serialize(unicode))), Type.Add)
+  def insert(p: Int, unicode: Seq[data.Text]): Rich = Rich(Seq(EncodedSeq.Insert(p, Text.serialize(unicode))), Type.Add)
 
 
   override val pickler: Pickler[Rich] = new Pickler[Rich] {
     override def pickle(obj: Rich)(implicit state: PickleState): Unit = {
       import state.enc._
       writeInt(obj.u.size)
-      obj.u.foreach(a => Unicode.pickler.pickle(a))
+      obj.u.foreach(a => EncodedSeq.pickler.pickle(a))
       writeInt(obj.ty.id)
     }
 
     override def unpickle(implicit state: UnpickleState): Rich = {
       import state.dec._
-      Rich((0 until readInt).map(_ => Unicode.pickler.unpickle), Type(readInt))
+      Rich((0 until readInt).map(_ => EncodedSeq.pickler.unpickle), Type(readInt))
     }
   }
 
@@ -337,7 +339,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   override def random(d: data.Rich, r: Random): Rich = {
     def fallback(): Rich = {
       val a = randomParagraphInsertionPoint(d, r)
-      Rich(Seq(operation.Unicode.Insert(a, data.Rich.random(r).serialize())), Type.Add)
+      Rich(Seq(operation.EncodedSeq.Insert(a, data.Rich.random(r).serialize())), Type.Add)
     }
     val rc = r.nextInt(9)
     rc match {
@@ -345,12 +347,12 @@ object Rich extends OperationObject[data.Rich, Rich] {
         val randomFormat = SpecialChar.formattedSplittable(r.nextInt(SpecialChar.formattedSplittable.size))
         val range = randomSubrich(d, r)
         Rich(Seq(
-          operation.Unicode.Surround(range, data.Unicode(randomFormat.start), data.Unicode(randomFormat.end))), Type.Add)
+          operation.EncodedSeq.Surround(range, data.EncodedSeq(randomFormat.start), data.EncodedSeq(randomFormat.end))), Type.Add)
       case 1 =>
         randomFormatted(d, r) match {
           case Some(a) => Rich(Seq(
-            operation.Unicode.Delete(IntRange(a.until - 1)),
-            operation.Unicode.Delete(IntRange(a.start))), Type.Delete)
+            operation.EncodedSeq.Delete(IntRange(a.until - 1)),
+            operation.EncodedSeq.Delete(IntRange(a.start))), Type.Delete)
           case None => fallback()
         }
         // remove a format
@@ -359,19 +361,19 @@ object Rich extends OperationObject[data.Rich, Rich] {
         val randomFormat =
           (randomSubrich(d, r), LinkStart, UrlAttribute, TitleAttribute, LinkEnd)
         Rich(Seq(
-          operation.Unicode.Surround(randomFormat._1, data.Unicode(randomFormat._2),
-            data.Unicode(randomFormat._3) +
-              data.Unicode("http://www.baidu.com") +
-              data.Unicode(randomFormat._4) +
-              data.Unicode(randomFormat._5)
+          operation.EncodedSeq.Surround(randomFormat._1, data.EncodedSeq(randomFormat._2),
+            data.EncodedSeq(randomFormat._3) +
+              data.EncodedSeq("http://www.baidu.com") +
+              data.EncodedSeq(randomFormat._4) +
+              data.EncodedSeq(randomFormat._5)
           )
         ), Type.Add)
       case 3 =>
         // remove title/image to a subparagraph
         randomUrlAttributed(d, r) match {
           case Some((a, t)) => Rich(Seq(
-            operation.Unicode.Delete(IntRange(t.start - 1, a.until)),
-            operation.Unicode.Delete(IntRange(a.start))
+            operation.EncodedSeq.Delete(IntRange(t.start - 1, a.until)),
+            operation.EncodedSeq.Delete(IntRange(a.start))
           ),
             Type.Delete)
           case None => fallback()
@@ -379,13 +381,13 @@ object Rich extends OperationObject[data.Rich, Rich] {
       case 4 =>
         // change title/image url
         randomUrlAttributed(d, r) match {
-          case Some((_, t)) => Rich(Seq(operation.Unicode.ReplaceAtomic(t, data.Unicode(r.nextInt().toString))), Type.AddDelete)
+          case Some((_, t)) => Rich(Seq(operation.EncodedSeq.ReplaceAtomic(t, data.EncodedSeq(r.nextInt().toString))), Type.AddDelete)
           case None => fallback()
         }
       case 5 =>
         // delete a subparagrpah
         val range = randomSubrich(d, r)
-        Rich(Seq(operation.Unicode.Delete(range)), Type.Delete)
+        Rich(Seq(operation.EncodedSeq.Delete(range)), Type.Delete)
       case 6 =>
         // insert a subparagraph
         fallback()
@@ -395,14 +397,14 @@ object Rich extends OperationObject[data.Rich, Rich] {
           case Some(a) if a.size > 2 =>
             val len = r.nextInt(a.size - 2)
             val start = a.start + 1 + r.nextInt(a.size - 2 - len)
-            Rich(Seq(operation.Unicode.Delete(IntRange(start, start + len))), Type.Delete)
+            Rich(Seq(operation.EncodedSeq.Delete(IntRange(start, start + len))), Type.Delete)
           case None => fallback()
         }
       case 8 =>
         // insert inside unicode
         randomCoded(d, r) match {
-          case Some(a) => Rich(Seq(operation.Unicode.Insert(
-            1 + a.start + r.nextInt(a.size - 2), data.Unicode(r.nextInt(10).toString))), Type.Add)
+          case Some(a) => Rich(Seq(operation.EncodedSeq.Insert(
+            1 + a.start + r.nextInt(a.size - 2), data.EncodedSeq(r.nextInt(10).toString))), Type.Add)
           case None => fallback()
         }
       case _ =>
@@ -474,13 +476,13 @@ object Rich extends OperationObject[data.Rich, Rich] {
 
   override def apply(cs: TRANSACTION, model: data.Rich): data.Rich = {
     data.Rich.parse(cs.foldLeft(model.serialize()) { (m, c) =>
-      Unicode.apply(c.u, m)
+      EncodedSeq.apply(c.u, m)
     })
   }
 
   override def applyT(cs: Seq[TRANSACTION], model: data.Rich): data.Rich = {
     data.Rich.parse(cs.foldLeft(model.serialize()) { (m, t) =>
-      t.foldLeft(m) { (m, c) => Unicode.apply(c.u, m) }
+      t.foldLeft(m) { (m, c) => EncodedSeq.apply(c.u, m) }
     })
   }
 }

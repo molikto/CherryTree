@@ -72,7 +72,7 @@ class NodeMove extends CommandCategory("node: move") {
 
   new TextualCommand {
     override val description: String = "unwrap"
-    override def available(a: DocState): Boolean = a.isContent
+    override def available(a: DocState): Boolean = a.isContent && a.asContent != cursor.Node.root
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val mm = a.asContent
       val n = a.node(mm)
