@@ -36,11 +36,11 @@ case class DocState(
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
-      zoomAfter = Some(cur).filter(c => mustZoom || !currentlyVisible(c)))
+      zoomAfter = Some(cur).filter(c => mustZoom || !viewAsHidden(c)))
   }
 
   def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
-    val noZoom = model.cursor.Node.contains(zoom, n) && !viewAsHidden(n)
+    val noZoom = !viewAsHidden(n)
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(n, node(n).content.defaultMode(enableModal))),
       zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
@@ -130,6 +130,11 @@ case class DocState(
     userFoldedNodes.getOrElse(no.uuid, no.isH1)
   }
 
+  def viewAsFolded(a: data.Node): Boolean = {
+    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isH1)
+  }
+
+
   def viewAsFolded(a: cursor.Node): Boolean = {
     assert(cursor.Node.contains(zoom, a))
     val no = node(a)
@@ -145,9 +150,6 @@ case class DocState(
   def inViewport(a: cursor.Node): Boolean = cursor.Node.contains(zoom, a)
 
 
-  def currentlyVisible(a: Node): Boolean = {
-    inViewport(a) && !viewAsHidden(a)
-  }
 
   def notHiddenParent(k: Node): cursor.Node = {
     var j = k
@@ -159,6 +161,7 @@ case class DocState(
   }
 
   def viewAsHidden(k: Node): Boolean = {
+    if (!inViewport(k)) return false
     var n = k
     while (n.size > zoom.size) {
       n = cursor.Node.parent(n)
