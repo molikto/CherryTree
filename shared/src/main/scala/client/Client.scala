@@ -754,7 +754,7 @@ class Client(
         val d = disableUpdateBecauseLocalNodeDelete._1
         if (update.tryMergeInsertOfDeleteRange.contains(d.r)) {
           update.transaction match {
-            case Seq(i@operation.Node.Insert(at, childs)) if childs == disableUpdateBecauseLocalNodeDelete._3 =>
+            case operation.Node.Insert(at, childs) +: resTrans if childs == disableUpdateBecauseLocalNodeDelete._3 =>
               cutOneLocalHistory(Seq(d))
               val os = state_
               val zz = d.r.transformBeforeDeleted(os.zoom)
@@ -764,8 +764,8 @@ class Client(
               val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))
               val to = d.r.transformBeforeDeleted(at)
-              val trans = defaults.changeHeadingLevel(state_, d.r, model.cursor.Node.parent(to)) :+ operation.Node.Move(d.r, to)
-              update = update.copy(transaction = trans)
+              val trans = operation.Node.Move(d.r, to)
+              update = update.copy(transaction = trans +: resTrans)
           }
         }
       }
