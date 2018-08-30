@@ -763,7 +763,9 @@ class Client(
               uncommitted = uncommitted.dropRight(1)
               val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))
-              update = update.copy(transaction = Seq(operation.Node.Move(d.r, d.r.transformBeforeDeleted(at))))
+              val to = d.r.transformBeforeDeleted(at)
+              val trans = defaults.changeHeadingLevel(state_, d.r, model.cursor.Node.parent(to)) :+ operation.Node.Move(d.r, to)
+              update = update.copy(transaction = trans)
           }
         }
       }
@@ -772,8 +774,8 @@ class Client(
         updateConnectionStatusBasedOnDisableStatus()
       }
     }
-    val (last0, from) = operation.Node.apply(update.transaction, state, enableModal)
     val (res, ch) = applyFolds(state, update.unfoldBefore, update.toggleBefore)
+    val (last0, from) = operation.Node.apply(update.transaction, state.copy(userFoldedNodes = res), enableModal)
     val toMode: model.mode.Node = update.mode.getOrElse(last0.mode0 match {
       case c@model.mode.Node.Content(cur, sub: model.mode.Content.RichCodeSubMode) =>
         update.subCodeMode match {
@@ -785,8 +787,7 @@ class Client(
     })
     val last = last0.copy(mode0 = toMode,
       badMode = false,
-      zoom = update.zoomAfter.getOrElse(last0.zoom),
-      userFoldedNodes = res)
+      zoom = update.zoomAfter.getOrElse(last0.zoom))
     for (m <- update.viewMessagesBefore) {
       viewMessages_.onNext(m)
     }

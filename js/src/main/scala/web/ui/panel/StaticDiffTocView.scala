@@ -3,7 +3,7 @@ package web.ui.panel
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
 
-class StaticDiffTocView(onClick: String => Unit) extends StaticDiffContentListView(onClick) {
+class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick) {
 
   protected override def eq(a: Node, b: Node): Boolean = a == b
 
@@ -15,7 +15,7 @@ class StaticDiffTocView(onClick: String => Unit) extends StaticDiffContentListVi
   }
 
   override protected def onAddViewAndHold(view: HTMLElement, data: Node): Unit = {
-    val od = new StaticDiffTocView(onClick)
+    val od = new StaticDiffTocView(onClick, parentHeadingLevel + 1)
     od.update(data.childs)
     insertExtraToContentView(view, od.dom)
   }

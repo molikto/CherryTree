@@ -18,7 +18,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
 
   private val parentsView = new StaticDiffContentListView(onClick)
   parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
-  private val tocView = new StaticDiffTocView(onClick)
+  private val tocView = new StaticDiffTocView(onClick, 1)
   tocView.addHeader(div(`class` := "ct-section-label", "table of content").render)
 
   dom = div(

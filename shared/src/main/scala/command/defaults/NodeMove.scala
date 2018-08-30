@@ -4,8 +4,11 @@ import client.Client
 import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.cursor.Node
 import model.range.IntRange
-import model.{cursor, operation, range}
+import model.{cursor, data, operation, range}
+
+import scala.collection.mutable.ArrayBuffer
 
 class NodeMove extends CommandCategory("node: move") {
 
@@ -19,9 +22,12 @@ class NodeMove extends CommandCategory("node: move") {
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val mm = a.asContent
-      DocTransaction(targetTo(a.mover(), mm).map(n => operation.Node.Move(range.Node(mm), n)).toSeq, None)
+      DocTransaction(targetTo(a.mover(), mm).map(n =>
+        operation.Node.Move(range.Node(mm), n)
+      ).toSeq, None)
     }
   }
+
   abstract class IndentCommand extends  Command {
     override def available(a: DocState): Boolean = a.mode match {
       case None => false
@@ -30,14 +36,23 @@ class NodeMove extends CommandCategory("node: move") {
     }
     def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
 
+
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      def act(r: range.Node) = targetTo(a.mover(), r).map(k => operation.Node.Move(r, k))
+      def act(r: range.Node) = {
+        val target = targetTo(a.mover(), r)
+        val trans = target.toSeq.flatMap(to =>  {
+           changeHeadingLevel(a, r, model.cursor.Node.parent(to)) :+ operation.Node.Move(r, to)
+        })
+        (target, trans)
+      }
+
       val res = a.mode.get match {
         case v: model.mode.Node.Visual =>
-          a.asNodeVisual.minimalRange.flatMap(k => act(k))
-        case c@model.mode.Node.Content(at, _) => if (at == a.zoom) None else act(range.Node(at))
+          val r = a.asNodeVisual.minimalRange
+            if (r.isDefined) act(r.get) else (None, Seq.empty)
+        case c@model.mode.Node.Content(at, _) => if (at == a.zoom) (None, Seq.empty) else act(range.Node(at))
       }
-      DocTransaction(res.toSeq, None, unfoldBefore = res.map(a => model.cursor.Node.parent(a.to)).toSet)
+      DocTransaction(res._2, None, unfoldBefore = res._1.map(a => model.cursor.Node.parent(a.to)).toSet)
     }
   }
   new IndentCommand {
@@ -79,8 +94,11 @@ class NodeMove extends CommandCategory("node: move") {
       if (n.childs.isEmpty) {
         DocTransaction.empty
       } else {
+        val ran = range.Node(mm, IntRange(0, n.childs.size))
+        val to = cursor.Node.moveBy(mm, 1)
+        changeHeadingLevel(a, ran, mm) :+ ran
         DocTransaction(Seq(
-          operation.Node.Move(range.Node(mm, IntRange(0, n.childs.size)), cursor.Node.moveBy(mm, 1))
+          operation.Node.Move(ran, to)
         ), None)
       }
     }

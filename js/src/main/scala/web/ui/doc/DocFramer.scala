@@ -31,6 +31,7 @@ trait DocFramer {
   }
 
 
+
   def insertExtraToContentView(a: HTMLElement, b: HTMLElement): Unit = {
     val box = a.childNodes(0)
     box.appendChild(b)
@@ -72,37 +73,45 @@ trait DocFramer {
     }
   }
 
-  def contentViewAndHold(node: model.data.Node): HTMLElement = {
+  def contentViewAndHold(node: model.data.Node, parentHeadingLevel: Int): HTMLElement = {
     div(
       `class` := "ct-d-folded",
       display := "flex",
       flexDirection := "row",
       div(
-        `class` := classesFromNodeAttribute(node),
+        `class` := classesFromNodeAttribute(node, parentHeadingLevel),
         create(node)
       ),
       tag("span")(
-        `class` := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded" else "ct-d-hold"),
-        if (docFramerIsSmall >= 2) marginLeft := "-8px" else border := "none"
+        `class` := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded " else "ct-d-hold "),
+        if (docFramerIsSmall >= 2) {
+          marginLeft := "-8px"
+          marginTop := "6px"
+        } else border := "none"
       )
     ).render
   }
 
-  def updateContentViewAndHoldAttribute(a: HTMLElement, node: model.data.Node) = {
-    a.childNodes(0).asInstanceOf[HTMLElement].className = classesFromNodeAttribute(node)
+  def updateContentViewAndHoldAttribute(a: HTMLElement, node: model.data.Node, parentHeadingLevel: Int): Unit = {
+    a.childNodes(0).asInstanceOf[HTMLElement].className = classesFromNodeAttribute(node, parentHeadingLevel)
   }
 
-  def classesFromNodeAttribute(node: model.data.Node): String = {
+  def classesFromNodeAttribute(node: model.data.Node, parentHeadingLevel: Int): String = {
     "ct-d-box " + (node.contentType.map {
       case model.data.Node.ContentType.Cite => "ct-d-cite"
       case model.data.Node.ContentType.Hr => "ct-d-hr"
       case model.data.Node.ContentType.Heading(j) =>
-        if (docFramerIsSmall == 0) {
-          if (j > 1) s"ct-d-heading ct-d-h$j" else s"ct-d-h1"
-        } else if (docFramerIsSmall == 1) {
-          if (j > 1) s"ct-d-heading ct-d-hs${if (j >= 4) "s" else j.toString}" else s"ct-d-hs1"
+        val headingStr = if (parentHeadingLevel == -1 || j == parentHeadingLevel + 1) {
+          "ct-d-heading"
         } else {
-          if (j > 1) s"ct-d-heading" else s"ct-d-h1"
+          "ct-d-heading-error"
+        }
+        if (docFramerIsSmall == 0) {
+          if (j > 1) s"$headingStr ct-d-h$j" else s"ct-d-h1"
+        } else if (docFramerIsSmall == 1) {
+          if (j > 1) s"$headingStr ct-d-hs${if (j >= 4) "s" else j.toString}" else s"ct-d-hs1"
+        } else {
+          if (j > 1) headingStr else s"ct-d-h1"
         }
       case _ => ""
     }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {

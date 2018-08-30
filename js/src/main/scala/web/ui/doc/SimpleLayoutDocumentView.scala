@@ -52,7 +52,7 @@ class SimpleLayoutDocumentView(
   //     hold
   //    nonEditable...
 
-  private def frameAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
+  private def frameAt(at: model.cursor.Node): HTMLElement = {
     if (rootFrame == this.rootFrame) assert(currentDoc == null || currentDoc.inViewport(at), s"not in viewport $at, current view port is $currentZoom")
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
@@ -61,27 +61,42 @@ class SimpleLayoutDocumentView(
     rec(rootFrame, at.drop(currentZoom.size)).asInstanceOf[HTMLElement]
   }
 
-  private def boxAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
+  private def boxAt(at: model.cursor.Node): HTMLElement = {
+    frameAt(at).childNodes(0).asInstanceOf[HTMLElement]
   }
 
-  private def childListAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    boxAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
+  private def boxOf(frame: HTMLElement): HTMLElement = {
+    frame.childNodes(0).asInstanceOf[HTMLElement]
+  }
+
+  private def childListAt(at: model.cursor.Node): HTMLElement = {
+    boxAt(at).childNodes(1).asInstanceOf[HTMLElement]
+  }
+
+  private def childListOf(frame: HTMLElement): HTMLElement = {
+    boxOf(frame).childNodes(1).asInstanceOf[HTMLElement]
   }
 
   private def frameInList(parent: HTMLElement, at: Int) = parent.childNodes(at).asInstanceOf[HTMLElement]
 
 
-  private def holdAt(at: model.cursor.Node, rootFrame: Node = rootFrame): HTMLElement = {
-    frameAt(at, rootFrame).childNodes(1).asInstanceOf[HTMLElement]
+  private def holdAt(at: model.cursor.Node): HTMLElement = {
+    frameAt(at).childNodes(1).asInstanceOf[HTMLElement]
+  }
+
+  private def holdOf(at: HTMLElement): HTMLElement = {
+    at.childNodes(1).asInstanceOf[HTMLElement]
   }
 
   override protected def contentOfHold(a: Node): ContentView.General = View.fromDom(a.previousSibling.firstChild)
 
-  override protected def contentAt(at: model.cursor.Node): ContentView.General = contentAt(at, rootFrame)
+  private def contentOf(frame: HTMLElement): ContentView.General = {
+    val v = boxOf(frame).childNodes(0).asInstanceOf[HTMLElement]
+    View.fromDom[ContentView.General](v)
+  }
 
-  private def contentAt(at: model.cursor.Node, rootFrame: Node): ContentView.General = {
-    val v = boxAt(at, rootFrame).childNodes(0).asInstanceOf[HTMLElement]
+  override protected def contentAt(at: model.cursor.Node): ContentView.General = {
+    val v = boxAt(at).childNodes(0).asInstanceOf[HTMLElement]
     View.fromDom[ContentView.General](v)
   }
 
@@ -160,9 +175,9 @@ class SimpleLayoutDocumentView(
   private def destroyContents(a: HTMLElement, start: Int, u: Int): Unit = {
     for (i <- start until u) {
       val frame = frameInList(a, i)
-      val ll = childListAt(Seq.empty, rootFrame = frame)
+      val ll = childListOf(frame)
       destroyContents(ll, 0, ll.children.length)
-      contentAt(Seq.empty, rootFrame = frame).destroy()
+      contentOf(frame).destroy()
     }
   }
 
@@ -187,7 +202,7 @@ class SimpleLayoutDocumentView(
 
 
 
-  private def toggleHoldRendering(cur: model.cursor.Node, frame0: Node, childlist: Node, hold0: Node, fold: Boolean): Unit = {
+  private def toggleHoldRendering(cur: model.cursor.Node, node: model.data.Node, frame0: Node, childlist: Node, hold0: Node, fold: Boolean): Unit = {
     val hold = hold0.asInstanceOf[HTMLElement]
     val frame = frame0.asInstanceOf[HTMLElement]
     val cl = if (childlist == null) null else childlist.asInstanceOf[HTMLElement]
@@ -204,7 +219,7 @@ class SimpleLayoutDocumentView(
       if (frame.classList.contains("ct-d-folded")) {
         frame.classList.remove("ct-d-folded")
         hold.classList.remove("ct-d-hold-folded")
-        if (cl != null) insertNodes(cur, cl, 0, currentDoc.node(cur).childs)
+        if (cl != null) insertNodes(cur, cl, 0, node.childs)
       }
     }
   }
@@ -219,7 +234,7 @@ class SimpleLayoutDocumentView(
 
   private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val box = div(`class` := classesFromNodeAttribute(root)).render
+    val box = div(`class` := classesFromNodeAttribute(root, -1)).render
     parent.insertBefore(box, firstChild)
     val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
@@ -230,7 +245,7 @@ class SimpleLayoutDocumentView(
     hold.addEventListener("mouseover", handleHoverEvent)
     box.appendChild(list)
     val folded = currentDoc.viewAsFolded(root)
-    toggleHoldRendering(cur, parent, null, hold, folded)
+    toggleHoldRendering(cur, root, parent, null, hold, folded)
     if (!folded) insertNodes(cur, list, 0, root.childs)
   }
 
@@ -295,7 +310,12 @@ class SimpleLayoutDocumentView(
     observe(client.stateUpdates.doOnNext(update => {
       update.foldsBefore.foreach(f => {
         val fr = frameAt(f._1)
-        if (currentDoc.visible(f._1)) toggleHoldRendering(f._1, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), f._2)
+        if (currentDoc.visible(f._1)) {
+          if (model.debug_view) {
+            println(s"unfolding ${f._1} ${f._2}")
+          }
+          toggleHoldRendering(f._1, currentDoc.node(f._1), fr, childListOf(fr), holdOf(fr), f._2)
+        }
       })
       duringStateUpdate = true
       if (update.to.zoomId != currentZoomId) {
@@ -344,9 +364,9 @@ class SimpleLayoutDocumentView(
                 if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
                   replaceContent(at, old.content, to.node(at).contentType)
                 }
-                boxAt(at).className = classesFromNodeAttribute(to.node(at))
+                boxAt(at).className = classesFromNodeAttribute(to.node(at), -1)
                 val fr = frameAt(at)
-                toggleHoldRendering(at, fr, childListAt(Seq.empty, fr), holdAt(Seq.empty, fr), to.viewAsFolded(at))
+                toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
               }
             case model.operation.Node.Replace(at, c) =>
               if (s.visible(at)) {
