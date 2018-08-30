@@ -29,7 +29,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
   private val tocView = new StaticDiffTocView(onClick, 1)
 
-  private var hideLevel: Int = Try {_root_.client.localStorage.get("hide_level").get.toInt }.getOrElse(4)
+  private var hideLevel: Int = Try {_root_.client.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 
   private val selectView: HTMLSelectElement = select(
     height := "24px",
