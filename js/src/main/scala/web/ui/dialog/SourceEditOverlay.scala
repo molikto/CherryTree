@@ -115,6 +115,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   }
 
   var keys: String = ""
+  private var justPushed = false
 
 
   private def doUndo() = {
@@ -122,12 +123,14 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       opt.editor.onSourceEditorUndo()
     }
   }
+  private val NotSupportedRegisters = Seq('.', ':')
 
   private def doRedo() = {
     if (!dismissed) {
       opt.editor.onSourceEditorRedo()
     }
   }
+
 
   override def onAttach(): Unit = {
     super.onAttach()
@@ -171,19 +174,40 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
       val controller = CodeMirror.Vim.getRegisterController()
       val regs = controller.registers
+
       for (c <- RegisterInterface.ValidRegisters) {
         regs.updateDynamic(Character.toString(c))(jsObject(a => {
           val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => {
-            if (model.debug_view) println(s"code mirror register putting $c, $str")
-            opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, c.toInt)
-            opt.editor.setRegister(-1)
+            if (justPushed && c == '"') {
+              Unit
+            } else {
+              justPushed = true
+              window.setTimeout(() => {
+                justPushed = false
+              }, 0)
+              if (model.debug_view) println(s"code mirror register putting $c, $str")
+              opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, c.toInt)
+            }
           }
+
           val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => {
-            Unit
+            if (justPushed && c == '"') {
+              Unit
+            } else {
+              justPushed = true
+              window.setTimeout(() => {
+                justPushed = false
+              }, 0)
+              if (model.debug_view) println(s"code mirror register pushing $c, $str")
+              val upper = if ('a' <= c && c<= 'z') c + 'A' - 'a' else c
+              opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, upper.toInt)
+            }
           }
+
           val clear: js.Function0[Unit] = () => {
             opt.editor.clearRegister(c)
           }
+
           val toString: js.Function0[String] = () => {
             if (model.debug_view) println(s"code mirror register getting")
             val ret = opt.editor.retrieveSetRegisterAndSetToCloneNode(c.toInt) match {
@@ -191,9 +215,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
               case Some(Registerable.Text(a)) => Text.toPlain(a)
               case _ => ""
             }
-            opt.editor.setRegister(-1)
             ret
           }
+
           a.setText = setText
           a.pushText = pushText
           a.clear = clear
@@ -202,7 +226,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       }
       controller.updateDynamic("unnamedRegister")(regs.selectDynamic("\""))
       // disabled registers
-      for (c <- Seq('.', ':')) {
+      for (c <- NotSupportedRegisters) {
         regs.updateDynamic(Character.toString(c))(jsObject(a => {
           val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => Unit
           val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => Unit
@@ -247,23 +271,32 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         }
       })
 
+
       CodeMirror.on(codeMirror, "vim-keypress", (key: js.Dynamic)  => {
-        if (!dismissed && !fakeCommand) {
-          if (key.asInstanceOf[String] == "<Esc>") {
-            keys = ""
+        if (!dismissed) {
+          if (fakeCommand) {
+            if (model.debug_view) println(s"fake command $key")
           } else {
-            keys = keys + key
-          }
-          if (keys.size == 2 && keys.startsWith("\"")) {
-            if (RegisterInterface.ValidRegisters.contains(keys(1))) {
-              opt.editor.setRegister(keys(1))
+            if (key.asInstanceOf[String] == "<Esc>") {
+              keys = ""
             } else {
-              fakeCommand = true
-              CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
-              CodeMirror.Vim.handleKey(codeMirror, String.valueOf(opt.editor.currentRegister), "mapping")
-              fakeCommand = false
+              keys = keys + key
+            }
+            if (keys.size == 2 && keys.startsWith("\"")) {
+              val kk = keys(1)
+              val lower = if ('A' >= kk && kk <= 'Z') kk -'A' + 'a' else kk
+              if (RegisterInterface.ValidRegisters.contains(lower)) {
+                if (model.debug_view) println(s"changing register from code mirror ${keys(1)}")
+              } else if (NotSupportedRegisters.contains(keys(1))) {
+                fakeCommand = true
+                if (model.debug_view) println(s"not supported code mirror register ${keys(1)}")
+                CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
+                CodeMirror.Vim.handleKey(codeMirror, String.valueOf(opt.editor.currentRegister), "mapping")
+                fakeCommand = false
+              }
             }
           }
+          opt.editor.onSourceEditorCommandBuffer(keys)
         }
       })
       CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
@@ -362,6 +395,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     updating = false
   }
 
+
   def sync(a: CodeType): Unit = {
     updating = true
     setCodeType(a)
@@ -398,6 +432,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override def show(opt: T): Unit = {
     super.show(opt)
     str = opt.str
+    opt.editor.setRegister(-1)
     codeType_ = opt.codeType
     updating = true
     codeMirror.setValue(str.str)
@@ -411,9 +446,8 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           if (!dismissed) {
             fakeCommand = true
             CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
-            val cur = opt.editor.currentRegister
             CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
-            CodeMirror.Vim.handleKey(codeMirror, Character.toString(cur), "mapping")
+            CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
             fakeCommand = false
           }
         }, 0)

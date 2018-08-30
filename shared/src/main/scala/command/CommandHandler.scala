@@ -302,6 +302,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
   private var isInsertOverride = false
 
   protected def keyDown(key: Key): Boolean = {
+    // always reset register on any key event
     isInsertOverride = false
     val bufferBefore = if (key.control || key.meta) buffer.clone() else null
     if (!enableModal || state.isInsert) {
@@ -360,6 +361,13 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
     val ak = hasExit || res || (enableModal && !state.isRichInsert && !key.meta && !key.control)
+    if (justSet) {
+      justSet = false
+    } else {
+      if (hasExit || res) {
+        setRegister(-1)
+      }
+    }
     if (!ak && bufferBefore != null) {
       buffer.clear()
       buffer.appendAll(bufferBefore)

@@ -1,6 +1,6 @@
 package register
 
-import model.data.Unicode
+import model.data.{Text, Unicode}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -15,8 +15,9 @@ trait RegisterInterface {
 }
 
 object RegisterInterface {
-  val ValidRegisters: Seq[Char] =('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Seq('-', '"')
+  val ValidRegisters: Seq[Char] =('a' to 'z') ++ ('0' to '9') ++ Seq('-', '"')
 }
+
 
 
 trait RegisterHandler extends RegisterInterface {
@@ -25,12 +26,20 @@ trait RegisterHandler extends RegisterInterface {
   private var zeroToNine = (0 until 10).map(_ => None : Option[Registerable]).toBuffer
   private var smallDelete: Registerable = null
   protected var curRegister: Int = -1
+  protected var append = false
 
   private var system: Registerable = null
 
+  protected var justSet = false
+
   override def setRegister(a: Int): Unit = {
-    if ((a >= 'a' && a <= 'z') || (a >= 'A' && a<= 'Z')) {
+    justSet = true
+    append = false
+    if (a >= 'a' && a <= 'z') {
       curRegister = a
+    } else if (a >= 'A' && a <= 'Z') {
+      append = true
+      curRegister = a - ('A' - 'a')
     } else if (a >= '0' && a <= '9') {
       curRegister = a
       //    } else if (a == '*') { // this can only be got from Client.set = '*'
@@ -45,7 +54,6 @@ trait RegisterHandler extends RegisterInterface {
   def registerables: Seq[(Int, Option[Registerable])] =
       Seq(('"'.toInt, Option(default)), ('-'.toInt, Option(smallDelete))) ++
         ('a' to 'z').map(i => (i.toInt, named.get(i))) ++
-        ('A' to 'Z').map(i => (i.toInt, named.get(i))) ++
       zeroToNine.zipWithIndex.map(a => (a._2 + '0', a._1))
 
 
@@ -53,10 +61,13 @@ trait RegisterHandler extends RegisterInterface {
 
   protected def getRegisterable(set0: Int = -1): Option[Registerable] = {
     val set = if (set0 == -1) this.curRegister else set0
-    if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
+    if (set >= 'a' && set <= 'z') {
       named.get(set)
+    } else if (set >= 'A' && set <= 'Z') {
+      named.get(set - 'A' + 'a')
     } else if (set >= '0' && set <= '9') {
       zeroToNine(set - '0')
+
     } else if (set == '*') {
       Option(system)
     } else if (set == '-') {
@@ -90,18 +101,45 @@ trait RegisterHandler extends RegisterInterface {
 
   def clearRegister(a: Int) = yank(null, false, a)
 
-  override def yank(registerable: Registerable, isDelete: Boolean, register: Int = -1): Unit = {
+  override def yank(registerable0: Registerable, isDelete: Boolean, register: Int = -1): Unit = {
+    var registerable = registerable0
     var set = register
     if (set == -1) {
       set = this.curRegister
+      if (append) {
+        set = set + 'A' - 'a'
+        append = false
+      }
       this.curRegister = -1
     }
+    var push: Boolean = false
     var defaultHistory = true
     if (set == -1) {
       default = registerable
-    } else if ((set >= 'a' && set <= 'z') || (set >= 'A' && set <= 'Z')) {
+    } else if (set >= 'a' && set <= 'z') {
       defaultHistory = false
       named.put(set, registerable)
+    } else if (set >= 'A' && set <= 'Z') {
+      defaultHistory = false
+      val low = set - 'A' + 'a'
+      registerable = named.get(low) match {
+        case Some(t) =>
+          (t, registerable) match {
+            case (Registerable.Text(a), Registerable.Text(b)) =>
+              Registerable.Text(Text.normalize(a ++ b))
+            case (Registerable.Text(a), Registerable.Unicode(b)) =>
+              Registerable.Text(a :+ Text.Code(b))
+            case (Registerable.Unicode(a), Registerable.Text(b)) =>
+              Registerable.Text(Text.Code(a) +: b)
+            case (Registerable.Unicode(a), Registerable.Unicode(b)) =>
+              Registerable.Unicode(a + b)
+            case _ =>
+              registerable
+          }
+        case None =>
+          registerable
+      }
+      named.put(low, registerable)
     } else if (set >= '0' && set <= '9') {
       defaultHistory = false
       zeroToNine(set - '0') = Option(registerable)
@@ -115,6 +153,7 @@ trait RegisterHandler extends RegisterInterface {
       defaultHistory = false
       system = registerable
     }
+    default = registerable
     if (defaultHistory) {
       if (!isDelete) {
         zeroToNine(0) = Some(registerable)
