@@ -62,8 +62,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   ).render
 
   observe(client.sourceEditorCommands.doOnNext(str => {
-//    commandStatus.textContent = if (str.isEmpty) EmptyStr else str
-//    commandStatus.className = "ct-hint-color"
+    commandStatus.textContent = if (str.isEmpty) EmptyStr else str
+    commandStatus.className = "ct-hint-color"
   }))
 
   observe(client.commandBufferUpdates.doOnNext(c => {
@@ -90,7 +90,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
         ""
     }
 
-    val cs = ts.filter(!_.isEmpty).mkString(" ")
+    //val cs = ts.filter(!_.isEmpty).mkString(" ")
+    val cs = ts.filter(!_.isEmpty).mkString("")
     if (cs.isEmpty) {
       commandStatus.textContent = EmptyStr
       commandStatus.className = "ct-hint-color"

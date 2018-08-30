@@ -6,6 +6,7 @@ import model.data._
 import model.mode.Content.CodeInside
 import org.scalajs.dom.raw._
 import org.scalajs.dom.window
+import register.{RegisterInterface, Registerable}
 import scalatags.JsDom.all._
 import settings.Settings
 import web._
@@ -156,6 +157,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         })
       )
     }))
+    if (model.debug_view) {
+      window.asInstanceOf[js.Dynamic].cm = codeMirror
+    }
     if (enableModal) {
       CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
         doRedo()
@@ -165,7 +169,53 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       })
       CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
       CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
+      val controller = CodeMirror.Vim.getRegisterController()
+      val regs = controller.registers
+      for (c <- RegisterInterface.ValidRegisters) {
+        regs.updateDynamic(Character.toString(c))(jsObject(a => {
+          val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => {
+            if (model.debug_view) println(s"code mirror register putting $c, $str")
+            opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, c.toInt)
+            opt.editor.setRegister(-1)
+          }
+          val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => {
+            Unit
+          }
+          val clear: js.Function0[Unit] = () => {
+            opt.editor.clearRegister(c)
+          }
+          val toString: js.Function0[String] = () => {
+            if (model.debug_view) println(s"code mirror register getting")
+            val ret = opt.editor.retrieveSetRegisterAndSetToCloneNode(c.toInt) match {
+              case Some(Registerable.Unicode(a)) => a.str
+              case Some(Registerable.Text(a)) => Text.toPlain(a)
+              case _ => ""
+            }
+            opt.editor.setRegister(-1)
+            ret
+          }
+          a.setText = setText
+          a.pushText = pushText
+          a.clear = clear
+          a.updateDynamic("toString")(toString)
+        }))
+      }
+      controller.updateDynamic("unnamedRegister")(regs.selectDynamic("\""))
+      // disabled registers
+      for (c <- Seq('.', ':')) {
+        regs.updateDynamic(Character.toString(c))(jsObject(a => {
+          val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => Unit
+          val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => Unit
+          val clear: js.Function0[Unit] = () => Unit
+          val toString: js.Function0[String] = () => ""
+          a.setText = setText
+          a.pushText = pushText
+          a.clear = clear
+          a.updateDynamic("toString")(toString)
+        }))
+      }
     }
+
 
     codeMirror.getWrapperElement().asInstanceOf[HTMLElement].style.height = codeHeight
 
@@ -198,13 +248,22 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       })
 
       CodeMirror.on(codeMirror, "vim-keypress", (key: js.Dynamic)  => {
-        if (!dismissed) {
+        if (!dismissed && !fakeCommand) {
           if (key.asInstanceOf[String] == "<Esc>") {
             keys = ""
           } else {
             keys = keys + key
           }
-          opt.editor.onSourceEditorCommandBuffer(keys)
+          if (keys.size == 2 && keys.startsWith("\"")) {
+            if (RegisterInterface.ValidRegisters.contains(keys(1))) {
+              opt.editor.setRegister(keys(1))
+            } else {
+              fakeCommand = true
+              CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
+              CodeMirror.Vim.handleKey(codeMirror, String.valueOf(opt.editor.currentRegister), "mapping")
+              fakeCommand = false
+            }
+          }
         }
       })
       CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
@@ -349,7 +408,14 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       if (opt.mode.mode == "insert") {
         syncModeInner(opt.mode)
         window.setTimeout(() => {
-          if (!dismissed) CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+          if (!dismissed) {
+            fakeCommand = true
+            CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+            val cur = opt.editor.currentRegister
+            CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
+            CodeMirror.Vim.handleKey(codeMirror, Character.toString(cur), "mapping")
+            fakeCommand = false
+          }
         }, 0)
       }
     }
@@ -358,4 +424,6 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     modePos = opt.mode.pos
     updating = false
   }
+
+  private var fakeCommand = false
 }
