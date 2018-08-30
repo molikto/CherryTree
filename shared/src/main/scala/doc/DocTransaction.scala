@@ -28,7 +28,7 @@ case class DocTransaction(
     transaction.isEmpty && mode.isEmpty && unfoldBefore.isEmpty && toggleBefore.isEmpty && zoomAfter.isEmpty && extra.isEmpty
   }
 
-  val trace: Throwable = if (model.debug_view) {
+  val trace: Throwable = if (model.debug_model) {
     new Exception().fillInStackTrace()
   } else {
     null

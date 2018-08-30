@@ -241,32 +241,41 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def apply(a: DocState, enableModal: Boolean): DocState = {
       var zz = r.transformNodeAfterMoved(to, a.zoom)
-      val applied = apply(a.node)
+      val applied = a.copy(node = apply(a.node), zoom = zz)
       val (m0, bmm) = a.mode0  match {
         case mode.Node.Visual(fix, move) =>
           val tt = r.transformNodeAfterMoved(to, fix)
           val mm = r.transformNodeAfterMoved(to, move)
           if (cursor.Node.contains(zz, tt) && cursor.Node.contains(zz, mm)) {
-            (mode.Node.Visual(tt, mm), false)
+            (mode.Node.Visual(applied.visibleParent(tt), applied.visibleParent(mm)), false)
           } else {
-            val alt = if (cursor.Node.contains(zz, tt)) tt
+            val alt0 = if (cursor.Node.contains(zz, tt)) tt
             else if (cursor.Node.contains(zz, mm)) mm
             else r.transformNodeAfterMoved(to, r.parent)
-            (mode.Node.Content(alt, applied(alt).content.defaultMode(enableModal)), true)
+            val alt = a.visibleParent(alt0)
+            (mode.Node.Content(alt, applied.node(alt).content.defaultMode(enableModal)), true)
           }
         case mode.Node.Content(node, b) =>
           val tt = r.transformNodeAfterMoved(to, node)
           if (cursor.Node.contains(zz, tt)) {
-            (mode.Node.Content(tt, b), false)
+            val vp = applied.visibleParent(tt)
+            if (vp == tt) {
+              (mode.Node.Content(tt, b), false)
+            } else {
+              val alt = vp
+              (mode.Node.Content(alt, applied.node(alt).content.defaultMode(enableModal)), true)
+            }
           } else {
-            zz = r.transformNodeAfterMoved(to, node)
-            (mode.Node.Content(tt, b), false)
+            val alt = r.transformNodeAfterMoved(to, r.parent)
+            (mode.Node.Content(alt, applied.node(alt).content.defaultMode(enableModal)), true)
           }
       }
-      DocState(applied,
+      val ret = DocState(applied.node,
         zz,
         m0,
         a.badMode || bmm, a.userFoldedNodes)
+      ret.consistencyCheck()
+      ret
     }
 
     def reverse = operation.Node.Move(

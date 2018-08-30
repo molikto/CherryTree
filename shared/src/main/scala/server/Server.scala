@@ -80,7 +80,7 @@ trait Server extends Api {
           Left(ApiError.ClientVersionIsHigherThanServerCache)
         } else {
           val ws = changes.drop(clientVersion)
-          if (debug_model) {
+          if (debug_transmit) {
             assert(debugClientDoc == debugHistoryDocuments(clientVersion))
           }
           val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
@@ -90,7 +90,7 @@ trait Server extends Api {
           if (transformed.nonEmpty) {
             debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
           }
-          if (debug_model) {
+          if (debug_transmit) {
             for (t <- transformed) {
               debugTopDocument = operation.Node.apply(t, debugTopDocument)
               debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument

@@ -262,7 +262,7 @@ class Client(
 //      }
 //    }
 
-    if (model.debug_view) {
+    if (model.debug_model) {
       if (enableModal || !state_.copy(badMode = false).isRichNormal) {
 
       } else {
@@ -349,7 +349,7 @@ class Client(
       val submit = uncommitted
       if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
         lastRequestTime = System.currentTimeMillis()
-        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_model) committed else data.Node.debug_empty).call(), succsss => {
+        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed else data.Node.debug_empty).call(), succsss => {
           lockObject.synchronized {
             flushInner()
             updateFromServer(succsss)

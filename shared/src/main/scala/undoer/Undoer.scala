@@ -64,7 +64,7 @@ trait Undoer extends UndoerInterface with Settings {
 
   private def after(i: Int): Seq[transaction.Node] = {
     val bf = new ArrayBuffer[transaction.Node]()
-    var s = i - discarded + 1
+    var s = i + 1
     while (s < size) {
       val item = history(s)
       if (item.undoer != null) {

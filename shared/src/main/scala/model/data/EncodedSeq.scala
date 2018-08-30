@@ -12,7 +12,7 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
 
 
 
-  if (model.debug_view) {
+  if (model.debug_model) {
     assert({
       def test(): Boolean = {
         var previousIsString = false

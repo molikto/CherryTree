@@ -336,9 +336,7 @@ object Rich extends DataObject[Rich] {
 
   private[model] def parse(unicode: EncodedSeq): Rich = {
     val reader = new EncodedSeqReader(unicode)
-    val r = Rich(Text.parseAll(reader))
-    r.encodedSeq = unicode
-    r
+    Rich(Text.parseAll(reader))
   }
 
   override val pickler: Pickler[Rich] = new Pickler[Rich] {
