@@ -62,16 +62,19 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
     listData = newData
   }
 
-  def updateFocus(uuid: Option[String], list: HTMLElement): Unit = {
+  def updateFocus(uuid: Option[String], list: HTMLElement): Boolean = {
+    var contains = false
     (0 until size).foreach(i => {
       val ct = contentViewFromWithHold(domAt(i))
       val cu = uuidOf(ct)
       if (uuid.contains(cu)) {
+        contains = true
         web.view.scrollInToViewIfNotVisible(ct.dom, list, 10, 10, 30, 30)
         ct.dom.classList.add("ct-highlight")
       } else {
         ct.dom.classList.remove("ct-highlight")
       }
     })
+    contains
   }
 }

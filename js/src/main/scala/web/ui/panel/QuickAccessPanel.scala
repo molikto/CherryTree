@@ -2,10 +2,19 @@ package web.ui.panel
 
 import client.Client
 import org.scalajs.dom._
+import org.scalajs.dom.raw.{HTMLElement, HTMLOptionElement, HTMLSelectElement}
 import scalatags.JsDom.all._
 import web.view.{UnselectableView, View}
 
+import scala.util.Try
+
 class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView {
+
+  private var previousUpdateTime = 0L
+  private var scheduledUpdate: Int = -1
+  private var previousZoom: model.cursor.Node = null
+  private var previousFocus: Option[String] = None
+  private var previousNearestHeading: Option[String] = None
 
   private def onClick(uuid: String): Unit = {
     client.state.lookup(uuid) match {
@@ -19,7 +28,40 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   private val parentsView = new StaticDiffContentListView(onClick)
   parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
   private val tocView = new StaticDiffTocView(onClick, 1)
-  tocView.addHeader(div(`class` := "ct-section-label", "table of content").render)
+
+  private var hideLevel: Int = Try {_root_.client.localStorage.get("hide_level").get.toInt }.getOrElse(4)
+
+  private val selectView: HTMLSelectElement = select(
+    height := "24px",
+    `class` := "ct-select",
+    flex := "0 1 auto",
+    alignSelf := "right",
+    (3 to 6).map(a => option(s"hide heading $a", value := a.toString)),
+    onfocus := { e: Event =>
+      doc().focus()
+    },
+    onchange := { e: Event => {
+      val level = e.target.asInstanceOf[HTMLOptionElement].value.toInt
+      if (hideLevel != level) {
+        hideLevel = level
+        _root_.client.localStorage.set("hide_level", hideLevel.toString)
+        tocView.updateFocus(previousFocus, hideLevel, dom)
+      }
+      doc().focus()
+    }},
+  ).render
+
+  selectView.selectedIndex = hideLevel - 3
+
+  tocView.addHeader(div(
+    alignContent := "middle",
+    display := "flex",
+    justifyContent := "space-between",
+    flexDirection := "row",
+    `class` := "ct-section-label",
+    "contents",
+    selectView
+  ).render)
 
   dom = div(
     minWidth := "150px",
@@ -41,11 +83,6 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     renderState(update.from.isEmpty)
   }))
 
-  private var previousUpdateTime = 0L
-  private var scheduledUpdate: Int = -1
-  private var previousZoom: model.cursor.Node = null
-  private var previousFocus: Option[String] = None
-  private var previousNearestHeading: Option[String] = None
 
 
   /**
@@ -61,7 +98,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
 
   def renderState(emptyDataChange: Boolean): Unit = {
     val zoom = state.zoom
-    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading)
+    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
     val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
     if (previousZoom == zoom && focusSame) {
       if (emptyDataChange) {
@@ -100,7 +137,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     }
     if (!focusSame) {
       previousFocus = currentFocusTitleNode.map(_.uuid)
-      tocView.updateFocus(previousFocus, dom)
+      tocView.updateFocus(previousFocus, hideLevel, dom)
     }
     t = System.currentTimeMillis() - t
     if (t > 0 && model.debug_view) {

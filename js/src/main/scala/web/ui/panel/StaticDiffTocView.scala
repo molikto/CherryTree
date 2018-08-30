@@ -2,6 +2,7 @@ package web.ui.panel
 
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
+import scalatags.JsDom.all._
 
 class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick) {
 
@@ -13,6 +14,10 @@ class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel
     }
     web.view.View.fromDom[StaticDiffTocView](extraViewInFrame(domAt(index))).update(newData.childs)
   }
+  
+//  val header = scalatags.JsDom.all.div(s"${parentHeadingLevel}" : Frag).render
+//
+//  addHeader(header)
 
   override protected def onAddViewAndHold(view: HTMLElement, data: Node): Unit = {
     val od = new StaticDiffTocView(onClick, parentHeadingLevel + 1)
@@ -24,10 +29,14 @@ class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel
     super.update(newData0.filter(a => a.isHeading && !a.isH1))
   }
 
-  override def updateFocus(uuid: Option[String], list: HTMLElement): Unit = {
-    super.updateFocus(uuid, list)
+  def updateFocus(uuid: Option[String], hideLevel: Int, list: HTMLElement): Boolean = {
+    var contains = super.updateFocus(uuid, list)
     (0 until size).foreach(i => {
-      web.view.View.fromDom[StaticDiffTocView](extraViewInFrame(domAt(i))).updateFocus(uuid, list)
+      contains = web.view.View.fromDom[StaticDiffTocView](extraViewInFrame(domAt(i))).updateFocus(uuid, hideLevel, list) || contains // order matters
     })
+    dom.style.display = if (!contains && parentHeadingLevel + 1 >= hideLevel) "none" else "block"
+//    dom.style.opacity = if (!contains && parentHeadingLevel + 1 >= hideLevel) "0.5" else "1"
+    //header.textContent = s"$parentHeadingLevel $hideLevel $contains"
+    contains
   }
 }
