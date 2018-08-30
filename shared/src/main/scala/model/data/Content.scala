@@ -9,17 +9,17 @@ import scala.util.Random
 
 case class SourceEditType(name: String, ct: CodeType, desc: String = "")
 object SourceEditOverlay {
-  val inlineOnly: Seq[SourceEditType] = Vector(
+  val inlineOnly: Seq[SourceEditType] = Seq(
     SourceEditType("Embedded: LaTeX", Embedded.LaTeX),
     SourceEditType("Embedded: HTML", Embedded.HTML)
   )
-  val all = (Vector(
+  val all = (Seq(
     SourceEditType("Source: JavaScript", SourceCode("javascript")),
     SourceEditType("Source: Markdown", SourceCode("markdown")),
     SourceEditType("Source: Kotlin", SourceCode("kotlin")),
     SourceEditType("LaTeX Macro", LaTeXMacro),
     SourceEditType("Plain Text", PlainCodeType)) ++ SourceEditOverlay.inlineOnly).sortBy(_.name) ++
-    Vector(SourceEditType("Undefined", EmptyCodeType))
+    Seq(SourceEditType("Undefined", EmptyCodeType))
 }
 
 sealed abstract class CodeType(val str: String) {

@@ -51,105 +51,108 @@ object ClientTests extends TestSuite  {
       def insertTop0(i: String): transaction.Node =
         Seq(NodeOps.insertContent(Seq.empty, 0, i + " "))
 
-      def waitAssertStateSyncBetweenClientsAndServer(): Unit = {
-        val debug = false
-        if (debug) {
-          println("waiting for clients to commit")
-        }
-        while (clients.exists(a => {
-          val res = a.hasUncommited
-          if (res) {
-            val sycing = a.sync()
-            println(s"not finished ${a.debug_blockReason} $sycing")
+        def waitAssertStateSyncBetweenClientsAndServer(): Unit = {
+          val debug = false
+          if (debug) {
+            println("waiting for clients to commit")
           }
-          res
-        })) {
-          Thread.sleep(100)
-        }
-        if (debug) {
-          println("clients changes finished")
-        }
-        while (clients.exists(a => a.debug_committedVersion != serverChanges.size)) {
-          println(s"not updated ${clients.forall(_.sync())}")
-          Thread.sleep(100)
-        }
-        if (debug) {
-          println("Server doc " + serverDoc)
+          while (clients.exists(a => {
+            val res = a.hasUncommited
+            if (res) {
+              val sycing = a.sync()
+              println(s"not finished ${a.debug_blockReason} $sycing")
+            }
+            res
+          })) {
+            Thread.sleep(100)
+          }
+          if (debug) {
+            println("clients changes finished")
+          }
+          while (clients.exists(a => a.debug_committedVersion != serverChanges.size)) {
+            println(s"not updated ${clients.forall(_.sync())}")
+            Thread.sleep(100)
+          }
+          if (debug) {
+            println("Server doc " + serverDoc)
+            clients.foreach(c => {
+              println(c.debug_authentication + " " + c.debug_committedVersion  + " " + c.debug_committed)
+            })
+          }
           clients.foreach(c => {
-            println(c.debug_authentication + " " + c.debug_committedVersion  + " " + c.debug_committed)
+            val client = c.debug_committed
+            val sd = serverDoc
+            assert(client == sd)
           })
         }
-        clients.foreach(c => {
-          val client = c.debug_committed
-          val sd = serverDoc
-          assert(client == sd)
-        })
-      }
+      /*
 
-//      'oneWaySync - {
-//        client.change(insertTop)
-//        waitAssertStateSyncBetweenClientsAndServer()
-//        client.change(insertTop)
-//        client.change(insertTop)
-//        client.change(insertTop)
-//        client.change(insertTop)
-//        waitAssertStateSyncBetweenClientsAndServer()
-//      }
-//
-//      'randomTwoClientTopInsertionsSync - {
-//        val count = 100
-//        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
-//          clients(j).change(insertTop0(s"${('a' + j).toChar}$i"))
-//        }
-//        waitAssertStateSyncBetweenClientsAndServer()
-//        val str = serverDoc.content.asInstanceOf[data.Content.Code].unicode.toString
-//        val ts = str.split(" ").filter(_.nonEmpty)
-//        assert(ts.size == count)
-//        def decreasing(a: Seq[Int]) = a.sliding(2, 1).forall(a => a.size < 2 || a.head > a(1))
-//        val vs = clients.indices.map(i => ts.filter(_.startsWith(('a' + i).toChar.toString)).map(_.drop(1).toInt).toSeq)
-//        assert(vs.forall(decreasing))
-//        assert(vs.flatten.toSet == (0 until count).toSet)
-//      }
+  //      'oneWaySync - {
+  //        client.change(insertTop)
+  //        waitAssertStateSyncBetweenClientsAndServer()
+  //        client.change(insertTop)
+  //        client.change(insertTop)
+  //        client.change(insertTop)
+  //        client.change(insertTop)
+  //        waitAssertStateSyncBetweenClientsAndServer()
+  //      }
+  //
+  //      'randomTwoClientTopInsertionsSync - {
+  //        val count = 100
+  //        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+  //          clients(j).change(insertTop0(s"${('a' + j).toChar}$i"))
+  //        }
+  //        waitAssertStateSyncBetweenClientsAndServer()
+  //        val str = serverDoc.content.asInstanceOf[data.Content.Code].unicode.toString
+  //        val ts = str.split(" ").filter(_.nonEmpty)
+  //        assert(ts.size == count)
+  //        def decreasing(a: Seq[Int]) = a.sliding(2, 1).forall(a => a.size < 2 || a.head > a(1))
+  //        val vs = clients.indices.map(i => ts.filter(_.startsWith(('a' + i).toChar.toString)).map(_.drop(1).toInt).toSeq)
+  //        assert(vs.forall(decreasing))
+  //        assert(vs.flatten.toSet == (0 until count).toSet)
+  //      }
 
-      'randomSingleChangeTransactionSync - {
-        val count = 1000
-        for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
-          // sadly our tests is not one thread
-          val c = clients(j)
-          c.synchronized {
-            c.debug_unmarkTempDisableMode()
-            c.localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
+        'randomSingleChangeTransactionSync - {
+          val count = 1000
+          for ((i, j) <- (0 until count).map(a => (a, Random.nextInt(clients.size)))) {
+            // sadly our tests is not one thread
+            val c = clients(j)
+            c.synchronized {
+              c.debug_unmarkTempDisableMode()
+              c.localChange(DocTransaction(operation.Node.randomTransaction(1, clients(j).state.node, random), None))
+            }
           }
+          waitAssertStateSyncBetweenClientsAndServer()
         }
-        waitAssertStateSyncBetweenClientsAndServer()
-      }
 
-      'randomTwoChangeTransactionSync - {
-        val count = 1000
-        for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
-          // sadly our tests is not one thread
-          val c = clients(j)
-          c.synchronized {
-            c.debug_unmarkTempDisableMode()
-            c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+        'randomTwoChangeTransactionSync - {
+          val count = 1000
+          for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
+            // sadly our tests is not one thread
+            val c = clients(j)
+            c.synchronized {
+              c.debug_unmarkTempDisableMode()
+              c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+            }
           }
+          waitAssertStateSyncBetweenClientsAndServer()
         }
-        waitAssertStateSyncBetweenClientsAndServer()
-      }
 
-      'performanceTwoChangeTransactionSync - {
-        val random = new Random(21321321)
-        val count = 10000
-        for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
-          // sadly our tests is not one thread
-          val c = clients(j)
-          c.synchronized {
-            c.debug_unmarkTempDisableMode()
-            c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+        'performanceTwoChangeTransactionSync - {
+          val random = new Random(21321321)
+          val count = 10000
+          for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
+            // sadly our tests is not one thread
+            val c = clients(j)
+            c.synchronized {
+              c.debug_unmarkTempDisableMode()
+              c.localChange(DocTransaction(operation.Node.randomTransaction(2, clients(j).state.node, random), None))
+            }
           }
+          waitAssertStateSyncBetweenClientsAndServer()
         }
-        waitAssertStateSyncBetweenClientsAndServer()
-      }
+
+        */
 
       'humanLikeTest - {
 
@@ -183,7 +186,7 @@ object ClientTests extends TestSuite  {
               } catch {
                 case e: Throwable =>
                   println("action " + ith)
-                  println(c.state)
+                  println(c.state.mode0)
                   println(ccc.description)
                   println(trans)
                   throw e

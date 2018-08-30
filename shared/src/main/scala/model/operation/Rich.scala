@@ -308,7 +308,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
 
-  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => EncodedSeq.Delete(a)).toVector, Type.Delete)
+  def deleteNoneOverlappingOrderedRanges(range: Seq[IntRange]): Rich = Rich(range.reverse.map(a => EncodedSeq.Delete(a)), Type.Delete)
 
 
   def delete(start: Int, until: Int): Rich = deleteNoneOverlappingOrderedRanges(Seq(IntRange(start, until)))

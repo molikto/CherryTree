@@ -13,9 +13,10 @@ package object model extends Picklers {
   var parseFromHtml: String => Registerable = null
 
   var debug_oldDocVersion = false
-  val debug_view = true
+  val debug_view = false
   val debug_scroll = debug_view && true
-  val debug_model = false
+  val debug_model = true
+  val debug_transmit = false
   val debug_selection = debug_view && false
 
   var debug_RenderEmptyInsertionPointAsBox = false

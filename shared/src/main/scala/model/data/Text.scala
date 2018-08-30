@@ -185,7 +185,7 @@ object Text {
     while (!reader.isEmpty) {
       buffer += Text.parse(reader)
     }
-    buffer.toVector
+    buffer.toSeq
   }
 
   private[model] def parseAll(reader: EncodedSeqReader, until: SpecialChar): Seq[Text] = {
@@ -193,7 +193,7 @@ object Text {
     while (!reader.isEmpty && !reader.eatOrFalse(until)) {
       buffer += Text.parse(reader)
     }
-    buffer.toVector
+    buffer
   }
 
 

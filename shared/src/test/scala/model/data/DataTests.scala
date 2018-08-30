@@ -48,8 +48,8 @@ object DataTests extends TestSuite {
     'richAtom - {
       for (i <- 0 until 1000) {
         val a = Rich.random(r)
-        val aa = Text.before(Seq.empty, 0, a.size, a.text).toVector.reverse
-        val bb = Text.after(Seq.empty, 0, 0, a.text).toVector
+        val aa = Text.before(Seq.empty, 0, a.size, a.text).toSeq.reverse
+        val bb = Text.after(Seq.empty, 0, 0, a.text).toSeq
         assert({ a; aa == bb})
       }
     }
