@@ -1,6 +1,7 @@
 import java.io.{File, PrintWriter}
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import java.util.regex.Pattern
 
 
 def write(string: String, file: File) = {
@@ -19,8 +20,14 @@ val n = scala.io.Source.fromFile(css).getLines().map(a => {
   if (i >= 0) {
     val k = i +  "fas(".length
     val j = a.indexOf(")", i)
-    val name = a.substring(k, j)
-    val svg = scala.io.Source.fromFile(s"fontawesome-free-5.2.0-desktop/svgs/$name.svg").getLines().mkString("\n").replaceAllLiterally("<path ", "<path fill=\"#555c75\" ")
+    val name0 = a.substring(k, j)
+    val split = name0.split(" ")
+    val name = split(0)
+    println(split.mkString(" "))
+    val isError = split.contains("error")
+    val svg = scala.io.Source.fromFile(s"fontawesome-free-5.2.0-desktop/svgs/$name.svg").getLines().mkString("\n")
+      .replaceAllLiterally(s"<path ", s""""<path fill="${if (isError) "#7d4c5c" else "#555c75"}" """)
+    println(svg)
     val encoded = Base64.getEncoder.encodeToString(svg.getBytes(StandardCharsets.UTF_8))
     val replaceHandle = a.substring(i, j + 1)
     val toReplace = if (a.substring(j + 1).startsWith(" */")) {

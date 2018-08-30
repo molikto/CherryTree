@@ -1,11 +1,46 @@
 package command
 
 import doc.{DocState, DocTransaction}
+import model.data.Node
 import model.{cursor, data, mode, operation, range}
 import model.range.IntRange
 import register.Registerable
 
+import scala.collection.mutable.ArrayBuffer
+
 package object defaults {
+
+  def changeHeadingLevel(nodes: Seq[data.Node], r: range.Node, parent: cursor.Node, parentNode: data.Node): Seq[operation.Node] = {
+    var error = false
+    val bf = new ArrayBuffer[operation.Node]()
+    def rec(nodes: Seq[data.Node], r: range.Node, p: Int): Unit = {
+      if (error || p >= 6) {
+        error = true
+      } else {
+        nodes.zipWithIndex.filter(_._1.heading.exists(a => a != 1 && a != p + 1)).foreach(n => {
+          val cur = r.parent :+ (r.childs.start + n._2)
+          bf.append(operation.Node.AttributeChange(cur, data.Node.ContentType, Some(data.Node.ContentType.Heading(p + 1))))
+          if (n._1.childs.exists(_.heading.exists(_ != 1))) {
+            rec(n._1.childs, range.Node(cur, IntRange(0, n._1.childs.size)), p + 1)
+          }
+        })
+      }
+    }
+    parentNode.heading match {
+      case Some(l) =>
+        rec(nodes, r, l)
+      case _ =>
+    }
+    if (error) {
+      Seq.empty
+    } else {
+      bf
+    }
+  }
+
+  def changeHeadingLevel(a: DocState, r: range.Node, parent: cursor.Node): Seq[operation.Node] = {
+    changeHeadingLevel(a.node(r), r, parent, a.node(parent))
+  }
 
 
   def yankSelection(a: DocState,

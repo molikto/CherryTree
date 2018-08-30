@@ -119,7 +119,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   abstract class PutCommand extends Command {
     override protected def available(a: DocState): Boolean = a.isContent
 
-    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node)
+    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node)
     def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cursor = a.asContent
@@ -161,8 +161,10 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
       commandState.retrieveSetRegisterAndSetToCloneNode() match {
         case Some(Registerable.Node(n, range, needsClone)) =>
           if (n.nonEmpty) {
-            val (op, mode) = putNode(a, cursor, if (needsClone) data.Node.cloneNodes(n) else n)
-            DocTransaction(op, Some(mode), tryMergeInsertOfDeleteRange = range)
+            val (insertOp, mode) = putNode(a, cursor, if (needsClone) data.Node.cloneNodes(n) else n)
+            val pCur = model.cursor.Node.parent(insertOp.at)
+            val ctrans = changeHeadingLevel(insertOp.childs, model.range.Node(insertOp.at, insertOp.childs.length), pCur, a.node(pCur))
+            DocTransaction(insertOp +: ctrans, Some(mode), tryMergeInsertOfDeleteRange = range)
           } else {
             DocTransaction.empty
           }
@@ -179,9 +181,9 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override val description: String = "put after"
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
-    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
+    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
       val (insertionPoint, _) = insertPointAfter(a, at)
-      (Seq(operation.Node.Insert(insertionPoint, node)), mode.Node.Content(insertionPoint, node.head.content.defaultMode(enableModal)))
+      (operation.Node.Insert(insertionPoint, node), mode.Node.Content(insertionPoint, node.head.content.defaultMode(enableModal)))
     }
 
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
@@ -195,9 +197,9 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override val description: String = "put before"
     override def defaultKeys: Seq[KeySeq] = Seq("P")
 
-    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (Seq[operation.Node], mode.Node) = {
+    def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
       val pt = if (at == a.zoom) a.zoom :+ 0 else at
-      (Seq(operation.Node.Insert(pt, node)), mode.Node.Content(pt, node.head.content.defaultMode(enableModal)))
+      (operation.Node.Insert(pt, node), mode.Node.Content(pt, node.head.content.defaultMode(enableModal)))
     }
 
     override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {

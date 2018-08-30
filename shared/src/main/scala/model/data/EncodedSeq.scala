@@ -12,25 +12,27 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
 
 
 
-  assert({
-    def test(): Boolean = {
-      var previousIsString = false
-      for (j <- seq) {
-        j match {
-          case s: SpecialChar =>
-            previousIsString = false
-          case a: Unicode =>
-            if (previousIsString) {
-              return false
-            }
-            previousIsString = true
-          case _ => throw new IllegalStateException("not possible")
+  if (model.debug_view) {
+    assert({
+      def test(): Boolean = {
+        var previousIsString = false
+        for (j <- seq) {
+          j match {
+            case s: SpecialChar =>
+              previousIsString = false
+            case a: Unicode =>
+              if (previousIsString) {
+                return false
+              }
+              previousIsString = true
+            case _ => throw new IllegalStateException("not possible")
+          }
         }
+        true
       }
-      true
-    }
-    test()
-  })
+      test()
+    })
+  }
 
 
   override def toString: String = seq.mkString("^")

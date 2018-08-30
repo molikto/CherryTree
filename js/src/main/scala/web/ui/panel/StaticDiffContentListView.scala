@@ -42,10 +42,11 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
   protected def onAddViewAndHold(view: HTMLElement, data: Node) = {
   }
 
+  protected val parentHeadingLevel: Int = -1
 
   protected override def performAdd(i: Int, data: Node): Unit = {
     //if (model.debug_view) println(s"performing add $i")
-    val view = contentViewAndHold(data)
+    val view = contentViewAndHold(data, parentHeadingLevel)
     onAddViewAndHold(view, data)
     list.insertBefore(view, domAt(i))
   }
