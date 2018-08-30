@@ -54,9 +54,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
     list
   ).render
 
-
   private var regs: Seq[(Int, Option[Registerable])] = Seq.empty
-
 
   override def show(anchor: OverlayAnchor): Unit = {
     current.textContent = s"current register: ${client.currentRegister}"
@@ -78,7 +76,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
       div(
         marginLeft := "10px",
         t._2.map {
-          case Registerable.Unicode(u) => code(`class` := "ct-c-code", u)
+          case Registerable.Unicode(u) => code(`class` := "ct-c-code", u.str)
           case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, false) : Frag
           case Registerable.Node(a, _, _) =>
             if (a.isEmpty) "": Frag
