@@ -25,27 +25,15 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
     `class` := "ct-input"
   ).render
 
-  private val current = p(
-    paddingLeft := "8px",
-    paddingRight := "8px",
-    paddingTop := "4px",
-    paddingBottom := "4px",
-    marginBottom := "0px",
-    `class` := "ct-desc",
-  ).render
-
   override protected val list = div(
     width := "100%",
     maxHeight := "280px",
     minHeight := "0px",
     overflowY := "scroll",
     overflowX := "hidden",
-    `class` := "ct-scroll ct-panel",
-    current
+    `class` := "ct-scroll ct-panel"
   ).render
 
-
-  override protected def headerSize: Int = 1
 
   dom = div(
     `class` := "ct-card",
@@ -57,7 +45,6 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
   private var regs: Seq[(Int, Option[Registerable])] = Seq.empty
 
   override def show(anchor: OverlayAnchor): Unit = {
-    current.textContent = s"current register: ${client.currentRegister}"
     regs = client.registerables.sortBy(a => if (a._2.isDefined) 0 else 1)
     super.show(anchor)
     if (list.childNodes.length == headerSize) update()

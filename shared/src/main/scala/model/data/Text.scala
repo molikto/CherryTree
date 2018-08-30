@@ -58,6 +58,10 @@ object Text {
   }
 
 
+  def normalize(atoms: Seq[Text]): Seq[Text] = {
+    Text.parseAll(new EncodedSeqReader(Text.serialize(atoms)))
+  }
+
   def assemble(atoms: Seq[Atom]): Seq[Text] = {
     val buffer = new EncodedSeqWriter()
     atoms.foreach(_.serialize(buffer))
