@@ -27,7 +27,7 @@ class QuickSearchDialog(val client: Client,
   ).render
 
 
-  private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code")
+  private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code", "!latexmacro")
   private val marks = delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
   private val specialDesc = s"Special commands: ${(special ++ marks).mkString(" ")}"
 
@@ -69,6 +69,7 @@ class QuickSearchDialog(val client: Client,
     } else {
       val raw = (tt.toSet -- special).map(a => model.data.Unicode(a.toLowerCase())).toSeq
       val isHeading = tt.contains("!heading")
+      val islm = tt.contains("!latexmacro")
       val reqireHeadingLevel =
         if (tt.contains("!h1")) {
           1
@@ -86,7 +87,7 @@ class QuickSearchDialog(val client: Client,
           -1
         }
       val requireCode = tt.contains("!code")
-      client.state.quickSearch(raw, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
+      client.state.quickSearch(raw, islm, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
     }
   }
 

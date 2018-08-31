@@ -19,6 +19,25 @@ package object cursor {
 
 
   object Node {
+
+    val ordering: Ordering[Node] = new Ordering[Node] {
+      override def compare(x: Node, y: Node): Int = {
+        var tx = x
+        var ty = y
+        while (tx.nonEmpty && ty.nonEmpty) {
+          val d = tx.head - ty.head
+          if (d != 0) {
+            return d
+          }
+          tx = x.tail
+          ty = y.tail
+        }
+        if (tx.isEmpty && ty.isEmpty) return 0
+        if (tx.isEmpty) return -1
+        if (ty.isEmpty) return 1
+        throw new IllegalStateException("Not possible")
+      }
+    }
     def parent(a: Node) = a.dropRight(1)
     def contains(zoom: Node, node: Node): Boolean = node.startsWith(zoom)
 

@@ -37,12 +37,14 @@ class SourceView(
     val remaining = lines.size
     val totalSize = remaining + look.size
     CodeMirror.runMode(look.mkString("\n"), contentData.ty.codeMirror, preCode)
+    val sourceType = SourceEditType.all.find(contentData.ty != EmptyCodeType && _.ct == contentData.ty)
     if (remaining > 0) {
-      remainingView.textContent = s"$totalSize lines"
+      val sourceString = sourceType.map(_.name + ", ").getOrElse("")
+      remainingView.textContent = sourceString + s"$totalSize lines"
     } else if (contentData.unicode.isBlank) {
-      remainingView.textContent = "empty code block"
+      remainingView.textContent = if (sourceType.isEmpty) "empty code block" else sourceType.get.name + ", empty"
     } else {
-      remainingView.textContent = ""
+      remainingView.textContent = sourceType.map(_.name).getOrElse("")
     }
   }
 

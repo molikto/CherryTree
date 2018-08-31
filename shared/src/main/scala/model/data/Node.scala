@@ -18,11 +18,45 @@ trait NodeTag[T] {
 }
 
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
-case class Node (
+case class Node(
   uuid: String,
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+  def isLaTeXMacro: Boolean =
+    content match {
+      case c: Content.Code if c.ty == LaTeXMacro =>
+        true
+      case _ =>
+        false
+    }
+
+
+  def macros: Seq[String] = {
+    if (macros_ == null) {
+      var cur: String = null
+      content match {
+        case c: Content.Code if c.ty == LaTeXMacro =>
+          cur = c.unicode.str
+        case _ =>
+      }
+      var res: Seq[String] = if (cur == null) null else Seq(cur)
+      for (c <- childs) {
+        val cm = c.macros
+        if (cm.nonEmpty) {
+          if (res == null) {
+            res = cm
+          } else {
+            res = res ++ cm
+          }
+        }
+      }
+      macros_ = if (res == null) Seq.empty else res
+    }
+    macros_
+  }
+
+  private var macros_ : Seq[String] = null
 
   def refOfThis() = Node.nodRef( uuid)
 
@@ -75,6 +109,11 @@ case class Node (
 
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)
 
+
+  def foreach(a: (model.cursor.Node, Node) => Unit, cur: model.cursor.Node): Unit = {
+    a(cur, this)
+    childs.zipWithIndex.foreach(p => p._1.foreach(a, cur :+ p._2))
+  }
 
   def allChildrenUuids(cur: model.cursor.Node, in: Map[String, Boolean]): Seq[model.cursor.Node] = {
     childs.zipWithIndex.flatMap(c => {

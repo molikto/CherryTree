@@ -92,9 +92,9 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
     val registers: RegistersDialog = new RegistersDialog(client, overlayLayer)
-    val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(overlayLayer, docView.dom)
+    val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(client, overlayLayer, docView.dom)
     val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
-    val latexEditor: InlineCodeDialog = new InlineCodeDialog(overlayLayer)
+    val latexEditor: InlineCodeDialog = new InlineCodeDialog(client, overlayLayer)
 
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu

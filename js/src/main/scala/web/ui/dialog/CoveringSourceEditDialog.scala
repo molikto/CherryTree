@@ -6,6 +6,7 @@ import web.view._
 
 
 class CoveringSourceEditDialog(
+  override val editor: _root_.view.EditorInterface,
   protected val layer: OverlayLayer,
   val coveringElement: HTMLElement
 ) extends SourceEditOverlay[SourceEditOption] { // ordering is important

@@ -12,6 +12,8 @@ import scala.util.Random
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+  def toPlain: String = Text.toPlain(text)
+
 
   def apply(node: cursor.Node): Text = {
     assert(node.nonEmpty)
@@ -45,7 +47,7 @@ case class Rich(text: Seq[Text]) {
   }
 
 
-  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings) = {
+  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings): Boolean = {
     tt.forall(p => Text.quickSearch(text, p, deli))
   }
 

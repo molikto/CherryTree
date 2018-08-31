@@ -28,7 +28,7 @@ class NodeMisc extends CommandCategory("node: misc") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asContent
       DocTransaction(
-        Seq(operation.Node.Replace(cur, data.Content.Code.empty)),
+        Seq(operation.Node.Replace(cur, data.Content.Code(data.Unicode(a.node(cur).rich.toPlain), ""))),
         Some(a.copyContentMode(mode.Content.CodeNormal)))
     }
   }
@@ -38,7 +38,7 @@ class NodeMisc extends CommandCategory("node: misc") {
     override protected def available(a: DocState): Boolean = a.isCode
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, code) = a.asCode
-      val rich = data.Rich(if (code.unicode.isEmpty) Seq.empty else Seq(Text.Plain(code.unicode)))
+      val rich = data.Rich(if (code.unicode.isEmpty) Seq.empty else Seq(Text.Code(code.unicode)))
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Rich(rich))),
         Some(a.copyContentMode(Content.Rich(rich).defaultMode(enableModal))))

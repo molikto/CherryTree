@@ -9,7 +9,7 @@ import model.range.IntRange
 import settings.Settings
 
 
-case class DocState(
+case class DocState private (
   node: model.data.Node,
   zoom: cursor.Node,
   mode0: model.mode.Node,
@@ -36,7 +36,7 @@ case class DocState(
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
     DocTransaction(Seq.empty,
       Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
-      zoomAfter = Some(cur).filter(c => mustZoom || visible(c)))
+      zoomAfter = Some(cur).filter(c => mustZoom || notVisible(c)))
   }
 
   def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
@@ -55,12 +55,15 @@ case class DocState(
   def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
 
   def quickSearch(tt: Seq[data.Unicode],
+    isLaTeXMacro: Boolean,
     heading: Boolean,
     headingLevel: Int,
-    code: Boolean,
+    code0: Boolean,
     deli: settings.SpecialKeySettings, viewport: Boolean): Seq[cursor.Node] = {
     val (n, cur) = if (viewport) (node(zoom), zoom) else (node, cursor.Node.root)
+    val code = isLaTeXMacro || code0
     n.filter(cur, a => {
+      (!isLaTeXMacro || a.isLaTeXMacro) &&
       (!heading || a.isHeading) &&
         (headingLevel <= 0 || a.heading.contains(headingLevel)) &&
         (

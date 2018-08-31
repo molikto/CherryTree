@@ -68,7 +68,7 @@ class CodeViewEditor(
       case inside: model.mode.Content.CodeInside =>
         if (editing == null) {
           editing = documentView.sourceEditor
-          editing.show(new SourceEditOption(controller, contentData.unicode, CodeInside.empty(controller.enableModal), contentData.ty))
+          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(controller.enableModal), contentData.ty))
         } else if (!editorUpdated) {
           editing.sync(inside)
         }
