@@ -34,16 +34,11 @@ case class DocState private (
   }
 
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {
+    val enableModal = settings.enableModal
+    val noZoom =  !mustZoom && visible(cur)
     DocTransaction(Seq.empty,
-      Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(settings.enableModal))),
-      zoomAfter = Some(cur).filter(c => mustZoom || notVisible(c)))
-  }
-
-  def zoomTo(n: cursor.Node, enableModal: Boolean): DocTransaction = {
-    val noZoom = visible(n)
-    DocTransaction(Seq.empty,
-      Some(model.mode.Node.Content(n, node(n).content.defaultMode(enableModal))),
-      zoomAfter = if (noZoom) None else Some(n), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(n)) else Seq.empty)
+      Some(model.mode.Node.Content(cur, node(cur).content.defaultMode(enableModal))),
+      zoomAfter = if (noZoom) None else Some(cur), viewMessagesAfter = if (noZoom) Seq(ViewMessage.ScrollToNodeTop(cur)) else Seq.empty)
   }
 
   def focus: Node = mode0.focus

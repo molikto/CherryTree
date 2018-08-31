@@ -126,6 +126,6 @@ class QuickSearchDialog(val client: Client,
         return
       }
     }
-    client.localChange(client.state.zoomTo(n, client.enableModal))
+    client.localChange(client.state.goTo(n, client))
   }
 }

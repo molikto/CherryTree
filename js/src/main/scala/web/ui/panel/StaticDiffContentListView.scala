@@ -8,7 +8,10 @@ import web.ui.doc.DocFramer
 import web.view.View
 
 
-class StaticDiffContentListView(override val onClick: String => Unit) extends View with NodeQuickDiff with DocFramer {
+class StaticDiffContentListView(
+  override val onClick: String => Unit,
+  override val onDoubleClick: String => Unit,
+) extends View with NodeQuickDiff with DocFramer {
 
   dom = div().render
   private val list = dom
@@ -62,13 +65,13 @@ class StaticDiffContentListView(override val onClick: String => Unit) extends Vi
     listData = newData
   }
 
-  def updateFocus(uuid: Option[String], list: HTMLElement): Boolean = {
-    var contains = false
+  def updateFocus(uuid: Option[String], list: HTMLElement): Option[Int] = {
+    var contains: Option[Int] = None
     (0 until size).foreach(i => {
       val ct = contentViewFromWithHold(domAt(i))
       val cu = uuidOf(ct)
       if (uuid.contains(cu)) {
-        contains = true
+        contains = Some(i)
         web.view.scrollInToViewIfNotVisible(ct.dom, list, 10, 10, 30, 30)
         ct.dom.classList.add("ct-highlight")
       } else {

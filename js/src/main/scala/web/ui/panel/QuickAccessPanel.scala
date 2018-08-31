@@ -16,18 +16,34 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   private var previousFocus: Option[String] = None
   private var previousNearestHeading: Option[String] = None
 
+  private var justLookedUp: (String, model.cursor.Node) = null
+
   private def onClick(uuid: String): Unit = {
     client.state.lookup(uuid) match {
       case Some(cur) =>
-        client.localChange(client.state.zoomTo(cur, client.enableModal))
+        justLookedUp = (uuid, cur)
+        client.localChange(client.state.goTo(cur, client))
         doc().focus()
       case _ =>
     }
   }
 
-  private val parentsView = new StaticDiffContentListView(onClick)
+
+  private def onDoubleClick(uuid: String): Unit = {
+    val cur = if (justLookedUp != null && justLookedUp._1 == uuid) Some(justLookedUp._2) else client.state.lookup(uuid)
+    cur match {
+      case Some(cur) =>
+        client.localChange(client.state.goTo(cur, client, true))
+        doc().focus()
+      case _ =>
+    }
+  }
+
+
+
+  private val parentsView = new StaticDiffContentListView(onClick, onDoubleClick)
   parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
-  private val tocView = new StaticDiffTocView(onClick, 1)
+  private val tocView = new StaticDiffTocView(onClick, onDoubleClick, 1)
 
   private var hideLevel: Int = Try {_root_.client.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 
@@ -80,6 +96,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   private def state = client.state
 
   observe(client.stateUpdates.doOnNext(update => {
+    justLookedUp = null
     renderState(update.from.isEmpty)
   }))
 

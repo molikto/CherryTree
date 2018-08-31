@@ -638,8 +638,10 @@ block selection
 .ct-cg-atom {
 }
 
-.ct-latex {
+/*
  color: #abb2bf;
+*/
+.ct-latex {
  display: inline-block;
  box-sizing: border-box;
 }

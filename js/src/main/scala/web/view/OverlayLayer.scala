@@ -181,7 +181,7 @@ class OverlayLayer(val parent: HTMLElement, base: View) extends View {
   private def show(): Unit = {
     dom.style.display = "block"
     clicker.addEventListener("click", clickEvent)
-    clicker.addEventListener("dbclick", clickEvent)
+    clicker.addEventListener("dblclick", clickEvent)
   }
 
   private val clickEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
@@ -202,7 +202,7 @@ class OverlayLayer(val parent: HTMLElement, base: View) extends View {
 
   private def dismiss(): Unit = {
     clicker.removeEventListener("click", clickEvent)
-    clicker.removeEventListener("dbclick", clickEvent)
+    clicker.removeEventListener("dblclick", clickEvent)
     dom.style.display = "none"
     base.focus()
   }

@@ -4,7 +4,10 @@ import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
 
-class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick) {
+class StaticDiffTocView(
+  onClick: String => Unit,
+  onDoubleClick: String => Unit,
+  override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick, onDoubleClick) {
 
   protected override def eq(a: Node, b: Node): Boolean = a == b
 
@@ -20,7 +23,7 @@ class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel
 //  addHeader(header)
 
   override protected def onAddViewAndHold(view: HTMLElement, data: Node): Unit = {
-    val od = new StaticDiffTocView(onClick, parentHeadingLevel + 1)
+    val od = new StaticDiffTocView(onClick, onDoubleClick, parentHeadingLevel + 1)
     od.update(data.childs)
     insertExtraToContentView(view, od.dom)
   }
@@ -30,9 +33,13 @@ class StaticDiffTocView(onClick: String => Unit, override val parentHeadingLevel
   }
 
   def updateFocus(uuid: Option[String], hideLevel: Int, list: HTMLElement): Boolean = {
-    var contains = super.updateFocus(uuid, list)
+    var containsId = super.updateFocus(uuid, list)
+    var contains = containsId.isDefined
     (0 until size).foreach(i => {
       contains = web.view.View.fromDom[StaticDiffTocView](extraViewInFrame(domAt(i))).updateFocus(uuid, hideLevel, list) || contains // order matters
+    })
+    containsId.foreach(i => {
+      extraViewInFrame(domAt(i)).style.display = "block"
     })
     dom.style.display = if (!contains && parentHeadingLevel + 1 >= hideLevel) "none" else "block"
 //    dom.style.opacity = if (!contains && parentHeadingLevel + 1 >= hideLevel) "0.5" else "1"

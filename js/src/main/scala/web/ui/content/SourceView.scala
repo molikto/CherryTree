@@ -33,7 +33,7 @@ class SourceView(
   protected override def onUpdateContent(contentData: model.data.Content.Code) {
     removeAllChild(preCode)
     val lines = contentData.unicode.str.lines
-    val look = lines.take(5).toSeq
+    val look = lines.take(5).toVector
     val remaining = lines.size
     val totalSize = remaining + look.size
     CodeMirror.runMode(look.mkString("\n"), contentData.ty.codeMirror, preCode)

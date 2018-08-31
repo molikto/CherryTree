@@ -23,6 +23,7 @@ trait DocFramer {
   val docFramerExtraClass: String = ""
 
   val onClick: String => Unit = null
+  val onDoubleClick: String => Unit = null
 
   val useFoldedIcon: Boolean = false
 
@@ -50,14 +51,24 @@ trait DocFramer {
     onClick(uuid)
   }
 
+  private val onDoubleClickListener: js.Function1[Event, _] = (ev: Event) => {
+    val uuid = ev.currentTarget.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String]
+    onDoubleClick(uuid)
+  }
+
   private def create(a: model.data.Node): General = {
     val cv = ContentView.create(a.content, a.contentType)
     if (docFramerExtraClass != "") {
       cv.dom.classList.add(docFramerExtraClass)
     }
-    if (onClick != null) {
+    if (onClick != null || onDoubleClick != null) {
       cv.dom.asInstanceOf[js.Dynamic].ctUuid = a.uuid
+    }
+    if (onClick != null) {
       cv.dom.addEventListener("click", onClickListener)
+    }
+    if (onDoubleClick != null) {
+      cv.dom.addEventListener("dblclick", onDoubleClickListener)
     }
     cv
   }
