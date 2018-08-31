@@ -54,6 +54,24 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
           } else {
             deleteOnPosStart(a, commandState, rich, cur)
           }
+
+        /*
+
+        // a complex implementation we don't want the burden now
+
+        if (i > 0) {
+            val atom = rich.before(i)
+            if (atom.isGrapheme) {
+              DocTransaction.empty
+            } else {
+              DocTransaction(
+                Seq(operation.Node.rich(cur, operation.Rich.deleteOrUnwrapAt(rich, atom.range.start))),
+              None) // we don't explicitly set mode, as insert mode transformation is always correct
+            }
+          } else {
+            deleteOnPosStart(a, commandState, rich, cur)
+          }
+          */
         case v: model.mode.Content.RichVisual =>
           deleteRichNormalRange(a, commandState, cur, v.merged, true, noHistory = true)
         case _ => throw new IllegalStateException("Not supported mode")
@@ -78,6 +96,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
       }
     }
   }
+
 
   new EditCommand with OverrideCommand {
     override val description: String = "delete text after cursor"

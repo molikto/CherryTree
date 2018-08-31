@@ -17,6 +17,8 @@ import scala.util.{Random, Try}
 object ClientTests extends TestSuite  {
 
 
+  model.debug_view = false
+
   val tests = Tests {
     val s = new server.Server() {
       override def debugSave(a: String, bs: Array[Byte]): Unit = {
@@ -85,7 +87,6 @@ object ClientTests extends TestSuite  {
             assert(client == sd)
           })
         }
-      /*
 
   //      'oneWaySync - {
   //        client.change(insertTop)
@@ -140,7 +141,7 @@ object ClientTests extends TestSuite  {
 
         'performanceTwoChangeTransactionSync - {
           val random = new Random(21321321)
-          val count = 10000
+          val count = 100
           for ((_, j) <- (0 until count).map(a => (a, random.nextInt(clients.size)))) {
             // sadly our tests is not one thread
             val c = clients(j)
@@ -151,8 +152,6 @@ object ClientTests extends TestSuite  {
           }
           waitAssertStateSyncBetweenClientsAndServer()
         }
-
-        */
 
       'humanLikeTest - {
 
