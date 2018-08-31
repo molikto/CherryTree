@@ -1,8 +1,10 @@
 package web.ui.doc
 
-import doc.DocInterface
+import doc.{DocInterface, DocState}
 import model.data.Content
 import model.data.Node.ContentType
+import model.mode.Node
+import model.operation
 import model.range.IntRange
 import org.scalajs.dom
 import org.scalajs.dom.html.Div
@@ -10,7 +12,7 @@ import org.scalajs.dom.{CompositionEvent, DragEvent, Event, FocusEvent, MouseEve
 import org.scalajs.dom.raw.HTMLElement
 import util.Rect
 import view.EditorInterface
-import scalatags.JsDom.all._
+import scalatags.JsDom.all.{s, _}
 import web.ui
 import web.ui.content.{ContentView, ContentViewEditor, RichView}
 import web.view._
@@ -19,6 +21,17 @@ import web.ui.dialog._
 import scala.scalajs.js
 
 abstract class DocumentView extends View with EditorView {
+
+
+  private val latexMacroCache = LaTeXMacroCache.instance
+
+  def clearNodeVisual(): Unit
+  def updateNodeVisual(v: Node.Visual, fromUser: Boolean): Unit
+
+  // this can temp be null during state update
+  protected var currentDoc: DocState = null
+  protected def currentZoom: model.cursor.Node = currentDoc.zoom
+  protected def currentZoomId: String = currentDoc.zoomId
 
   private val noEditable = div(
     `class` := "unselectable",
@@ -51,8 +64,8 @@ abstract class DocumentView extends View with EditorView {
   /**
     * TODO no protected var
     */
-  protected var duringStateUpdate: Boolean = false
-  protected var allowCompositionInput = false
+  private var duringStateUpdate: Boolean = false
+  private var allowCompositionInput = false
 
 
   protected val client: DocInterface
@@ -62,14 +75,6 @@ abstract class DocumentView extends View with EditorView {
   protected def contentOfHold(a: raw.Node): ContentView.General
 
   private val nonEditableSelection = document.createRange()
-
-
-  override def onAttach(): Unit = {
-    super.onAttach()
-
-    nonEditableSelection.setStart(noEditable.childNodes(0), 0)
-    nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
-  }
 
   private def cancelNoEditableInput(): Any = {
     noEditable.textContent = ui.EvilChar
@@ -94,6 +99,8 @@ abstract class DocumentView extends View with EditorView {
       }
     }
   })
+
+
 
   event("compositionupdate", (a: CompositionEvent) => {
     flushBeforeKeyDown()
@@ -140,21 +147,33 @@ abstract class DocumentView extends View with EditorView {
     *
     *
     */
-  private var isFocusedOut: Boolean = true
+  private var focusedOut_ : Boolean = true
+  private def focusedOut_=(b: Boolean) : Unit = {
+    focusedOut_ = b
+    if (!b) {
+      latexMacroCache.update(currentDoc)
+      if (latexMacroCache.dirty) {
+        latexMacroCache.rebuildAndMarkNoDirty()
+        refreshAllLaTeX()
+      }
+    }
+  }
+  private def focusedOut: Boolean = focusedOut_
+
   private var currentSelection: raw.Range = nonEditableSelection
 
 
 
 
   event("blur", (a: FocusEvent) => {
-    isFocusedOut = true
+    focusedOut = true
     dom.classList.add("ct-window-inactive")
   })
 
 
   override def focus(): Unit = {
-    if (isFocusedOut) {
-      isFocusedOut = false
+    if (focusedOut) {
+      focusedOut = false
       dom.classList.remove("ct-window-inactive")
       if (model.debug_scroll) {
         println("focusing on document")
@@ -166,15 +185,15 @@ abstract class DocumentView extends View with EditorView {
 
 
   event("focus", (a: FocusEvent) => {
-    if (!duringStateUpdate && isFocusedOut) {
-      isFocusedOut = false
+    if (!duringStateUpdate && focusedOut) {
+      focusedOut = false
       dom.classList.remove("ct-window-inactive")
       flushSelection()
     }
   })
 
   protected def flushSelection(force: Boolean = false): Unit = {
-    if (!isFocusedOut) {
+    if (!focusedOut) {
       val sel = window.getSelection()
       if (!force) {
         if (sel.rangeCount == 1) {
@@ -203,6 +222,116 @@ abstract class DocumentView extends View with EditorView {
       }
     }
   }
+
+  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
+    duringStateUpdate = true
+    m match {
+      case None =>
+        allowCompositionInput = false
+        removeActiveContentEditor()
+        endSelection()
+        clearNodeVisual()
+      case Some(mk) => mk match {
+        case model.mode.Node.Content(at, aa) =>
+          allowCompositionInput = aa match {
+            case _: model.mode.Content.RichInsert => true
+            case _: model.mode.Content.RichVisual => true
+            case _ => false
+          }
+          clearNodeVisual()
+          val current = contentAt(at)
+          if (current != activeContent) {
+            removeActiveContentEditor()
+            activeContentEditor = current.createEditor(this, editor)
+          }
+          activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
+        case v@model.mode.Node.Visual(_, _) =>
+          allowCompositionInput = false
+          removeActiveContentEditor()
+          endSelection()
+          updateNodeVisual(v, fromUser)
+      }
+    }
+    duringStateUpdate = false
+    flushSelection()
+  }
+
+
+  def removeAllNodes(): Unit
+
+  def renderAll(): Unit
+
+  def toggleHold(a: model.cursor.Node, visible: Boolean)
+
+
+  def renderTransaction(s: DocState, t: operation.Node, to: DocState, viewUpdated: Boolean, editorUpdated: Boolean): Unit
+
+  def refreshAllLaTeX(): Unit
+
+  // we use onAttach because we access window.setSelection
+  override def onAttach(): Unit = {
+    super.onAttach()
+
+    nonEditableSelection.setStart(noEditable.childNodes(0), 0)
+    nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
+
+    val DocState(node, zoom, _, _, _) = client.state
+
+    currentDoc = client.state
+    latexMacroCache.update(currentDoc)
+    latexMacroCache.rebuildAndMarkNoDirty()
+    latexMacroCache.active()
+    renderAll()
+    updateMode(client.state.mode)
+    latexMacroCache.inactive()
+
+    observe(client.stateUpdates.doOnNext(update => {
+      latexMacroCache.active()
+      if (!focusedOut) {
+        latexMacroCache.update(update.to)
+      }
+      update.foldsBefore.foreach(f => {
+        if (currentDoc.visible(f._1)) {
+          if (model.debug_view) {
+            println(s"unfolding ${f._1} ${f._2}")
+          }
+          toggleHold(f._1, f._2)
+        }
+      })
+      duringStateUpdate = true
+      if (update.to.zoomId != currentZoomId) {
+        //          if (cursor.Node.contains(currentZoom, a)) {
+        //          } else {
+        //            cleanFrame(rootFrame)
+        //            insertNodeRec(update.root(a), rootFrame)
+        //          }
+        updateMode(None)
+        removeAllNodes()
+        currentDoc = update.to
+        renderAll()
+        scrollToTop()
+      } else {
+        for ((s, t, to) <- update.from) {
+          currentDoc = s
+          //              if (model.debug_view) {
+          //                println(s"current zoom is $currentZoom")
+          //                println(s"current trans is ${t._1}")
+          //              }
+          renderTransaction(s, t, to, update.viewUpdated, update.editorUpdated)
+        }
+      }
+      if (latexMacroCache.dirty) {
+        latexMacroCache.rebuildAndMarkNoDirty()
+        refreshAllLaTeX()
+      }
+      currentDoc = update.to
+      duringStateUpdate = false
+      updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
+      refreshMounted()
+      latexMacroCache.inactive()
+    }))
+  }
+
 
   def startSelection(range: raw.Range): Unit = {
     currentSelection = range

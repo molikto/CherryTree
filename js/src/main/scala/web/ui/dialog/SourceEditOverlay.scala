@@ -11,15 +11,18 @@ import scalatags.JsDom.all._
 import settings.Settings
 import web._
 import web.ui._
-import web.view._
+import view._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-class SourceEditOption(val editor: _root_.view.SourceEditInterface, val str: Unicode, val mode: CodeInside, val codeType: CodeType) {
+class SourceEditOption(val str: Unicode, val mode: CodeInside, val codeType: CodeType) {
 }
 
+object SourceEditOverlay {
+  var globalDefined = false
+}
 
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings {
 
@@ -31,6 +34,9 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   private def exitOnInputDollarSign: Boolean = codeType == Embedded.LaTeX &&
     delimitationSettings.exists(a => a._1 == SpecialChar.LaTeX && a._3 == dollarSign && a._2 == dollarSign)
 
+  
+  def editor: _root_.view.EditorInterface
+  
   private val codeHeight = "calc(100% - 32px)"
   private val ta = textarea(
     height := codeHeight,
@@ -43,7 +49,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     justifyContent := "center",
     `class` := "ct-desc").render
 
-  protected def predefined: Seq[SourceEditType]  = SourceEditOverlay.all
+  protected def predefined: Seq[SourceEditType]  = SourceEditType.all
 
   private val selectView: HTMLSelectElement = select(
       height := "24px",
@@ -55,7 +61,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           val ee = e.target.asInstanceOf[HTMLSelectElement].value
           val ct = predefined.find(_.ct.str == ee).get.ct
           setCodeType(ct)
-          opt.editor.onCodeTypeChangeAndEditorUpdated(ct)
+          editor.onCodeTypeChangeAndEditorUpdated(ct)
         }
       }},
       predefined.map(a => option(a.name, value := a.ct.str))
@@ -106,7 +112,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
           flush()
         }, 0)
       } else {
-        opt.editor.onChangeAndEditorUpdated(pendingChanges, CodeInside(modeStr, modePos))
+        editor.onChangeAndEditorUpdated(pendingChanges, CodeInside(modeStr, modePos))
         if (pendingChanges.nonEmpty) {
           pendingChanges.clear()
         }
@@ -120,14 +126,14 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
   private def doUndo() = {
     if (!dismissed) {
-      opt.editor.onSourceEditorUndo()
+      editor.onSourceEditorUndo()
     }
   }
   private val NotSupportedRegisters = Seq('.', ':')
 
   private def doRedo() = {
     if (!dismissed) {
-      opt.editor.onSourceEditorRedo()
+      editor.onSourceEditorRedo()
     }
   }
 
@@ -164,79 +170,83 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       window.asInstanceOf[js.Dynamic].cm = codeMirror
     }
     if (enableModal) {
-      CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
-        doRedo()
-      })
-      CodeMirror.Vim.defineAction("outterUndo", (cm: js.Dynamic, opt: js.Dynamic) => {
-        doUndo()
-      })
-      CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
-      CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
-      val controller = CodeMirror.Vim.getRegisterController()
-      val regs = controller.registers
+      if (!SourceEditOverlay.globalDefined) {
+        SourceEditOverlay.globalDefined = true
 
-      for (c <- RegisterInterface.ValidRegisters) {
-        regs.updateDynamic(Character.toString(c))(jsObject(a => {
-          val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => {
-            if (justPushed && c == '"') {
-              Unit
-            } else {
-              justPushed = true
-              window.setTimeout(() => {
-                justPushed = false
-              }, 0)
-              if (model.debug_view) println(s"code mirror register putting $c, $str")
-              opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, c.toInt)
+        CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
+          doRedo()
+        })
+        CodeMirror.Vim.defineAction("outterUndo", (cm: js.Dynamic, opt: js.Dynamic) => {
+          doUndo()
+        })
+        CodeMirror.Vim.mapCommand("u", "action", "outterUndo", jsObject(_ => {}), jsObject(_.context = "normal"))
+        CodeMirror.Vim.mapCommand("<C-r>", "action", "outterRedo", jsObject(_ => {}), jsObject(_ => {}))
+        val controller = CodeMirror.Vim.getRegisterController()
+        val regs = controller.registers
+
+        for (c <- RegisterInterface.ValidRegisters) {
+          regs.updateDynamic(Character.toString(c))(jsObject(a => {
+            val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => {
+              if (justPushed && c == '"') {
+                Unit
+              } else {
+                justPushed = true
+                window.setTimeout(() => {
+                  justPushed = false
+                }, 0)
+                if (model.debug_view) println(s"code mirror register putting $c, $str")
+                editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, c.toInt)
+              }
             }
-          }
 
-          val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => {
-            if (justPushed && c == '"') {
-              Unit
-            } else {
-              justPushed = true
-              window.setTimeout(() => {
-                justPushed = false
-              }, 0)
-              if (model.debug_view) println(s"code mirror register pushing $c, $str")
-              val upper = if ('a' <= c && c<= 'z') c + 'A' - 'a' else c
-              opt.editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, upper.toInt)
+            val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => {
+              if (justPushed && c == '"') {
+                Unit
+              } else {
+                justPushed = true
+                window.setTimeout(() => {
+                  justPushed = false
+                }, 0)
+                if (model.debug_view) println(s"code mirror register pushing $c, $str")
+                val upper = if ('a' <= c && c<= 'z') c + 'A' - 'a' else c
+                editor.yank(Registerable.Unicode(model.data.Unicode(str)), false, upper.toInt)
+              }
             }
-          }
 
-          val clear: js.Function0[Unit] = () => {
-            opt.editor.clearRegister(c)
-          }
-
-          val toString: js.Function0[String] = () => {
-            if (model.debug_view) println(s"code mirror register getting")
-            val ret = opt.editor.retrieveSetRegisterAndSetToCloneNode(c.toInt) match {
-              case Some(Registerable.Unicode(a)) => a.str
-              case Some(Registerable.Text(a)) => Text.toPlain(a)
-              case _ => ""
+            val clear: js.Function0[Unit] = () => {
+              editor.clearRegister(c)
             }
-            ret
-          }
 
-          a.setText = setText
-          a.pushText = pushText
-          a.clear = clear
-          a.updateDynamic("toString")(toString)
-        }))
-      }
-      controller.updateDynamic("unnamedRegister")(regs.selectDynamic("\""))
-      // disabled registers
-      for (c <- NotSupportedRegisters) {
-        regs.updateDynamic(Character.toString(c))(jsObject(a => {
-          val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => Unit
-          val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => Unit
-          val clear: js.Function0[Unit] = () => Unit
-          val toString: js.Function0[String] = () => ""
-          a.setText = setText
-          a.pushText = pushText
-          a.clear = clear
-          a.updateDynamic("toString")(toString)
-        }))
+            val toString: js.Function0[String] = () => {
+              if (model.debug_view) println(s"code mirror register getting")
+              val ret = editor.retrieveSetRegisterAndSetToCloneNode(c.toInt) match {
+                case Some(Registerable.Unicode(a)) => a.str
+                case Some(Registerable.Text(a)) => Text.toPlain(a)
+                case _ => ""
+              }
+              ret
+            }
+
+            a.setText = setText
+            a.pushText = pushText
+            a.clear = clear
+            a.updateDynamic("toString")(toString)
+          }))
+        }
+        controller.updateDynamic("unnamedRegister")(regs.selectDynamic("\""))
+        // disabled registers
+        for (c <- NotSupportedRegisters) {
+          regs.updateDynamic(Character.toString(c))(jsObject(a => {
+            val setText: js.Function3[String, js.UndefOr[Boolean], js.UndefOr[Boolean], Unit] = (str, linewise, blockwise) => Unit
+            val pushText: js.Function2[String, js.UndefOr[Boolean], Unit] = (str, linewise) => Unit
+            val clear: js.Function0[Unit] = () => Unit
+            val toString: js.Function0[String] = () => ""
+            a.setText = setText
+            a.pushText = pushText
+            a.clear = clear
+            a.updateDynamic("toString")(toString)
+          }))
+        }
       }
     }
 
@@ -291,12 +301,12 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
                 fakeCommand = true
                 if (model.debug_view) println(s"not supported code mirror register ${keys(1)}")
                 CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
-                CodeMirror.Vim.handleKey(codeMirror, String.valueOf(opt.editor.currentRegister), "mapping")
+                CodeMirror.Vim.handleKey(codeMirror, String.valueOf(editor.currentRegister), "mapping")
                 fakeCommand = false
               }
             }
           }
-          opt.editor.onSourceEditorCommandBuffer(keys)
+          editor.onSourceEditorCommandBuffer(keys)
         }
       })
       CodeMirror.on(codeMirror, "vim-command-done", (e: js.Dynamic) => {
@@ -355,7 +365,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override protected def onDismiss(): Unit = {
     val opt = this.opt
     super.onDismiss()
-    opt.editor.onExitSubMode()
+    editor.onExitSubMode()
     codeMirror.setValue("")
     if (enableModal) {
       if (isInnerInsert) {
@@ -379,6 +389,8 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
     if (exitOnInputDollarSign) {
       desc.textContent = "insert $ to exit"
+    } else if (a == LaTeXMacro) {
+      desc.textContent = "currently only support \\gdef"
     } else {
       desc.textContent = ""
     }
@@ -432,7 +444,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
   override def show(opt: T): Unit = {
     super.show(opt)
     str = opt.str
-    opt.editor.setRegister(-1)
+    editor.setRegister(-1)
     codeType_ = opt.codeType
     updating = true
     codeMirror.setValue(str.str)

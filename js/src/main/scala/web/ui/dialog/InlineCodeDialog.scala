@@ -5,15 +5,15 @@ import model.mode.Content.CodeInside
 import web.view._
 
 object InlineCodeDialog {
-  abstract class Anchor(editor: _root_.view.SourceEditInterface, str: Unicode, mode: CodeInside, ty: CodeType) extends SourceEditOption(editor, str, mode, ty) with OverlayAnchor {
+  abstract class Anchor(str: Unicode, mode: CodeInside, ty: CodeType) extends SourceEditOption(str, mode, ty) with OverlayAnchor {
   }
 }
 
-class InlineCodeDialog(override val layer: OverlayLayer) extends SourceEditOverlay[InlineCodeDialog.Anchor] with MountedOverlay[InlineCodeDialog.Anchor]  { // order is important!
+class InlineCodeDialog(override val editor: _root_.view.EditorInterface, override val layer: OverlayLayer) extends SourceEditOverlay[InlineCodeDialog.Anchor] with MountedOverlay[InlineCodeDialog.Anchor]  { // order is important!
 
   override def showLineNumber = false
 
-  override protected def predefined: Seq[SourceEditType] = SourceEditOverlay.inlineOnly
+  override protected def predefined: Seq[SourceEditType] = SourceEditType.inlineOnly
 
   override def onAttach(): Unit = {
     super.onAttach()

@@ -1,6 +1,5 @@
 package web.ui.content
 
-import model._
 import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
@@ -12,7 +11,7 @@ import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.ui
-import web.ui.doc.DocumentView
+import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.view._
 import web.ui.content.ContentViewEditor.General
 import web.ui._
@@ -30,9 +29,19 @@ import scala.scalajs.js
   *
   *
   */
+object RichView {
+
+  val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
+    val el = e.target.asInstanceOf[HTMLElement]
+    window.console.log("image loading error")
+    el.style.width = "12px"
+    el.style.height= "12px"
+  }
+
+}
 class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends ContentView.Rich {
 
-  private val emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
+  private def emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
 
   def rich: Rich = contentData.content
 
@@ -106,12 +115,18 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   }
 
 
-  val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
-    val el = e.target.asInstanceOf[HTMLElement]
-    window.console.log("image loading error")
-    el.style.width = "12px"
-    el.style.height= "12px"
+  override def refreshLaTeX(): Unit = {
+    val ct = dom.getElementsByClassName("ct-latex-p")
+    var i = 0
+    while (i < ct.length) {
+      val el = ct.item(i).asInstanceOf[HTMLElement]
+      val str = el.getAttribute("data")
+      el.removeChild(el.childNodes(1))
+      LaTeXMacroCache.renderLaTeX(el, str, 1)
+      i += 1
+    }
   }
+
 
   /**
     * ct-cg is control glyph
@@ -185,23 +200,11 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       case Text.LaTeX(c) =>
         val a = span(
           contenteditable := "false",
-          `class` := "ct-cg-node ct-cg-atom",
+          `class` := "ct-cg-node ct-cg-atom ct-latex-p",
+          data := c.str,
           span(EvilChar)
         ).render
-        if (c.isBlank) {
-          a.appendChild(warningInline("empty LaTeX").render)
-        } else {
-          val b = span(
-            `class` := "ct-latex"
-          ).render
-          try {
-            KaTeX.render(c.str, b)
-            a.appendChild(b)
-          } catch {
-            case err: Throwable =>
-              a.appendChild(errorInline("LaTeX error", err).render)
-          }
-        }
+        LaTeXMacroCache.renderLaTeX(a, c.str, 1)
         a.appendChild(span(EvilChar).render)
         a: Frag
       case Text.Code(c) =>

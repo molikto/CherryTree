@@ -124,7 +124,8 @@ class SimpleLayoutDocumentView(
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
   private var previousNodeMove: HTMLElement = null
 
-  private def updateNodeVisual(v: model.mode.Node.Visual, fromUser: Boolean): Unit = {
+
+  override def updateNodeVisual(v: model.mode.Node.Visual, fromUser: Boolean): Unit = {
     val newVisual = new ArrayBuffer[Element]()
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
@@ -151,7 +152,7 @@ class SimpleLayoutDocumentView(
     }
   }
 
-  private def clearNodeVisual(): Unit = {
+  override def clearNodeVisual(): Unit = {
     if (previousNodeMove != null) {
       for (c <- previousNodeVisual) {
         c.classList.remove("ct-node-visual")
@@ -164,7 +165,7 @@ class SimpleLayoutDocumentView(
 
 
 
-  private def removeAllNodes(): Unit = {
+  override def removeAllNodes(): Unit = {
     val a = rootFrame
     removeNodes(model.range.Node(currentZoom, IntRange(0, childListAt(currentZoom).childNodes.length)))
     contentAt(currentZoom).destroy()
@@ -226,12 +227,6 @@ class SimpleLayoutDocumentView(
 
 
 
-
-  // this can temp be null during state update
-  private var currentDoc: DocState = null
-  private def currentZoom: model.cursor.Node = currentDoc.zoom
-  private def currentZoomId: String = currentDoc.zoomId
-
   private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
     val box = div(`class` := classesFromNodeAttribute(root, -1)).render
@@ -264,151 +259,96 @@ class SimpleLayoutDocumentView(
   }
 
 
-  private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
-    duringStateUpdate = true
-    m match {
-      case None =>
-        allowCompositionInput = false
-        removeActiveContentEditor()
-        endSelection()
-        clearNodeVisual()
-      case Some(mk) => mk match {
-        case model.mode.Node.Content(at, aa) =>
-          allowCompositionInput = aa match {
-            case _: model.mode.Content.RichInsert => true
-            case _: model.mode.Content.RichVisual => true
-            case _ => false
-          }
-          clearNodeVisual()
-          val current = contentAt(at)
-          if (current != activeContent) {
-            removeActiveContentEditor()
-            activeContentEditor = current.createEditor(this, editor)
-          }
-          activeContentEditor.updateMode(aa, viewUpdated, editorUpdated, fromUser)
-        case v@model.mode.Node.Visual(_, _) =>
-          allowCompositionInput = false
-          removeActiveContentEditor()
-          endSelection()
-          updateNodeVisual(v, fromUser)
+  def refreshAllLaTeX(): Unit = {
+    if (model.debug_katex) window.console.log("refreshing all latex")
+    def rec(frame: HTMLElement): Unit = {
+      contentOf(frame).refreshLaTeX()
+      var c = childListOf(frame).firstChild
+      while (c != null) {
+        rec(c.asInstanceOf[HTMLElement])
+        c = c.nextSibling
       }
     }
-    duringStateUpdate = false
-    flushSelection()
+    rec(rootFrame)
   }
 
-
-  // we use onAttach because we access window.setSelection
-  override def onAttach(): Unit = {
-    super.onAttach()
-    val DocState(node, zoom, _, _, _) = client.state
-    currentDoc = client.state
-    insertNodeRec(zoom, currentDoc.node(currentDoc.zoom), rootFrame)
-
-    updateMode(client.state.mode)
-
-    observe(client.stateUpdates.doOnNext(update => {
-      update.foldsBefore.foreach(f => {
-        val fr = frameAt(f._1)
-        if (currentDoc.visible(f._1)) {
-          if (model.debug_view) {
-            println(s"unfolding ${f._1} ${f._2}")
-          }
-          toggleHoldRendering(f._1, currentDoc.node(f._1), fr, childListOf(fr), holdOf(fr), f._2)
-        }
-      })
-      duringStateUpdate = true
-      if (update.to.zoomId != currentZoomId) {
-        //          if (cursor.Node.contains(currentZoom, a)) {
-        //          } else {
-        //            cleanFrame(rootFrame)
-        //            insertNodeRec(update.root(a), rootFrame)
-        //          }
-        updateMode(None)
-        removeAllNodes()
-        currentDoc = update.to
-        insertNodeRec(currentZoom, update.to.node(currentZoom), rootFrame)
-        scrollToTop()
-      } else {
-        for ((s, t, to) <- update.from) {
-          currentDoc = s
-          //              if (model.debug_view) {
-          //                println(s"current zoom is $currentZoom")
-          //                println(s"current trans is ${t._1}")
-          //              }
-          def replaceContent(at: model.cursor.Node, c: Content, contentType: Option[ContentType]) = {
-            val previousContent = contentAt(at)
-            val p = previousContent.dom.parentNode
-            val before = previousContent.dom.nextSibling
-            previousContent.destroy()
-            createContent(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
-          }
-
-          t match {
-            case model.operation.Node.Content(at, c) =>
-              val m: Option[model.mode.Content] = s.mode match {
-                case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
-                case _ => None
-              }
-              if (s.visible(at)) {
-                val content = contentAt(at)
-                if (content == activeContent) {
-                  activeContentEditor.updateContent(to.node(at).content, m, c, update.viewUpdated, update.editorUpdated)
-                } else {
-                  content.updateContent(to.node(at).content, c, update.viewUpdated)
-                }
-              }
-            case model.operation.Node.AttributeChange(at, _, _) =>
-              if (s.visible(at)) {
-                val old = to.node(at)
-                if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
-                  replaceContent(at, old.content, to.node(at).contentType)
-                }
-                boxAt(at).className = classesFromNodeAttribute(to.node(at), -1)
-                val fr = frameAt(at)
-                toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
-              }
-            case model.operation.Node.Replace(at, c) =>
-              if (s.visible(at)) {
-                replaceContent(at, c, to.node(at).contentType)
-              }
-            case model.operation.Node.Delete(r) =>
-              if (s.viewAsNotFoldedAndNotHidden(r.parent)) {
-                removeNodes(r)
-              }
-            case model.operation.Node.Insert(at, childs) =>
-              val pCur = model.cursor.Node.parent(at)
-              if (s.visible(at)) {
-                val root = childListAt(pCur)
-                insertNodes(pCur, root, at.last, childs)
-              }
-            case model.operation.Node.Move(range, to) =>
-              val toP = model.cursor.Node.parent(to)
-              if (s.viewAsNotFoldedAndNotHidden(range.parent) && s.visible(to)) {
-                val parent = childListAt(range.parent)
-                val toParent = childListAt(toP)
-                val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
-                val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
-                nodes.foreach(n => {
-                  toParent.insertBefore(n, before)
-                })
-              } else if (s.viewAsNotFoldedAndNotHidden(range.parent)) {
-                removeNodes(range)
-              } else if (s.visible(to)) {
-                val data = s.node(range)
-                val p = model.cursor.Node.parent(to)
-                val root = childListAt(p)
-                insertNodes(p, root, to.last, data)
-              }
-          }
-        }
-      }
-      currentDoc = update.to
-      duringStateUpdate = false
-      updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
-      refreshMounted()
-    }))
+  def renderAll(): Unit = {
+    insertNodeRec(currentZoom, currentDoc.node(currentZoom), rootFrame)
   }
+
+  def toggleHold(a: model.cursor.Node, visible: Boolean): Unit = {
+    val fr = frameAt(a)
+    toggleHoldRendering(a, currentDoc.node(a), fr, childListOf(fr), holdOf(fr), visible)
+  }
+
+  def renderTransaction(s: DocState, t: model.operation.Node, to: DocState, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
+    def replaceContent(at: model.cursor.Node, c: Content, contentType: Option[ContentType]) = {
+      val previousContent = contentAt(at)
+      val p = previousContent.dom.parentNode
+      val before = previousContent.dom.nextSibling
+      previousContent.destroy()
+      createContent(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
+    }
+
+    t match {
+      case model.operation.Node.Content(at, c) =>
+        val m: Option[model.mode.Content] = s.mode match {
+          case Some(model.mode.Node.Content(at1, m)) if at == at1 => Some(m)
+          case _ => None
+        }
+        if (s.visible(at)) {
+          val content = contentAt(at)
+          if (content == activeContent) {
+            activeContentEditor.updateContent(to.node(at).content, m, c, viewUpdated, editorUpdated)
+          } else {
+            content.updateContent(to.node(at).content, c, viewUpdated)
+          }
+        }
+      case model.operation.Node.AttributeChange(at, _, _) =>
+        if (s.visible(at)) {
+          val old = to.node(at)
+          if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
+            replaceContent(at, old.content, to.node(at).contentType)
+          }
+          boxAt(at).className = classesFromNodeAttribute(to.node(at), -1)
+          val fr = frameAt(at)
+          toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
+        }
+      case model.operation.Node.Replace(at, c) =>
+        if (s.visible(at)) {
+          replaceContent(at, c, to.node(at).contentType)
+        }
+      case model.operation.Node.Delete(r) =>
+        if (s.viewAsNotFoldedAndNotHidden(r.parent)) {
+          removeNodes(r)
+        }
+      case model.operation.Node.Insert(at, childs) =>
+        val pCur = model.cursor.Node.parent(at)
+        if (s.visible(at)) {
+          val root = childListAt(pCur)
+          insertNodes(pCur, root, at.last, childs)
+        }
+      case model.operation.Node.Move(range, to) =>
+        val toP = model.cursor.Node.parent(to)
+        if (s.viewAsNotFoldedAndNotHidden(range.parent) && s.visible(to)) {
+          val parent = childListAt(range.parent)
+          val toParent = childListAt(toP)
+          val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq
+          val before = if (to.last < toParent.childNodes.length)  toParent.childNodes.item(to.last) else null
+          nodes.foreach(n => {
+            toParent.insertBefore(n, before)
+          })
+        } else if (s.viewAsNotFoldedAndNotHidden(range.parent)) {
+          removeNodes(range)
+        } else if (s.visible(to)) {
+          val data = s.node(range)
+          val p = model.cursor.Node.parent(to)
+          val root = childListAt(p)
+          insertNodes(p, root, to.last, data)
+        }
+    }
+  }
+
 
   def scrollToTop(cur: model.cursor.Node): Unit = {
     contentAt(cur).dom.scrollIntoView(true)

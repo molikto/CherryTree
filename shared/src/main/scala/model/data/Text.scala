@@ -135,13 +135,11 @@ object Text {
     }
   }
 
-  sealed trait Atomic extends Text {
+  sealed trait Atomic extends Delimited {
     final override def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i < size) Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
     }
-
-    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
     final override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = {
       if (i == size)
@@ -235,7 +233,7 @@ object Text {
     def content: T
 
     override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
-      p == deli(delimitation.start) || p == deli(delimitation.end)
+      deli.get(delimitation.start).contains(p) || deli.get(delimitation.end).contains(p)
   }
 
   sealed trait Formatted extends DelimitedT[Seq[Text]] {

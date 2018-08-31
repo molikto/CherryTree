@@ -17,10 +17,20 @@ object ContentView {
 
   def createFromCode(a: data.Content.Code): Code = {
     a.ty match {
-      case Embedded("html") =>
+      case Embedded.HTML =>
         new EmbeddedHtmlView(a)
+      case Embedded.LaTeX =>
+        new EmbeddedLaTeXView(a)
       case _ =>
         new SourceView(a)
+    }
+  }
+
+  def matches(a: data.CodeType, v: Code): Boolean = {
+    a match {
+      case Embedded.HTML => v.isInstanceOf[EmbeddedHtmlView]
+      case Embedded.LaTeX => v.isInstanceOf[EmbeddedLaTeXView]
+      case _ => v.isInstanceOf[SourceView]
     }
   }
 
@@ -56,12 +66,6 @@ object ContentView {
     }
   }
 
-  def matches(a: data.CodeType, v: Code): Boolean = {
-    a match {
-      case Embedded("html") => v.isInstanceOf[EmbeddedHtmlView]
-      case _ => v.isInstanceOf[SourceView]
-    }
-  }
 
   def create(a: data.Content, contentType: Option[ContentType], editable: Boolean = false): General = {
     (a match {
@@ -75,6 +79,8 @@ object ContentView {
 }
 
 trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
+  def refreshLaTeX(): Unit  = {}
+
 
   def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General
 

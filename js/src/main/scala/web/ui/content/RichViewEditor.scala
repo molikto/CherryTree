@@ -440,7 +440,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
             if (editor == null) {
               editor = documentView.inlineEditor
               val text = sub.getText(rich)
-              val anchor = new InlineCodeDialog.Anchor(controller, text.asCoded.content, code, text.asDelimited.delimitation.codeType) {
+              val anchor = new InlineCodeDialog.Anchor(text.asCoded.content, code, text.asDelimited.delimitation.codeType) {
                 override def rect: Rect = selectionRect
               }
               documentView.inlineEditor.show(anchor)
