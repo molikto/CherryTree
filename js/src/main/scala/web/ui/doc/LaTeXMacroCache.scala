@@ -80,7 +80,10 @@ class LaTeXMacroCache() {
           e.printStackTrace()
       }
     }
-    opts = js.Dynamic.literal(macros = target)
+    opts = js.Dynamic.literal(
+      throwOnError = false,
+      macros = target
+    )
     dirt = false
   }
 

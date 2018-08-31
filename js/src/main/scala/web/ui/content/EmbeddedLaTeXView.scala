@@ -15,6 +15,7 @@ class EmbeddedLaTeXView(initData: model.data.Content.Code
   }
 
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
+    removeAllChild(dom)
     LaTeXMacroCache.renderLaTeX(dom, contentData.unicode.str, 0, true)
   }
 
