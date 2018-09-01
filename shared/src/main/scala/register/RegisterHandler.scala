@@ -103,6 +103,7 @@ trait RegisterHandler extends RegisterInterface {
 
   override def yank(registerable0: Registerable, isDelete: Boolean, register: Int = -1): Unit = {
     var registerable = registerable0
+    if (registerable.isEmpty) return
     var set = register
     if (set == -1) {
       set = this.curRegister
@@ -168,6 +169,27 @@ trait RegisterHandler extends RegisterInterface {
         zeroToNine = zeroToNine.take(10)
       }
     }
+    registerable match {
+      case Registerable.Node(na, from, needsClone) if !needsClone =>
+        registerables.flatMap(_._2).foreach(a => {
+          if (a != registerable) {
+            a match {
+              case b@Registerable.Node(nb, _, nc) if !nc =>
+                if (uuids(na).exists(uuids(nb))) {
+                  b.needsClone = true
+                  b.from = None
+                }
+              case _ =>
+            }
+          }
+        })
+      case _ =>
+    }
   }
 
+  private def uuids(u: Seq[model.data.Node]): mutable.Set[String] = {
+    val c = mutable.Set.empty[String]
+    u.foreach(_.foreachNode(a => c.add(a.uuid)))
+    c
+  }
 }

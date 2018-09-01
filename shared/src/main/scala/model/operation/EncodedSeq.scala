@@ -136,8 +136,8 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
      case mode.Content.RichVisual(a, b) =>
        (transformAtomicRange(a), transformAtomicRange(b)) match {
          case (Some(aa), Some(bb)) => (mode.Content.RichVisual(aa, bb), false)
-         case (Some(aa), None) => (mode.Content.RichNormal(aa), true)
-         case (None, Some(aa)) => (mode.Content.RichNormal(aa), true)
+         case (Some(aa), None) => (if (aa.isEmpty) mode.Content.RichInsert(aa.start) else mode.Content.RichNormal(aa), true)
+         case (None, Some(aa)) => (if (aa.isEmpty) mode.Content.RichInsert(aa.start) else mode.Content.RichNormal(aa), true)
          case _ => (mode.Content.RichInsert(r.start), true)
        }
       case mode.Content.RichNormal(range) =>
@@ -268,7 +268,13 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       if (range == r) {
         Some(range.moveBy(left.size))
       } else if (range.contains(r)) {
-        Some(IntRange(range.start, range.until + left.size + right.size))
+        if (r.isEmpty && r.start == range.start) {
+          Some(range.moveBy(left.size + right.size))
+        } else if (r.isEmpty && r.until == range.until) {
+          Some(range)
+        } else {
+          Some(IntRange(range.start, range.until + left.size + right.size))
+        }
       } else if (r.contains(range)) {
         Some(IntRange(range.start + left.size, range.until + left.size))
       } else if (range.overlap(r)) {
@@ -314,7 +320,7 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
         Delete(r.until, r.until + right.size))
     }
 
-    override def reverse(d: data.EncodedSeq): EncodedSeq = throw new NotImplementedError("This is ugly!!!!")
+    override def reverse(d: data.EncodedSeq): EncodedSeq = throw new IllegalArgumentException("not possible")
 
     override def merge(before: Any, whitespace: Boolean): Option[EncodedSeq] = None
 

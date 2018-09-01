@@ -66,8 +66,10 @@ object SpecialChar {
   val codedNonAtomic: Seq[Delimitation] =  all.filter(_.ty == DelimitationType.CodedNonAtomic)
   val coded: Seq[Delimitation] = all.filter(_.coded)
 
+
   val emptyContent: Seq[Delimitation] = all.filter(_.ty == DelimitationType.Empty)
 
+  val nonAtomic: Seq[Delimitation] = all.filter(a => a.ty != DelimitationType.Empty && a.ty != DelimitationType.CodedAtomic)
 
   val urlAttributed: Seq[Delimitation] = all.filter(_.attributes.contains(UrlAttribute))
 

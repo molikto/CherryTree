@@ -119,6 +119,7 @@ case class Rich(private [model] val u: Seq[EncodedSeq], override val ty: Type) e
 
   override type This = Rich
 
+
   override def reverse(d: data.Rich): Rich = {
     Rich(u.foldLeft((d.serialize(), Seq.empty[operation.EncodedSeq])) { (s, a) =>
       a match {
@@ -235,6 +236,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
   }
 
   def deleteTextualRange(rich: model.data.Rich, r0: IntRange): Option[(Seq[operation.Rich], IntRange, Int)] = {
+    // include all special char that has a matching inside
     val ssss = util.last(rich.befores(r0.start).takeWhile {
       case s: Atom.Special => r0.contains(s.another.range)
       case _ => false
@@ -246,6 +248,7 @@ object Rich extends OperationObject[data.Rich, Rich] {
     val r = IntRange(ssss, uuuu)
     val singleSpecials = rich.singleSpecials(r)
     val reverses = singleSpecials.map(_.another)
+    // deletable non-single spec range
     val ds = r.minusOrderedInside(singleSpecials.map(_.range))
     def deleteRanges(i: Seq[IntRange]) = {
       val remaining = IntRange(0, rich.size).minusOrderedInside(i)

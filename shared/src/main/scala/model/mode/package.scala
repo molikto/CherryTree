@@ -62,9 +62,29 @@ package object mode {
       override def end: Int = range.until
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
-      assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)), s"wrong rich visual mode $fix $move")
+      def maybeEmpty(reflect: RichVisual): RichVisual = {
+        if (reflect.fix.isEmpty) {
+          val mgd = merged
+          if (reflect.fix.start < reflect.move.start) {
+            RichVisual(IntRange(mgd.start, mgd.start), IntRange(mgd.until, mgd.until))
+          } else {
+            RichVisual(IntRange(mgd.until, mgd.until), IntRange(mgd.start, mgd.start))
+          }
+        } else {
+          this
+        }
+      }
 
-      def collapse(enableModal: Boolean): Rich = if (enableModal) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
+      def exitInModal: Rich = if (move.isEmpty) RichInsert(move.start) else RichNormal(move)
+
+      if (fix.nonEmpty) {
+        assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)), s"wrong rich visual mode $fix $move")
+      } else {
+        assert(move.isEmpty && fix.start != move.start)
+      }
+
+      def collapse(enableModal: Boolean): Rich =
+        if (enableModal && move.nonEmpty) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
 
       def swap: RichVisual = RichVisual(move, fix)
       def swap(leftIsAnchor: Boolean): RichVisual = if (leftIsAnchor) this else swap
@@ -72,13 +92,15 @@ package object mode {
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
       override def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich =
-        if (enableModal) {
+        if (enableModal && move.nonEmpty) {
           copy(move = range)
         } else {
-          if (range.start <= merged.start) {
-            RichInsert(merged.start)
+          val f = fix.start
+          val anther = if (range.start < f) range.start else range.until
+          if (f == anther) {
+            RichInsert(anther)
           } else {
-            RichInsert(merged.until)
+            RichVisual(fix, IntRange(anther, anther))
           }
         }
       override def end: Int = merged.until

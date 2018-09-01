@@ -57,21 +57,21 @@ package object defaults {
             Seq(a.node)
         }
         val data = Registerable.Node(ns, needsClone = true)
-        commandState.yank(Registerable.Node(ns, needsClone = true), isDelete = false, register = reg)
+        commandState.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           deleteNodeRange(a, commandState, v.minimalRange.get, enableModal, noHistory = true)
         } else {
           DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultMode(enableModal)))
         }
         (trans, Some(data))
-      case Some(model.mode.Node.Content(pos, v@model.mode.Content.RichVisual(fix, _))) =>
+      case Some(model.mode.Node.Content(pos, v: model.mode.Content.RichVisual)) =>
         val data = Registerable.Text(a.rich(pos).copyTextualRange(v.merged))
         commandState.yank(data, isDelete = isDelete, register = reg)
         val trans = if (isDelete) {
           deleteRichNormalRange(a, commandState, pos, v.merged, !enableModal, noHistory = true)
         } else {
           if (enableModal) {
-            DocTransaction(model.mode.Node.Content(pos, model.mode.Content.RichNormal(fix)))
+            DocTransaction(model.mode.Node.Content(pos, v.exitInModal))
           } else {
             DocTransaction.empty
           }

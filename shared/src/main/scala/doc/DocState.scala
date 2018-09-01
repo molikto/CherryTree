@@ -84,42 +84,74 @@ case class DocState private (
 
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
-    assert(visible(mode0.focus), s"mode hidden $mode0, $zoom")
-    assert(visible(mode0.other), s"mode hidden $mode0, $zoom")
+
+    if (visible(mode0.focus)) {
+    } else {
+      assert(false)
+    }
+    if (visible(mode0.other)) {
+    } else {
+      assert(false)
+    }
     if (isRich) {
       val (cur, rich, mo) = asRich
       def checkAtomicRichRange(a: IntRange) = {
-        val r1 = rich.afters(a.start).next().range
-        val r2 = rich.befores(a.until).next().range
-        assert(r1 == r2 && a == r1)
+        try {
+          val r1 = rich.afters(a.start).next().range
+          val r2 = rich.befores(a.until).next().range
+          if (r1 == r2 && a == r1) {
+          } else {
+            val a = 1
+            assert(false, "what is this?")
+          }
+        } catch  {
+          case e: Throwable =>
+            throw e
+        }
       }
       def checkAtomicTextRichRange(a: IntRange) = {
-        val r1 = rich.afters(a.start).next()
-        val r2 = rich.befores(a.until).next()
-        assert(r1.textRange == r2.textRange && a == r1.textRange)
+        try {
+          val r1 = rich.afters(a.start).next()
+          val r2 = rich.befores(a.until).next()
+          if (r1.textRange == r2.textRange && a == r1.textRange) {
+          } else {
+            assert(false)
+          }
+        } catch  {
+          case e: Throwable =>
+            throw e
+        }
       }
       def ret(mo: model.mode.Content.Rich): Unit = {
         mo match {
           case model.mode.Content.RichVisual(a, b) =>
-            assert(a.nonEmpty)
-            assert(b.nonEmpty)
-            checkAtomicRichRange(a)
-            checkAtomicRichRange(b)
+            if (a.nonEmpty) {
+              assert(b.nonEmpty)
+              checkAtomicRichRange(a)
+              checkAtomicRichRange(b)
+            } else {
+              assert(b.isEmpty)
+            }
           case model.mode.Content.RichInsert(i) =>
             assert(i <= rich.size)
             if (i != 0 && i != rich.size) {
               assert(rich.before(i).range.until == rich.after(i).range.start)
             }
           case model.mode.Content.RichNormal(i) =>
-            checkAtomicRichRange(i)
+            if (rich.isEmpty) {
+              assert(i == IntRange(0, 0))
+            } else {
+              checkAtomicRichRange(i)
+            }
           case model.mode.Content.RichCodeSubMode(r, _, o) =>
-            checkAtomicTextRichRange(r)
+            //checkAtomicTextRichRange(r)
             ret(o)
           case model.mode.Content.RichAttributeSubMode(r, o) =>
-            checkAtomicTextRichRange(r)
+            //checkAtomicTextRichRange(r)
             ret(o)
         }
       }
+      ret(mo)
     }
   }
 
@@ -378,7 +410,7 @@ case class DocState private (
 
   def asNodeVisual: model.mode.Node.Visual = mode match {
     case Some(v@model.mode.Node.Visual(_, _)) => v
-    case _ => throw new MatchError("Not possible")
+    case _ => throw new IllegalArgumentException("not possible")
   }
 
   def asCode: (cursor.Node, data.Content.Code) = {

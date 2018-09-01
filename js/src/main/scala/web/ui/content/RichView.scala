@@ -281,25 +281,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   def boundingRect(atom: Atom, range: Range): Rect = {
     if (atom != null && atom.isAtomic) {
       val eli = nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement]
-      val cts = eli.getClientRects()
-      var i = 0
-      var a: Rect = null
-      while (i < cts.length) {
-        val k = toRect(cts.item(i))
-        if (k.width > 0) {
-          if (a == null) {
-            a = k
-          } else {
-            a = a.merge(k)
-          }
-        }
-        i += 1
-      }
-      if (a == null) {
-        toRect(eli.getBoundingClientRect())
-      } else {
-        a
-      }
+      Rect(eli.clientLeft, eli.clientTop, eli.clientWidth, eli.clientHeight)
     } else {
       toRect(range.getBoundingClientRect())
     }

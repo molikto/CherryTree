@@ -153,7 +153,7 @@ abstract class CommandHandler extends Settings with CommandInterface {
     if (command.available(state, this)) {
       clearPreviousCommand()
       buffer.append(IdentifiedCommand(None, command, Seq.empty))
-      assert(tryComplete(false))
+      tryComplete(false)
       commandBufferUpdates_.onNext(buffer)
     }
   }
@@ -290,7 +290,6 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val avs = commands.filter(c => c.actDoubleClick && c.available(state, this)).sortBy(-_.priority(Seq.empty))
     avs.headOption.foreach(c => runTextualIfAvailable(c))
   }
-
 
   private def clearPreviousCommand(): Unit = {
     buffer.lastOption match {

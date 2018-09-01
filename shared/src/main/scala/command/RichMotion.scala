@@ -17,7 +17,7 @@ trait Motion {
 trait RichMotion extends Motion {
 
   // -1 always exclude, 0 left edge, 1 always include
-  protected def move(content: model.data.Rich, r: IntRange): (IntRange, Int) = throw new NotImplementedError("MMmm....")
+  protected def move(content: model.data.Rich, r: IntRange): (IntRange, Int) = throw new IllegalArgumentException("MMmm....")
   def move(commandState: CommandInterface, content: model.data.Rich, count: Int, r: IntRange, char: Option[Unicode]): Option[(IntRange, Int)] =
     Some((0 until count).foldLeft((r, 0)) { (rr, _) => move(content, rr._1) })
 }

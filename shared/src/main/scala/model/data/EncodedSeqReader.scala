@@ -34,6 +34,8 @@ private[model] class EncodedSeqReader(a: EncodedSeq) {
 
   override def toString: String = throw new IllegalStateException("Not allowed")
 
+  def debugString: String = a.toString
+
   def isEmpty: Boolean = start >= a.fragmentSize
 
   def eatOrNotSpecial(): Option[SpecialChar] = {
