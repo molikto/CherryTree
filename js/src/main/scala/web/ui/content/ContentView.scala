@@ -3,6 +3,8 @@ package web.ui.content
 import model.data
 import model.data.Node.ContentType
 import model.data.{Embedded, SourceCode}
+import model.range.IntRange
+import org.scalajs.dom
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw.HTMLElement
 import view.EditorInterface
@@ -79,8 +81,17 @@ object ContentView {
 }
 
 trait ContentView[T <: data.Content, O <: model.operation.Content] extends View {
+  def rangeAroundLine(line: Int, xPos: Int, insert: Boolean): Option[IntRange] = None
+
   def refreshLaTeX(): Unit  = {}
 
+  def constructVisualLineBuff(): Unit = {}
+
+  def readVisualSelectionLine(selection: raw.Range, isUp: Boolean): Int = 0
+
+  def visualLineCount() = 1
+
+  def clearVisualLineBuff(): Unit = {}
 
   def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General
 

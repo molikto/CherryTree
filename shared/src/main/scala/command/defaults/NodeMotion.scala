@@ -47,9 +47,12 @@ class NodeMotion extends CommandCategory("node: motion") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(Up, Shift + Up)
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
 
-
-//    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-//      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(true))
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      if (a.isNodeVisual) {
+        super.action(a, commandState, count)
+      } else {
+        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(true, count))
+      }
     override def move(data: DocState, a: Node): Option[Node] = data.mover().visualUp(a)
   }
 
@@ -57,8 +60,12 @@ class NodeMotion extends CommandCategory("node: motion") {
     override val description: String = "move down"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Down, Shift + Down)
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
-//    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-//      DocTransaction.message(Client.ViewMessage.SimulateKeyboardMotion(false))
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+      if (a.isNodeVisual) {
+        super.action(a, commandState, count)
+      } else {
+        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(false, count))
+      }
     override def move(data: DocState, a: Node): Option[Node] = data.mover().visualDown(a)
   }
 

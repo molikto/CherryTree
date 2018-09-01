@@ -255,9 +255,6 @@ class SimpleLayoutDocumentView(
     }
   }
 
-  def simulateKeyboardMotion(isUp: Boolean): Unit = {
-  }
-
 
   def refreshAllLaTeX(): Unit = {
     if (model.debug_katex) window.console.log("refreshing all latex")

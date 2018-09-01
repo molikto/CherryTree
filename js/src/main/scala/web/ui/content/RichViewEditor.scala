@@ -70,26 +70,8 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
       val dom = documentView.fakeSelections
       val p = dom.getBoundingClientRect()
       fakeRangeSelection = range
-      val rects = range.getClientRects()
-      val ar = new ArrayBuffer[Rect]()
-      for (i <- 0 until rects.length) {
-        var rect = rects(i)
-        val b = toRect(rect)
-        var j = 0
-        while (rect != null && j < ar.size) {
-          val a = ar(j)
-          if (a.seemsSameLine(b)) {
-            ar(j) = a.merge(b)
-            rect = null
-          }
-          j += 1
-        }
-        if (rect != null) {
-          ar.append(b)
-        }
-        j += 1
-      }
 
+      val ar = contentView.linesFromClientRects(range.getClientRects())
       for (rect <- ar.reverse) {
         dom.appendChild(
           div(

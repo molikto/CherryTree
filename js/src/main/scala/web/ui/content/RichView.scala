@@ -4,11 +4,13 @@ import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, EventTarget, HTMLElement, HTMLSpanElement, MouseEvent, Node, NodeList, Range}
-import org.scalajs.dom.{document, raw, window}
+import org.scalajs.dom.raw.{ClientRectList, CompositionEvent, Element, ErrorEvent, Event, EventTarget, HTMLElement, HTMLSpanElement, MouseEvent, Node, NodeList, Range}
+import org.scalajs.dom.{ClientRect, document, raw, window}
 import scalatags.JsDom
 import scalatags.JsDom.all._
 import util.Rect
+import java.util
+
 import view.EditorInterface
 import web.ui
 import web.ui.doc.{DocumentView, LaTeXMacroCache}
@@ -38,6 +40,7 @@ object RichView {
     el.style.height= "12px"
   }
 
+  private var visualLines: (RichView, Seq[Rect], Boolean) = null
 }
 class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends ContentView.Rich {
 
@@ -222,6 +225,190 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     }
   }
 
+
+  def linesFromClientRects(rects0: ClientRectList): Seq[Rect] =  {
+    val ar0 = new Array[Rect](rects0.length)
+    for (i <- 0 until rects0.length) {
+      val rect = rects0(i)
+      val b = toRect(rect).withBorder(4, -2)
+      ar0(i) = b
+    }
+    val rects = ar0.sorted
+    val ar = new ArrayBuffer[Rect]()
+    for (i <- rects.indices) {
+      var rect = rects(i)
+      var j = 0
+      while (rect != null && j < ar.size) {
+        val a = ar(j)
+        if (a.meet(rect)) {
+          ar(j) = a.merge(rect)
+          rect = null
+        }
+        j += 1
+      }
+      if (rect != null) {
+        ar.append(rect)
+      }
+      j += 1
+    }
+    ar
+  }
+
+  override def constructVisualLineBuff(): Unit = {
+    // LATER this merging might be WRONG.... nevermind
+    val rects0 = nonEmptySelectionToDomRange(IntRange(0, contentData.content.size))._1.getClientRects()
+    val ar = linesFromClientRects(rects0)
+    RichView.visualLines = (this, ar, false)
+  }
+
+  override def clearVisualLineBuff(): Unit = {
+    RichView.visualLines = null
+  }
+
+  override def visualLineCount(): Int = {
+    assert(RichView.visualLines._1 == this)
+    Math.max(1, RichView.visualLines._2.size)
+  }
+
+
+  private def sortVisualLine(): Unit = {
+    assert(RichView.visualLines._1 == this)
+    if (!RichView.visualLines._3) {
+      RichView.visualLines = (this, RichView.visualLines._2.sortBy(_.top), true)
+    }
+  }
+
+  def boundingRect(atom: Atom, range: Range): ClientRect = {
+    if (atom != null && atom.isAtomic) {
+      nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement].getBoundingClientRect()
+    } else {
+      range.getBoundingClientRect()
+    }
+    //if (range.startContainer == range.endContainer && range.startOffset == range.endOffset)
+  }
+
+  override def readVisualSelectionLine(range: Range, isUp: Boolean): Int = {
+    sortVisualLine()
+
+    val lines = RichView.visualLines._2
+    val offset = readOffset(range.startContainer, range.startOffset, false)
+    val atom = if (offset != rich.size) rich.after(offset) else null
+    val rect = toRect(boundingRect(atom, range)).withBorder(4, -2)
+    val pred = (r: Rect) => r.meet(rect)
+    val selection = if (isUp) lines.indexWhere(pred) else lines.lastIndexWhere(pred)
+    val sel = if (selection == -1) 0 else selection
+    sel
+  }
+
+  override def rangeAroundLine(li: Int, xPos: Int, insert: Boolean): Option[IntRange] = {
+    sortVisualLine()
+    val line = RichView.visualLines._2(li)
+    var min: IntRange = null
+    var minDiff: Int = 0
+    var minX = 0.0
+    var minSize: Double = 0
+
+    /*
+
+      def test(a: HTMLElement) = {
+      val rect = toRect(a.getBoundingClientRect())
+      if (line.seemsSameLine(rect)) {
+        if (min == null) {
+          min = a
+          minDiff = rect.distance(xPos)
+        } else {
+          val diff = rect.distance(xPos)
+          if (diff < minDiff) {
+            minDiff = diff
+            min = a
+          }
+        }
+      }
+    }
+    val sel = document.createRange()
+    def rec(a: Node): Unit = {
+       a match {
+         case p: HTMLElement if p.classList.contains("ct-cg-atom") =>
+           test(p)
+         case p: HTMLElement =>
+           test(p.childNodes(0).asInstanceOf[HTMLElement])
+           test(p.childNodes(2).asInstanceOf[HTMLElement])
+           var t = p.childNodes(1).childNodes(1).firstChild
+           while (t != null) {
+             rec(t)
+             t = t.nextSibling
+           }
+         case r: raw.Text =>
+           var i = 0
+           while (i < r.textContent.length - 1) {
+             sel.setStart(r, i)
+             sel.setEnd(r, i + 1)
+             val rect = toRect(sel.getBoundingClientRect())
+             if (line.seemsSameLine(rect)) {
+               if (min == null) {
+                 min = r
+                 minDiff = rect.distance(xPos)
+               } else {
+                 val diff = rect.distance(xPos)
+                 if (diff < minDiff) {
+                   minDiff = diff
+                   min = r
+                   minStart = i
+                 }
+               }
+             }
+             i += 1
+           }
+       }
+    }
+    rec(dom)
+      */
+
+    val sel = document.createRange()
+    val (sn, sp, _) = posInDom(0)
+    sel.setStart(sn, sp)
+    val atoms = contentData.content.afters(0).toArray
+    var i = 0
+    while (i < atoms.length) {
+      val a = atoms(i)
+      val range = a.range
+      val (tn, tp, _) = posInDom(range.until, a, if (i + 1 == atoms.length) null else atoms(i + 1))
+      sel.setStart(sel.endContainer, sel.endOffset)
+      sel.setEnd(tn, tp)
+      val rangeRect = toRect(boundingRect(a, sel)).withBorder(4, -2)
+      if (line.meet(rangeRect)) {
+        if (min == null) {
+          min = range
+          minDiff = rangeRect.distance(xPos)
+          minSize = rangeRect.width
+          minX = rangeRect.left
+        } else {
+          val diff = rangeRect.distance(xPos)
+          if (diff < minDiff || (diff == minDiff && rangeRect.width < minSize)) {
+            minDiff = diff
+            minSize = rangeRect.width
+            minX = rangeRect.left
+            min = range
+          }
+        }
+      }
+      i += 1
+    }
+    println(s"selected one with $minDiff $minSize")
+    if (min != null) {
+      if (insert) {
+        if (Math.abs(xPos - minX) <= Math.abs(minX + minSize - xPos)) {
+          Some(IntRange(min.start, min.start))
+        } else {
+          Some(IntRange(min.until, min.until))
+        }
+      } else {
+        Some(min)
+      }
+    } else {
+      None
+    }
+  }
 
   def atomicParentOf(target: Node): (HTMLElement, Int, Int) = {
     var t = target
@@ -480,7 +667,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     * 1. node == text, int == pos in text, int == unicode index
     * 2. node == parent, int offset, int == -1
     */
-  private[content] def posInDom(pos: Int): (Node, Int, Int) = {
+  private[content] def posInDom(pos: Int, ss0: Atom = null, ee0: Atom = null): (Node, Int, Int) = {
     val ret = if (pos == 0) {
       if (isEmpty) {
         (root, 0, -1)
@@ -497,8 +684,8 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
           (nodeChildArray(root), rich.text.size, -1)
       }
     } else {
-      val ss = rich.before(pos)
-      val ee = rich.after(pos)
+      val ss = if (ss0 == null) rich.before(pos) else ss0
+      val ee = if (ee0 == null) rich.after(pos) else ee0
       ss match {
         case p: Atom.PlainGrapheme =>
           (nodeAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
@@ -532,7 +719,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       }
     }
     if (model.debug_selection) {
-      window.console.log(s"pos $pos in dom", ret._1, ret._2, ret._3)
+      //window.console.log(s"pos $pos in dom", ret._1, ret._2, ret._3)
     }
     ret
   }

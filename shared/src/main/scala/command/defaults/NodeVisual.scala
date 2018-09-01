@@ -1,6 +1,7 @@
 package command.defaults
 
 import client.Client
+import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
@@ -33,7 +34,7 @@ class NodeVisual extends CommandCategory("node: visual") {
         case model.mode.Node.Content(at, mm) if mm.isNormalOrVisual =>
           DocTransaction(mode.Node.Visual(at, at))
         case model.mode.Node.Visual(_, move) =>
-          DocTransaction(model.data.Node.defaultMode(a.node, move, enableModal))
+          DocTransaction.message(ViewMessage.ExitVisual)
         case _ => throw new IllegalArgumentException("Wrong branch")
       }
       case None => throw new IllegalArgumentException("Wrong branch")

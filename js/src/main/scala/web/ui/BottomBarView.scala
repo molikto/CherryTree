@@ -121,7 +121,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
                 "VISUAL"
               case model.mode.Content.RichNormal(_) =>
                 "NORMAL"
-              case model.mode.Content.CodeNormal =>
+              case model.mode.Content.CodeNormal(_) =>
                 "CODE"
               case model.mode.Content.CodeInside(mode, int) =>
                 s"CODE : ${mode.toUpperCase}"

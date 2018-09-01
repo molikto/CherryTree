@@ -63,7 +63,7 @@ class CodeViewEditor(
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
     aa match {
-      case model.mode.Content.CodeNormal =>
+      case model.mode.Content.CodeNormal(_) =>
         removeEditor()
       case inside: model.mode.Content.CodeInside =>
         if (editing == null) {
