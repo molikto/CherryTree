@@ -455,7 +455,7 @@ abstract class DocumentView extends View with EditorView {
 
   protected override def flushBeforeKeyDown(): Unit = {
     if (focusFinder != null) {
-      readSelectionAfterMouseUpWithDelay(0, focusFinder._2)
+      readSelectionAfterMouseUpWithDelay(0, focusFinder._2, focusFinder._3, focusFinder._4)
     }
   }
 
@@ -466,7 +466,7 @@ abstract class DocumentView extends View with EditorView {
     }
     editor.disableRemoteStateUpdate(true, true)
     clearAllPreviousReading()
-    readSelectionAfterMouseUpWithDelay(1, null)
+    readSelectionAfterMouseUpWithDelay(1, null, null, false)
   }
 
   event("mousedown", (a: MouseEvent) => {
@@ -551,8 +551,9 @@ abstract class DocumentView extends View with EditorView {
         if (model.debug_selection) {
           println("read selection at " + waitTime)
         }
-        readSelectionAfterMouseUpWithDelay(waitTime, mouseFirstContentRich)
-        if (clickCount == 2 && !isRightMouseButton) {
+        val isDoubleClick = clickCount == 2 && !isRightMouseButton
+        readSelectionAfterMouseUpWithDelay(waitTime, mouseFirstContentRich, a, isDoubleClick)
+        if (isDoubleClick) {
           editor.onDoubleClick()
         }
       } else {
@@ -634,7 +635,7 @@ abstract class DocumentView extends View with EditorView {
     }
   }
 
-  private var focusFinder: (Int, RichView) = null
+  private var focusFinder: (Int, RichView, MouseEvent, Boolean) = null
 
   private def clearAllPreviousReading(): Unit = {
     if (focusFinder != null) {
@@ -661,29 +662,55 @@ abstract class DocumentView extends View with EditorView {
 
   override def systemHandleArrowKey: Boolean = selection != nonEditableSelection
 
-  private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView): Unit = {
+  private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView, mouseEvent: MouseEvent, isDouble: Boolean): Unit = {
     def work() = {
       editor.disableRemoteStateUpdate(false, true)
       focus()
       val sel = window.getSelection()
       if (sel != null && sel.rangeCount > 0) {
-        val pc = findParentContent(sel.anchorNode)
-        if (pc != null) {
-          val cc = findParentContent(sel.focusNode)
-          if (cc == null || cc == pc) {
+
+        val mt = if (mouseEvent != null) ContentView.findParentContent(mouseEvent.target.asInstanceOf[raw.Node], dom, true) else null
+        var ct = ContentView.findParentContent(sel.focusNode, dom, true)
+        var noUseSelection = false
+        if (mt != null && mt != ct) {
+          noUseSelection = true
+          ct = mt
+        }
+        if (ct != null) {
+          val pc = cursorOf(ct)
+          val cc = findParentContent(sel.anchorNode)
+          if (cc == null || cc == pc || noUseSelection) {
             val cur = pc
-            val range = contentAt(cur).asInstanceOf[Any] match {
+            ct.asInstanceOf[Any] match {
               case r: RichView =>
-                r.readSelectionFromDom() match {
-                  case Some(res) =>
-                    editor.onFocusOn(cur, Some(res._1), res._2, false)
-                  case _ => editor.onFocusOn(cur, None, true, false)
+                val atomic = if ((noUseSelection || sel.isCollapsed) && mouseEvent != null) {
+                  r.atomicParentOf(mouseEvent.target.asInstanceOf[raw.Node])
+                } else {
+                  null
+                }
+                if (atomic != null) {
+                  if (isDouble) {
+                    editor.onFocusOn(cur, Some(IntRange(atomic._2, atomic._3)), true, false)
+                  } else {
+                    val rect = atomic._1.getBoundingClientRect()
+                    if (Math.abs(mouseEvent.clientX - rect.left) < Math.abs(mouseEvent.clientX - rect.right)) {
+                      editor.onFocusOn(cur, Some(IntRange(atomic._2, atomic._2)), true, false)
+                    } else {
+                      editor.onFocusOn(cur, Some(IntRange(atomic._3, atomic._3)), true, false)
+                    }
+                  }
+                } else {
+                  r.readSelectionFromDom() match {
+                    case Some(res) =>
+                      editor.onFocusOn(cur, Some(res._1), res._2, false)
+                    case _ => editor.onFocusOn(cur, None, true, false)
+                  }
                 }
               case w =>
                 editor.onFocusOn(cur, None, true, false)
             }
           } else {
-            editor.onVisualMode(pc, cc)
+            editor.onVisualMode(cc, pc)
           }
         } else {
           editor.onRefreshMode()
@@ -699,7 +726,7 @@ abstract class DocumentView extends View with EditorView {
     } else {
       focusFinder = (window.setTimeout(() => {
         work()
-      }, delay), richView)
+      }, delay), richView, mouseEvent, isDouble)
     }
   }
 

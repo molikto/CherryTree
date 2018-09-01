@@ -4,7 +4,7 @@ import model.data._
 import model.range.IntRange
 import monix.execution.Cancelable
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, HTMLElement, HTMLSpanElement, MouseEvent, Node, NodeList, Range}
+import org.scalajs.dom.raw.{CompositionEvent, Element, ErrorEvent, Event, EventTarget, HTMLElement, HTMLSpanElement, MouseEvent, Node, NodeList, Range}
 import org.scalajs.dom.{document, raw, window}
 import scalatags.JsDom
 import scalatags.JsDom.all._
@@ -40,6 +40,7 @@ object RichView {
 
 }
 class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends ContentView.Rich {
+
 
   private def emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
 
@@ -164,16 +165,19 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
         )
       case Text.Image(b, c) =>
         val sp = span(
-          `class` := "ct-cg-node"
+          `class` := "ct-cg-node ct-cg-atom",
+          contenteditable := false,
+          span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (b.isEmpty) {
           sp.appendChild(warningInline("empty image").render)
         } else {
           sp.appendChild(img(`class` := "ct-image", title := c.str, src := b.str, onerror := {e: Event => {
-            removeAllChild(sp)
-            sp.appendChild(errorInline("image error").render)
+            sp.removeChild(sp.childNodes(1))
+            sp.insertBefore(errorInline("image error").render, sp.childNodes(1))
           }}).render)
         }
+        sp.appendChild(span(EvilChar).render)
         sp: Frag
       case Text.HTML(c) =>
         val a = span(
@@ -218,6 +222,22 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     }
   }
 
+
+  def atomicParentOf(target: Node): (HTMLElement, Int, Int) = {
+    var t = target
+    while (t != null && t != dom) {
+      t match {
+        case element: HTMLElement =>
+          if (element.classList.contains("ct-cg-atom")) {
+            val cur = cursorOf(element)
+            return (element, contentData.content.startPosOf(cur), contentData.content.startPosOf(model.cursor.Node.moveBy(cur, 1)))
+          }
+        case _ =>
+      }
+      t = t.parentNode
+    }
+    null
+  }
 
   private def isValidContainer(a: Node) = {
     a == root || (a.isInstanceOf[HTMLElement] && exitsClassPrefix(a.asInstanceOf[HTMLElement], "ct-c-"))
