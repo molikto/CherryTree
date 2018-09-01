@@ -484,7 +484,7 @@ class Client(
     updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
-  override def onFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean = {
+  override def onMouseFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
     state.mode match {
@@ -499,30 +499,14 @@ class Client(
       case c@data.Content.Rich(r) =>
         ran match {
           case Some(a) =>
-            if (enableModal) {
-              if (a.isEmpty) {
-                if (state.isInsertal) {
-                  mode.Content.RichInsert(a.start)
-                } else {
-                  mode.Content.RichNormal(r.rangeBefore(a.start))
-                }
-              } else {
-                val r1 = r.rangeAfter(a.start)
-                val r2 = r.rangeBefore(a.until)
-                if (r1 == r2) {
-                  mode.Content.RichNormal(r1)
-                } else {
-                  mode.Content.RichVisual(r1, r2).swap(leftIsAnchor)
-                }
-              }
-            } else {
-              if (a.isEmpty) {
+            if (a.isEmpty) {
+              if (!enableModal || state.isInsertal) {
                 mode.Content.RichInsert(a.start)
               } else {
-                val r1 = r.rangeAfter(a.start)
-                val r2 = r.rangeBefore(a.until)
-                mode.Content.RichVisual(r1, r2).swap(leftIsAnchor)
+                mode.Content.RichNormal(r.rangeBefore(a.start))
               }
+            } else {
+              mode.Content.RichVisual(IntRange(a.start, a.start), IntRange(a.until, a.until)).swap(leftIsAnchor)
             }
           case None =>
             c.defaultMode(enableModal)
@@ -706,8 +690,8 @@ class Client(
     if (unfold0.isEmpty && toggle0.isEmpty) {
       (folded0.userFoldedNodes, Map.empty)
     } else {
-      val toggle = toggle0.map(c => (c, state.node(c)))
-      val unfold = unfold0.map(c => (c, state.node(c)))
+      val toggle = toggle0.map(c => (c, folded0.node(c)))
+      val unfold = unfold0.map(c => (c, folded0.node(c)))
       var toFold = toggle.filter(a => !folded0.folded(a._1))
       val toUnfold = (toggle -- toFold) ++ unfold.filter(a => folded0.folded(a._1))
       toFold = toFold -- toUnfold
@@ -763,6 +747,7 @@ class Client(
               val zz = d.r.transformBeforeDeleted(os.zoom)
               val td = disableUpdateBecauseLocalNodeDelete._4
               state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
+              state_.consistencyCheck()
               uncommitted = uncommitted.dropRight(1)
               val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))

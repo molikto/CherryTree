@@ -120,13 +120,14 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override protected def available(a: DocState): Boolean = a.isContent
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node)
-    def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content)
+    def select(selection: IntRange): Int
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cursor = a.asContent
       def putTextInRich(n: Seq[Text]) = {
         def putBeforeAfter(rich: Rich, normal: IntRange) = {
           var canInsert = false
-          if (rich.insideCoded(normal.start)) {
+          val insertionPoint = select(normal)
+          if (rich.insideCoded(insertionPoint)) {
             if (n.size == 1 && n.head.isPlain) {
               canInsert = true
             }
@@ -134,7 +135,13 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             canInsert = true
           }
           // LATER insert serialized format
-          val (op, mode) = putText(rich, normal, if (canInsert) n else Seq(Text.Plain(Unicode(Text.toPlain(n)))))
+            val frag = if (canInsert) n else Seq(Text.Plain(Unicode({
+              val pp = Text.toPlain(n)
+              if (pp.isEmpty) " " else pp
+            })))
+          val op = Seq(operation.Rich.insert(insertionPoint, frag))
+          val rg = Rich(frag).rangeEnd.moveBy(insertionPoint)
+          val mode = model.mode.Content.RichNormal(rg).collapse(enableModal)
           DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
         }
         if (n.nonEmpty) {
@@ -144,11 +151,11 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
                 putBeforeAfter(a.rich(cursor), ran)
               case model.mode.Content.RichInsert(i) =>
                 putBeforeAfter(a.rich(cursor), IntRange(i, i))
-              case v@model.mode.Content.RichVisual(m, f) =>
+              case v: model.mode.Content.RichVisual =>
                 val trans = deleteRichNormalRange(a, commandState, cursor, v.merged, insert = true, noHistory = true)
-                val docAfter = model.operation.Node.apply(trans.transaction, a, enableModal)._1
-                val t2 = byMode(docAfter.mode0.asInstanceOf[model.mode.Node.Content].a)
-                t2.copy(transaction =  trans.transaction ++ t2.transaction)
+                val mode = if (trans.transaction.isEmpty) a.mode0 else trans.mode.get
+                val t2 = byMode(mode.asInstanceOf[model.mode.Node.Content].a)
+                t2.copy(transaction = trans.transaction ++ t2.transaction)
               case _ =>
                 DocTransaction.empty
             }
@@ -181,16 +188,14 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override val description: String = "put after"
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
+
+    override def select(selection: IntRange): Int = selection.until
+
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
       val (insertionPoint, _) = insertPointAfter(a, at)
       (operation.Node.Insert(insertionPoint, node), mode.Node.Content(insertionPoint, node.head.content.defaultMode(enableModal)))
     }
 
-    override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
-      val op = operation.Rich.insert(selection.until, frag)
-      val rg = Rich(frag).rangeEnd.moveBy(selection.until)
-      (Seq(op), mode.Content.RichNormal(rg).collapse(enableModal))
-    }
   }
 
   val putBefore = new PutCommand {
@@ -202,11 +207,6 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
       (operation.Node.Insert(pt, node), mode.Node.Content(pt, node.head.content.defaultMode(enableModal)))
     }
 
-    override def putText(rich: Rich, selection: IntRange, frag: Seq[Text]): (Seq[operation.Rich], mode.Content) = {
-
-      val op = operation.Rich.insert(selection.start, frag)
-      val rg = Rich(frag).rangeEnd.moveBy(selection.start)
-      (Seq(op), mode.Content.RichNormal(rg).collapse(enableModal))
-    }
+    override def select(selection: IntRange): Int = selection.start
   }
 }

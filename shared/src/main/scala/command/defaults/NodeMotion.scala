@@ -35,7 +35,7 @@ class NodeMotion extends CommandCategory("node: motion") {
           case kkk@model.mode.Node.Content(n, cc) =>
             model.data.Node.defaultMode(a.node, act(n), enableModal)
         }
-        case None => throw new MatchError("Not allowed")
+        case None => throw new IllegalArgumentException("Not allowed")
       }), viewMessagesBefore = message.toSeq)
     }
   }

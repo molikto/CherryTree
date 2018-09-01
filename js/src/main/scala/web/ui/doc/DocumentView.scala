@@ -470,7 +470,7 @@ abstract class DocumentView extends View with EditorView {
         mouseFirstContentRich = r
         r.tempEditableTempDuringSelectionChange(true)
       case _ =>
-        editor.onFocusOn(other, None, true, false)
+        editor.onMouseFocusOn(other, None, true, false)
     }
   }
 
@@ -518,7 +518,7 @@ abstract class DocumentView extends View with EditorView {
           } else {
             None
           }
-          editor.onFocusOn(pc, ran, true, false)
+          editor.onMouseFocusOn(pc, ran, true, false)
           down = null
         }
         clickCount = 3
@@ -672,7 +672,7 @@ abstract class DocumentView extends View with EditorView {
         clearAllPreviousReading() // if mouseup is before us
       val ct = contentOfHold(element)
         endMouseDown(a, false, false)
-        editor.onFocusOn(cursorOf(ct), None, true, false)
+        editor.onMouseFocusOn(cursorOf(ct), None, true, false)
         showCommandMenu()
       case _ =>
     }
@@ -685,7 +685,7 @@ abstract class DocumentView extends View with EditorView {
     content.constructVisualLineBuff()
     val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, false)
     content.clearVisualLineBuff()
-    editor.onFocusOn(currentDoc.mode.get.focus, range, true, false)
+    editor.onMouseFocusOn(currentDoc.mode.get.focus, range, true, false)
   }
 
   def visualUpDownMotion(isUp: Boolean, count: Int): Unit = {
@@ -752,16 +752,16 @@ abstract class DocumentView extends View with EditorView {
         if (goToExteme) {
           content.clearVisualLineBuff()
           if (isUp) {
-            editor.onFocusOn(cur, Some(IntRange(0, 0)), true, false)
+            editor.onMouseFocusOn(cur, Some(IntRange(0, 0)), true, false)
           } else {
             val size = currentDoc.node(cur).content.size
-            editor.onFocusOn(cur, Some(IntRange(size, size)), true, false)
+            editor.onMouseFocusOn(cur, Some(IntRange(size, size)), true, false)
           }
         } else {
           val insert = !editor.enableModal || currentDoc.isInsertal
           var range = content.rangeAroundLine(line, (visualMotionX + dom.offsetLeft).toInt, insert)
           content.clearVisualLineBuff()
-          editor.onFocusOn(cur, range, true, false)
+          editor.onMouseFocusOn(cur, range, true, false)
         }
       case _ => throw new IllegalStateException("Not possible")
     }
@@ -796,24 +796,24 @@ abstract class DocumentView extends View with EditorView {
                 }
                 if (atomic != null) {
                   if (isDouble) {
-                    editor.onFocusOn(cur, Some(IntRange(atomic._2, atomic._3)), true, false)
+                    editor.onMouseFocusOn(cur, Some(IntRange(atomic._2, atomic._3)), true, false)
                   } else {
                     val rect = atomic._1.getBoundingClientRect()
                     if (Math.abs(mouseEvent.clientX - rect.left) < Math.abs(mouseEvent.clientX - rect.right)) {
-                      editor.onFocusOn(cur, Some(IntRange(atomic._2, atomic._2)), true, false)
+                      editor.onMouseFocusOn(cur, Some(IntRange(atomic._2, atomic._2)), true, false)
                     } else {
-                      editor.onFocusOn(cur, Some(IntRange(atomic._3, atomic._3)), true, false)
+                      editor.onMouseFocusOn(cur, Some(IntRange(atomic._3, atomic._3)), true, false)
                     }
                   }
                 } else {
                   r.readSelectionFromDom() match {
                     case Some(res) =>
-                      editor.onFocusOn(cur, Some(res._1), res._2, false)
-                    case _ => editor.onFocusOn(cur, None, true, false)
+                      editor.onMouseFocusOn(cur, Some(res._1), res._2, false)
+                    case _ => editor.onMouseFocusOn(cur, None, true, false)
                   }
                 }
               case w =>
-                editor.onFocusOn(cur, None, true, false)
+                editor.onMouseFocusOn(cur, None, true, false)
             }
           } else {
             editor.onVisualMode(cc, pc)

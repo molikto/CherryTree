@@ -28,8 +28,6 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
     override def repeatable: Boolean = true
 
-    def enterVisualOn(k: Option[KeySeq]): Boolean = false
-
     final override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (_, content, m) = a.asRich
       if (content.isEmpty) {
@@ -43,11 +41,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
           res
         }
         val acted = act(m.focus)
-        val enterVisual = enterVisualOn(key)
-        val mode = if (!m.isInstanceOf[model.mode.Content.RichVisual] && enterVisual)
-          model.mode.Content.RichVisual(firstNonEmpty, acted)
-        else
-          m.copyWithNewFocus(acted, enterVisual || enableModal)
+        val mode = m.copyWithNewFocus(acted, enableModal)
         DocTransaction(a.copyContentMode(mode))
       }
     }
@@ -56,16 +50,14 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand { // DIFFERENCE h + Control is also in Vim, but we don't use this,
     override val description: String = "move left"
-    override val hardcodeKeys: Seq[KeySeq] = Seq(Left, Shift + Left)
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Left)
     override val defaultKeys = Seq("h", Backspace)
-    override def enterVisualOn(k: Option[KeySeq]): Boolean = k.exists(_.exists(_.shift))
     override def move(content: Rich, a: IntRange): (IntRange, Int) = if (a.start == 0) (a, 0) else (content.before(a.start).range, 0)
   }
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand {
     override val description: String = "move right"
-    override val hardcodeKeys: Seq[KeySeq] = Seq(Right, Shift + Right)
-    override def enterVisualOn(k: Option[KeySeq]): Boolean = k.exists(_.exists(_.shift))
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Right)
     override val defaultKeys = Seq("l")  // DIFFERENCE space is for smart move
     override def move(content: Rich, a: IntRange): (IntRange, Int)  =  if (a.until == content.size) (a, 1) else (content.after(a.until).range, 0)
   }

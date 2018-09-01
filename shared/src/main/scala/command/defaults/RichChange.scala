@@ -46,11 +46,15 @@ class RichChange extends CommandCategory("rich text: change") {
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (cur, rich, normal) = a.asRichNormal
-      motion.flatMap(m => {
-        m.act(commandState, rich, count, normal.range, grapheme).map(r => {
-          deleteRichNormalRange(a, commandState,cur, r, insert = true)
-        })
-      }).getOrElse(DocTransaction.empty)
+      if (rich.isEmpty) {
+        DocTransaction(a.copyContentMode(model.mode.Content.RichInsert(0)))
+      } else {
+        motion.flatMap(m => {
+          m.act(commandState, rich, count, normal.range, grapheme).map(r => {
+            deleteRichNormalRange(a, commandState,cur, r, insert = true)
+          })
+        }).getOrElse(DocTransaction(a.copyContentMode(model.mode.Content.RichInsert(normal.range.start))))
+      }
     }
   }
 

@@ -13,7 +13,7 @@ abstract sealed class Text {
   def toScalaTags: Frag
   def toPlainScalaTags: Frag
 
-  def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new NotImplementedError()
+  def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new IllegalArgumentException("not possible")
   def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
@@ -171,7 +171,7 @@ object Text {
         case HTMLStart =>
           HTML(reader.eatUntilAndDrop(HTMLEnd))
         case kk =>
-          throw new EncodedSeqParseException(s"Expecting a non-special char or a special start char, but found $kk, reader:\n$reader")
+          throw new EncodedSeqParseException(s"Expecting a non-special char or a special start char, but found $kk, reader:\n${reader.debugString}")
       }
       case None =>
         Plain(reader.eatUntilSpecialChar())
@@ -215,7 +215,7 @@ object Text {
     def delimitation: SpecialChar.Delimitation
 
     def attributes: Seq[SpecialChar] = delimitation.attributes
-    def attribute(i: SpecialChar): Unicode = throw new NotImplementedError()
+    def attribute(i: SpecialChar): Unicode = throw new IllegalArgumentException("not possible")
     def urlAttr: Unicode = attribute(UrlAttribute)
     def titleAttr: Unicode = attribute(TitleAttribute)
     def rangeAttribute(i: SpecialChar): IntRange = {

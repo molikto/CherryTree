@@ -31,7 +31,6 @@ case class Node(
         false
     }
 
-
   def macros: Seq[String] = {
     if (macros_ == null) {
       var cur: String = null
@@ -109,6 +108,11 @@ case class Node(
 
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)
 
+
+  @inline def foreachNode(a: Node => Unit): Unit = {
+    a(this)
+    childs.foreach(_.foreachNode(a))
+  }
 
   def foreach(a: (model.cursor.Node, Node) => Unit, cur: model.cursor.Node): Unit = {
     a(cur, this)

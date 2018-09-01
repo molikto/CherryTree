@@ -2,6 +2,9 @@
 package client
 
 import api.{Api, Authentication}
+import command.{CommandInterface, CommandInterfaceAvailable, FindCommand, Part}
+import command.Key.Grapheme
+import command.Part.IdentifiedCommand
 import doc.DocTransaction
 import model._
 import model.data.{EncodedSeq, Node, Unicode}
@@ -167,18 +170,36 @@ object ClientTests extends TestSuite  {
               case e: Throwable =>
                 println("action " + ith)
                 println(c.state)
-                throw e
+                throw new Exception("falled" , e)
             }
           }
-          val avs = c.commands.filter(a => a.available(c.state, c) && !a.needsStuff)
+          val avs = c.commands.filter(a => a.available(c.state, c))
           if (avs.nonEmpty) {
             val ccc = avs(Random.nextInt(avs.size - 1))
             try {
+              val motion: command.Motion = if (ccc.needsMotion) {
+                val ms = c.commands.filter(a => a.isInstanceOf[command.Motion] && a.available(c.state, new CommandInterfaceAvailable {
+                  override def lastFindCommand: Option[(FindCommand, Unicode)] = c.lastFindCommand
+
+                  override protected def commandBuffer: Seq[Part] = Seq(IdentifiedCommand(None, ccc, Seq.empty))
+                })
+                ).map(_.asInstanceOf[command.Motion])
+                ms(Random.nextInt(ms.size - 1))
+              } else {
+                null
+              }
+              val chhh = if (ccc.needsChar || (motion != null && motion.asInstanceOf[command.Command].needsChar)) {
+                val chars = (('a' to 'z') ++ ('0' to '9')).toSeq
+                Some(Unicode(String.valueOf(chars(Random.nextInt(chars.size - 1)))))
+              } else {
+                None
+              }
               val trans = ccc.action(
                 c.state,
                 Random.nextInt(10),
                 c,
-                if (Random.nextBoolean()) None else ccc.keys.headOption, None, None)
+                if (Random.nextBoolean()) None else ccc.keys.headOption,
+                chhh, Option(motion))
               try {
                 c.debug_unmarkTempDisableMode()
                 c.localChange(trans)
@@ -188,13 +209,13 @@ object ClientTests extends TestSuite  {
                   println(c.state.mode0)
                   println(ccc.description)
                   println(trans)
-                  throw e
+                  throw new Exception("falled" , e)
               }
             } catch {
               case e: Throwable =>
-                println(c.state)
+                println(c.state.mode0)
                 println(ccc.description)
-                throw e
+                throw new Exception("falled" , e)
             }
           }
         }

@@ -3,6 +3,8 @@ package model
 import model.operation.Node
 import model.ot.Node.RebaseResult
 
+import scala.collection.mutable.ArrayBuffer
+
 package object range {
 
 
@@ -19,7 +21,7 @@ package object range {
       val (max, min) = util.maxMin(start, move.start)
       IntRange(min, max)
     } else {
-      throw new NotImplementedError("Not implemented yet")
+      throw new IllegalArgumentException("not possible")
     }
     def merge(move: IntRange): IntRange = merge(move, 1)
 
@@ -27,7 +29,10 @@ package object range {
 
 
     def minusOrderedInside(except: Seq[IntRange]): Seq[IntRange] = {
-      (Seq(start) ++ except.flatMap(a => Seq(a.start, a.until)) ++ Seq(until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty).toSeq
+      val rs = (Seq(start) ++ except.flatMap(a => Seq(a.start, a.until)) ++ Seq(until)).grouped(2).map(seq => IntRange(seq.head, seq(1))).filter(_.nonEmpty)
+      val ar = new ArrayBuffer[IntRange]()
+      ar.appendAll(rs)
+      ar
     }
 
     override def iterator: Iterator[Int] = new Iterator[Int] {

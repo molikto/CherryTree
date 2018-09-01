@@ -77,11 +77,12 @@ class RichSpecial extends CommandCategory("rich text: format") {
       }
     }
 
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalArgumentException("Should not call this")
   }).toMap
 
 
-  SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
+
+  SpecialChar.nonAtomic.map(deli => deli -> new DeliCommand(deli) {
 
     override val description: String = s"change to a ${deli.name}"
 
@@ -130,7 +131,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
       return DocTransaction.empty
     }
 
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError("Should not call this")
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalArgumentException("Should not call this")
   }).toMap
 
 
@@ -169,14 +170,16 @@ class RichSpecial extends CommandCategory("rich text: format") {
           case (cursor, rich, visual) =>
             val r = visual.merged
             val after = rich.after(r.start)
-            if (after.special(deli.start) && rich.before(r.until).special(deli.end)) {
-              val ret = if (visual.fix.start > visual.move.start) {
-                mode.Content.RichVisual(rich.before(visual.fix.start).range.moveBy(-1),
-                  rich.after(visual.move).range.moveBy(-1))
+            val before = rich.before(r.until)
+            if (after.special(deli.start) && before.special(deli.end)) {
+              var ret = if (visual.fix.start > visual.move.start) {
+                mode.Content.RichVisual(rich.before(before.range.start).range.moveBy(-1),
+                  rich.after(after.range.until).range.moveBy(-1))
               } else {
-                mode.Content.RichVisual(rich.after(visual.fix).range.moveBy(-1),
-                  rich.before(visual.move.start).range.moveBy(-1))
+                mode.Content.RichVisual(rich.after(after.range.until).range.moveBy(-1),
+                  rich.before(before.range.start).range.moveBy(-1))
               }
+              ret = ret.maybeEmpty(visual)
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.unwrap(r.start, after.text.asDelimited))),
                 Some(a.copyContentMode(ret)))
@@ -184,11 +187,12 @@ class RichSpecial extends CommandCategory("rich text: format") {
               val soc = rich.singleSpecials(r).map(_.range)
               val remaining = r.minusOrderedInside(soc)
               val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
-              val fakePoints = if (visual.fix.start <= visual.move.start) {
+              var fakePoints = if (visual.fix.start <= visual.move.start) {
                 mode.Content.RichVisual(IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
               } else {
                 mode.Content.RichVisual(IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
               }
+              fakePoints = fakePoints.maybeEmpty(visual)
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
                 Some(a.copyContentMode(fakePoints)))
@@ -226,7 +230,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
       case (cursor, rich, visual) =>
         val r = visual.merged
         val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
-        val fakeMode =
+        var fakeMode =
           if (deli.atomic) {
             mode.Content.RichVisual(p, p)
           } else if (visual.fix.start <= visual.move.start) {
@@ -234,6 +238,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
           } else {
             mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
           }
+        fakeMode = fakeMode.maybeEmpty(visual)
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
           DocTransaction(Seq(
@@ -258,12 +263,13 @@ class RichSpecial extends CommandCategory("rich text: format") {
             if (g.isDefined) r = g.get
             if (g.isDefined) {
               val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
-              val fakeMode =
+              var fakeMode =
                 if (visual.fix.start <= visual.move.start) {
                   mode.Content.RichVisual(IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
                 } else {
                   mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
                 }
+              fakeMode = fakeMode.maybeEmpty(visual)
               DocTransaction(Seq(
                 operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
                 Some(a.copyContentMode(fakeMode)))

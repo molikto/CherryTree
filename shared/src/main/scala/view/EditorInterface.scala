@@ -35,7 +35,7 @@ trait EditorInterface extends SourceEditInterface with RichEditInterface with Se
   def flushBeforeMouseDown()
 
   def onRefreshMode(): Unit
-  def onFocusOn(cur: Node, range: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean
+  def onMouseFocusOn(cur: Node, range: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean
   def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
   def flushes: Observable[Unit]
   def onKeyDown(k: Key): Boolean

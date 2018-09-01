@@ -25,9 +25,12 @@ abstract class Command {
   def repeatable: Boolean = false
   def needsChar: Boolean = false
   def needsMotion: Boolean = false
-  def needsStuff = needsMotion || needsChar
+  def documentOnly: Boolean = false
+  def needsStuff = needsMotion || needsChar || documentOnly
 
   def actDoubleClick: Boolean = false
+
+  def actTripleClick: Boolean = false
 
   
   def priority(c: KeySeq): Int = if (defaultKeys.contains(c)) {
@@ -40,7 +43,7 @@ abstract class Command {
 
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
-  protected def available(a: DocState): Boolean = throw new NotImplementedError(description)
+  protected def available(a: DocState): Boolean =throw new IllegalArgumentException(s"not implemented $description")
   def action(a: DocState,
     count: Int,
     commandState: CommandInterface,
@@ -48,7 +51,7 @@ abstract class Command {
     grapheme: Option[Unicode],
     motion: Option[Motion]
   ): DocTransaction = action(a, commandState, count)
-  protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new NotImplementedError(description)
+  protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = throw new IllegalArgumentException(description)
 }
 
 

@@ -44,9 +44,10 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
                       } else {
                         DocTransaction.empty
                       }
-                    case model.mode.Content.RichVisual(_, move) =>
+                    case v: model.mode.Content.RichVisual =>
                       if (enableModal) {
-                        DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(move)))
+                        DocTransaction(a.copyContentMode(v.exitInModal))
+
                       } else {
                         DocTransaction.empty
                       }

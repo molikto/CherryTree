@@ -72,7 +72,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
       if (rich.isEmpty) return DocTransaction.empty
       motion.flatMap(m => {
         m.act(commandState, rich, count, normal.range, grapheme).map(r => {
-          deleteRichNormalRange(a, commandState,cur, r, insert = !enableModal)
+          deleteRichNormalRange(a, commandState, cur, r, insert = !enableModal)
         })
       }).getOrElse(DocTransaction.empty)
     }
