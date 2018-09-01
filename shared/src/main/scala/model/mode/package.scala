@@ -16,6 +16,7 @@ package object mode {
   object Content {
     sealed abstract class Rich extends Content {
       def end: Int
+      def start: Int
       def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich
       def focus: IntRange
       def merged: IntRange
@@ -27,6 +28,7 @@ package object mode {
     case class RichInsert(pos: Int) extends Rich {
       override def breakWhiteSpaceInserts: Boolean = true
       override def end: Int = pos
+      override def start: Int = pos
 
       override def focus: IntRange = IntRange(pos, pos)
       override def merged: IntRange = focus
@@ -60,6 +62,7 @@ package object mode {
         }
 
       override def end: Int = range.until
+      override def start: Int = range.start
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
       def maybeEmpty(reflect: RichVisual): RichVisual = {
@@ -95,15 +98,15 @@ package object mode {
         if (enableModal && move.nonEmpty) {
           copy(move = range)
         } else {
-          val f = fix.start
-          val anther = if (range.start < f) range.start else range.until
-          if (f == anther) {
-            RichInsert(anther)
+          val mm = range.merge(merged)
+          if (mm.start != merged.start) {
+            RichInsert(mm.start)
           } else {
-            RichVisual(fix, IntRange(anther, anther))
+            RichInsert(mm.until)
           }
         }
       override def end: Int = merged.until
+      override def start: Int = merged.start
     }
 
     sealed abstract class RichSubMode extends Rich {
@@ -125,12 +128,13 @@ package object mode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
       override def breakWhiteSpaceInserts: Boolean = code.breakWhiteSpaceInserts
       override def end: Int = modeBefore.end
-
+      override def start: Int = modeBefore.start
     }
 
     case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
       override def end: Int = modeBefore.end
+      override def start: Int = modeBefore.start
     }
 
     case class CodeNormal(backToInsert: Boolean) extends Code with Normal //

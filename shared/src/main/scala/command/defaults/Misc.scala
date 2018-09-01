@@ -7,6 +7,7 @@ import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
 import model.mode
+import model.mode.Content.RichNormal
 import model.range.IntRange
 
 import scala.util.{Success, Try}
@@ -46,8 +47,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
                       }
                     case v: model.mode.Content.RichVisual =>
                       if (enableModal) {
-                        DocTransaction(a.copyContentMode(v.exitInModal))
-
+                        DocTransaction(a.copyContentMode(RichNormal(if (v.move.nonEmpty) v.move else a.node(n).rich.rangeBefore(v.move.start))))
                       } else {
                         DocTransaction.empty
                       }

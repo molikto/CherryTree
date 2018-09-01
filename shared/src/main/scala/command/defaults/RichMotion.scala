@@ -7,6 +7,7 @@ import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
+import model.mode.Content.RichInsert
 import settings.Settings
 
 class RichMotion extends CommandCategory("rich text: cursor motion") {
@@ -15,34 +16,41 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
   trait RichMotionCommand extends Command with command.RichMotion {
     override def showInCommandMenu(modal: Boolean): Boolean = false
-    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrVisual || commandState.needsMotion
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrNoneEmptyVisual || commandState.needsMotion
   }
 
 
   trait InsertRichMotionCommand extends Command with command.RichMotion {
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRich || commandState.needsMotion
+
+    def move(content: Rich, a: Int): Int
   }
 
   abstract class SimpleRichMotionCommand extends RichMotionCommand {
 
     override def repeatable: Boolean = true
 
+
     final override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val (_, content, m) = a.asRich
       if (content.isEmpty) {
         DocTransaction.empty
       } else {
-
-        var firstNonEmpty = if (m.focus.isEmpty) null else m.focus
-        def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) =>
-          val res = move(content, rr)._1
-          if (firstNonEmpty == null)  firstNonEmpty = res
-          res
+        if (m.focus.isEmpty) {
+          val to = (0 until count).foldLeft(m.focus.start) { (r, _) =>
+            this.asInstanceOf[InsertRichMotionCommand].move(content, r)
+          }
+          DocTransaction(a.copyContentMode(RichInsert(to)))
+        } else {
+          def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) =>
+            val res = move(content, rr)._1
+            res
+          }
+          val acted = act(m.focus)
+          val mode = m.copyWithNewFocus(acted, enableModal)
+          DocTransaction(a.copyContentMode(mode))
         }
-        val acted = act(m.focus)
-        val mode = m.copyWithNewFocus(acted, enableModal)
-        DocTransaction(a.copyContentMode(mode))
       }
     }
   }
@@ -53,6 +61,8 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val hardcodeKeys: Seq[KeySeq] = Seq(Left)
     override val defaultKeys = Seq("h", Backspace)
     override def move(content: Rich, a: IntRange): (IntRange, Int) = if (a.start == 0) (a, 0) else (content.before(a.start).range, 0)
+
+    override def move(content: Rich, a: Int): Int = content.rangeBefore(a).start
   }
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand {
@@ -60,6 +70,8 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val hardcodeKeys: Seq[KeySeq] = Seq(Right)
     override val defaultKeys = Seq("l")  // DIFFERENCE space is for smart move
     override def move(content: Rich, a: IntRange): (IntRange, Int)  =  if (a.until == content.size) (a, 1) else (content.after(a.until).range, 0)
+
+    override def move(content: Rich, a: Int): Int = content.rangeAfter(a).until
   }
 
   new SimpleRichMotionCommand() with InsertRichMotionCommand {
@@ -67,6 +79,8 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val description: String = "move to beginning"
     override val defaultKeys = Seq("0", "^", Home) // DIFFERENCE merged because we are already structural
     override def move(content: Rich, a: IntRange): (IntRange, Int) = (content.rangeBeginning, 0)
+
+    override def move(content: Rich, a: Int): Int = 0
   }
 
   new SimpleRichMotionCommand with InsertRichMotionCommand {
@@ -74,6 +88,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val description: String = "move to end"
     override val defaultKeys = Seq("$", End) // DIFFERENCE is not repeatable, different from Vim
     override def move(content: Rich, a: IntRange):  (IntRange, Int) = (content.rangeEnd, 1)
+    override def move(content: Rich, a: Int): Int = content.size
   }
 
   // screen related is not implemented
