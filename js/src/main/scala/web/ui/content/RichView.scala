@@ -278,11 +278,30 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     }
   }
 
-  def boundingRect(atom: Atom, range: Range): ClientRect = {
+  def boundingRect(atom: Atom, range: Range): Rect = {
     if (atom != null && atom.isAtomic) {
-      nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement].getBoundingClientRect()
+      val eli = nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement]
+      val cts = eli.getClientRects()
+      var i = 0
+      var a: Rect = null
+      while (i < cts.length) {
+        val k = toRect(cts.item(i))
+        if (k.width > 0) {
+          if (a == null) {
+            a = k
+          } else {
+            a = a.merge(k)
+          }
+        }
+        i += 1
+      }
+      if (a == null) {
+        toRect(eli.getBoundingClientRect())
+      } else {
+        a
+      }
     } else {
-      range.getBoundingClientRect()
+      toRect(range.getBoundingClientRect())
     }
     //if (range.startContainer == range.endContainer && range.startOffset == range.endOffset)
   }
@@ -293,7 +312,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     val lines = RichView.visualLines._2
     val offset = readOffset(range.startContainer, range.startOffset, false)
     val atom = if (offset != rich.size) rich.after(offset) else null
-    val rect = toRect(boundingRect(atom, range)).withBorder(4, -2)
+    val rect = boundingRect(atom, range).withBorder(4, -2)
     val pred = (r: Rect) => r.meet(rect)
     val selection = if (isUp) lines.indexWhere(pred) else lines.lastIndexWhere(pred)
     val sel = if (selection == -1) 0 else selection
@@ -375,7 +394,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       val (tn, tp, _) = posInDom(range.until, a, if (i + 1 == atoms.length) null else atoms(i + 1))
       sel.setStart(sel.endContainer, sel.endOffset)
       sel.setEnd(tn, tp)
-      val rangeRect = toRect(boundingRect(a, sel)).withBorder(4, -2)
+      val rangeRect = boundingRect(a, sel).withBorder(4, -2)
       if (line.meet(rangeRect)) {
         if (min == null) {
           min = range
