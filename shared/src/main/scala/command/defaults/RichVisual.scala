@@ -50,7 +50,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
         val (_, _, mode) = a.asRich
         mode match {
           case model.mode.Content.RichInsert(pos) => true
-          case model.mode.Content.RichVisual(a, b) => a.isEmpty
+          case model.mode.Content.RichVisual(a, b) => true
           case _ => false
         }
       } else {
@@ -75,17 +75,23 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
               RichVisual(IntRange(pos, pos), IntRange(move, move))
             }))
           }
-        case model.mode.Content.RichVisual(fix, move) =>
-          val pos = move.start
+        case v@model.mode.Content.RichVisual(fix0, move0) =>
+          val (fix, move) = if (fix0.nonEmpty) {
+            val merged = v.merged
+            (merged.until, merged.start)
+          } else {
+            (fix0.start, move0.start)
+          }
+          val pos = move
           if (pos == 0) {
             DocTransaction.empty
           } else {
             DocTransaction(a.copyContentMode({
               val move = rich.before(pos).range.start
-              if (move == fix.start) {
+              if (move == fix) {
                 RichInsert(move)
               } else {
-                RichVisual(fix, IntRange(move, move))
+                RichVisual(IntRange(fix, fix), IntRange(move, move))
               }
             }))
           }
@@ -110,17 +116,23 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
               RichVisual(IntRange(pos, pos), IntRange(move, move))
             }))
           }
-        case model.mode.Content.RichVisual(fix, move) =>
-          val pos = move.start
+        case v@model.mode.Content.RichVisual(fix0, move0) =>
+          val (fix, move) = if (fix0.nonEmpty) {
+            val merged = v.merged
+            (merged.start, merged.until)
+          } else {
+            (fix0.start, move0.start)
+          }
+          val pos = move
           if (pos == rich.size) {
             DocTransaction.empty
           } else {
             DocTransaction(a.copyContentMode({
               val move = rich.after(pos).range.until
-              if (move == fix.start) {
+              if (move == fix) {
                 RichInsert(move)
               } else {
-                RichVisual(fix, IntRange(move, move))
+                RichVisual(IntRange(fix, fix), IntRange(move, move))
               }
             }))
           }

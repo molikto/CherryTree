@@ -21,7 +21,7 @@ class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
 
     override val description: String = "open a line bellow"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
-    override def available(a: DocState): Boolean = a.isContent
+    override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asContent
       val (insertionPoint, ct) = insertPointAfter(a, pos)
@@ -35,7 +35,7 @@ class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
   new Command {
     override val description: String = "open a line above"
     override val defaultKeys: Seq[KeySeq] = Seq("O")
-    override def available(a: DocState): Boolean = a.isContent
+    override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asContent
       if (pos == a.zoom) {

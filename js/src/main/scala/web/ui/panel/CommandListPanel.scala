@@ -62,7 +62,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
               h.addEventListener("click", onPanelClick)
               h: Frag
             },
-            commands.map(c => {
+            commands.filter(_.description.nonEmpty).map(c => {
               val dom = div(
                 p(marginLeft := "8px",
                   marginBottom := "0px",

@@ -19,6 +19,7 @@ package object mode {
       def start: Int
       def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich
       def focus: IntRange
+      def fixed: IntRange = focus
       def merged: IntRange
     }
     sealed abstract class Code extends Content
@@ -65,6 +66,7 @@ package object mode {
       override def start: Int = range.start
     }
     case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
+      override def fixed: IntRange = fix
       def maybeEmpty(reflect: RichVisual): RichVisual = {
         if (reflect.fix.isEmpty) {
           val mgd = merged

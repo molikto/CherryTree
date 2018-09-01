@@ -683,12 +683,13 @@ abstract class DocumentView extends View with EditorView {
     val cur = currentDoc.mode.get.focus
     val content = contentAt(cur)
     content.constructVisualLineBuff()
-    val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, false)
+    val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, !editor.enableModal)
     content.clearVisualLineBuff()
-    editor.onMouseFocusOn(currentDoc.mode.get.focus, range, true, false)
+    editor.onMouseFocusOn(currentDoc.mode.get.focus, range, true, false, maybeNormal = true)
   }
 
-  def visualUpDownMotion(isUp: Boolean, count: Int): Unit = {
+  def visualUpDownMotion(isUp: Boolean, count: Int, enterVisual: Boolean): Unit = {
+    if (count == 0) return
     duringVisualUpDown = true
     currentDoc.mode match {
       case Some(model.mode.Node.Content(node, a)) =>
@@ -702,7 +703,15 @@ abstract class DocumentView extends View with EditorView {
           }
         }
         content.constructVisualLineBuff()
-        var line = content.readVisualSelectionLine(currentSelection, isUp)
+
+        val sel = a match {
+          case model.mode.Content.RichVisual(a, b) =>
+            val r =currentSelection.cloneRange()
+            r.collapse(a.start > b.start)
+            r
+          case _ => currentSelection
+        }
+        var line = content.readVisualSelectionLine(sel, isUp)
         var lineCount = content.visualLineCount()
         var goToExteme = false
         val mover = currentDoc.mover()
@@ -749,19 +758,31 @@ abstract class DocumentView extends View with EditorView {
           }
           i += 1
         }
-        if (goToExteme) {
+        val range = if (goToExteme) {
           content.clearVisualLineBuff()
           if (isUp) {
-            editor.onMouseFocusOn(cur, Some(IntRange(0, 0)), true, false)
+            Some(IntRange(0, 0))
           } else {
             val size = currentDoc.node(cur).content.size
-            editor.onMouseFocusOn(cur, Some(IntRange(size, size)), true, false)
+            Some(IntRange(size, size))
           }
         } else {
           val insert = !editor.enableModal || currentDoc.isInsertal
-          var range = content.rangeAroundLine(line, (visualMotionX + dom.offsetLeft).toInt, insert)
+          val ret = content.rangeAroundLine(line, (visualMotionX + dom.offsetLeft).toInt, insert)
           content.clearVisualLineBuff()
-          editor.onMouseFocusOn(cur, range, true, false)
+          ret
+        }
+        if (enterVisual || (editor.enableModal && a.isInstanceOf[model.mode.Content.RichVisual])) {
+          if (node != cur || !a.isInstanceOf[model.mode.Content.Rich]) {
+            editor.onVisualMode(node, cur)
+          } else {
+            val rm = a.asInstanceOf[model.mode.Content.Rich]
+            val rang = range.getOrElse(if (isUp) currentDoc.node(cur).rich.rangeBeginning else currentDoc.node(cur).rich.rangeEnd)
+            val leftIsAnchor = rm.fixed.start < rang.start
+            editor.onMouseFocusOn(cur, Some(rm.fixed.merge(rang)), leftIsAnchor, false)
+          }
+        } else {
+          editor.onMouseFocusOn(cur, range, true, false, maybeNormal = true)
         }
       case _ => throw new IllegalStateException("Not possible")
     }

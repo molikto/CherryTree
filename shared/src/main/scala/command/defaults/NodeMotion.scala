@@ -2,11 +2,12 @@ package command.defaults
 
 import client.Client
 import client.Client.ViewMessage
-import command.{CommandCategory, CommandInterface}
+import command.{CommandCategory, CommandInterface, Motion}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.cursor
 import model.cursor.Node
+import model.data.Unicode
 
 class NodeMotion extends CommandCategory("node: motion") {
 
@@ -47,12 +48,13 @@ class NodeMotion extends CommandCategory("node: motion") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(Up, Shift + Up)
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
 
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (a.isNodeVisual) {
         super.action(a, commandState, count)
       } else {
-        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(true, count))
+        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(true, count, key.exists(_.exists(_.shift))))
       }
+    }
     override def move(data: DocState, a: Node): Option[Node] = data.mover().visualUp(a)
   }
 
@@ -60,12 +62,15 @@ class NodeMotion extends CommandCategory("node: motion") {
     override val description: String = "move down"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Down, Shift + Down)
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
+
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       if (a.isNodeVisual) {
         super.action(a, commandState, count)
       } else {
-        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(false, count))
+        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(false, count, key.exists(_.exists(_.shift))))
       }
+    }
+
     override def move(data: DocState, a: Node): Option[Node] = data.mover().visualDown(a)
   }
 

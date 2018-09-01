@@ -50,7 +50,7 @@ object Client {
     case class ScrollToNodeTop(cur: cursor.Node) extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
     case class CopyToClipboard(a: String) extends ViewMessage
-    case class VisualUpDownMotion(isUp: Boolean, count: Int) extends ViewMessage
+    case class VisualUpDownMotion(isUp: Boolean, count: Int, intoVisual: Boolean) extends ViewMessage
     case object ExitVisual extends ViewMessage
   }
 }
@@ -484,7 +484,7 @@ class Client(
     updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
-  override def onMouseFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean): Boolean = {
+  override def onMouseFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean, maybeNormal: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
     state.mode match {
@@ -506,7 +506,15 @@ class Client(
                 mode.Content.RichNormal(r.rangeBefore(a.start))
               }
             } else {
-              mode.Content.RichVisual(IntRange(a.start, a.start), IntRange(a.until, a.until)).swap(leftIsAnchor)
+              if (maybeNormal && enableModal && !state.isInsertal && r.rangeAfter(a.start).until == a.until) {
+                mode.Content.RichNormal(a)
+              } else {
+                if (enableModal) {
+                  mode.Content.RichVisual(r.rangeAfter(a.start), r.rangeBefore(a.until)).swap(leftIsAnchor)
+                } else {
+                  mode.Content.RichVisual(IntRange(a.start, a.start), IntRange(a.until, a.until)).swap(leftIsAnchor)
+                }
+              }
             }
           case None =>
             c.defaultMode(enableModal)

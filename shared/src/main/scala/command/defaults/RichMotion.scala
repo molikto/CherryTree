@@ -7,12 +7,27 @@ import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
-import model.mode.Content.RichInsert
+import model.mode.Content.{RichInsert, RichVisual}
 import settings.Settings
 
 class RichMotion extends CommandCategory("rich text: cursor motion") {
 
 
+
+  new Command {
+
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+    override def keyConfigurable: Boolean = false
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Meta + Left, Meta + Right)
+
+    override protected def available(a: DocState): Boolean = true
+    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      DocTransaction.empty
+    }
+    override val description: String = ""
+
+    override def defaultKeys: Seq[KeySeq] = Seq()
+  }
 
   trait RichMotionCommand extends Command with command.RichMotion {
     override def showInCommandMenu(modal: Boolean): Boolean = false
@@ -37,19 +52,36 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
       if (content.isEmpty) {
         DocTransaction.empty
       } else {
-        if (m.focus.isEmpty) {
+        def simpleMethod() = {
           val to = (0 until count).foldLeft(m.focus.start) { (r, _) =>
             this.asInstanceOf[InsertRichMotionCommand].move(content, r)
           }
           DocTransaction(a.copyContentMode(RichInsert(to)))
-        } else {
-          def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) =>
-            val res = move(content, rr)._1
-            res
-          }
-          val acted = act(m.focus)
-          val mode = m.copyWithNewFocus(acted, enableModal)
-          DocTransaction(a.copyContentMode(mode))
+        }
+        m match {
+          case model.mode.Content.RichInsert(pos) =>
+            simpleMethod()
+          case _ =>
+            if (!enableModal) {
+              simpleMethod()
+            } else {
+              def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) =>
+                val res = move(content, rr)._1
+                res
+              }
+              val mo = m match {
+                case model.mode.Content.RichVisual(fix, move) if fix.isEmpty =>
+                  if (fix.start < move.start) {
+                    RichVisual(content.rangeAfter(fix.start), content.rangeBefore(move.until))
+                  } else {
+                    RichVisual(content.rangeBefore(fix.start), content.rangeAfter(move.until))
+                  }
+                case _ => m
+              }
+              val acted = act(mo.focus)
+              val mode = mo.copyWithNewFocus(acted, enableModal)
+              DocTransaction(a.copyContentMode(mode))
+            }
         }
       }
     }
