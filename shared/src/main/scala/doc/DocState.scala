@@ -283,6 +283,10 @@ case class DocState private (
     case _ => false
   }
 
+  def isEmptyRichVisual: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(a, _))) => a.isEmpty
+  }
+
 
   def contentMode: model.mode.Content = mode match {
     case Some(c: model.mode.Node.Content)  => c.a
