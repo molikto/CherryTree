@@ -50,7 +50,8 @@ object Client {
     case class ScrollToNodeTop(cur: cursor.Node) extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
     case class CopyToClipboard(a: String) extends ViewMessage
-    case class SimulateKeyboardMotion(isUp: Boolean) extends ViewMessage
+    case class VisualUpDownMotion(isUp: Boolean, count: Int) extends ViewMessage
+    case object ExitVisual extends ViewMessage
   }
 }
 
@@ -425,7 +426,7 @@ class Client(
       case Some(model.mode.Node.Content(cur, sub: model.mode.Content.RichSubMode)) =>
         localChange(DocTransaction(state.copyContentMode(sub.modeBefore)))
       case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
-        localChange(DocTransaction(state.copyContentMode(model.mode.Content.CodeNormal)))
+        localChange(DocTransaction(state.copyContentMode(model.mode.Content.CodeNormal(false))))
       case _ =>
     }
   }
@@ -500,7 +501,7 @@ class Client(
           case Some(a) =>
             if (enableModal) {
               if (a.isEmpty) {
-                if (state.isInsert) {
+                if (state.isInsertal) {
                   mode.Content.RichInsert(a.start)
                 } else {
                   mode.Content.RichNormal(r.rangeBefore(a.start))
@@ -526,7 +527,9 @@ class Client(
           case None =>
             c.defaultMode(enableModal)
         }
-      case c: data.Content.Code => c.defaultMode(enableModal)
+      case c: data.Content.Code =>
+        val normalMode = enableModal && !state.isInsertal
+        c.defaultMode(normalMode)
     }
     localChange(DocTransaction(Seq.empty, Some(model.mode.Node.Content(c, mo))))
     true

@@ -29,7 +29,7 @@ class NodeMisc extends CommandCategory("node: misc") {
       val cur = a.asContent
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Code(data.Unicode(a.node(cur).rich.toPlain), ""))),
-        Some(a.copyContentMode(mode.Content.CodeNormal)))
+        Some(a.copyContentMode(mode.Content.CodeNormal(false))))
     }
   }
 

@@ -111,7 +111,7 @@ package object mode {
       override def end: Int = modeBefore.end
     }
 
-    case object CodeNormal extends Code with Normal //
+    case class CodeNormal(backToInsert: Boolean) extends Code with Normal //
 
     // insert, normal, visual, visual-line??
     case class CodeInside(mode: String, pos: Int) extends Code {
@@ -175,9 +175,10 @@ package object mode {
             writeInt(3)
             writeIntArray(fix.toArray)
             writeIntArray(move.toArray)
-          case Content(node, mode.Content.CodeNormal) =>
+          case Content(node, mode.Content.CodeNormal(b)) =>
             writeInt(4)
             writeIntArray(node.toArray)
+            writeByte(if (b) 1 else 0)
           case Content(node, mode.Content.CodeInside(a, b)) =>
             writeInt(5)
             writeIntArray(node.toArray)
@@ -202,7 +203,7 @@ package object mode {
           case 1 => Content(readIntArray, mode.Content.RichNormal(IntRange.pickler.unpickle))
           case 2 => Content(readIntArray, mode.Content.RichVisual(IntRange.pickler.unpickle, IntRange.pickler.unpickle))
           case 3 => Visual(readIntArray, readIntArray)
-          case 4 => Content(readIntArray, mode.Content.CodeNormal)
+          case 4 => Content(readIntArray, mode.Content.CodeNormal(if (readByte == 0) false else true))
           case 5 => Content(readIntArray, mode.Content.CodeInside(readString, readInt))
           case 6 =>
             val r = unpickle(implicitly).asInstanceOf[mode.Node.Content]

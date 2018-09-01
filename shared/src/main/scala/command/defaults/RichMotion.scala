@@ -1,6 +1,7 @@
 package command.defaults
 
 import client.Client
+import client.Client.ViewMessage
 import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Motion}
 import model.range.IntRange
 import command.Key._

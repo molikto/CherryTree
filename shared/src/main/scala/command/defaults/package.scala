@@ -77,7 +77,7 @@ package object defaults {
           }
         }
         (trans, Some(data))
-      case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal)) =>
+      case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal(_))) =>
         val old = a.node(pos)
         val data = Registerable.Node(Seq(old.copy(childs = Seq.empty).cloneNode()), None, false)
         commandState.yank(data, isDelete = false, register = reg)

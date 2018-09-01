@@ -200,6 +200,13 @@ case class DocState private (
     case _ => false
   }
 
+  def isInsertal: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert(_))) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside(_, _))) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeNormal(b))) => b
+    case _ => false
+  }
+
   def isRichInsert: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert(_))) => true
     case _ => false
@@ -266,7 +273,7 @@ case class DocState private (
   }
 
   def isCodeNormal: Boolean = mode match {
-    case Some(model.mode.Node.Content(_, model.mode.Content.CodeNormal)) => true
+    case Some(model.mode.Node.Content(_, model.mode.Content.CodeNormal(_))) => true
     case _ => false
   }
 
@@ -402,7 +409,7 @@ case class DocState private (
       case Some(model.mode.Node.Content(n, c)) =>
         c match {
           case t@model.mode.Content.RichNormal(_) => (n, t)
-          case t@model.mode.Content.CodeNormal => (n, t)
+          case t@model.mode.Content.CodeNormal(_) => (n, t)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

@@ -49,6 +49,13 @@ abstract class DocumentView extends View with EditorView {
     height := "0px"
   ).render
 
+  val motionXView = div(
+    position := "absolute",
+    background := "#000000",
+    width := "1px",
+    height := "100%"
+  ).render
+
   dom = div(
     position := "relative",
     `class` := "ct-scroll ct-document-view-root " + (if (!web.debug_fakeSelection) "ct-document-view-background" else ""),
@@ -60,6 +67,10 @@ abstract class DocumentView extends View with EditorView {
     fakeSelections,
     noEditable,
   ).render
+
+  if (model.debug_selection) {
+    dom.appendChild(motionXView)
+  }
 
   /**
     * TODO no protected var
@@ -192,7 +203,17 @@ abstract class DocumentView extends View with EditorView {
     }
   })
 
-  protected def flushSelection(force: Boolean = false): Unit = {
+
+  private var duringVisualUpDown = false
+  private var visualMotionX = -1
+
+  protected def flushSelection(force: Boolean = false, userModeUpdate: Boolean = false): Unit = {
+    if (!duringVisualUpDown && userModeUpdate && currentSelection != nonEditableSelection) {
+      visualMotionX = (toRect(currentSelection.getBoundingClientRect()).middleX - dom.offsetLeft).toInt
+      if (model.debug_selection) {
+        motionXView.style.left = s"${visualMotionX}px"
+      }
+    }
     if (!focusedOut) {
       val sel = window.getSelection()
       if (!force) {
@@ -253,7 +274,7 @@ abstract class DocumentView extends View with EditorView {
       }
     }
     duringStateUpdate = false
-    flushSelection()
+    flushSelection(userModeUpdate = fromUser)
   }
 
 
@@ -658,9 +679,94 @@ abstract class DocumentView extends View with EditorView {
   })
 
 
+  def exitVisual(): Unit = {
+    val cur = currentDoc.mode.get.focus
+    val content = contentAt(cur)
+    content.constructVisualLineBuff()
+    val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, false)
+    content.clearVisualLineBuff()
+    editor.onFocusOn(currentDoc.mode.get.focus, range, true, false)
+  }
 
+  def visualUpDownMotion(isUp: Boolean, count: Int): Unit = {
+    duringVisualUpDown = true
+    currentDoc.mode match {
+      case Some(model.mode.Node.Content(node, a)) =>
+        var i = 0
+        var cur = node
+        var content = contentAt(cur)
+        if (model.debug_view) {
+          if (currentSelection != nonEditableSelection) {
+            assert(findParentContent(currentSelection.startContainer) == cur)
+            assert(activeContentEditor.contentView == content)
+          }
+        }
+        content.constructVisualLineBuff()
+        var line = content.readVisualSelectionLine(currentSelection, isUp)
+        var lineCount = content.visualLineCount()
+        var goToExteme = false
+        val mover = currentDoc.mover()
+        if (model.debug_selection) {
+          window.console.log("line count", lineCount, line)
+        }
+        def resetContentAt(c: model.cursor.Node): Unit = {
+          assert(cur != c)
+          content.clearVisualLineBuff()
+          cur = c
+          content = contentAt(c)
+          content.constructVisualLineBuff()
+          lineCount = content.visualLineCount()
+          if (isUp) {
+            line = lineCount - 1
+          } else {
+            line = 0
+          }
+        }
 
-  override def systemHandleArrowKey: Boolean = selection != nonEditableSelection
+        while (i < count) {
+          if (isUp) {
+            if (line > 0) {
+              line -= 1
+            } else {
+              mover.visualUp(cur) match {
+                case Some(j) =>
+                  resetContentAt(j)
+                case None =>
+                  goToExteme = true
+              }
+            }
+          } else {
+            if (line < lineCount - 1) {
+              line += 1
+            } else {
+              mover.visualDown(cur) match {
+                case Some(j) =>
+                  resetContentAt(j)
+                case None =>
+                  goToExteme = true
+              }
+            }
+          }
+          i += 1
+        }
+        if (goToExteme) {
+          content.clearVisualLineBuff()
+          if (isUp) {
+            editor.onFocusOn(cur, Some(IntRange(0, 0)), true, false)
+          } else {
+            val size = currentDoc.node(cur).content.size
+            editor.onFocusOn(cur, Some(IntRange(size, size)), true, false)
+          }
+        } else {
+          val insert = !editor.enableModal || currentDoc.isInsertal
+          var range = content.rangeAroundLine(line, (visualMotionX + dom.offsetLeft).toInt, insert)
+          content.clearVisualLineBuff()
+          editor.onFocusOn(cur, range, true, false)
+        }
+      case _ => throw new IllegalStateException("Not possible")
+    }
+    duringVisualUpDown = false
+  }
 
   private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView, mouseEvent: MouseEvent, isDouble: Boolean): Unit = {
     def work() = {

@@ -32,7 +32,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
         case Some(m) =>
           m match {
             case model.mode.Node.Visual(fix, move) =>
-              DocTransaction(model.data.Node.defaultMode(a.node, move, enableModal))
+              DocTransaction.message(ViewMessage.ExitVisual)
             case nc@model.mode.Node.Content(n, c) =>
               a.node(n).content match {
                 case model.data.Content.Rich(rich) =>
@@ -55,7 +55,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
                 case model.data.Content.Code(_, _) =>
                   c match {
                     case i:model.mode.Content.CodeInside =>
-                      DocTransaction(a.copyContentMode(model.mode.Content.CodeNormal))
+                      DocTransaction(a.copyContentMode(model.mode.Content.CodeNormal(false)))
                     case _ => DocTransaction.empty
                   }
                 case _ =>
