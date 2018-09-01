@@ -109,7 +109,7 @@ case class Node(
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)
 
 
-  @inline def foreachNode(a: Node => Unit): Unit = {
+  def foreachNode(a: Node => Unit): Unit = {
     a(this)
     childs.foreach(_.foreachNode(a))
   }

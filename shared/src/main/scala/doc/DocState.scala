@@ -265,8 +265,8 @@ case class DocState private (
     case _ => false
   }
 
-  def isRichNormalOrVisual: Boolean = mode match {
-    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
+  def isRichNormalOrNoneEmptyVisual: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(a, _))) => a.nonEmpty
     case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => true
     case _ => false
   }

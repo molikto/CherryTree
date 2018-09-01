@@ -5,6 +5,7 @@ import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{Atom, SpecialChar}
+import model.mode.Content.{RichInsert, RichVisual}
 import model.{data, mode, operation}
 import model.range.IntRange
 
@@ -42,23 +43,88 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
     }
   }
 
-  new OverrideCommand {
-    override def showInCommandMenu(modal: Boolean): Boolean = false
-    override val description: String = "expand selection left"
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Left)
-    override def available(a: DocState): Boolean = a.isRich && !a.isRichNormal
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.empty
+  trait ShiftLeftRightCommand extends OverrideCommand {
+
+    override def available(a: DocState): Boolean = {
+      if (a.isRich) {
+        val (_, _, mode) = a.asRich
+        mode match {
+          case model.mode.Content.RichInsert(pos) => true
+          case model.mode.Content.RichVisual(a, b) => a.isEmpty
+          case _ => false
+        }
+      } else {
+        false
+      }
     }
   }
 
-  new OverrideCommand {
+  new ShiftLeftRightCommand {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+    override val description: String = "expand selection left"
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Left)
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val (_, rich, mode) = a.asRich
+      mode match {
+        case model.mode.Content.RichInsert(pos) =>
+          if (pos == 0) {
+            DocTransaction.empty
+          } else {
+            DocTransaction(a.copyContentMode({
+              val move = rich.before(pos).range.start
+              RichVisual(IntRange(pos, pos), IntRange(move, move))
+            }))
+          }
+        case model.mode.Content.RichVisual(fix, move) =>
+          val pos = move.start
+          if (pos == 0) {
+            DocTransaction.empty
+          } else {
+            DocTransaction(a.copyContentMode({
+              val move = rich.before(pos).range.start
+              if (move == fix.start) {
+                RichInsert(move)
+              } else {
+                RichVisual(fix, IntRange(move, move))
+              }
+            }))
+          }
+      }
+    }
+  }
+
+  new ShiftLeftRightCommand {
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "expand selection right"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Right)
     override def available(a: DocState): Boolean = a.isRich && !a.isRichNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.empty
+      val (_, rich, mode) = a.asRich
+      mode match {
+        case model.mode.Content.RichInsert(pos) =>
+          if (pos == rich.size) {
+            DocTransaction.empty
+          } else {
+            DocTransaction(a.copyContentMode({
+              val move = rich.after(pos).range.until
+              RichVisual(IntRange(pos, pos), IntRange(move, move))
+            }))
+          }
+        case model.mode.Content.RichVisual(fix, move) =>
+          val pos = move.start
+          if (pos == rich.size) {
+            DocTransaction.empty
+          } else {
+            DocTransaction(a.copyContentMode({
+              val move = rich.after(pos).range.until
+              if (move == fix.start) {
+                RichInsert(move)
+              } else {
+                RichVisual(fix, IntRange(move, move))
+              }
+            }))
+          }
+      }
     }
   }
 
