@@ -206,10 +206,20 @@ abstract class DocumentView extends View with EditorView {
 
   private var duringVisualUpDown = false
   private var visualMotionX = -1
+  private val tempSelection: raw.Range = document.createRange()
 
   protected def flushSelection(force: Boolean = false, userModeUpdate: Boolean = false): Unit = {
     if (!duringVisualUpDown && userModeUpdate && currentSelection != nonEditableSelection) {
-      visualMotionX = (toRect(currentSelection.getBoundingClientRect()).middleX - dom.offsetLeft).toInt
+      val sel = currentDoc.mode match {
+        case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(a, b))) =>
+          val r = tempSelection
+          r.setStart(currentSelection.startContainer, currentSelection.startOffset)
+          r.setEnd(currentSelection.endContainer, currentSelection.endOffset)
+          r.collapse(a.start > b.start)
+          r
+        case _ => currentSelection
+      }
+      visualMotionX = (toRect(sel.getBoundingClientRect()).middleX - dom.offsetLeft).toInt
       if (model.debug_selection) {
         motionXView.style.left = s"${visualMotionX}px"
       }
@@ -706,7 +716,9 @@ abstract class DocumentView extends View with EditorView {
 
         val sel = a match {
           case model.mode.Content.RichVisual(a, b) =>
-            val r =currentSelection.cloneRange()
+            val r = tempSelection
+            r.setStart(currentSelection.startContainer, currentSelection.startOffset)
+            r.setEnd(currentSelection.endContainer, currentSelection.endOffset)
             r.collapse(a.start > b.start)
             r
           case _ => currentSelection
