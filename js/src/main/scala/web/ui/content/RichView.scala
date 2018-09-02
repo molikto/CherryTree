@@ -386,11 +386,11 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       if (line.meet(rangeRect)) {
         if (min == null) {
           min = range
-          minDiff = rangeRect.distance(xPos)
+          minDiff = rangeRect.distanceMightNeg(xPos)
           minSize = rangeRect.width
           minX = rangeRect.left
         } else {
-          val diff = rangeRect.distance(xPos)
+          val diff = rangeRect.distanceMightNeg(xPos)
           if (diff < minDiff || (diff == minDiff && rangeRect.width < minSize)) {
             minDiff = diff
             minSize = rangeRect.width

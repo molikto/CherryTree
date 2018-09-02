@@ -18,7 +18,7 @@ package object model extends Picklers {
   val debug_scroll = debug_view && true
   var debug_model = true
   val debug_transmit = true
-  val debug_selection = debug_view && false
+  val debug_selection = debug_view && true
 
   var debug_RenderEmptyInsertionPointAsBox = false
 
