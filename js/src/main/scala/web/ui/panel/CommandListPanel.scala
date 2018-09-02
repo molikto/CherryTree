@@ -33,6 +33,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
 
   private val onPanelClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
     ev.currentTarget.asInstanceOf[HTMLElement].parentElement.classList.toggle("hide-children")
+    doc().focus()
   }
 
   val res = div(
