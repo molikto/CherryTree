@@ -11,20 +11,10 @@
  **/
 
 .unselectable {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
 .text-selectable {
-    -webkit-touch-callout: text;
-    -webkit-user-select: text;
-    -khtml-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
     user-select: text;
 }
 
@@ -324,6 +314,7 @@
     order: -1;
     opacity: 0.5;
     user-select: none;
+    caret-color: transparent;
 }
 
 .ct-d-hold-folded {
@@ -636,14 +627,13 @@ block selection
 }
 
 .ct-cg-atom {
+ display: inline-block;
 }
 
 /*
  color: #abb2bf;
 */
 .ct-latex {
- display: inline-block;
- box-sizing: border-box;
 }
 
 .ct-inline-html {
