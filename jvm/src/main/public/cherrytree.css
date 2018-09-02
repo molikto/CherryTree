@@ -621,9 +621,6 @@ block selection
 }
 
 
-.ct-cg-node {
-}
-
 .ct-cg-atom {
  display: inline-block;
 }
@@ -656,6 +653,7 @@ block selection
     font-style: normal;
     color: #636e83;
     font-weight:normal;
+    font-family: 'Gentium Book Basic', serif, sans-serif;
 }
 
 

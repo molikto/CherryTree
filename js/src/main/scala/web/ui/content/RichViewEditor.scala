@@ -145,6 +145,21 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
     }
     val (node, offset, unicode) = posInDom(pos)
     if (unicode == -1) {
+      if (offset > 0) {
+        node.childNodes(offset - 1) match {
+          case t: raw.Text =>
+            // LATER try not count it
+            return updateExistingInsertingTextNodeIn(t, t.textContent.length, t.textContent.codePointCount(0, t.textContent.length))
+          case _ =>
+        }
+      }
+      if (offset < node.childNodes.length) {
+        node.childNodes(offset) match {
+          case t: raw.Text =>
+            return updateExistingInsertingTextNodeIn(t, 0, 0)
+          case _ =>
+        }
+      }
       updateTempEmptyTextNodeIn(node, offset)
     } else {
       updateExistingInsertingTextNodeIn(node, offset, unicode)
