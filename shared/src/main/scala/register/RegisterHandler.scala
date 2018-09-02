@@ -30,10 +30,10 @@ trait RegisterHandler extends RegisterInterface {
 
   private var system: Registerable = null
 
-  protected var justSet = false
+  protected var registerJustSet = false
 
   override def setRegister(a: Int): Unit = {
-    justSet = true
+    registerJustSet = true
     append = false
     if (a >= 'a' && a <= 'z') {
       curRegister = a

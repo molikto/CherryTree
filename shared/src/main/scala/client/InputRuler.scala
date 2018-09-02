@@ -7,8 +7,12 @@ import model.cursor.Node
 import model.data.{SpecialChar, Unicode}
 import model.{data, operation}
 
+import scala.collection.mutable.ArrayBuffer
+
 
 abstract class InputRule(val a: String) {
+  def shortDesc: String
+  def longDesc: String = shortDesc
   val pt = Pattern.compile(a + "$")
   def create(doc: DocState, at: model.cursor.Node, pos: Int, start: Int, end: Int): DocTransaction
 }
@@ -21,6 +25,7 @@ abstract class InputRule(val a: String) {
        None
      )
    }
+   override def shortDesc: String = ""
  }
 
 class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pattern.quote(a)) {
@@ -31,6 +36,8 @@ class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pa
       DocTransaction.empty
     }
   }
+  override def shortDesc: String = a
+  override def longDesc: String = "typing at the beginning of a node to change to content type"
 }
 
 
@@ -48,11 +55,14 @@ class ParentChildrenTypeRule(a: String, ty: data.Node.ChildrenType) extends Inpu
     }
     DocTransaction.empty
   }
+  override def shortDesc: String = a
+  override def longDesc: String = "typing at the beginning of a node to change to list type"
 }
 
 trait InputRuler { self: Client =>
 
-  private val inputRules = Seq(
+
+  private val inputRules: ArrayBuffer[InputRule] = ArrayBuffer(
     new ReplaceInputRule("--", "–"),
     new ReplaceInputRule("–-", "—"),
     new ReplaceInputRule("-–", "—"),
@@ -73,18 +83,12 @@ trait InputRuler { self: Client =>
     new ReplaceInputRule("<--", "⟵"), new ReplaceInputRule("←-", "⟵"),
     new ReplaceInputRule("<==>", "⇔"), new ReplaceInputRule("⇐>", "⇔"),
     new ReplaceInputRule("<==", "⇐"),
-    new ReplaceInputRule("==>", "⇒"),
-    new ContentTypeRule("> ", data.Node.ContentType.Cite),
-    new ContentTypeRule("###### ", data.Node.ContentType.Heading(6)), // shit! order is important!
-    new ContentTypeRule("##### ", data.Node.ContentType.Heading(5)),
-    new ContentTypeRule("#### ", data.Node.ContentType.Heading(4)),
-    new ContentTypeRule("### ", data.Node.ContentType.Heading(3)),
-    new ContentTypeRule("## ", data.Node.ContentType.Heading(2)),
-    new ContentTypeRule("# ", data.Node.ContentType.Heading(1)),
-    new ParentChildrenTypeRule("1. ", data.Node.ChildrenType.OrderedList),
-    new ParentChildrenTypeRule("- ", data.Node.ChildrenType.DashList),
-    new ParentChildrenTypeRule("* ", data.Node.ChildrenType.UnorderedList),
+    new ReplaceInputRule("==>", "⇒")
   )
+
+  def registerInputRule(a: InputRule): Unit = {
+    inputRules.append(a)
+  }
 
   def extraInputRuleOperation(d: DocState, op: model.transaction.Node): Option[DocTransaction] = {
     op match {

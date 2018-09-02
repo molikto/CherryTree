@@ -41,13 +41,14 @@ abstract class CommandHandler extends Settings with CommandInterface {
     new defaults.NodeVisual(),
     new defaults.NodeMove(),
     new defaults.NodeDelete(),
+    new defaults.NodeStyle(),
     new defaults.NodeFold(),
-    new defaults.NodeMisc(),
     yankPaste,
     new defaults.UndoRedo(),
     new defaults.Scroll(),
   )
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
+
 
 
   private val insertModeCommands = commands.filter(_.emptyAsFalseInInsertMode)
@@ -360,8 +361,8 @@ abstract class CommandHandler extends Settings with CommandInterface {
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
     val ak = hasExit || res || (enableModal && !state.isRichInsert && !key.meta && !key.control)
-    if (justSet) {
-      justSet = false
+    if (registerJustSet) {
+      registerJustSet = false
     } else {
       if (hasExit || res) {
         setRegister(-1)

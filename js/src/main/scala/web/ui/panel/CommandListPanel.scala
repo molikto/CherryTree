@@ -70,13 +70,14 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                   paddingRight := "4px",
                   paddingTop := "5px",
                   paddingBottom := "5px",
-                  Some(span(tag("kbd")(`class` := "ct-kbd2", "N"), " ")).filter(_ => c.repeatable),
-                  if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.actTripleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1triple"), " ") else Seq.empty[Frag] : Frag,
-                  c.textCommand.map(a => span(tag("kbd")(`class` := "ct-kbd", ":" + a), " ")),
+                  Some(span(tag("kbd")(`class` := "ct-kbd2", "N", title := "this command is repeatable when prefixed by a number"), " ")).filter(_ => c.repeatable),
+                  if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double", title := "double click"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.actTripleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1triple", title := "triple click"), " ") else Seq.empty[Frag] : Frag,
+                  c.inputRule.map(a => span(tag("kbd")(`class` := "ct-kbd", a.shortDesc, title := a.longDesc), " ")),
+                  c.textCommand.map(a => span(tag("kbd")(`class` := "ct-kbd", ":" + a, title := "use command menu to invoke this command"), " ")),
                   c.keys.map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
-                  if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char", title := "this command needs have a char as argument"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion", title := "this command needs a motion as argument"), " ") else Seq.empty[Frag] : Frag,
                   c.description)
               ).render
               dom.asInstanceOf[js.Dynamic].command = c.asInstanceOf[scala.scalajs.js.Any]

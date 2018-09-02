@@ -175,6 +175,14 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
 
+  new TextualCommand {
+    override val description: String = "copy node link"
+    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asContent).refOfThis()))
+    }
+  }
+
 
 
   // these are currently NOT implemented becuase we want a different mark system
