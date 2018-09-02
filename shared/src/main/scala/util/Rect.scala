@@ -2,9 +2,9 @@ package util
 
 case class Rect(left: Double, top: Double, width: Double, height: Double) extends Comparable[Rect] {
 
-  def distance(xPos: Int): Int = {
+  def distanceMightNeg(xPos: Int): Int = {
     if (contains(xPos, middleY)) {
-      0
+      - Math.min(Math.abs(left - xPos).toInt, Math.abs(right - xPos).toInt)
     } else {
       Math.min(Math.abs(left - xPos).toInt, Math.abs(right - xPos).toInt)
     }
