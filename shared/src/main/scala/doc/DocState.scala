@@ -6,6 +6,7 @@ import model.cursor.Node
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
+import search.Search
 import settings.Settings
 
 
@@ -16,6 +17,7 @@ case class DocState private (
   badMode: Boolean,
   userFoldedNodes: Map[String, Boolean]
 ) {
+
   def changeContentType(cur: cursor.Node,
     to: Option[data.Node.ContentType],
     opts: transaction.Node = Seq.empty

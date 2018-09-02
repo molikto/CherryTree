@@ -306,8 +306,6 @@ abstract class DocumentView extends View with EditorView {
     nonEditableSelection.setStart(noEditable.childNodes(0), 0)
     nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
 
-    val DocState(node, zoom, _, _, _) = client.state
-
     currentDoc = client.state
     latexMacroCache.update(currentDoc)
     latexMacroCache.rebuildAndMarkNoDirty()
@@ -698,8 +696,9 @@ abstract class DocumentView extends View with EditorView {
     editor.onMouseFocusOn(currentDoc.mode.get.focus, range, true, false, maybeNormal = true)
   }
 
-  def visualUpDownMotion(isUp: Boolean, count: Int, enterVisual: Boolean): Unit = {
-    if (count == 0) return
+  def visualUpDownMotion(isUp: Boolean, blockWiseCount: Int, enterVisual: Boolean): Unit = {
+    val isBlockwise = blockWiseCount >= 0
+    val count = 1 // we don't accept multiple lines now
     duringVisualUpDown = true
     currentDoc.mode match {
       case Some(model.mode.Node.Content(node, a)) =>
@@ -746,7 +745,7 @@ abstract class DocumentView extends View with EditorView {
 
         while (i < count) {
           if (isUp) {
-            if (line > 0) {
+            if (!isBlockwise && line > 0) {
               line -= 1
             } else {
               mover.visualUp(cur) match {
@@ -757,7 +756,7 @@ abstract class DocumentView extends View with EditorView {
               }
             }
           } else {
-            if (line < lineCount - 1) {
+            if (!isBlockwise && line < lineCount - 1) {
               line += 1
             } else {
               mover.visualDown(cur) match {

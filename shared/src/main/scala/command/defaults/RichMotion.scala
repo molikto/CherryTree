@@ -106,6 +106,22 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override def move(content: Rich, a: Int): Int = content.rangeAfter(a).until
   }
 
+
+
+  new UpDownCommand(true, false, false) {
+    override val description: String = "move up visual line"
+    // DIFFERENCE we always go to first char now
+    // DIFFERENCE k and - is merged
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Up)
+    override val defaultKeys: Seq[KeySeq] = Seq("gk")
+  }
+
+  new UpDownCommand(false, false, false) {
+    override val description: String = "move down visual line"
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Down)
+    override val defaultKeys: Seq[KeySeq] = Seq("gj")
+  }
+
   new SimpleRichMotionCommand() with InsertRichMotionCommand {
     override def repeatable: Boolean = false
     override val description: String = "move to beginning"

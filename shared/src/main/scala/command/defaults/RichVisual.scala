@@ -62,7 +62,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
 
   new ShiftLeftRightCommand {
     override def showInCommandMenu(modal: Boolean): Boolean = false
-    override val description: String = "expand selection left"
+    override val description: String = "start/expand selection left"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Left)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, mode) = a.asRich
@@ -102,7 +102,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
 
   new ShiftLeftRightCommand {
     override def showInCommandMenu(modal: Boolean): Boolean = false
-    override val description: String = "expand selection right"
+    override val description: String = "start/expand selection right"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Right)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, mode) = a.asRich
@@ -138,6 +138,21 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
           }
       }
     }
+  }
+
+
+
+
+  new UpDownCommand(true, false, true) with OverrideCommand {
+    override val description: String = "start/expand selection up"
+    // DIFFERENCE we always go to first char now
+    // DIFFERENCE k and - is merged
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Up)
+  }
+
+  new UpDownCommand(false, false, true) with OverrideCommand {
+    override val description: String = "start/expand selection down"
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Down)
   }
 
   new Command {

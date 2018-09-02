@@ -146,8 +146,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       docView.scrollToBottom()
     case Client.ViewMessage.CopyToClipboard(str) =>
       util.copyTextToClipboard(str)
-    case Client.ViewMessage.VisualUpDownMotion(isUp, count, enterVisual) =>
-      docView.visualUpDownMotion(isUp, count, enterVisual)
+    case Client.ViewMessage.VisualUpDownMotion(isUp, blockWiseCount, enterVisual) =>
+      docView.visualUpDownMotion(isUp, blockWiseCount, enterVisual)
     case Client.ViewMessage.ExitVisual =>
       docView.exitVisual()
     case Client.ViewMessage.ScrollToNodeTop(cur) =>

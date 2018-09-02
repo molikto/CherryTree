@@ -12,66 +12,17 @@ import model.data.Unicode
 class NodeMotion extends CommandCategory("node: motion") {
 
 
-
-
-  /**
-    * CTRL-M and <CR>)
-    * _     N  _            down N-1 lines, on the first non-blank character
-    */
-  // LATER these
-  abstract class NodeMotionCommand extends Command {
-
-    override def showInCommandMenu(modal: Boolean): Boolean = false
-    override def repeatable: Boolean = true
-    def move(data: DocState, a: cursor.Node): Option[cursor.Node] = None
-    def message: Option[ViewMessage] = None
-
-    override def available(a: DocState): Boolean = a.mode.nonEmpty
-
-    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      def act(r: cursor.Node): cursor.Node = (0 until count).foldLeft(r) {(r, _) => move(a, r).getOrElse(r)}
-      DocTransaction(Seq.empty, Some(a.mode match {
-        case Some(m) => m match {
-          case v@model.mode.Node.Visual(_, mm) => v.copy(move = act(mm))
-          case kkk@model.mode.Node.Content(n, cc) =>
-            model.data.Node.defaultMode(a.node, act(n), enableModal)
-        }
-        case None => throw new IllegalArgumentException("Not allowed")
-      }), viewMessagesBefore = message.toSeq)
-    }
-  }
-
-  new NodeMotionCommand {
+  new UpDownCommand(true, true, false) {
     override val description: String = "move up"
     // DIFFERENCE we always go to first char now
     // DIFFERENCE k and - is merged
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Up, Shift + Up)
     override val defaultKeys: Seq[KeySeq] = Seq("k", "-")
-
-    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      if (a.isNodeVisual) {
-        super.action(a, commandState, count)
-      } else {
-        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(true, count, key.exists(_.exists(_.shift))))
-      }
-    }
-    override def move(data: DocState, a: Node): Option[Node] = data.mover().visualUp(a)
   }
 
-  new NodeMotionCommand {
+  new UpDownCommand(false, true, false) {
     override val description: String = "move down"
-    override def hardcodeKeys: Seq[KeySeq] = Seq(Down, Shift + Down)
     override val defaultKeys: Seq[KeySeq] = Seq("j", "+")
-
-    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      if (a.isNodeVisual) {
-        super.action(a, commandState, count)
-      } else {
-        DocTransaction.message(Client.ViewMessage.VisualUpDownMotion(false, count, key.exists(_.exists(_.shift))))
-      }
-    }
-
-    override def move(data: DocState, a: Node): Option[Node] = data.mover().visualDown(a)
+    override def move(data: DocState, a: cursor.Node): Option[cursor.Node] = data.mover().visualDown(a)
   }
 
   val parent: Command = new NodeMotionCommand {
