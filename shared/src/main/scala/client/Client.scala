@@ -50,7 +50,7 @@ object Client {
     case class ScrollToNodeTop(cur: cursor.Node) extends ViewMessage
     case class QuickSearch(currentDoc: Boolean) extends ViewMessage
     case class CopyToClipboard(a: String) extends ViewMessage
-    case class VisualUpDownMotion(isUp: Boolean, count: Int, intoVisual: Boolean) extends ViewMessage
+    case class VisualUpDownMotion(isUp: Boolean, blockWiseCount: Int, intoVisual: Boolean) extends ViewMessage
     case object ExitVisual extends ViewMessage
   }
 }

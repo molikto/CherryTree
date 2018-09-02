@@ -14,9 +14,6 @@ class NodeVisual extends CommandCategory("node: visual") {
   // v_CTRL-V CTRL-V       highlight blockwise or stop highlighting
 
 
-  // TODO gv
-  // gv       gv           start highlighting on previous visual area
-
   new Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "enter/exit node visual mode"
@@ -41,6 +38,7 @@ class NodeVisual extends CommandCategory("node: visual") {
     }
 
   }
+
 
 
   new Command {

@@ -13,10 +13,6 @@ import scala.collection.mutable.ArrayBuffer
 class NodeMove extends CommandCategory("node: move") {
 
 
-  // LATER
-  //unindent-row	<
-  //indent-row	>
-
   abstract class MoveCommand extends  Command {
     override def available(a: DocState): Boolean = a.isContent
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
