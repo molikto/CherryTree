@@ -813,4 +813,6 @@ class Client(
 
   override def onKeyDown(k: Key): Boolean = keyDown(k)
 
+
+  commands.flatMap(_.inputRule).foreach(registerInputRule)
 }

@@ -1,6 +1,6 @@
 package command
 
-import client.Client
+import client.{Client, InputRule}
 import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.data.Unicode
@@ -32,7 +32,8 @@ abstract class Command {
 
   def actTripleClick: Boolean = false
 
-  
+  val inputRule: Seq[InputRule] = Seq.empty
+
   def priority(c: KeySeq): Int = if (defaultKeys.contains(c)) {
       1
   } else {
