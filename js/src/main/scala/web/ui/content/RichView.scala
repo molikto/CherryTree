@@ -135,7 +135,12 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   /**
     * ct-cg is control glyph
     * ct-c-xxx and root is valid container
-    * text node and ct-cg-node is valid container childs
+    * valid items
+    *   ct-cg-node
+    *      with valid container inside: format
+    *      with simple p and cg-cc-coded: coded
+    *      with ct-cg-atom: atomic
+    *   text
     */
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
@@ -218,7 +223,8 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
         span(
           `class` := "ct-cg-node",
           cg("`"),
-          span(`class` := "ct-c-code", c.str),
+          span(`class` := "ct-c-code",
+            if (c.str.isEmpty) Seq.empty[Frag] : Frag else c.str),
           cg("`")
         )
       case Text.Plain(c) => stringFrag(c.str)
@@ -278,16 +284,6 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     }
   }
 
-  def atomSelectionBoundingRect(atom: Atom, range: Range): Rect = {
-    if (atom != null && atom.isAtomic) {
-      val eli = nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement]
-      toRect(eli.getBoundingClientRect())
-    } else {
-      toRect(range.getBoundingClientRect())
-    }
-    //if (range.startContainer == range.endContainer && range.startOffset == range.endOffset)
-  }
-
   override def readVisualSelectionLine(range: Range, isUp: Boolean): Int = {
     if (isEmpty) {
       0
@@ -296,7 +292,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       val lines = RichView.visualLines._2
       val offset = readOffset(range.startContainer, range.startOffset, false)
       val atom = if (offset != rich.size) rich.after(offset) else null
-      val rect = atomSelectionBoundingRect(atom, range).withBorder(4, -2)
+      val rect = toRect(range.getBoundingClientRect()).withBorder(4, -2)
       val pred = (r: Rect) => r.meet(rect)
       val selection = if (isUp) lines.indexWhere(pred) else lines.lastIndexWhere(pred)
       val sel = if (selection == -1) 0 else selection
@@ -382,7 +378,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       val (tn, tp, _) = posInDom(range.until, a, if (i + 1 == atoms.length) null else atoms(i + 1))
       sel.setStart(sel.endContainer, sel.endOffset)
       sel.setEnd(tn, tp)
-      val rangeRect = atomSelectionBoundingRect(a, sel).withBorder(4, -2)
+      val rangeRect = toRect(sel.getBoundingClientRect()).withBorder(4, -2)
       if (line.meet(rangeRect)) {
         if (min == null) {
           min = range
@@ -453,7 +449,6 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   }
 
   private[content] def readOffset(a: Node, o: Int, isEnd: Boolean): Int = {
-    val head = document.getElementsByTagName("head").item(0)
     if (dom.contains(a)) {
       if (a == extraNode) {
         readOffsetNormalizedIndex(a.parentNode, indexOf(a), isEnd)
@@ -676,52 +671,24 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     */
   private[content] def posInDom(pos: Int, ss0: Atom = null, ee0: Atom = null): (Node, Int, Int) = {
     val ret = if (pos == 0) {
-      if (isEmpty) {
-        (root, 0, -1)
-      } else if (rich.text.head.isPlain) {
-        (nodeAt(Seq(0)), 0, 0)
-      } else {
-        (nodeChildArray(root), 0, -1)
-      }
+      (root, 0, -1)
     } else if (pos == rich.size) {
-      rich.text.last match {
-        case plain: Text.Plain =>
-          (nodeAt(Seq(rich.text.size - 1)), plain.unicode.str.length, plain.unicode.size)
-        case _ =>
-          (nodeChildArray(root), rich.text.size, -1)
-      }
+      (root, rich.text.size, -1)
     } else {
       val ss = if (ss0 == null) rich.before(pos) else ss0
       val ee = if (ee0 == null) rich.after(pos) else ee0
-      ss match {
-        case p: Atom.PlainGrapheme =>
+      (ss, ee) match {
+        case (p: Atom.PlainGrapheme, g: Atom.PlainGrapheme) =>
           (nodeAt(ss.nodeCursor), ss.text.asPlain.unicode.toStringPosition(p.unicodeUntil), p.unicodeUntil)
-        case s: Atom.SpecialOrMarked =>
-          ee match {
-            case es: Atom.SpecialOrMarked =>
-              if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
-                (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
-              } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
-                (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
-              } else { // different sibling node
-                (nodeChildArray(nodeAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1, -1)
-              }
-            case ep: Atom.PlainGrapheme =>
-              (nodeAt(ee.nodeCursor), 0, 0)
-            case ec: Atom.CodedGrapheme =>
-              (nodeAt(ee.nodeCursor), 0, 0)
-            case _ =>
-              throw new IllegalStateException("Not possible")
-          }
-        case c: Atom.CodedGrapheme =>
-          val unicode = ss.text.asCoded.content
-          ee match {
-            case es: Atom.SpecialOrMarked =>
-              (nodeAt(c.nodeCursor), unicode.toStringPosition(unicode.size), unicode.size)
-            case ec: Atom.CodedGrapheme =>
-              (nodeAt(c.nodeCursor), unicode.toStringPosition(ec.unicodeIndex), ec.unicodeIndex)
-            case _ =>
-              throw new IllegalStateException("Not possible")
+        case (p: Atom.CodedGrapheme, g: Atom.CodedGrapheme) =>
+          (nodeAt(ss.nodeCursor), ss.text.asCoded.content.toStringPosition(p.unicodeUntil), p.unicodeUntil)
+        case (s, es) =>
+          if (ss.nodeCursor.size < ee.nodeCursor.size) { // one wraps another
+            (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
+          } else if (ss.nodeCursor == ee.nodeCursor) { // same node, empty
+            (nodeChildArray(nodeAt(ss.nodeCursor)), 0, -1)
+          } else { // different sibling node
+            (nodeChildArray(nodeAt(model.cursor.Node.parent(ss.nodeCursor))), ss.nodeCursor.last + 1, -1)
           }
       }
     }
