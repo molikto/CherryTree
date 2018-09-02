@@ -4,12 +4,12 @@ import command.Key
 import model.data.Unicode
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all._
-import view.EditorInterface
+import view.{RichEditInterface, SourceEditInterface}
 import web.view._
 import web.ui._
 
 object UrlAttributeEditDialog {
-  abstract class Anchor(val editor: EditorInterface) extends OverlayAnchor {
+  abstract class Anchor(val editor: RichEditInterface) extends OverlayAnchor {
   }
 }
 class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedOverlay[UrlAttributeEditDialog.Anchor] {

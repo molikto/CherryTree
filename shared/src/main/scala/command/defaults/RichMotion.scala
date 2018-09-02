@@ -6,7 +6,7 @@ import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Mo
 import model.range.IntRange
 import command.Key._
 import doc.{DocState, DocTransaction}
-import model.data.{Rich, Unicode}
+import model.data.{Atom, Rich, Unicode}
 import model.mode.Content.{RichInsert, RichVisual}
 import settings.Settings
 
@@ -27,11 +27,6 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val description: String = ""
 
     override def defaultKeys: Seq[KeySeq] = Seq()
-  }
-
-  trait RichMotionCommand extends Command with command.RichMotion {
-    override def showInCommandMenu(modal: Boolean): Boolean = false
-    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrNoneEmptyVisual || commandState.needsMotion
   }
 
 
@@ -138,6 +133,19 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override def move(content: Rich, a: IntRange):  (IntRange, Int) = (content.rangeEnd, 1)
     override def move(content: Rich, a: Int): Int = content.size
   }
+
+
+
+  new SimpleRichMotionCommand  {
+    override val description: String = "move to matching format symbol"
+    override def defaultKeys: Seq[KeySeq] = Seq("%")
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = super.available(a, commandState) && a.isRich((_, r, a) => a.special)
+    override def repeatable: Boolean = false
+    override protected def move(content: Rich, r: IntRange): (IntRange, Int) = {
+      (content.after(r.start).asInstanceOf[Atom.Special].another.range, 1)
+    }
+  }
+
 
   // screen related is not implemented
   // LATER

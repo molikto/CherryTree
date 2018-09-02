@@ -35,7 +35,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     delimitationSettings.exists(a => a._1 == SpecialChar.LaTeX && a._3 == dollarSign && a._2 == dollarSign)
 
   
-  def editor: _root_.view.EditorInterface
+  def editor: _root_.view.SourceEditInterface
   
   private val codeHeight = "calc(100% - 32px)"
   private val ta = textarea(

@@ -96,6 +96,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
               }
             }))
           }
+        case _ => throw new IllegalStateException("Not reachable")
       }
     }
   }
@@ -136,6 +137,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
               }
             }))
           }
+        case _ => throw new IllegalStateException("Not reachable")
       }
     }
   }
