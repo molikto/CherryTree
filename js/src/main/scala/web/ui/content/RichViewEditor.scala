@@ -44,8 +44,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: EditorInter
     })
   }
 
-
-
   override def refreshRangeSelection(): Unit = {
     if (fakeRangeSelection != null) {
       setRangeSelection(fakeRangeSelection, false)

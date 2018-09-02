@@ -33,6 +33,23 @@ class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pa
   }
 }
 
+
+class ParentChildrenTypeRule(a: String, ty: data.Node.ChildrenType) extends InputRule(Pattern.quote(a)) {
+  override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
+    if (pos == a.length && at != doc.zoom) {
+      val par = model.cursor.Node.parent(at)
+      if (doc.node(par).attribute(data.Node.ChildrenType).getOrElse(data.Node.ChildrenType.UnorderedList) != ty) {
+        return DocTransaction(
+          Seq(
+            operation.Node.rich(at, operation.Rich.delete(start, end)),
+            operation.Node.AttributeChange(par, data.Node.ChildrenType, Some(ty))),
+          None)
+      }
+    }
+    DocTransaction.empty
+  }
+}
+
 trait InputRuler { self: Client =>
 
   private val inputRules = Seq(
@@ -64,6 +81,9 @@ trait InputRuler { self: Client =>
     new ContentTypeRule("### ", data.Node.ContentType.Heading(3)),
     new ContentTypeRule("## ", data.Node.ContentType.Heading(2)),
     new ContentTypeRule("# ", data.Node.ContentType.Heading(1)),
+    new ParentChildrenTypeRule("1. ", data.Node.ChildrenType.OrderedList),
+    new ParentChildrenTypeRule("- ", data.Node.ChildrenType.DashList),
+    new ParentChildrenTypeRule("* ", data.Node.ChildrenType.UnorderedList),
   )
 
   def extraInputRuleOperation(d: DocState, op: model.transaction.Node): Option[DocTransaction] = {

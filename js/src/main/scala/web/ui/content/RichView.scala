@@ -278,10 +278,10 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     }
   }
 
-  def boundingRect(atom: Atom, range: Range): Rect = {
+  def atomSelectionBoundingRect(atom: Atom, range: Range): Rect = {
     if (atom != null && atom.isAtomic) {
       val eli = nodeAt(atom.nodeCursor).asInstanceOf[HTMLElement]
-      Rect(eli.clientLeft, eli.clientTop, eli.clientWidth, eli.clientHeight)
+      toRect(eli.getBoundingClientRect())
     } else {
       toRect(range.getBoundingClientRect())
     }
@@ -289,19 +289,25 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   }
 
   override def readVisualSelectionLine(range: Range, isUp: Boolean): Int = {
-    sortVisualLine()
-
-    val lines = RichView.visualLines._2
-    val offset = readOffset(range.startContainer, range.startOffset, false)
-    val atom = if (offset != rich.size) rich.after(offset) else null
-    val rect = boundingRect(atom, range).withBorder(4, -2)
-    val pred = (r: Rect) => r.meet(rect)
-    val selection = if (isUp) lines.indexWhere(pred) else lines.lastIndexWhere(pred)
-    val sel = if (selection == -1) 0 else selection
-    sel
+    if (isEmpty) {
+      0
+    } else {
+      sortVisualLine()
+      val lines = RichView.visualLines._2
+      val offset = readOffset(range.startContainer, range.startOffset, false)
+      val atom = if (offset != rich.size) rich.after(offset) else null
+      val rect = atomSelectionBoundingRect(atom, range).withBorder(4, -2)
+      val pred = (r: Rect) => r.meet(rect)
+      val selection = if (isUp) lines.indexWhere(pred) else lines.lastIndexWhere(pred)
+      val sel = if (selection == -1) 0 else selection
+      sel
+    }
   }
 
   override def rangeAroundLine(li: Int, xPos: Int, insert: Boolean): Option[IntRange] = {
+    if (isEmpty) {
+      return Some(IntRange(0, 0))
+    }
     sortVisualLine()
     val line = RichView.visualLines._2(li)
     var min: IntRange = null
@@ -376,7 +382,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       val (tn, tp, _) = posInDom(range.until, a, if (i + 1 == atoms.length) null else atoms(i + 1))
       sel.setStart(sel.endContainer, sel.endOffset)
       sel.setEnd(tn, tp)
-      val rangeRect = boundingRect(a, sel).withBorder(4, -2)
+      val rangeRect = atomSelectionBoundingRect(a, sel).withBorder(4, -2)
       if (line.meet(rangeRect)) {
         if (min == null) {
           min = range
