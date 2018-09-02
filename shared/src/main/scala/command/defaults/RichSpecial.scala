@@ -135,6 +135,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
   }).toMap
 
 
+
   abstract class WrapCommand(deli: SpecialChar.Delimitation) extends DeliCommand(deli) {
 
     override def emptyAsFalseInInsertMode: Boolean = true

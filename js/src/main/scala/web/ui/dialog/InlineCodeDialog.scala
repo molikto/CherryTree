@@ -9,7 +9,7 @@ object InlineCodeDialog {
   }
 }
 
-class InlineCodeDialog(override val editor: _root_.view.EditorInterface, override val layer: OverlayLayer) extends SourceEditOverlay[InlineCodeDialog.Anchor] with MountedOverlay[InlineCodeDialog.Anchor]  { // order is important!
+class InlineCodeDialog(override val editor: _root_.view.SourceEditInterface, override val layer: OverlayLayer) extends SourceEditOverlay[InlineCodeDialog.Anchor] with MountedOverlay[InlineCodeDialog.Anchor]  { // order is important!
 
   override def showLineNumber = false
 

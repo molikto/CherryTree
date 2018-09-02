@@ -1,12 +1,13 @@
 package web.ui.dialog
 
 import org.scalajs.dom.raw.HTMLElement
+import view.SourceEditInterface
 import web.view.{CoveringOverlay, OverlayLayer}
 import web.view._
 
 
 class CoveringSourceEditDialog(
-  override val editor: _root_.view.EditorInterface,
+  override val editor: SourceEditInterface,
   protected val layer: OverlayLayer,
   val coveringElement: HTMLElement
 ) extends SourceEditOverlay[SourceEditOption] { // ordering is important

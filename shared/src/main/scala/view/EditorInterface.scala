@@ -11,7 +11,7 @@ import monix.reactive.Observable
 import register.RegisterInterface
 import settings.Settings
 
-trait SourceEditInterface extends RegisterInterface {
+trait SourceEditInterface extends RegisterInterface with Settings {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
   def onExitSubMode(): Unit
@@ -20,14 +20,15 @@ trait SourceEditInterface extends RegisterInterface {
   def onSourceEditorRedo(): Unit
 }
 
-trait RichEditInterface {
+trait RichEditInterface extends Settings {
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int, mergeWithPrevious: Boolean): mode.Content.Rich
   def onAttributeModified(url: Unicode, title: Unicode)
   // returns if there is any data change
   def onDeleteCurrentSelectionAndStartInsert(): Boolean
+  def onExitSubMode(): Unit
 }
 
-trait EditorInterface extends SourceEditInterface with RichEditInterface with Settings {
+trait EditorInterface extends SourceEditInterface with RichEditInterface {
 
   def onDoubleClick(): Unit
 

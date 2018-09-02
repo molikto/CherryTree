@@ -53,7 +53,7 @@ class NodeMove extends CommandCategory("node: move") {
   }
   new IndentCommand {
     override val description: String = "unindent the node"
-    override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h", "<<")
+    override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h", "<")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.parent(node.start).flatMap(p => {
         mover.parent(p).map(pp => pp :+ (p.last + 1))
@@ -62,7 +62,7 @@ class NodeMove extends CommandCategory("node: move") {
   }
   new IndentCommand {
     override val description: String = "indent the node"
-    override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l", ">>")
+    override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l", ">")
     override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
       mover.previous(node.start).map(a => a :+ mover.size(a))
   }

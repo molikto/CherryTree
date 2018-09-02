@@ -53,6 +53,12 @@ class CommandCategory(val name: String) extends Settings {
   }
 
 
+  trait RichMotionCommand extends Command with command.RichMotion {
+    override def showInCommandMenu(modal: Boolean): Boolean = false
+    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrNoneEmptyVisual || commandState.needsMotion
+  }
+
+
   abstract class UpDownCommand(val isUp: Boolean, val isBlockWise: Boolean, val hasShift: Boolean) extends NodeMotionCommand {
     override def repeatable: Boolean = isBlockWise
     override def stayInVisual: Boolean = hasShift
