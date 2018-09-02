@@ -45,6 +45,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
 
   trait ShiftLeftRightCommand extends OverrideCommand {
 
+
     override def available(a: DocState): Boolean = {
       if (a.isRich) {
         val (_, _, mode) = a.asRich
@@ -103,7 +104,6 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "expand selection right"
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Right)
-    override def available(a: DocState): Boolean = a.isRich && !a.isRichNormal
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, mode) = a.asRich
       mode match {

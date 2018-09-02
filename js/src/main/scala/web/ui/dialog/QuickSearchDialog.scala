@@ -111,7 +111,7 @@ class QuickSearchDialog(val client: Client,
 
   override def renderItem(t: (model.cursor.Node, String), index: Int): HTMLElement = {
     val node = client.state.node(t._1)
-    val ct = contentViewAndHold(node, -1)
+    val ct = contentViewAndHold(node)
     ct.classList.add("ct-menu-item")
     ct
   }

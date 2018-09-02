@@ -229,7 +229,7 @@ class SimpleLayoutDocumentView(
 
   private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val box = div(`class` := classesFromNodeAttribute(root, -1)).render
+    val box = div(`class` := classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
     val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
@@ -307,7 +307,7 @@ class SimpleLayoutDocumentView(
           if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
             replaceContent(at, old.content, to.node(at).contentType)
           }
-          boxAt(at).className = classesFromNodeAttribute(to.node(at), -1)
+          boxAt(at).className = classesFromNodeAttribute(to.node(at))
           val fr = frameAt(at)
           toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
         }
