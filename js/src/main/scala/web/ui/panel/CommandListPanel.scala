@@ -16,6 +16,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
     minWidth := "150px",
     width := "100%",
     height := "100%",
+    whiteSpace := "pre-wrap",
     overflowY := "scroll",
     `class` := "ct-scroll ct-panel",
     padding := "24px",
