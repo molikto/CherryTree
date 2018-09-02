@@ -22,6 +22,8 @@ trait DocFramer {
   val docFramerIsSmall: Int = 0
   val docFramerExtraClass: String = ""
 
+  protected val parentHeadingLevel: Int = -1
+
   val onClick: String => Unit = null
   val onDoubleClick: String => Unit = null
 
@@ -77,6 +79,7 @@ trait DocFramer {
     val oldView = contentViewFromWithHold(a)
     if (ContentView.matches(data.content, data.contentType, oldView)) {
       oldView.updateContent(data.content)
+      updateContentViewAndHoldAttribute(a, data)
     } else {
       oldView.destroy()
       val box = a.childNodes(0)
@@ -84,13 +87,13 @@ trait DocFramer {
     }
   }
 
-  def contentViewAndHold(node: model.data.Node, parentHeadingLevel: Int): HTMLElement = {
+  def contentViewAndHold(node: model.data.Node): HTMLElement = {
     div(
       `class` := "ct-d-folded",
       display := "flex",
       flexDirection := "row",
       div(
-        `class` := classesFromNodeAttribute(node, parentHeadingLevel),
+        `class` := classesFromNodeAttribute(node),
         create(node)
       ),
       tag("span")(
@@ -103,11 +106,11 @@ trait DocFramer {
     ).render
   }
 
-  def updateContentViewAndHoldAttribute(a: HTMLElement, node: model.data.Node, parentHeadingLevel: Int): Unit = {
-    a.childNodes(0).asInstanceOf[HTMLElement].className = classesFromNodeAttribute(node, parentHeadingLevel)
+  def updateContentViewAndHoldAttribute(a: HTMLElement, node: model.data.Node): Unit = {
+    a.childNodes(0).asInstanceOf[HTMLElement].className = classesFromNodeAttribute(node)
   }
 
-  def classesFromNodeAttribute(node: model.data.Node, parentHeadingLevel: Int): String = {
+  def classesFromNodeAttribute(node: model.data.Node): String = {
     "ct-d-box " + (node.contentType.map {
       case model.data.Node.ContentType.Cite => "ct-d-cite"
       case model.data.Node.ContentType.Hr => "ct-d-hr"
