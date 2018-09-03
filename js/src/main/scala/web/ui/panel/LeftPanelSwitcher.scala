@@ -11,6 +11,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
   private val container = div(
     display := "flex",
     marginLeft := "22px",
+    minWidth := "240px",
     width := "calc(100% - 22px)",
     height := "100%"
   ).render

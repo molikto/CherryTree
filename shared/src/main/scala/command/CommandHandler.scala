@@ -15,11 +15,12 @@ import settings.Settings
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
+import search.SearchHandler
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
 
-abstract class CommandHandler extends Settings with CommandInterface {
+abstract class CommandHandler extends Settings with CommandInterface with SearchHandler {
   self: Client =>
 
 
@@ -211,11 +212,18 @@ abstract class CommandHandler extends Settings with CommandInterface {
           } else {
             tryMergeThenRec()
           }
-        case (Part.IdentifiedCommand(key1, c1, _) +: Part.IdentifiedCommand(key2, c2, _) +: Nil, _) =>
+        case (Part.IdentifiedCommand(key1, c1, _) +: (p2@Part.IdentifiedCommand(key2, c2, _)) +: Nil, _) =>
           if (c2.isInstanceOf[Motion] && c2.needsChar && char.isEmpty) {
             true
-          } else if (c1.needsMotion && c2.isInstanceOf[Motion]) {
-            actAndMarkComplete(c1, count, key1, char, Some(c2.asInstanceOf[Motion]))
+          } else if (c1.needsMotion) {
+            c2 match {
+              case motion: Motion =>
+                actAndMarkComplete(c1, count, key1, char, Some(motion))
+              case c: command.Command if c.clearOnConflict =>
+                buffer.clear()
+                buffer.append(p2)
+                rec(waitForStrong)
+            }
           } else {
             tryMergeThenRec()
           }

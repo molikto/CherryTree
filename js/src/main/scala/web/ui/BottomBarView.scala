@@ -27,7 +27,7 @@ import scala.util.Random
 class BottomBarView(val client: Client) extends UnselectableView  {
 
 
-  val size = "24px"
+  val size = 24
 
 
   private val mode = span("").render
@@ -50,7 +50,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
-    height := size,
+    height := size + "px",
     flexDirection := "row",
     connection,
     divider(),

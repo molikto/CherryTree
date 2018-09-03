@@ -307,7 +307,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     sortVisualLine()
     val line = RichView.visualLines._2(li)
     var min: IntRange = null
-    var minDiff: Int = 0
+    var minDiff: Double = 0
     var minX = 0.0
     var minSize: Double = 0
 
@@ -382,11 +382,13 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       if (line.meet(rangeRect)) {
         if (min == null) {
           min = range
-          minDiff = rangeRect.distanceMightNeg(xPos)
+          minDiff = rangeRect.distanceOrInsideRatio(xPos)
+          if (model.debug_selection) println(s"distance $a, $minDiff ${rangeRect.left} ${rangeRect.width}")
           minSize = rangeRect.width
           minX = rangeRect.left
         } else {
-          val diff = rangeRect.distanceMightNeg(xPos)
+          val diff = rangeRect.distanceOrInsideRatio(xPos)
+          if (model.debug_selection) println(s"distance $a, $diff ${rangeRect.left} ${rangeRect.width}")
           if (diff < minDiff || (diff == minDiff && rangeRect.width < minSize)) {
             minDiff = diff
             minSize = rangeRect.width
@@ -480,8 +482,12 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       rich.startPosOf(cursorOf(a)) + a.textContent.codePointCount(0, o)
     } else if (isValidContainer(a)) { // a node inside a valid container
       if (o >= childNodesLength(a)) {
-        val cur = cursorOf(childNodes(a, o - 1))
-        rich.startPosOf(cur) + rich(cur).size
+        if (a == root) {
+          rich.size
+        } else {
+          val cur = cursorOf(a.parentNode)
+          rich.startPosOf(cur) + rich(cur).asDelimited.contentSize + 1
+        }
       } else {
         rich.startPosOf(cursorOf(childNodes(a, o)))
       }

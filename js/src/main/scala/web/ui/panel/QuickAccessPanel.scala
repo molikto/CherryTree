@@ -117,7 +117,8 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     val zoom = state.zoom
     val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
     val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
-    if (previousZoom == zoom && focusSame) {
+    val zoomSame = previousZoom == zoom
+    if (zoomSame && focusSame) {
       if (emptyDataChange) {
         return
       }
@@ -143,16 +144,18 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     val nearestHeadingCur = zoom.inits.find(l => state.node(l).isH1)
     val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
     parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
+    var tocChanged = false
     if (emptyDataChange && previousNearestHeading == nearestHeading.map(_.uuid)) {
       // no toc changes
     } else {
+      tocChanged = true
       if (previousNearestHeading.isDefined != nearestHeading.isDefined) {
         tocView.dom.style.display = if (nearestHeading.isDefined) "auto" else "none"
       }
       previousNearestHeading = nearestHeading.map(_.uuid)
       tocView.update(nearestHeading.map(_.childs).getOrElse(Seq.empty))
     }
-    if (!focusSame) {
+    if (!focusSame || tocChanged) {
       previousFocus = currentFocusTitleNode.map(_.uuid)
       tocView.updateFocus(previousFocus, hideLevel, dom)
     }

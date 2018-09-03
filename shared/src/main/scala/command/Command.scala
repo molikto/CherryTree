@@ -26,6 +26,7 @@ abstract class Command {
   def needsChar: Boolean = false
   def needsMotion: Boolean = false
   def documentOnly: Boolean = false
+  def clearOnConflict: Boolean = false
   def needsStuff = needsMotion || needsChar || documentOnly
 
   def actDoubleClick: Boolean = false
