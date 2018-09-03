@@ -9,6 +9,7 @@ import model.mode.Content.CodeInside
 import model.range.IntRange
 import monix.reactive.Observable
 import register.RegisterInterface
+import search.SearchHandler
 import settings.Settings
 
 trait SourceEditInterface extends RegisterInterface with Settings {
@@ -28,7 +29,7 @@ trait RichEditInterface extends Settings {
   def onExitSubMode(): Unit
 }
 
-trait EditorInterface extends SourceEditInterface with RichEditInterface {
+trait EditorInterface extends SourceEditInterface with RichEditInterface with SearchHandler {
 
   def onDoubleClick(): Unit
 

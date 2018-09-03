@@ -111,8 +111,6 @@ abstract class DocumentView extends View with EditorView {
     }
   })
 
-
-
   event("compositionupdate", (a: CompositionEvent) => {
     flushBeforeKeyDown()
     if (duringValidComposition) editor.disableRemoteStateUpdate(true, false)
@@ -449,6 +447,25 @@ abstract class DocumentView extends View with EditorView {
   }
 
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    * gaint mess of mouse, keyboard arrow handling
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    */
 
 
   private var isRightMouseButton: Boolean = false
@@ -461,9 +478,9 @@ abstract class DocumentView extends View with EditorView {
       dx * dx + dy * dy < 100 && ano.t - t < limit
     }
   }
-  private val acientMouseDown = Click(-1L, 0, 0)
-  private var lastMouseDown = acientMouseDown
-  private var oneButLastMouseDown = acientMouseDown
+  private val noMouseDown = Click(-1L, 0, 0)
+  private var lastMouseDown = noMouseDown
+  private var oneButLastMouseDown = noMouseDown
   private var mouseFirstContent: model.cursor.Node = null
   private var mouseFirstContentRich: RichView = null
   private var mouseSecondContent: model.cursor.Node = null
@@ -488,23 +505,23 @@ abstract class DocumentView extends View with EditorView {
     }
   }
 
-  protected override def postFlushSelectionOnArrowKey(): Unit = {
-    if (currentSelection != nonEditableSelection) {
-      currentSelection.collapse(false)
-      flushSelection()
-    }
-    editor.disableRemoteStateUpdate(true, true)
-    clearAllPreviousReading()
-    readSelectionAfterMouseUpWithDelay(1, null, null, false)
-  }
+//  protected override def postFlushSelectionOnArrowKey(): Unit = {
+//    if (currentSelection != nonEditableSelection) {
+//      currentSelection.collapse(false)
+//      flushSelection()
+//    }
+//    editor.disableRemoteStateUpdate(true, true)
+//    clearAllPreviousReading()
+//    readSelectionAfterMouseUpWithDelay(1, null, null, false)
+//  }
 
   event("mousedown", (a: MouseEvent) => {
     editor.flushBeforeMouseDown()
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
     if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
-      lastMouseDown = acientMouseDown
-      oneButLastMouseDown = acientMouseDown
+      lastMouseDown = noMouseDown
+      oneButLastMouseDown = noMouseDown
       val pc = findParentContent(a.target.asInstanceOf[raw.Node])
       if (pc != null) {
         editor.onVisualMode(pc, pc)

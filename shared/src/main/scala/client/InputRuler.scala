@@ -59,8 +59,7 @@ class ParentChildrenTypeRule(a: String, ty: data.Node.ChildrenType) extends Inpu
   override def longDesc: String = "typing at the beginning of a node to change to list type"
 }
 
-trait InputRuler { self: Client =>
-
+trait InputRuler {
 
   private val inputRules: ArrayBuffer[InputRule] = ArrayBuffer(
     new ReplaceInputRule("--", "–"),

@@ -69,15 +69,19 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     }
   }
 
+
   private val rightPanel = div(
     width := "100%",
     height := "100%",
     display := "flex",
+    minWidth := "360px",
+    position := "relative",
     flexDirection := "column-reverse",
     overflow := "hidden").render
   dom.appendChild(rightPanel)
 
-  new BottomBarView(client).attachToNode(rightPanel)
+  val bottomBar = new BottomBarView(client)
+  bottomBar.attachToNode(rightPanel)
 
   private val docView = new SimpleLayoutDocumentView(client, client).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView]
 
@@ -88,6 +92,9 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
   }
 
   val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, dom)
+
+
+  new SearchBar(client, () => docView, bottomBar.size).attachToNode(rightPanel)
 
   {
     val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)

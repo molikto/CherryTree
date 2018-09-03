@@ -4,6 +4,7 @@ import command.Key.Grapheme
 import doc.DocTransaction
 import model.data.Unicode
 import register.{RegisterInterface, Registerable}
+import search.SearchHandler
 import undoer.UndoerInterface
 
 trait CommandInterfaceAvailable {
@@ -17,7 +18,7 @@ trait CommandInterfaceAvailable {
 
 }
 
-trait CommandInterface extends CommandInterfaceAvailable with RegisterInterface with UndoerInterface {
+trait CommandInterface extends CommandInterfaceAvailable with RegisterInterface with UndoerInterface with SearchHandler {
 
 
 }
