@@ -184,18 +184,6 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
   }
 
 
-  new Command {
-    override val description: String = "search"
-    override def defaultKeys: Seq[KeySeq] = Seq("/")
-    override def hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "f")
-    override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
-    override def clearOnConflict: Boolean = true
-    override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.startSearch(hardcodeKeys.head == key)
-      DocTransaction.empty
-    }
-
-  }
 
 
   // these are currently NOT implemented becuase we want a different mark system

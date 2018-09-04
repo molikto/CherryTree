@@ -2,7 +2,7 @@ package web.ui
 
 import command.Key._
 import scalatags.JsDom.all._
-import search.SearchHandler
+import search.{Search, SearchHandler}
 import web.view._
 import web.ui._
 import org.scalajs.dom._
@@ -66,7 +66,6 @@ class SearchBar(
     if (state.uiShown && dismissed) {
       show()
       focus()
-      search.textContent = state.uncommited.term
       search.select()
     } else if (!state.uiShown && !dismissed) {
       dismiss()

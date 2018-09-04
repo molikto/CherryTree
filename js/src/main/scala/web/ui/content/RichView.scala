@@ -585,15 +585,14 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
 
   private[content] def readPlainInsertionPointBeforeFlush(isNode: Node = null): Int = {
     val sel = window.getSelection()
-    if (sel.rangeCount >= 1) {
+    if (sel.isCollapsed) {
       if (isEmpty) {
         0
       } else {
         if (model.debug_selection) {
           window.console.log("read insertion", sel)
         }
-        val range = sel.getRangeAt(0)
-        return readOffset(range.endContainer, range.endOffset, true)
+        return readOffset(sel.anchorNode, sel.anchorOffset, true)
       }
     }
     -1
@@ -622,7 +621,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   }
 
 
-  private def childNodes(childArray: Node, j: Int): Node = {
+  private[content] def childNodes(childArray: Node, j: Int): Node = {
     var c: Node = null
     if (extraNode == null || extraNode.parentNode != childArray) {
       c = childArray.childNodes(j)
@@ -640,7 +639,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     c
   }
 
-  private def childNodesLength(a: Node) = {
+  private[content] def childNodesLength(a: Node) = {
     if (extraNode == null || extraNode.parentNode != a) {
       a.childNodes.length
     } else {
