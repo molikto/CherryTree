@@ -6,7 +6,7 @@ import model.cursor.Node
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
-import search.Search
+import search.{Search, SearchOccurrence}
 import settings.Settings
 
 
@@ -50,6 +50,14 @@ case class DocState private (
 
 
   def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
+
+  /**
+    * we only return the first one now...
+    */
+  def searchInShown(a: Search, after: Boolean): Seq[SearchOccurrence] = {
+    val mv = mover()
+    Seq.empty
+  }
 
   def quickSearch(tt: Seq[data.Unicode],
     isLaTeXMacro: Boolean,

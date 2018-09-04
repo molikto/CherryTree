@@ -30,6 +30,7 @@ abstract class CommandHandler extends Settings with CommandInterface with Search
 
   private val defaultCategories =  Seq(
     miscCommands,
+    new defaults.Search(),
     new defaults.RichMotion(),
     new defaults.RichTextObject(),
     new defaults.RichInsertEnter(),
