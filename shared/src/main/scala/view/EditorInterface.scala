@@ -29,7 +29,7 @@ trait RichEditInterface extends Settings {
   def onExitSubMode(): Unit
 }
 
-trait EditorInterface extends SourceEditInterface with RichEditInterface with SearchHandler {
+trait EditorInterface extends SourceEditInterface with RichEditInterface {
 
   def onDoubleClick(): Unit
 

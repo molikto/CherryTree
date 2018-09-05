@@ -35,7 +35,17 @@ package object util extends ObservablePropertyImplicits  {
 
   private val debugOn = false
 
-  def isAscii(c: String): Boolean = Unicode(c).forall(isAscii)
+  def isAscii(c: String): Boolean = {
+    var i = 0
+    while (i < c.length) {
+      val j = c.codePointAt(i)
+      if (!isAscii(j)) {
+        return false
+      }
+      i = c.offsetByCodePoints(i, 1)
+    }
+    true
+  }
 
   def isEnglishLetter(c: Int): Boolean =
     ('a' <= c && c <= 'z') ||
@@ -43,7 +53,7 @@ package object util extends ObservablePropertyImplicits  {
 
   def isEnglishLetter(a: String): Boolean = Unicode(a).forall(isEnglishLetter)
 
-  def isAscii(codepoint: Int): Boolean = codepoint >= 0 && codepoint <= 0x7f
+  @inline def isAscii(codepoint: Int): Boolean = codepoint >= 0 && codepoint <= 0x7f
 
   def matchCommandSearch(str: String, term: String) = str.contains(term)
 

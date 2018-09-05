@@ -13,6 +13,7 @@ import org.scalajs.dom.raw.HTMLElement
 import util.Rect
 import view.EditorInterface
 import scalatags.JsDom.all.{s, _}
+import search.Search
 import web.ui
 import web.ui.content.{ContentView, ContentViewEditor, RichView}
 import web.view._
@@ -356,8 +357,26 @@ abstract class DocumentView extends View with EditorView {
       updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
       latexMacroCache.inactive()
+      updateSearchingHighlight()
     }))
   }
+
+  private var searching: Search = null
+
+  private def updateSearchingHighlight(): Unit = {
+    if (searching == null) {
+      fakeSelections.innerHTML = ""
+    } else {
+      val ocs = currentDoc.searchInShown(searching)
+      // render search ocs
+    }
+  }
+
+
+  observe(client.searchState.doOnNext(search => {
+    searching = search.searching.orNull
+    updateSearchingHighlight()
+  }))
 
 
   def startSelection(range: raw.Range): Unit = {
