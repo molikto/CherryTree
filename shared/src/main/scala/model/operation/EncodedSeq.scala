@@ -3,6 +3,7 @@ package model.operation
 import model._
 import Type.Type
 import model.data.EncodedSeqReader
+import model.mode.Content.RichInsert
 import model.ot.Rebased
 import util._
 import model.range.IntRange
@@ -34,6 +35,7 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
 
     override def translate(start: Int): EncodedSeq = copy(at = at + start)
 
+    def transformPos(s: Int) = if (s < at) s else if (s > at || leftGlued) s + unicode.size else s
     def transformRange(r: IntRange): IntRange = r match {
       case IntRange(start, until) =>
         if (at <= start) IntRange(start + unicode.size, until + unicode.size)
@@ -43,9 +45,11 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
 
     override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(s) =>
-        mode.Content.RichInsert(if (s < at) s else if (s > at || leftGlued) s + unicode.size else s)
+        mode.Content.RichInsert(transformPos(s))
       case mode.Content.RichVisual(a, b) =>
         mode.Content.RichVisual(transformRange(a), transformRange(b))
+      case mode.Content.RichSelection(a, b) =>
+        mode.Content.RichSelection(transformPos(a), transformPos(b))
       case mode.Content.RichNormal(r) =>
         if (r.isEmpty) {
           assert(at == 0)
@@ -124,14 +128,27 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       }
     }
 
+    def transformPos(k: Int): (Int, Boolean) = {
+      if (k <= r.start) {
+        (k, false)
+      } else if (k >= r.until) {
+        (k - r.size, false)
+      } else {
+        (r.start, true)
+      }
+    }
+
     override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = i match {
       case mode.Content.RichInsert(k) =>
-        if (k <= r.start) {
-          (i, false)
-        } else if (k >= r.until) {
-          (mode.Content.RichInsert(k - r.size), false)
+        val (kk, isBad) = transformPos(k)
+        (mode.Content.RichInsert(kk), isBad)
+      case mode.Content.RichSelection(a, b) =>
+        val (aa, isBadA) = transformPos(a)
+        val (bb, isBadB) = transformPos(b)
+        if (aa == bb) {
+          (mode.Content.RichInsert(aa), isBadA || isBadB)
         } else {
-          (mode.Content.RichInsert(r.start), true)
+          (mode.Content.RichSelection(aa, bb), isBadA || isBadB)
         }
      case mode.Content.RichVisual(a, b) =>
        (transformAtomicRange(a), transformAtomicRange(b)) match {
@@ -221,17 +238,23 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       }
     }
 
+    def transformPos(k: Int) = {
+      if (r.deletesCursor(k)) {
+        throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
+      } else if (k <= r.start) {
+        k
+      } else {
+        k + sizeDiff
+      }
+    }
+
     override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
-        if (r.deletesCursor(k)) {
-          throw new IllegalStateException("ReplaceAtomic should not be called with insertion inside")
-        } else if (k <= r.start) {
-          i
-        } else {
-          mode.Content.RichInsert(k + sizeDiff)
-        }
+        RichInsert(transformPos(k))
       case mode.Content.RichVisual(a, b) =>
         mode.Content.RichVisual(transformRange(a), transformRange(b))
+      case mode.Content.RichSelection(a, b) =>
+        mode.Content.RichSelection(transformPos(a), transformPos(b))
       case mode.Content.RichNormal(range) =>
         mode.Content.RichNormal(transformRange(range))
       case sub: mode.Content.RichSubMode =>
@@ -286,14 +309,20 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       }
     }
 
+    def transformPos(k: Int) = {
+      if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size
+    }
+
     override private[model] def transformRichMaybeBad(i: mode.Content.Rich): (mode.Content.Rich, Boolean) = (i match {
       case mode.Content.RichInsert(k) =>
-        mode.Content.RichInsert(if (k <= r.start) k else if (k < r.until) k + left.size else k + left.size + right.size)
+        mode.Content.RichInsert(transformPos(k))
       case mode.Content.RichVisual(a, b) =>
         (transformRange(a), transformRange(b)) match {
           case (Some(aa), Some(bb)) => mode.Content.RichVisual(aa, bb)
           case _ => throw new IllegalArgumentException("Should not usually happen")
         }
+      case mode.Content.RichSelection(a, b) =>
+        mode.Content.RichSelection(transformPos(a), transformPos(b))
       case mode.Content.RichNormal(range) =>
         if (range.isEmpty) {
           mode.Content.RichNormal(IntRange(0, 1)) // LATER we know all our surround is some surround by special char!!

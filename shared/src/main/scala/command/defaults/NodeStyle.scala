@@ -17,7 +17,7 @@ class NodeStyle extends CommandCategory("node: format") {
 
   new TextualCommand {
     override val description: String = "reset content to: code"
-    override protected def available(a: DocState): Boolean = a.isRich
+    override protected def available(a: DocState): Boolean = a.isRichNonSub
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asContent
       DocTransaction(

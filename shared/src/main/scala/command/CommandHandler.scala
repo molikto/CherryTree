@@ -48,7 +48,7 @@ abstract class CommandHandler extends Settings with CommandInterface with Search
     yankPaste,
     new defaults.UndoRedo(),
     new defaults.Scroll(),
-  )
+  ).filter(_.commands.nonEmpty)
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 
 

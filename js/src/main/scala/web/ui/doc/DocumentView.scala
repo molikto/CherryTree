@@ -210,11 +210,11 @@ abstract class DocumentView extends View with EditorView {
   protected def flushSelection(force: Boolean = false, userModeUpdate: Boolean = false): Unit = {
     if (!duringVisualUpDown && userModeUpdate && currentSelection != nonEditableSelection) {
       val sel = currentDoc.mode match {
-        case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(a, b))) =>
+        case Some(model.mode.Node.Content(_, v: model.mode.Content.RichRange)) =>
           val r = tempSelection
           r.setStart(currentSelection.startContainer, currentSelection.startOffset)
           r.setEnd(currentSelection.endContainer, currentSelection.endOffset)
-          r.collapse(a.start > b.start)
+          r.collapse(!v.leftIsAnchor)
           r
         case _ => currentSelection
       }
@@ -265,7 +265,7 @@ abstract class DocumentView extends View with EditorView {
         case model.mode.Node.Content(at, aa) =>
           allowCompositionInput = aa match {
             case _: model.mode.Content.RichInsert => true
-            case _: model.mode.Content.RichVisual => true
+            case _: model.mode.Content.RichRange => true
             case _ => false
           }
           clearNodeVisual()
@@ -750,11 +750,11 @@ abstract class DocumentView extends View with EditorView {
         content.constructVisualLineBuff()
 
         val sel = a match {
-          case model.mode.Content.RichVisual(a, b) =>
+          case v: model.mode.Content.RichRange =>
             val r = tempSelection
             r.setStart(currentSelection.startContainer, currentSelection.startOffset)
             r.setEnd(currentSelection.endContainer, currentSelection.endOffset)
-            r.collapse(a.start > b.start)
+            r.collapse(!v.leftIsAnchor)
             r
           case _ => currentSelection
         }

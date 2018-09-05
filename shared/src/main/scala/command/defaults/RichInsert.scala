@@ -37,7 +37,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   new RichInsertCommand with OverrideCommand {
 
-    override def available(a: DocState): Boolean = if (!enableModal) a.isRich else super.available(a)
+    override def available(a: DocState): Boolean = if (!enableModal) a.isRichNonSub else super.available(a)
 
     override val description: String = "delete text before cursor / delete node if empty"
     override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace) +: (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
@@ -54,27 +54,9 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
           } else {
             deleteOnPosStart(a, commandState, rich, cur)
           }
-
-        /*
-
-        // a complex implementation we don't want the burden now
-
-        if (i > 0) {
-            val atom = rich.before(i)
-            if (atom.isGrapheme) {
-              DocTransaction.empty
-            } else {
-              DocTransaction(
-                Seq(operation.Node.rich(cur, operation.Rich.deleteOrUnwrapAt(rich, atom.range.start))),
-              None) // we don't explicitly set mode, as insert mode transformation is always correct
-            }
-          } else {
-            deleteOnPosStart(a, commandState, rich, cur)
-          }
-          */
-        case v: model.mode.Content.RichVisual =>
+        case v: model.mode.Content.RichRange =>
           deleteRichNormalRange(a, commandState, cur, v.merged, true, noHistory = true)
-        case _ => throw new IllegalStateException("Not supported mode")
+        case _ => throw new IllegalStateException(s"Not supported mode $mode")
       }
     }
   }

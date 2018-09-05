@@ -61,7 +61,8 @@ case class DocState private (
       val mv = mover()
       Seq.empty
     }
-    lastSearch._2
+    Seq.empty
+    //lastSearch._2
   }
 
   def quickSearch(tt: Seq[data.Unicode],
@@ -95,7 +96,7 @@ case class DocState private (
   def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
 
 
-  def consistencyCheck(): Unit = {
+  def consistencyCheck(enableModal: Boolean): Unit = {
 
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
@@ -110,6 +111,11 @@ case class DocState private (
     }
     if (isRich) {
       val (cur, rich, mo) = asRich
+      if (enableModal) {
+        assert(!mo.isInstanceOf[model.mode.Content.RichSelection])
+      } else {
+        assert(!mo.isInstanceOf[model.mode.Content.RichNormalOrVisual])
+      }
       def checkAtomicRichRange(a: IntRange) = {
         try {
           val r1 = rich.afters(a.start).next().range
@@ -139,14 +145,12 @@ case class DocState private (
       }
       def ret(mo: model.mode.Content.Rich): Unit = {
         mo match {
+          case v@model.mode.Content.RichSelection(a, b) =>
+            //checkAtomicTextRichRange(v.merged)
           case model.mode.Content.RichVisual(a, b) =>
-            if (a.nonEmpty) {
-              assert(b.nonEmpty)
-              checkAtomicRichRange(a)
-              checkAtomicRichRange(b)
-            } else {
-              assert(b.isEmpty)
-            }
+            assert(b.nonEmpty)
+            checkAtomicRichRange(a)
+            checkAtomicRichRange(b)
           case model.mode.Content.RichInsert(i) =>
             assert(i <= rich.size)
             if (i != 0 && i != rich.size) {
@@ -267,6 +271,12 @@ case class DocState private (
 
   def isNonEmptyRich: Boolean = mode match {
     case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) => node(cur).content.nonEmpty
+    case _ => false
+  }
+
+  def isRichNonSub: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, rich: model.mode.Content.RichSubMode)) => false
+    case Some(model.mode.Node.Content(_, rich: model.mode.Content.Rich)) => true
     case _ => false
   }
 
@@ -401,6 +411,11 @@ case class DocState private (
     case _ => false
   }
 
+  def isRichRange: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, r: model.mode.Content.RichRange)) => true
+    case _ => false
+  }
+
   def isRichVisual: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
     case _ => false
@@ -457,6 +472,18 @@ case class DocState private (
     }
   }
 
+  def asRichRange: (cursor.Node, Rich, model.mode.Content.RichRange) = {
+    mode match {
+      case Some(o@model.mode.Node.Content(n, c)) =>
+        val content = rich(n)
+        c match {
+          case v: model.mode.Content.RichRange => (n, content, v)
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
+  }
+
   def asRichVisual: (cursor.Node, Rich, model.mode.Content.RichVisual) = {
     mode match {
       case Some(o@model.mode.Node.Content(n, c)) =>
@@ -488,6 +515,18 @@ case class DocState private (
         val content = rich(n)
         c match {
           case insert@model.mode.Content.RichInsert(r) => (n, content, insert)
+          case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+        }
+      case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
+    }
+  }
+
+  def asRichNormalOrVisual: (cursor.Node, Rich, model.mode.Content.RichNormalOrVisual) = {
+    mode match {
+      case Some(o@model.mode.Node.Content(n, c)) =>
+        val content = rich(n)
+        c match {
+          case nor: model.mode.Content.RichNormalOrVisual => (n, content, nor)
           case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")
         }
       case _ => throw new IllegalArgumentException("Should not call this method with not applicable state")

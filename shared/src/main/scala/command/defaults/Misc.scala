@@ -25,6 +25,9 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override val description: String = "exit current mode"
     override val hardcodeKeys: Seq[KeySeq] = Seq(Escape)
 
+
+    override def modalOnly: Boolean = true
+
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
 
 

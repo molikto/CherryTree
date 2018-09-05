@@ -18,6 +18,15 @@ class CommandCategory(val name: String) extends Settings {
 
 
 
+  val commands = new ArrayBuffer[command.Command]()
+
+  trait Command extends command.Command {
+    if (enableModal || !modalOnly) {
+      commands.append(this)
+    }
+    override def category: String = name
+  }
+
 
   /**
     * CTRL-M and <CR>)
@@ -54,6 +63,7 @@ class CommandCategory(val name: String) extends Settings {
 
 
   trait RichMotionCommand extends Command with command.RichMotion {
+    override def modalOnly: Boolean = true
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = a.isRichNormalOrNoneEmptyVisual || commandState.needsMotion
   }
@@ -71,13 +81,6 @@ class CommandCategory(val name: String) extends Settings {
     }
 
     override def move(data: DocState, a: Node): Option[Node] = if (isUp) data.mover().visualUp(a) else data.mover().visualDown(a)
-  }
-
-  val commands = new ArrayBuffer[command.Command]()
-
-  trait Command extends command.Command {
-    commands.append(this)
-    override def category: String = name
   }
   trait TextualCommand extends Command {
     override def defaultKeys: Seq[KeySeq] = Seq.empty

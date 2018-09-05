@@ -64,14 +64,14 @@ package object defaults {
           DocTransaction(model.mode.Node.Content(fix, a.node(fix).content.defaultMode(enableModal)))
         }
         (trans, Some(data))
-      case Some(model.mode.Node.Content(pos, v: model.mode.Content.RichVisual)) =>
+      case Some(model.mode.Node.Content(pos, v: model.mode.Content.RichRange)) =>
         val data = Registerable.Text(a.rich(pos).copyTextualRange(v.merged))
         commandState.yank(data, isDelete = isDelete, register = reg)
         val trans = if (isDelete) {
           deleteRichNormalRange(a, commandState, pos, v.merged, !enableModal, noHistory = true)
         } else {
           if (enableModal) {
-            DocTransaction(model.mode.Node.Content(pos, v.exitInModal))
+            DocTransaction(model.mode.Node.Content(pos, v.asInstanceOf[model.mode.Content.RichVisual].collapse))
           } else {
             DocTransaction.empty
           }

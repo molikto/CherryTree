@@ -13,6 +13,7 @@ class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
 
   trait Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
+    override def modalOnly: Boolean = true
   }
 
   // DIFFERENCE: currently not repeatable

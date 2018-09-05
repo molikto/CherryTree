@@ -210,7 +210,7 @@ class Client(
     mergeWithPreviousLocal: Boolean = false,
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
-    a.consistencyCheck()
+    a.consistencyCheck(enableModal)
     val vv = viewAdded ++ from
     val res = DocUpdate(a,
       if (vv.isEmpty) Seq.empty else vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)),
@@ -484,6 +484,9 @@ class Client(
     updateState(state, Seq.empty, Seq.empty, Undoer.Local)
   }
 
+  /**
+    *
+    */
   override def onMouseFocusOn(c: Node, ran: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean, maybeNormal: Boolean): Boolean = {
     import model._
     if (model.debug_selection) println(s"focus on $ran")
@@ -512,7 +515,7 @@ class Client(
                 if (enableModal) {
                   mode.Content.RichVisual(r.rangeAfter(a.start), r.rangeBefore(a.until)).swap(leftIsAnchor)
                 } else {
-                  mode.Content.RichVisual(IntRange(a.start, a.start), IntRange(a.until, a.until)).swap(leftIsAnchor)
+                  mode.Content.RichSelection(a.start, a.until).swap(leftIsAnchor)
                 }
               }
             }
@@ -537,7 +540,7 @@ class Client(
     state.mode match {
       case Some(model.mode.Node.Content(pos, rich: model.mode.Content.Rich)) =>
         rich match {
-          case v: model.mode.Content.RichVisual =>
+          case v: model.mode.Content.RichRange =>
             val trans = command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true, noHistory = true)
             val ret = trans.transaction.nonEmpty
             localChange(trans)
@@ -755,7 +758,7 @@ class Client(
               val zz = d.r.transformBeforeDeleted(os.zoom)
               val td = disableUpdateBecauseLocalNodeDelete._4
               state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
-              state_.consistencyCheck()
+              state_.consistencyCheck(enableModal)
               uncommitted = uncommitted.dropRight(1)
               val inverse = d.reverse(state.node)
               viewAdd = Seq((os, inverse))

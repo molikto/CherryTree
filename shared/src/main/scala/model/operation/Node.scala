@@ -274,7 +274,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
         zz,
         m0,
         a.badMode || bmm, a.userFoldedNodes)
-      ret.consistencyCheck()
+      ret.consistencyCheck(enableModal)
       ret
     }
 

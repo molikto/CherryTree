@@ -11,6 +11,7 @@ import model.{cursor, mode, operation}
 class RichChange extends CommandCategory("rich text: change") {
 
   trait Command extends super.Command {
+    override def modalOnly: Boolean = true
     override def showInCommandMenu(modal: Boolean): Boolean = false
   }
 

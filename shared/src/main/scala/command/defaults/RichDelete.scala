@@ -11,6 +11,10 @@ import model.{cursor, mode, operation}
 class RichDelete extends CommandCategory("rich text: delete") {
 
 
+
+  abstract class Command extends super.Command {
+    override def modalOnly: Boolean = true
+  }
   // LATER
   // J     N  J            join N-1 lines (delete <EOL>s)
   //v_J      {visual}J    join the highlighted lines
@@ -22,7 +26,8 @@ class RichDelete extends CommandCategory("rich text: delete") {
   new Command {
     override def repeatable: Boolean = true
     override val description: String = "delete under cursor, and more after if has N"
-    override val defaultKeys: Seq[KeySeq] = Seq("x", Delete)
+    override def hardcodeKeys: Seq[KeySeq] = Seq(Delete)
+    override val defaultKeys: Seq[KeySeq] = Seq("x")
     override def available(a: DocState): Boolean = a.isRichNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (pos, rich, normal) = a.asRichNormal
@@ -35,6 +40,7 @@ class RichDelete extends CommandCategory("rich text: delete") {
   }
 
   new Command {
+    override def modalOnly: Boolean = true
     override def repeatable: Boolean = true
     override val description: String = "delete before cursor, and more if has N"
     override val defaultKeys: Seq[KeySeq] = Seq("X")
