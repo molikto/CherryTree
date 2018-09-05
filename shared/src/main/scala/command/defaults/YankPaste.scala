@@ -15,6 +15,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
   abstract class Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
+    override def modalOnly: Boolean = true
   }
 
   new Command {
@@ -36,6 +37,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   }
 
   new TextualCommand {
+    override def modalOnly: Boolean = true
     override val description: String = "registers"
     override protected def available(a: DocState): Boolean = true
 
@@ -74,7 +76,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
   new Command {
     override val description: String = "yank to line end"
     override val defaultKeys: Seq[KeySeq] = Seq("Y")
-    override def available(a: DocState): Boolean = a.isRich
+    override def available(a: DocState): Boolean = a.isRichNonSub
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (c, rich, normal) = a.asRich
@@ -151,7 +153,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
                 putBeforeAfter(a.rich(cursor), ran)
               case model.mode.Content.RichInsert(i) =>
                 putBeforeAfter(a.rich(cursor), IntRange(i, i))
-              case v: model.mode.Content.RichVisual =>
+              case v: model.mode.Content.RichRange =>
                 val trans = deleteRichNormalRange(a, commandState, cursor, v.merged, insert = true, noHistory = true)
                 val mode = if (trans.transaction.isEmpty) a.mode0 else trans.mode.get
                 val t2 = byMode(mode.asInstanceOf[model.mode.Node.Content].a)

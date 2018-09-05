@@ -310,9 +310,9 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
     clearRangeSelection()
   }
 
-  private def updateVisualMode(fix: IntRange, move: IntRange, fromUser: Boolean): Unit = {
+  private def updateVisualMode(merged: IntRange, fromUser: Boolean): Unit = {
     fakeRangeGlowing = true
-    val (r1,_) = nonEmptySelectionToDomRange(fix.merge(move))
+    val (r1,_) = nonEmptySelectionToDomRange(merged)
     setRangeSelection(r1, fromUser)
   }
 
@@ -401,9 +401,9 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
             initMode(0)
             updateInsertMode(pos, fromUser)
           }
-        case mode.Content.RichVisual(fix, move) =>
+        case r: mode.Content.RichRange =>
           if (!sub) initMode(1)
-          updateVisualMode(fix, move, fromUser)
+          updateVisualMode(r.merged, fromUser)
         case mode.Content.RichNormal(range) =>
           if (isEmpty) {
             if (!sub) {

@@ -6,6 +6,7 @@ import client.Client.ViewMessage
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
+import model.mode.Content.RichRange
 import model.range.IntRange
 import model.{cursor, data, mode, operation}
 
@@ -13,7 +14,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
 
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
-
+    override def keysOn(modal: Boolean): Seq[KeySeq] = keys
     override val description: String = if (deli.atomic) s"insert a new ${deli.name}" else  s"insert a new/or move cursor out of ${deli.name}"
 
     override def emptyAsFalseInInsertMode: Boolean = true
@@ -84,6 +85,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
 
   SpecialChar.nonAtomic.map(deli => deli -> new DeliCommand(deli) {
 
+
+    override def modalOnly: Boolean = true
+
     override val description: String = s"change to a ${deli.name}"
 
 
@@ -141,8 +145,8 @@ class RichSpecial extends CommandCategory("rich text: format") {
     override def emptyAsFalseInInsertMode: Boolean = true
 
     override def available(a: DocState): Boolean = {
-      if (a.isRichVisual) {
-        val (node, rich, visual) = a.asRichVisual
+      if (a.isRichRange) {
+        val (node, rich, visual) = a.asRichRange
         val merge = visual.merged
         !rich.insideCoded(merge.start) && !rich.insideCoded(merge.until)
       } else {
@@ -166,21 +170,21 @@ class RichSpecial extends CommandCategory("rich text: format") {
   SpecialChar.formattedSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-      if (a.isRichVisual) {
-        a.asRichVisual match {
+      if (a.isRichRange ) {
+        a.asRichRange match {
           case (cursor, rich, visual) =>
             val r = visual.merged
             val after = rich.after(r.start)
             val before = rich.before(r.until)
             if (after.special(deli.start) && before.special(deli.end)) {
-              var ret = if (visual.fix.start > visual.move.start) {
-                mode.Content.RichVisual(rich.before(before.range.start).range.moveBy(-1),
+              val ret0 = if (!visual.leftIsAnchor) {
+                (rich.before(before.range.start).range.moveBy(-1),
                   rich.after(after.range.until).range.moveBy(-1))
               } else {
-                mode.Content.RichVisual(rich.after(after.range.until).range.moveBy(-1),
+                (rich.after(after.range.until).range.moveBy(-1),
                   rich.before(before.range.start).range.moveBy(-1))
               }
-              ret = ret.maybeEmpty(visual)
+              val ret = RichRange.create(ret0._1, ret0._2, enableModal)
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.unwrap(r.start, after.text.asDelimited))),
                 Some(a.copyContentMode(ret)))
@@ -188,12 +192,12 @@ class RichSpecial extends CommandCategory("rich text: format") {
               val soc = rich.singleSpecials(r).map(_.range)
               val remaining = r.minusOrderedInside(soc)
               val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
-              var fakePoints = if (visual.fix.start <= visual.move.start) {
-                mode.Content.RichVisual(IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
+              val fakePoints0 = if (visual.leftIsAnchor) {
+                (IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
               } else {
-                mode.Content.RichVisual(IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
+                (IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
               }
-              fakePoints = fakePoints.maybeEmpty(visual)
+              val fakePoints = RichRange.create(fakePoints0._1, fakePoints0._2, enableModal)
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
                 Some(a.copyContentMode(fakePoints)))
@@ -224,22 +228,22 @@ class RichSpecial extends CommandCategory("rich text: format") {
     */
   SpecialChar.coded.map(deli => deli -> new WrapCommand(deli) {
 
-    override def available(a: DocState): Boolean = a.isRichVisual && super.available(a)
+    override def available(a: DocState): Boolean = a.isRichRange && super.available(a)
 
     override val description: String = s"wrap selection as ${deli.name}"
-    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichVisual match {
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = a.asRichRange match {
       case (cursor, rich, visual) =>
         val r = visual.merged
         val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
-        var fakeMode =
+        val fakeMode0 =
           if (deli.atomic) {
-            mode.Content.RichVisual(p, p)
-          } else if (visual.fix.start <= visual.move.start) {
-            mode.Content.RichVisual(IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
+            (p, p)
+          } else if (visual.leftIsAnchor) {
+            (IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
           } else {
-            mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
+            (IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
           }
-        fakeMode = fakeMode.maybeEmpty(visual)
+        val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, enableModal)
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
           DocTransaction(Seq(
@@ -256,21 +260,21 @@ class RichSpecial extends CommandCategory("rich text: format") {
   SpecialChar.formattedNonSplittable.map(deli => deli -> new WrapCommand(deli) {
     override val description: String = s"wrap selection in ${deli.name}"
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction =
-      if (a.isRichVisual) {
-        a.asRichVisual match {
+      if (a.isRichRange) {
+        a.asRichRange match {
           case (cursor, rich, visual) =>
             var r = visual.merged
             val g = rich.isSubRich(r)
             if (g.isDefined) r = g.get
             if (g.isDefined) {
               val p = IntRange(r.start, r.until + deli.wrapSizeOffset)
-              var fakeMode =
-                if (visual.fix.start <= visual.move.start) {
-                  mode.Content.RichVisual(IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
+              val fakeMode0 =
+                if (visual.leftIsAnchor) {
+                  (IntRange.len(p.start, 1), IntRange.endLen(p.until, deli.newDeliEndSize))
                 } else {
-                  mode.Content.RichVisual(IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
+                  (IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
                 }
-              fakeMode = fakeMode.maybeEmpty(visual)
+              val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, enableModal)
               DocTransaction(Seq(
                 operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
                 Some(a.copyContentMode(fakeMode)))

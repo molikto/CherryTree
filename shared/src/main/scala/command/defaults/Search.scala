@@ -22,6 +22,7 @@ class Search extends CommandCategory("search & pattern matches") {
 
   new Command {
     override val description: String = "search backward"
+    override def modalOnly: Boolean = true
     override def defaultKeys: Seq[KeySeq] = Seq("?")
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
@@ -44,6 +45,7 @@ class Search extends CommandCategory("search & pattern matches") {
   new Command {
     override val description: String = "repeat last search, in opposite direction"
     override def defaultKeys: Seq[KeySeq] = Seq("N")
+    override def modalOnly: Boolean = true
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {

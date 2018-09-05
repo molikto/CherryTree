@@ -119,6 +119,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
                 "INSERT"
               case model.mode.Content.RichVisual(_, _) =>
                 "VISUAL"
+              case model.mode.Content.RichSelection(_, _) =>
+                "SELECTION"
               case model.mode.Content.RichNormal(_) =>
                 "NORMAL"
               case model.mode.Content.CodeNormal(_) =>

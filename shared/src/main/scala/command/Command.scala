@@ -21,6 +21,7 @@ abstract class Command {
   def emptyAsFalseInInsertMode: Boolean = false
   def maybeInsertModeGrapheme(u: Unicode): Boolean = false
   def textCommand: Seq[String] = Seq.empty
+  def modalOnly: Boolean = false
 
   def repeatable: Boolean = false
   def needsChar: Boolean = false
@@ -43,6 +44,7 @@ abstract class Command {
 
   def showInCommandMenu(modal: Boolean): Boolean = if (modal) keys.isEmpty else  keys.forall(_.exists(_.isSimpleGrapheme))
 
+  def keysOn(modal: Boolean) = if (modal) keys else keys.filter(!_.forall(_.isSimpleGrapheme))
   def keys:  Seq[KeySeq] = defaultKeys ++ hardcodeKeys // TODO key maps
   def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = available(a) && !commandState.needsMotion
   protected def available(a: DocState): Boolean =throw new IllegalArgumentException(s"not implemented $description")

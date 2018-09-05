@@ -17,7 +17,6 @@ package object mode {
     sealed abstract class Rich extends Content {
       def end: Int
       def start: Int
-      def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich
       def focus: IntRange
       def fixed: IntRange = focus
       def merged: IntRange
@@ -33,7 +32,10 @@ package object mode {
 
       override def focus: IntRange = IntRange(pos, pos)
       override def merged: IntRange = focus
-      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): Rich = if (r.start < pos) RichInsert(r.start) else RichInsert(r.until)
+    }
+
+    sealed trait RichNormalOrVisual extends Rich {
+      def copyWithNewFocus(r: IntRange): RichNormalOrVisual
     }
     /**
       * second parameter is a range because selection is not just one codepoint
@@ -43,7 +45,7 @@ package object mode {
       *
       * empty selection is only valid when document is empty
       */
-    case class RichNormal(range: IntRange) extends Rich with Normal {
+    case class RichNormal(range: IntRange) extends RichNormalOrVisual with Normal {
       assert(range.size != 0 || range.start == 0) // try to avoid empty selection error
       def isEmpty: Boolean = range.isEmpty
 
@@ -51,62 +53,61 @@ package object mode {
 
       override def focus: IntRange = range
       override def merged: IntRange = range
-      override def copyWithNewFocus(r: IntRange, enableModal: Boolean): Rich =
-        if (enableModal) {
-          copy(range = r)
-        } else {
-          if (range.start <= range.start) {
-            RichInsert(range.start)
-          } else {
-            RichInsert(range.until)
-          }
-        }
+      override def copyWithNewFocus(r: IntRange): RichNormalOrVisual = copy(range = r)
 
       override def end: Int = range.until
       override def start: Int = range.start
     }
-    case class RichVisual(fix: IntRange, move: IntRange) extends Rich {
-      override def fixed: IntRange = fix
-      def maybeEmpty(reflect: RichVisual): RichVisual = {
-        if (reflect.fix.isEmpty) {
-          val mgd = merged
-          if (reflect.fix.start < reflect.move.start) {
-            RichVisual(IntRange(mgd.start, mgd.start), IntRange(mgd.until, mgd.until))
-          } else {
-            RichVisual(IntRange(mgd.until, mgd.until), IntRange(mgd.start, mgd.start))
-          }
+
+    object RichRange {
+      def create(fix: IntRange, move: IntRange, enableModal: Boolean): RichRange = {
+        if (enableModal) {
+          RichVisual(fix, move)
         } else {
-          this
+          if (fix.start <= move.start) {
+            RichSelection(fix.start, move.until)
+          } else {
+            RichSelection(fix.until, move.start)
+          }
         }
       }
+    }
+    sealed trait RichRange extends Rich {
+      def merged: IntRange
+      def leftIsAnchor: Boolean
+    }
 
-      def exitInModal: Rich = if (move.isEmpty) RichInsert(move.start) else RichNormal(move)
+    case class RichSelection(fix: Int, move: Int) extends RichRange {
+      assert(fix != move)
 
-      if (fix.nonEmpty) {
-        assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)), s"wrong rich visual mode $fix $move")
-      } else {
-        assert(move.isEmpty && fix.start != move.start)
-      }
+      override def leftIsAnchor: Boolean = fix < move
 
-      def collapse(enableModal: Boolean): Rich =
-        if (enableModal && move.nonEmpty) model.mode.Content.RichNormal(move) else model.mode.Content.RichInsert(moveEnd)
+      override def merged: IntRange = if (fix < move) IntRange(fix, move) else IntRange(move, fix)
+
+      override def end: Int = merged.until
+
+      override def focus: IntRange = IntRange(move, move)
+      def swap(leftIsAnchor: Boolean): RichSelection = if (leftIsAnchor) this else RichSelection(move, fix)
+
+      override def start: Int = merged.start
+
+    }
+    case class RichVisual(fix: IntRange, move: IntRange) extends RichNormalOrVisual with RichRange {
+      override def fixed: IntRange = fix
+
+      override def leftIsAnchor: Boolean = fix.start <= move.start
+
+      assert(fix.nonEmpty && move.nonEmpty && (fix == move || !fix.overlap(move)), s"wrong rich visual mode $fix $move")
+
+      def collapse: Rich =
+        model.mode.Content.RichNormal(move)
 
       def swap: RichVisual = RichVisual(move, fix)
       def swap(leftIsAnchor: Boolean): RichVisual = if (leftIsAnchor) this else swap
       def moveEnd = if (move.start > fix.start) move.until else move.start
       override def focus: IntRange = move
       override def merged: IntRange = fix.merge(move)
-      override def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich =
-        if (enableModal && move.nonEmpty) {
-          copy(move = range)
-        } else {
-          val mm = range.merge(merged)
-          if (mm.start != merged.start) {
-            RichInsert(mm.start)
-          } else {
-            RichInsert(mm.until)
-          }
-        }
+      override def copyWithNewFocus(range: IntRange): RichNormalOrVisual = copy(move = range)
       override def end: Int = merged.until
       override def start: Int = merged.start
     }
@@ -119,8 +120,6 @@ package object mode {
       def modeBefore: Rich
       def copyWithRange(range: IntRange, rich: Rich): RichSubMode
 
-
-      override def copyWithNewFocus(range: IntRange, enableModal: Boolean): Rich = modeBefore.copyWithNewFocus(range, enableModal)
       override def focus: IntRange = modeBefore.focus
       override def merged: IntRange = modeBefore.merged
     }
@@ -199,26 +198,31 @@ package object mode {
             writeIntArray(node.toArray)
             IntRange.pickler.pickle(fix)
             IntRange.pickler.pickle(move)
-          case Visual(fix, move) =>
+          case Content(node, mode.Content.RichSelection(fix, move)) =>
             writeInt(3)
+            writeIntArray(node.toArray)
+            writeInt(fix)
+            writeInt(move)
+          case Visual(fix, move) =>
+            writeInt(4)
             writeIntArray(fix.toArray)
             writeIntArray(move.toArray)
           case Content(node, mode.Content.CodeNormal(b)) =>
-            writeInt(4)
+            writeInt(5)
             writeIntArray(node.toArray)
             writeByte(if (b) 1 else 0)
           case Content(node, mode.Content.CodeInside(a, b)) =>
-            writeInt(5)
+            writeInt(6)
             writeIntArray(node.toArray)
             writeString(a)
             writeInt(b)
           case Content(node, mode.Content.RichCodeSubMode(range, code, mode)) =>
-            writeInt(6)
+            writeInt(7)
             pickler.pickle(Content(node, mode))
             pickler.pickle(Content(node, code))
             IntRange.pickler.pickle(range)
           case Content(node, mode.Content.RichAttributeSubMode(range, mode)) =>
-            writeInt(7)
+            writeInt(8)
             pickler.pickle(Content(node, mode))
             IntRange.pickler.pickle(range)
         }
@@ -230,15 +234,16 @@ package object mode {
           case 0 => Content(readIntArray, mode.Content.RichInsert(readInt))
           case 1 => Content(readIntArray, mode.Content.RichNormal(IntRange.pickler.unpickle))
           case 2 => Content(readIntArray, mode.Content.RichVisual(IntRange.pickler.unpickle, IntRange.pickler.unpickle))
-          case 3 => Visual(readIntArray, readIntArray)
-          case 4 => Content(readIntArray, mode.Content.CodeNormal(if (readByte == 0) false else true))
-          case 5 => Content(readIntArray, mode.Content.CodeInside(readString, readInt))
-          case 6 =>
+          case 3 => Content(readIntArray, mode.Content.RichSelection(readInt, readInt))
+          case 4 => Visual(readIntArray, readIntArray)
+          case 5 => Content(readIntArray, mode.Content.CodeNormal(if (readByte == 0) false else true))
+          case 6 => Content(readIntArray, mode.Content.CodeInside(readString, readInt))
+          case 7 =>
             val r = unpickle(implicitly).asInstanceOf[mode.Node.Content]
             val j = unpickle(implicitly).asInstanceOf[mode.Node.Content].a.asInstanceOf[mode.Content.CodeInside]
             val ran = IntRange.pickler.unpickle
             Content(r.node, mode.Content.RichCodeSubMode(ran, j, r.a.asInstanceOf[mode.Content.Rich]))
-          case 7 =>
+          case 8 =>
             val r = unpickle(implicitly).asInstanceOf[mode.Node.Content]
             val ran = IntRange.pickler.unpickle
             Content(r.node, mode.Content.RichAttributeSubMode(ran, r.a.asInstanceOf[mode.Content.Rich]))

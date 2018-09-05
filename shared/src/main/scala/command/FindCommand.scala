@@ -8,6 +8,8 @@ import settings.Settings
 trait FindCommand extends Command with RichMotion {
 
 
+  override def modalOnly: Boolean = true
+
   def settings: Settings
   def reverse: FindCommand
 
@@ -18,11 +20,11 @@ trait FindCommand extends Command with RichMotion {
   def findGrapheme(a: Rich, r: IntRange, char: Unicode, count: Int, skipCurrent: Boolean): Option[IntRange]
 
   def action(a: DocState, char: Unicode, count: Int, skipCurrent: Boolean): DocTransaction = {
-    val (_, content, mm) = a.asRich
+    val (_, content, mm) = a.asRichNormalOrVisual
     def act(r: IntRange) = findGrapheme(content, mm.focus, char, count, skipCurrent)
     act(mm.focus) match {
       case Some(move) =>
-        DocTransaction(a.copyContentMode(mm.copyWithNewFocus(move, settings.enableModal)))
+        DocTransaction(a.copyContentMode(mm.copyWithNewFocus(move)))
       case None =>
         DocTransaction.empty
     }

@@ -165,7 +165,7 @@ object ClientTests extends TestSuite  {
           if (c.state.isRichInsert) {
             c.debug_unmarkTempDisableMode()
             try {
-              c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), true, -1, false)
+              c.onInsertRichTextAndViewUpdated(0, 0, Unicode(Random.nextInt().toString), false, -1, false)
             } catch {
               case e: Throwable =>
                 println("action " + ith)

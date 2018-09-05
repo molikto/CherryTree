@@ -15,9 +15,10 @@ class NodeVisual extends CommandCategory("node: visual") {
 
 
   new Command {
+    override def modalOnly: Boolean = true
     override def showInCommandMenu(modal: Boolean): Boolean = false
     override val description: String = "enter/exit node visual mode"
-    override val defaultKeys: Seq[KeySeq] = Seq("V", Ctrl + "V") // DIFFERENCE merged two command
+    override val defaultKeys: Seq[KeySeq] = Seq("V") // DIFFERENCE merged two command
     override def available(a: DocState): Boolean = a.mode match {
       case Some(m) => m match {
         case model.mode.Node.Content(_, mm) => mm.isNormalOrVisual
@@ -43,6 +44,7 @@ class NodeVisual extends CommandCategory("node: visual") {
 
   new Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
+    override def modalOnly: Boolean = true
     override val description: String = "swap movable and fixed cursor"
     override val defaultKeys: Seq[KeySeq] = Seq("o")
     override def available(a: DocState): Boolean = a.isNodeVisual

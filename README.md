@@ -27,3 +27,4 @@ release build with `sbt assembly` for the jar. more info here: https://github.co
     * `shared/.../undoer`, etc.: part of client functionality separated out
 * `jvm`: abstract server implementation
 * `js` the web client
+

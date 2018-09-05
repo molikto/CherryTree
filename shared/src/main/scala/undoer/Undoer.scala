@@ -3,6 +3,7 @@ package undoer
 import doc.{DocState, DocTransaction}
 import model.{ot, _}
 import model.data.Node
+import model.mode.Content.RichInsert
 import model.range.IntRange
 import settings.Settings
 import undoer.Undoer.Remote
@@ -170,7 +171,7 @@ trait Undoer extends UndoerInterface with Settings {
           def rec(c: model.mode.Content): model.mode.Content = c match {
             // LATER this is also hacky!!!
             case v@model.mode.Content.RichVisual(fix, move) =>
-              v.collapse(enableModal)
+              v.collapse
             case model.mode.Content.RichAttributeSubMode(range, modeBefore) =>
               rec(modeBefore)
             case sub@model.mode.Content.RichCodeSubMode(range, code, modeBefore) =>
