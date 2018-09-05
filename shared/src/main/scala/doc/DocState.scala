@@ -51,12 +51,17 @@ case class DocState private (
 
   def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
 
+
+  private var lastSearch: (Search, Seq[SearchOccurrence]) = null
   /**
     * we only return the first one now...
     */
-  def searchInShown(a: Search, after: Boolean): Seq[SearchOccurrence] = {
-    val mv = mover()
-    Seq.empty
+  def searchInShown(a: Search): Seq[SearchOccurrence] = {
+    if (lastSearch == null || a != lastSearch._2) {
+      val mv = mover()
+      Seq.empty
+    }
+    lastSearch._2
   }
 
   def quickSearch(tt: Seq[data.Unicode],
@@ -284,17 +289,6 @@ case class DocState private (
   def isRichNormalOrInsert: Boolean = mode match {
     case Some(model.mode.Node.Content(_, model.mode.Content.RichInsert( _))) => true
     case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => true
-    case _ => false
-  }
-
-  def isNonEmptyRichNormalOrVisual: Boolean = mode match {
-    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(_, _))) => true
-    case Some(model.mode.Node.Content(_, model.mode.Content.RichNormal(a))) => a.nonEmpty
-    case _ => false
-  }
-
-  def isEmptyRichVisual: Boolean = mode match {
-    case Some(model.mode.Node.Content(_, model.mode.Content.RichVisual(a, _))) => a.isEmpty
     case _ => false
   }
 

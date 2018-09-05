@@ -27,17 +27,17 @@ class SearchBar(
   var dismissed = false
 
 
-  event(search, "input", (e: Event) => {
+  event(search, "input", (_: Event) => {
     searchHandler.updateConstructingSearchTerm(search.textContent)
   })
 
   event(search, "keydown", (k: KeyboardEvent) => {
     KeyMap.get(k.key) match {
       case Some(Enter) =>
-        searchHandler.commitConstructing()
+        searchHandler.commitSearching()
         k.preventDefault()
       case Some(Escape) =>
-        searchHandler.cancelConstructing()
+        searchHandler.cancelSearching()
         k.preventDefault()
       case _ =>
     }
@@ -63,11 +63,12 @@ class SearchBar(
 
   observe(searchHandler.searchState.doOnNext(state => {
     // we ignore all other updates here because they will be all from us
-    if (state.uiShown && dismissed) {
+    if (state.searching.nonEmpty && dismissed) {
       show()
       focus()
+      // we don't udpate the term, instead select it and let the state... flow...
       search.select()
-    } else if (!state.uiShown && !dismissed) {
+    } else if (state.searching.isEmpty && !dismissed) {
       dismiss()
       doc().focus()
     }

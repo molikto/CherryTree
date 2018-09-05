@@ -14,10 +14,10 @@ package object model extends Picklers {
 
   var debug_oldDocVersion = false
   val debug_katex = false
-  var debug_view = true
-  val debug_scroll = debug_view && true
-  var debug_model = true
-  val debug_transmit = true
+  var debug_view = false
+  val debug_scroll = debug_view && false
+  var debug_model = false
+  val debug_transmit = false
   val debug_selection = debug_view && false
 
   var debug_RenderEmptyInsertionPointAsBox = false
