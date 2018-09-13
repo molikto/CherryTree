@@ -90,7 +90,7 @@ trait Undoer extends UndoerInterface with Settings {
     }
   }
 
-  protected def cutOneLocalHistory(assertTrans: transaction.Node): Unit = {
+  protected def cutLastUndoHistory(assertTrans: transaction.Node): Unit = {
     assert(history_.last.ty == Local, "history is not local....?")
     assert(history_.last.trans == assertTrans, s"trans different ${history_.last.trans} $assertTrans")
     removeOne()
@@ -259,12 +259,17 @@ trait Undoer extends UndoerInterface with Settings {
     val item = history(i)
     // TODO conflicts
     val aft = after(i)
-    val (tt, pp) = ot.Node.rebaseT(item.reverse, aft).t
+    val reverse = item.reverse.map {
+      case i@operation.Node.Insert(at, childs) =>
+        i.copy(childs = childs.map(_.cloneNode()))
+      case a => a
+    }
+    val (tt, pp) = ot.Node.rebaseT(reverse, aft).t
     val (applied, afrom) = try {
      operation.Node.apply(tt, currentDoc, enableModal)
     } catch {
       case t: Throwable =>
-        throw new Exception(s"seems reverse is wrong ${item.trans}, ${item.reverse} $aft", t)
+        throw new Exception(s"seems reverse is wrong ${item.trans}, $reverse $aft", t)
     }
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null

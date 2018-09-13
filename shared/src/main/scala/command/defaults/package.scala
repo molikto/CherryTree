@@ -56,7 +56,7 @@ package object defaults {
             if (isDelete) return (DocTransaction.empty, None)
             Seq(a.node)
         }
-        val data = Registerable.Node(ns, needsClone = true)
+        val data = Registerable.Node(ns)
         commandState.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           deleteNodeRange(a, commandState, v.minimalRange.get, enableModal, noHistory = true)
@@ -79,7 +79,7 @@ package object defaults {
         (trans, Some(data))
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal(_))) =>
         val old = a.node(pos)
-        val data = Registerable.Node(Seq(old.copy(childs = Seq.empty).cloneNode()), None, false)
+        val data = Registerable.Node(Seq(old.copy(childs = Seq.empty)), None)
         commandState.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           DocTransaction(Seq(model.operation.Node.Replace(pos,
@@ -100,9 +100,10 @@ package object defaults {
     noHistory: Boolean = false,
     goUp: Boolean = false): DocTransaction = {
     val parent = a.node(rr.parent)
-    val r = rr.copy(childs = IntRange(rr.childs.start, rr.childs.until min parent.childs.size))
+    assert(rr.childs.until <= parent.childs.size)
+    val r = rr
     if (!noHistory) {
-      commandState.yank(Registerable.Node(a.node(rr), from = Some(rr), needsClone = false), isDelete = true, register = register)
+      commandState.yank(Registerable.Node(a.node(rr), deletionFrom = Some(rr)), isDelete = true, register = register)
     }
     DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) =

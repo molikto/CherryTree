@@ -56,7 +56,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asContent
       val node = a.node(c)
-      commandState.yank(Registerable.Node(Seq(node.copy(content = a.node(c).content, childs = Seq.empty)), needsClone = true), isDelete = false)
+      commandState.yank(Registerable.Node(Seq(node.copy(childs = Seq.empty))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -68,7 +68,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asContent
-      commandState.yank(Registerable.Node(Seq(a.node(c)), needsClone = true), isDelete = false)
+      commandState.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -167,10 +167,10 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
           DocTransaction.empty
         }
       }
-      commandState.retrieveSetRegisterAndSetToCloneNode() match {
-        case Some(Registerable.Node(n, range, needsClone)) =>
+      commandState.retrieveSetRegisterAndSetToCloneNode(true) match {
+        case Some(Registerable.Node(n, range)) =>
           if (n.nonEmpty) {
-            val (insertOp, mode) = putNode(a, cursor, if (needsClone) data.Node.cloneNodes(n) else n)
+            val (insertOp, mode) = putNode(a, cursor, if (range.isEmpty) data.Node.cloneNodes(n) else n)
             val pCur = model.cursor.Node.parent(insertOp.at)
             val ctrans = changeHeadingLevel(insertOp.childs, model.range.Node(insertOp.at, insertOp.childs.length), pCur, a.node(pCur))
             DocTransaction(insertOp +: ctrans, Some(mode), tryMergeInsertOfDeleteRange = range)

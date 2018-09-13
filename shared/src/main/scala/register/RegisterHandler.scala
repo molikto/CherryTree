@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 trait RegisterInterface {
   def setRegister(a: Int): Unit
   def yank(registerable: Registerable, isDelete: Boolean, register: Int = -1): Unit
-  def retrieveSetRegisterAndSetToCloneNode(register: Int = -1): Option[Registerable]
+  def retrieveSetRegisterAndSetToCloneNode(allowNode: Boolean, register: Int = -1): Option[Registerable]
   def clearRegister(a: Int): Unit
 
   def currentRegister: Char
@@ -79,7 +79,7 @@ trait RegisterHandler extends RegisterInterface {
   /**
     * if in current register there is a fresh deleted node, we will mark this as needs clone
     */
-  override def retrieveSetRegisterAndSetToCloneNode(register: Int = -1): Option[Registerable] = {
+  override def retrieveSetRegisterAndSetToCloneNode(allowNode: Boolean, register: Int = -1): Option[Registerable] = {
     val set = if (register == -1) {
       val s = this.curRegister
       this.curRegister = -1
@@ -88,15 +88,22 @@ trait RegisterHandler extends RegisterInterface {
       register
     }
     val reg = getRegisterable(set)
-    reg match {
-      case Some(r@Registerable.Node(a, info, needsClone)) if !needsClone =>
-        val give = r.copy()
-        r.needsClone = true
-        r.from = None
-        Some(give)
+    val res = reg match {
+      case Some(r@Registerable.Node(a, deletionFrom)) =>
+        if (allowNode) {
+          if (deletionFrom.isEmpty) {
+            reg
+          } else {
+            val noNeedClone = r.copy()
+            r.deletionFrom = None
+            Some(noNeedClone)
+          }
+        } else {
+          None
+        }
       case a => a
     }
-
+    res
   }
 
   def clearRegister(a: Int) = yank(null, false, a)
@@ -170,19 +177,26 @@ trait RegisterHandler extends RegisterInterface {
       }
     }
     registerable match {
-      case Registerable.Node(na, from, needsClone) if !needsClone =>
+      case Registerable.Node(na, deletionFrom) if deletionFrom.nonEmpty =>
         registerables.flatMap(_._2).foreach(a => {
           if (a != registerable) {
             a match {
-              case b@Registerable.Node(nb, _, nc) if !nc =>
+              case b@Registerable.Node(nb, df) if df.nonEmpty =>
                 if (uuids(na).exists(uuids(nb))) {
-                  b.needsClone = true
-                  b.from = None
+                  b.deletionFrom = None
                 }
               case _ =>
             }
           }
         })
+      case _ =>
+    }
+  }
+
+  def markAllAsNeedsClone(): Unit = {
+    registerables.flatMap(_._2).foreach {
+      case b@Registerable.Node(nb, nc)  =>
+        b.deletionFrom = None
       case _ =>
     }
   }

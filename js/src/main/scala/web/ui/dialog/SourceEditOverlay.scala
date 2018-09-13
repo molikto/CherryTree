@@ -219,10 +219,11 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
 
             val toString: js.Function0[String] = () => {
               if (model.debug_view) println(s"code mirror register getting")
-              val ret = editor.retrieveSetRegisterAndSetToCloneNode(c.toInt) match {
+              val ret = editor.retrieveSetRegisterAndSetToCloneNode(false, c.toInt) match {
                 case Some(Registerable.Unicode(a)) => a.str
                 case Some(Registerable.Text(a)) => Text.toPlain(a)
-                case _ => ""
+                case None => ""
+                case _ => throw new IllegalStateException("not alloed")
               }
               ret
             }

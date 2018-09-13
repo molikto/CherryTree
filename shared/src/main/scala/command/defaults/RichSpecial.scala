@@ -191,16 +191,20 @@ class RichSpecial extends CommandCategory("rich text: format") {
             } else {
               val soc = rich.singleSpecials(r).map(_.range)
               val remaining = r.minusOrderedInside(soc)
-              val range = (r.start, r.until + remaining.size * deli.wrapSizeOffset - 1)
-              val fakePoints0 = if (visual.leftIsAnchor) {
-                (IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
+              if (remaining.isEmpty) {
+                DocTransaction.empty
               } else {
-                (IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
+                val range = (remaining.head.start, remaining.last.until + remaining.size * deli.wrapSizeOffset - 1)
+                val fakePoints0 = if (visual.leftIsAnchor) {
+                  (IntRange.len(range._1, 1), IntRange.endLen(range._2 + 1, deli.newDeliEndSize))
+                } else {
+                  (IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
+                }
+                val fakePoints = RichRange.create(fakePoints0._1, fakePoints0._2, enableModal)
+                DocTransaction(Seq(operation.Node.rich(cursor,
+                  operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
+                  Some(a.copyContentMode(fakePoints)))
               }
-              val fakePoints = RichRange.create(fakePoints0._1, fakePoints0._2, enableModal)
-              DocTransaction(Seq(operation.Node.rich(cursor,
-                operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
-                Some(a.copyContentMode(fakePoints)))
             }
         }
       } else if (a.isNodeVisual) {

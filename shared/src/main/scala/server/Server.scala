@@ -64,7 +64,7 @@ trait Server extends Api {
 
   def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: data.Node): ErrorT[ClientUpdate] = synchronized {
+  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: Int): ErrorT[ClientUpdate] = synchronized {
     clients.get(authentication) match {
       case None =>
         Left(ApiError.InvalidToken)
@@ -72,6 +72,7 @@ trait Server extends Api {
         val diff = clientVersion - cached.version
         if (diff < 0) {
           if (ts.size >= cached.lastAccepted) {
+            if (model.debug_model) println("previous data back failed")
             Right(ClientUpdate(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
           } else {
             Left(ApiError.ClientVersionIsOlderThanServerCache)
@@ -81,7 +82,9 @@ trait Server extends Api {
         } else {
           val ws = changes.drop(clientVersion)
           if (debug_transmit) {
-            assert(debugClientDoc == debugHistoryDocuments(clientVersion))
+            if (debugClientDoc != debugHistoryDocuments(clientVersion).hashCode()) {
+              throw new IllegalStateException("transmit error???")
+            }
           }
           val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
           var debugTopDocument = document
@@ -95,7 +98,6 @@ trait Server extends Api {
               debugTopDocument = operation.Node.apply(t, debugTopDocument)
               debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
             }
-            assert(operation.Node.apply(wws, operation.Node.applyT(ts, debugHistoryDocuments(clientVersion))) == document)
           }
           val cu = ClientUpdate(ws, ts.size, version, serverStatus)
           clients.update(authentication, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))

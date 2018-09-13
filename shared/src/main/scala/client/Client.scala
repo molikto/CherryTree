@@ -13,7 +13,7 @@ import monix.reactive._
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
 import api._
-import command.Key.KeySeq
+import command.Key.{Delete, KeySeq}
 import model.ot.Rebased
 import util._
 import model._
@@ -338,6 +338,7 @@ class Client(
     if (disableUpdateBecauseLocalNodeDelete != null) {
       if (System.currentTimeMillis() - disableUpdateBecauseLocalNodeDelete._2 > 5000) {
         disableUpdateBecauseLocalNodeDelete = null
+        markAllAsNeedsClone()
       }
     }
     disableUpdateBecauseLocalNodeDelete != null
@@ -350,7 +351,7 @@ class Client(
       val submit = uncommitted
       if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
         lastRequestTime = System.currentTimeMillis()
-        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed else data.Node.debug_empty).call(), succsss => {
+        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed.hashCode() else 0).call(), succsss => {
           lockObject.synchronized {
             flushInner()
             updateFromServer(succsss)
@@ -386,6 +387,9 @@ class Client(
     */
   private def updateFromServer(success: ClientUpdate): Unit = {
     if (updateDisableUpdateBecauseLocalNodeDelete()) {
+      if (model.debug_model) {
+        println("ignore returned server stuff because we just performed a delete...")
+      }
       // ignore it
     } else if (disableRemoteStateUpdate) {
       disabledStateUpdates.append(success)
@@ -645,7 +649,7 @@ class Client(
     data.map {
       case Registerable.Unicode(a) =>
         (None, Some(a.str), None)
-      case Registerable.Node(a, _, _) =>
+      case Registerable.Node(a, _) =>
         previousCopyId = Random.nextInt().toString
         val html = model.data.Node.toHtml(a)
         (Some(html), Some(html): Option[String], Some(previousCopyId))
@@ -715,6 +719,20 @@ class Client(
     }
   }
 
+  private def assertDisabledLocalUpdateConsistency(): Unit = {
+    assert(uncommitted.lastOption.contains(Seq(disableUpdateBecauseLocalNodeDelete._1)))
+  }
+
+  override def undo(currentDoc: DocState): DocTransaction = {
+    updateDisableUpdateBecauseLocalNodeDelete()
+    if (disableUpdateBecauseLocalNodeDelete != null) {
+      val insertOp = disableUpdateBecauseLocalNodeDelete._1.reverse(disableUpdateBecauseLocalNodeDelete._4.node)
+      DocTransaction(Seq(insertOp), None, tryMergeInsertOfDeleteRange = Some(disableUpdateBecauseLocalNodeDelete._1.r))
+    } else {
+      super.undo(currentDoc)
+    }
+  }
+
   def localChange(
     update0: DocTransaction,
     isSmartInsert: Boolean = false,
@@ -746,30 +764,31 @@ class Client(
           }
       }
     }
-    if (!justDisabled) {
-      if (disableUpdateBecauseLocalNodeDelete != null &&
-        uncommitted.lastOption.contains(Seq(disableUpdateBecauseLocalNodeDelete._1))) {
-        val d = disableUpdateBecauseLocalNodeDelete._1
-        if (update.tryMergeInsertOfDeleteRange.contains(d.r)) {
-          update.transaction match {
-            case operation.Node.Insert(at, childs) +: resTrans if childs == disableUpdateBecauseLocalNodeDelete._3 =>
-              cutOneLocalHistory(Seq(d))
-              val os = state_
-              val zz = d.r.transformBeforeDeleted(os.zoom)
-              val td = disableUpdateBecauseLocalNodeDelete._4
-              state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
-              state_.consistencyCheck(enableModal)
-              uncommitted = uncommitted.dropRight(1)
-              val inverse = d.reverse(state.node)
-              viewAdd = Seq((os, inverse))
-              val to = d.r.transformBeforeDeleted(at)
-              val trans = operation.Node.Move(d.r, to)
-              update = update.copy(transaction = trans +: resTrans)
+    if (!justDisabled && disableUpdateBecauseLocalNodeDelete != null) {
+      uncommitted.lastOption match {
+        case Some(Seq(d@operation.Node.Delete(r))) =>
+          if (update.tryMergeInsertOfDeleteRange.contains(r)) {
+            update.transaction match {
+              case operation.Node.Insert(at, childs) +: resTrans if childs == disableUpdateBecauseLocalNodeDelete._3 =>
+                cutLastUndoHistory(Seq(d))
+                val os = state_
+                val zz = r.transformBeforeDeleted(os.zoom)
+                val td = disableUpdateBecauseLocalNodeDelete._4
+                state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
+                state_.consistencyCheck(enableModal)
+                uncommitted = uncommitted.dropRight(1)
+                val inverse = d.reverse(state.node)
+                viewAdd = Seq((os, inverse))
+                val to = d.r.transformBeforeDeleted(at)
+                val trans = operation.Node.Move(d.r, to)
+                update = update.copy(transaction = trans +: resTrans)
+            }
           }
-        }
+        case _ =>
       }
       if (update.transaction.nonEmpty && disableUpdateBecauseLocalNodeDelete != null) {
         disableUpdateBecauseLocalNodeDelete = null
+        markAllAsNeedsClone()
         updateConnectionStatusBasedOnDisableStatus()
       }
     }
