@@ -274,7 +274,7 @@ package object util {
     collectTo(bf, root.firstChild,0)
     if (bf.isEmpty) Registerable.Text(Seq.empty)
     else if (bf.size == 1 && bf.head.childs.isEmpty && bf.head.content.isRich) Registerable.Text(bf.head.rich.text)
-    else Registerable.Node(bf, None, true)
+    else Registerable.Node(bf, None)
   }
 
 

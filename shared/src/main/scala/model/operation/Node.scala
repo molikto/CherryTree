@@ -144,7 +144,12 @@ object Node extends OperationObject[data.Node, operation.Node] {
   }
   case class Insert(at: cursor.Node, childs: Seq[data.Node]) extends Node {
     override def ty: Type = Type.Add
-    override def apply(d: data.Node): data.Node = d.insert(at, childs)
+    override def apply(d: data.Node): data.Node = {
+      if (model.debug_model) {
+        d.assertNewNodes(childs.map(_.uuid))
+      }
+      d.insert(at, childs)
+    }
 
 
     override def toString: String = s"Insert(${at.mkString("-")}, ${childs.size})"

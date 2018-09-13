@@ -176,6 +176,7 @@ object ClientTests extends TestSuite  {
           val avs = c.commands.filter(a => a.available(c.state, c))
           if (avs.nonEmpty) {
             val ccc = avs(Random.nextInt(avs.size - 1))
+            println(s"performing ${ccc.description}")
             try {
               val motion: command.Motion = if (ccc.needsMotion) {
                 val ms = c.commands.filter(a => a.isInstanceOf[command.Motion] && a.available(c.state, new CommandInterfaceAvailable {

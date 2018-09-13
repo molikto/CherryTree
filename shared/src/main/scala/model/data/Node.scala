@@ -23,6 +23,15 @@ case class Node(
   content: Content,
   attributes: Map[String, String],
   childs: Seq[Node]) {
+
+
+  def assertNewNodes(strings: Seq[String]): Unit = {
+    if (strings.contains(uuid)) {
+      throw new IllegalStateException("Not allowed")
+    }
+    childs.foreach(_.assertNewNodes(strings))
+  }
+
   def isLaTeXMacro: Boolean =
     content match {
       case c: Content.Code if c.ty == LaTeXMacro =>

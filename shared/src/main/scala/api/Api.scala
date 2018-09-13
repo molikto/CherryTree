@@ -30,7 +30,7 @@ trait Api {
     version: Int,
     changes: Seq[transaction.Node],
     mode: Option[model.mode.Node],
-    debugCurrentDoc: data.Node
+    debugCurrentDoc: Int
   ): Either[ApiError, ClientUpdate]
 
 

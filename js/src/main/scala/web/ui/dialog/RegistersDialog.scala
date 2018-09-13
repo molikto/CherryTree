@@ -65,7 +65,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
         t._2.map {
           case Registerable.Unicode(u) => code(`class` := "ct-c-code", u.str)
           case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, false) : Frag
-          case Registerable.Node(a, _, _) =>
+          case Registerable.Node(a, _) =>
             if (a.isEmpty) "": Frag
             else {
               val count = a.map(_.count).sum
