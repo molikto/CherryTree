@@ -7,6 +7,7 @@ import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
 import scalatags.Text.all._
+import search.{Search, SearchOccurrence}
 
 
 abstract sealed class Text {
@@ -447,4 +448,66 @@ object Text {
     override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
 
   }
+
+  def search(texts: Seq[Text], a: Search, startPos0: Int): Option[IntRange] = {
+    val sizeSum = texts.map(_.size).sum
+    val startPos = startPos0 min sizeSum
+    if (a.direction >= 0) {
+      var before = 0
+      for (t <- texts) {
+        if (before + t.size >= startPos) {
+          t match {
+            case f: Formatted =>
+              val res = search(f.content, a, startPos - before - 1).map(_.moveBy(1 + before))
+              if (res.isDefined) {
+                return res
+              }
+            case a: Atomic =>
+            case Plain(u) =>
+              val index = u.indexOfLower(a.lowerTerm, startPos - before)
+              if (index >= 0) {
+                return Some(IntRange.len(before + index, a.lowerTerm.size))
+              }
+            case c: Coded =>
+              val index = c.content.indexOfLower(a.lowerTerm, startPos - before - 1)
+              if (index >= 0) {
+                return Some(IntRange.len(before + index + 1, a.lowerTerm.size))
+              }
+          }
+        } else if (before >= startPos) {
+          return None
+        }
+        before += t.size
+      }
+    } else {
+      var before = sizeSum
+      for (t <- texts.reverseIterator) {
+        before -= t.size
+        if (before <= startPos) {
+          t match {
+            case f: Formatted =>
+              val res = search(f.content, a, startPos - before - 1).map(_.moveBy(1 + before))
+              if (res.isDefined) {
+                return res
+              }
+            case a: Atomic =>
+            case Plain(u) =>
+              val index = u.lastIndexOfLower(a.lowerTerm, startPos - before)
+              if (index >= 0) {
+                return Some(IntRange.len(before + index, a.lowerTerm.size))
+              }
+            case c: Coded =>
+              val index = c.content.lastIndexOfLower(a.lowerTerm, startPos - before - 1)
+              if (index >= 0) {
+                return Some(IntRange.len(before + index + 1, a.lowerTerm.size))
+              }
+          }
+        } else if (before + t.size < startPos) {
+          return None
+        }
+      }
+    }
+    None
+  }
+
 }

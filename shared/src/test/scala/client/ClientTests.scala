@@ -221,6 +221,18 @@ object ClientTests extends TestSuite  {
           }
         }
 
+        for (c <- clients) {
+          import monix.execution.Scheduler.Implicits.global
+          c.searchState.doOnNext(state => {
+            if (c.searchState.get.searching.nonEmpty) {
+              c.synchronized {
+                println("committing search")
+                c.updateConstructingSearchTerm(random.nextInt(100).toString)
+                c.commitSearching()
+              }
+            }
+          }).subscribe()
+        }
         for (j <- 0 until 1000) {
           for (c <- clients) {
             for (i <- 0 until Random.nextInt(5)) {

@@ -83,7 +83,7 @@ trait Server extends Api {
           val ws = changes.drop(clientVersion)
           if (debug_transmit) {
             if (debugClientDoc != debugHistoryDocuments(clientVersion).hashCode()) {
-              throw new IllegalStateException("transmit error???")
+              throw new IllegalStateException("transmit error??")
             }
           }
           val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)

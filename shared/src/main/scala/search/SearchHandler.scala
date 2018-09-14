@@ -1,9 +1,10 @@
 package search
 
 import client.Client
-import doc.DocTransaction
+import doc.{DocTransaction, DocUpdate}
 import util.ObservableProperty
 import com.softwaremill.quicklens._
+import model.range.IntRange
 import monix.reactive.Observable
 
 
@@ -16,6 +17,7 @@ trait SearchInterface {
 trait StartSearchInterface {
 
   def startSearch(exitUiOnCommit: Boolean, direction: Int): Unit
+  def repeatLastSearch(ops: Boolean): Unit
 }
 
 case class SearchState(
@@ -40,18 +42,51 @@ trait SearchHandler extends SearchInterface with StartSearchInterface { self: Cl
     searchState_.modify(_.copy(searching = Some(uncommited)))
   }
 
-  def commitSearching(): Unit = {
-    lastSearch = lastState
-    state.searchInShown(lastState).headOption.foreach {
+  def doSearch(search: Search): Unit = {
+    state.searchInShown(search, enableModal).headOption.foreach {
       case SearchOccurrence(node, ocr) =>
+        val nor = state.node(node).content match {
+          case model.data.Content.Rich(content) => content.rangeAfter(ocr.start)
+          case _ => IntRange(0, 0)
+        }
         if (enableModal) {
+          val mode = state.mode0 match {
+            case model.mode.Node.Content(cn, a) =>
+              a match {
+                case model.mode.Content.RichVisual(a, b) =>
+                  if (cn == node) {
+                    model.mode.Node.Content(node, model.mode.Content.RichVisual(a, nor))
+                  } else {
+                    model.mode.Node.Visual(cn, node)
+                  }
+                case _ =>
+                  model.mode.Node.Content(node, model.mode.Content.RichNormal(nor))
+              }
+            case model.mode.Node.Visual(fix, move) =>
+              model.mode.Node.Visual(fix, node)
+          }
+          localChange(DocTransaction(mode))
         } else {
-          onMouseFocusOn(node, ocr, true, false, false)
+          // this will produce a range selection
+          onMouseFocusOn(node, Some(ocr), true, false, false)
         }
     }
-    // go to first highlighted mark
-    if (exitOnCommit) {
-      searchState_.update(SearchState(None))
+  }
+
+  def repeatLastSearch(ops: Boolean): Unit = {
+    if (lastSearch != null) {
+      doSearch(if (ops) lastSearch.reverse else lastSearch)
+    }
+  }
+
+  def commitSearching(): Unit = {
+    if (lastState.term.nonEmpty) {
+      lastSearch = lastState
+      doSearch(lastSearch)
+      // go to first highlighted mark
+      if (exitOnCommit) {
+        searchState_.update(SearchState(None))
+      }
     }
   }
 
@@ -63,6 +98,8 @@ trait SearchHandler extends SearchInterface with StartSearchInterface { self: Cl
 
   def startSearch(exitUiOnCommit: Boolean, direction: Int): Unit = {
     exitOnCommit = exitUiOnCommit
-    searchState_.update(SearchState(Some(lastState.copy(direction = direction, term = ""))))
+    lastState = lastState.copy(direction = direction)
+    // when start search, we don't actually show the old term in view
+    searchState_.update(SearchState(Some(lastState.copy(term = ""))))
   }
 }
