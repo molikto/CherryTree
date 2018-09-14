@@ -4,6 +4,7 @@ import boopickle._
 import model.range.IntRange
 import model.cursor
 import model.data.Text.Delimited
+import search.{Search, SearchOccurrence}
 import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
@@ -12,6 +13,7 @@ import scala.util.Random
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+
   def toPlain: String = Text.toPlain(text)
 
 
@@ -46,6 +48,10 @@ case class Rich(text: Seq[Text]) {
     ret
   }
 
+
+  def search(a: Search, startPos: Int): Option[IntRange] = {
+    Text.search(text, a, startPos)
+  }
 
   def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings): Boolean = {
     tt.forall(p => Text.quickSearch(text, p, deli))

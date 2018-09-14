@@ -28,7 +28,7 @@ class SearchBar(
 
 
   event(search, "input", (_: Event) => {
-    searchHandler.updateConstructingSearchTerm(search.textContent)
+    searchHandler.updateConstructingSearchTerm(search.value)
   })
 
   event(search, "keydown", (k: KeyboardEvent) => {

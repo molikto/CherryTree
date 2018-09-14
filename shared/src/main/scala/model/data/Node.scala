@@ -7,6 +7,7 @@ import model._
 import Node.{ChildrenType, ContentType}
 import model.range.IntRange
 import scalatags.Text.all._
+import search.{Search, SearchOccurrence}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

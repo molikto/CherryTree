@@ -38,6 +38,7 @@ class Search extends CommandCategory("search & pattern matches") {
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      commandState.repeatLastSearch(false)
       DocTransaction.empty
     }
   }
@@ -49,6 +50,7 @@ class Search extends CommandCategory("search & pattern matches") {
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
+      commandState.repeatLastSearch(true)
       DocTransaction.empty
     }
   }

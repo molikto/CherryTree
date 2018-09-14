@@ -48,6 +48,15 @@ case class Unicode(var str: String) extends Seq[Int] {
   def contains(p: Unicode): Boolean = str.contains(p.str)
   def containsLowerCase(p: Unicode): Boolean = str.toLowerCase().contains(p.str)
 
+  def lastIndexOfLower(a: Unicode, startPos: Int): Int = {
+    fromStringPositionNeg(str.toLowerCase().lastIndexOf(a.str, toStringPosition(startPos)))
+  }
+
+  def indexOfLower(a: Unicode, startPos: Int): Int = {
+    fromStringPositionNeg(str.toLowerCase().indexOf(a.str, toStringPosition(startPos)))
+  }
+
+
   def isBlank: Boolean = {
     var i = 0
     while (i < str.length) {
@@ -88,6 +97,8 @@ case class Unicode(var str: String) extends Seq[Int] {
   override def apply(i: Int): Int = str.codePointAt(toStringPosition(i))
 
   override def head: Int = apply(0)
+
+  def fromStringPositionNeg(a: Int): Int = if (a < 0) a else fromStringPosition(a)
 
   def fromStringPosition(i: Int): Int = {
     if (noSurrogatePairBeforeAndAtCodePointIndex(i)) {
@@ -332,4 +343,6 @@ case class Unicode(var str: String) extends Seq[Int] {
 
 
   def containsSpace: Boolean = str.contains(" ")
+
+  def lower = Unicode(str.toLowerCase())
 }

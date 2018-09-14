@@ -3,6 +3,7 @@ package model.data
 import boopickle._
 import model.range.IntRange
 import model.{data, mode}
+import search.{Search, SearchOccurrence}
 
 import scala.util.Random
 
@@ -72,6 +73,8 @@ object CodeType {
 
 abstract sealed class Content {
 
+
+  def search(a: Search, startPos: Int): Option[IntRange]
   def isEmpty: Boolean
   def size: Int
   def nonEmpty: Boolean = !isEmpty
@@ -111,6 +114,7 @@ object Content extends DataObject[Content] {
 
     override def size: Int = unicode.size
 
+    override def search(a: Search, startPos: Int): Option[IntRange] = None
   }
 
   object Code {
@@ -125,6 +129,8 @@ object Content extends DataObject[Content] {
     protected override def defaultInsertMode(): mode.Content = mode.Content.RichInsert(0)
 
     override def isEmpty: Boolean = content.isEmpty
+
+    override def search(a: Search, startPos: Int): Option[IntRange] = content.search(a, startPos)
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

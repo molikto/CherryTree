@@ -9,6 +9,11 @@ import model.range.IntRange
 import search.{Search, SearchOccurrence}
 import settings.Settings
 
+object DocState {
+  private case class SearchCache(search: Search, mode: model.mode.Node, enableModal: Boolean) {
+    var res: Seq[SearchOccurrence] = null
+  }
+}
 
 case class DocState private (
   node: model.data.Node,
@@ -52,17 +57,77 @@ case class DocState private (
   def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
 
 
-  private var lastSearch: (Search, Seq[SearchOccurrence]) = null
+  private var lastSearch: DocState.SearchCache = null
   /**
     * we only return the first one now...
     */
-  def searchInShown(a: Search): Seq[SearchOccurrence] = {
-    if (lastSearch == null || a != lastSearch._2) {
-      val mv = mover()
-      Seq.empty
+  def searchInShown(a: Search, enableModal: Boolean): Seq[SearchOccurrence] = {
+    val cacheKey = DocState.SearchCache(a, mode0, enableModal)
+    if (cacheKey != lastSearch) {
+      def inner(): Seq[SearchOccurrence] = {
+        val mv = mover()
+        // this is the inclusive position the atom of the match start should be with in
+        val searchBefore = a.direction == -1
+        val (startNode, startPos) = mode0 match {
+          case model.mode.Node.Content(node, a) =>
+            def rec(a: model.mode.Content): Int = {
+              a match {
+                case n: model.mode.Content.RichNormalOrVisual =>
+                  if (searchBefore) n.focus.start - 1 else n.focus.until
+                case i: model.mode.Content.RichInsert =>
+                  i.pos
+                case s: model.mode.Content.RichSelection =>
+                  if (searchBefore) s.start - 1 else s.end
+                case a: model.mode.Content.RichSubMode =>
+                  rec(a.modeBefore)
+                case c: model.mode.Content.Code =>
+                  0
+              }
+            }
+            (node, rec(a))
+          case model.mode.Node.Visual(fix, to) =>
+            if (enableModal) {
+              (to, if (searchBefore) 0 else Int.MaxValue)
+            } else {
+              (to, 0)
+            }
+        }
+        // selection/normal/visual mode, search after exclude range, before include range
+        // line mode, after include, before exclude
+        var res: Option[IntRange] = None
+        def rep(startNode: cursor.Node, startPos: Int, isRev: Boolean): Seq[SearchOccurrence] = {
+          var n = startNode
+          var pos = startPos
+          while (n != null) {
+            res = node(n).content.search(a, pos)
+            if (res.isDefined) {
+              return Seq(SearchOccurrence(n, res.get))
+            } else {
+              if (a.direction == -1) {
+                n = mv.visualUp(n).orNull
+                pos = Int.MaxValue
+              } else {
+                n = mv.visualDown(n).orNull
+                pos = 0
+              }
+            }
+          }
+          if (!isRev) {
+            if (searchBefore) {
+              rep(mv.visualBottom(zoom), Int.MaxValue, true)
+            } else {
+              rep(zoom, 0, true)
+            }
+          } else {
+            Seq.empty
+          }
+        }
+        rep(startNode, startPos, false)
+      }
+      cacheKey.res = inner()
+      lastSearch = cacheKey
     }
-    Seq.empty
-    //lastSearch._2
+    lastSearch.res
   }
 
   def quickSearch(tt: Seq[data.Unicode],
