@@ -9,12 +9,12 @@ class Search extends CommandCategory("search & pattern matches") {
 
   new Command {
     override val description: String = "search forward"
-    override def defaultKeys: Seq[KeySeq] = Seq("/")
-    override def hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "f")
+    override val defaultKeys: Seq[KeySeq] = Seq("/")
+    override val hardcodeKeys: Seq[KeySeq] = Seq(ModKey + "f")
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      val isModF = hardcodeKeys.head == key
+      val isModF = hardcodeKeys.headOption == key
       commandState.startSearch(!isModF, if (isModF) 0 else 1)
       DocTransaction.empty
     }
