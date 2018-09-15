@@ -3,6 +3,7 @@ package model.data
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
+import scalatags.Text
 import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer
@@ -162,6 +163,10 @@ object Text {
           StrikeThrough(parseAll(reader, StrikeThroughEnd))
         case LinkStart =>
           Link(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(LinkEnd))
+        case HashTagStart =>
+          HashTag(parseAll(reader, HashTagEnd))
+        case HashDefStart =>
+          HashDef(parseAll(reader, HashDefEnd))
         case ImageStart =>
           reader.eat(UrlAttribute)
           Image(reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(ImageEnd))
@@ -323,6 +328,22 @@ object Text {
       if (i == UrlAttribute) url
       else if (i == TitleAttribute) tit
       else throw new IllegalArgumentException("Not here")
+  }
+
+  case class HashTag(content: Seq[Text]) extends Formatted {
+    override def delimitation: Delimitation = SpecialChar.HashTag
+
+    // LATER what should this be?
+    override def toScalaTags: Frag = a(Text.toScalaTags(content))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+  }
+
+  case class HashDef(content: Seq[Text]) extends Formatted {
+    override def delimitation: Delimitation = SpecialChar.HashDef
+
+    // LATER what should this be?
+    override def toScalaTags: Frag = a(Text.toScalaTags(content))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
   }
 
   sealed trait Coded extends DelimitedT[Unicode] {
