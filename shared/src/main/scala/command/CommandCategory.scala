@@ -97,7 +97,7 @@ class CommandCategory(val name: String) extends Settings {
 
     override def strong: Boolean = true
 
-    private val graphemes =  Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).distinct
+    private val graphemes =  Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).filter(_.nonEmpty).distinct
     private val systemKeys: Seq[KeySeq] =
       if (deli == SpecialChar.Emphasis) Seq(ModKey + "i", ModKey + "y")
       else if (deli == SpecialChar.Strong) Seq(ModKey + "b")

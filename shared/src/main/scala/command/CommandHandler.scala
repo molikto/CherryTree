@@ -202,6 +202,7 @@ abstract class CommandHandler extends Settings with CommandInterface with Search
             scheduledComplete = Observable.delay({
               scheduledComplete = null
               tryComplete(false)
+              commandBufferUpdates_.onNext(buffer)
             }).delaySubscription(300.milliseconds).subscribe()
             true
           } else {

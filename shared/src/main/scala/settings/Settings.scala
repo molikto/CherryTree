@@ -16,6 +16,8 @@ trait Settings {
     (SpecialChar.Strong, Unicode("**"), Unicode("**")),
     (SpecialChar.LaTeX, Unicode("$"), Unicode("$")),
     (SpecialChar.Link, Unicode("["), Unicode("]")),
+    (SpecialChar.HashTag, Unicode("#"), Unicode("#")),
+    (SpecialChar.HashDef, Unicode("##"), Unicode("##")),
     (SpecialChar.Emphasis, Unicode("*"), Unicode("*"))
   )
 

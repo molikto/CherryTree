@@ -162,6 +162,18 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
         del(`class` := "ct-c-del", rec(c)),
         cg("~")
       )
+      case Text.HashTag(c) => span(
+        `class` := "ct-cg-node ct-cg-node-hashtag",
+        cg("#"),
+        span(`class` := "ct-c-hashtag", rec(c)),
+        cg("#")
+      )
+      case Text.HashDef(c) => span(
+        `class` := "ct-cg-node ct-cg-node-hashdef",
+        cg("#", "ct-cg-shadow"),
+        span(`class` := "ct-c-hashdef", rec(c)),
+        cg("#", "ct-cg-shadow")
+      )
       case l@Text.Link(t, b, c) =>
         val tt: String = if (c.isEmpty) b.str else s"${c.str}\n${b.str}"
         span(
