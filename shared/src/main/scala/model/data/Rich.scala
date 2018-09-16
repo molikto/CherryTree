@@ -13,6 +13,18 @@ import scala.util.Random
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+  def tags: Map[Text.HashTag, Int] =
+    if (text.size == 1 && text.head.isInstanceOf[Text.Plain]) Map.empty
+    else {
+      Rich.tagsBuffer.clear()
+      Text.tags(text, Rich.tagsBuffer)
+      if (Rich.tagsBuffer.isEmpty) {
+        Map.empty
+      } else {
+        Rich.tagsBuffer.groupBy(a => a).mapValues(_.size)
+      }
+    }
+
 
   def toPlain: String = Text.toPlain(text)
 
@@ -339,6 +351,7 @@ case class Rich(text: Seq[Text]) {
 
 object Rich extends DataObject[Rich] {
 
+  private val tagsBuffer = new ArrayBuffer[Text.HashTag]()
 
   val empty: Rich = Rich(Seq.empty)
 
