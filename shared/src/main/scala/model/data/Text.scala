@@ -42,6 +42,14 @@ abstract sealed class Text {
   * context sensitive formats includes no links inside links, etc
   */
 object Text {
+  def tags(text: Seq[Text], a: ArrayBuffer[HashTag]): Unit = {
+    text.foreach {
+      case h: HashTag => a.append(h)
+      case f: Formatted => tags(f.content, a)
+      case _ =>
+    }
+  }
+
 
   private[data] def toScalaTags(a: Seq[Text]): Frag = a.map(_.toScalaTags): Frag
   private[data] def toPlainScalaTags(a: Seq[Text]): Frag = a.map(_.toPlainScalaTags): Frag

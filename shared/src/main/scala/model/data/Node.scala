@@ -41,6 +41,12 @@ case class Node(
         false
     }
 
+  lazy val selfTags = content match {
+    case Content.Rich(rich) => rich.tags
+    case _ => Map.empty
+  }
+
+
   def macros: Seq[String] = {
     if (macros_ == null) {
       var cur: String = null
