@@ -10,7 +10,16 @@ package object range {
 
   case class IntRange(start: Int, until: Int) extends Iterable[Int] {
 
+
+
     assert(start >= 0 && until >= start, s"wrong IntRange($start, $until)")
+
+    override def equals(obj: scala.Any): Boolean = {
+      obj match {
+        case IntRange(s, u) => start == s && until == u
+        case _ => false
+      }
+    }
 
     override def toString(): String = s"[$start, $until)"
 
@@ -148,6 +157,14 @@ package object range {
   case class Node(parent: cursor.Node,
     childs: IntRange) extends Iterable[cursor.Node] {
 
+
+    override def equals(obj: scala.Any): Boolean = {
+      obj match {
+        case Node(p, c) =>
+          parent == p && childs == c
+        case _ => false
+      }
+    }
 
     override def size: Int = childs.size
 
