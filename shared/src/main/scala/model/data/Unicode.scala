@@ -176,6 +176,25 @@ case class Unicode(var str: String) extends Seq[Int] {
       }
 
     } else {
+      /*
+            new Iterator[(Int, Unicode)] {
+        if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
+
+        private var ii = b
+        private var i = toStringPosition(b)
+        override def hasNext: Boolean = i > 0
+
+
+        override def next(): (Int, Unicode) = {
+          val p = i
+          i = GraphemeSplitter.prevBreak(str, p)
+          val sub = str.substring(i, p)
+          ii -= sub.codePointCount(0, sub.length)
+          val res = (ii, Unicode(sub))
+          res
+        }
+      }
+       */
       new Iterator[(Int, Unicode)] {
         if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
 
@@ -231,7 +250,7 @@ case class Unicode(var str: String) extends Seq[Int] {
         i = GraphemeSplitter.nextBreak(str, p)
         val sub = str.substring(p, i)
         val res = (ii, Unicode(sub))
-        ii += str.substring(p, i).codePointCount(0, sub.length)
+        ii += sub.codePointCount(0, sub.length)
         res
       }
     }

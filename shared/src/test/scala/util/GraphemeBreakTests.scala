@@ -15,11 +15,13 @@ object GraphemeBreakTests extends TestSuite {
       new String(cps, 0, cps.size)
     }))
     'graphemeBreak - {
+      val a = System.currentTimeMillis()
       for (d <- data) {
-        val a = Unicode(d.mkString("")).graphemes.toSeq.map(_._2.iterator.toVector)
+        val a = Unicode(d.mkString("")).graphemes.toVector.map(_._2.iterator.toVector)
         val b = d.map(a => Unicode(a)).toSeq.map(_.iterator.toVector)
         assert(a == b)
       }
+      println(s"in ${System.currentTimeMillis() - a}")
     }
 
     def testGraphemes(a: String, except: Int) = {

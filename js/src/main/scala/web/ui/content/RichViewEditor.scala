@@ -417,9 +417,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
         case _ => throw new IllegalStateException("Not here!")
       }
     }
-    if (fromUser) {
-      scrollInToViewIfNotVisible(contentView.dom, documentView.dom)
-    }
     aa match {
       case sub: mode.Content.RichSubMode =>
         updateViewMode(sub.modeBefore, false)
@@ -448,6 +445,9 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
       case _ =>
         clearEditor()
         updateViewMode(aa, false)
+    }
+    if (fromUser) {
+      scrollRectInToViewIfNotVisible(selectionRect, documentView.dom)
     }
   }
 
