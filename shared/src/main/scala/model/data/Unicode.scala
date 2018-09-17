@@ -44,6 +44,14 @@ object Unicode extends DataObject[Unicode] {
 case class Unicode(var str: String) extends Seq[Int] {
 
 
+  override def equals(that: Any): Boolean = that match {
+    case Unicode(a) => str == a
+    case _ => false
+  }
+
+
+  override def hashCode(): Int = str.hashCode()
+
   // LATER faster??
   def contains(p: Unicode): Boolean = str.contains(p.str)
   def containsLowerCase(p: Unicode): Boolean = str.toLowerCase().contains(p.str)
@@ -176,7 +184,6 @@ case class Unicode(var str: String) extends Seq[Int] {
       }
 
     } else {
-      /*
             new Iterator[(Int, Unicode)] {
         if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
 
@@ -194,7 +201,7 @@ case class Unicode(var str: String) extends Seq[Int] {
           res
         }
       }
-       */
+      /*
       new Iterator[(Int, Unicode)] {
         if (b > Unicode.this.size) throw new IllegalArgumentException(s"Not possible $b")
 
@@ -221,6 +228,7 @@ case class Unicode(var str: String) extends Seq[Int] {
           r
         }
       }
+       */
     }
 
   def after(b: Int): Iterator[(Int, Unicode)] = new Iterator[(Int, Unicode)] {

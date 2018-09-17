@@ -14,33 +14,37 @@ object GraphemeBreakTests extends TestSuite {
         .filter(a => a != "" && a != "×").map(a => Integer.parseInt(a, 16)).toArray
       new String(cps, 0, cps.size)
     }))
+
+    def testGraphemes(a: String) = {
+      val bigUnicode = Unicode(a)
+      val res = bigUnicode.graphemes.toSeq
+      for (a <- bigUnicode.after(0).map(_._1)) {
+        val aa = bigUnicode.before(a).toSeq.reverse
+        val bb = bigUnicode.after(a).toSeq
+        assert(aa ++ bb == res)
+      }
+    }
+
     'graphemeBreak - {
       val a = System.currentTimeMillis()
       for (d <- data) {
         val a = Unicode(d.mkString("")).graphemes.toVector.map(_._2.iterator.toVector)
-        val b = d.map(a => Unicode(a)).toSeq.map(_.iterator.toVector)
+        val b = d.map(a => Unicode(a)).map(_.iterator.toVector)
         assert(a == b)
       }
       println(s"in ${System.currentTimeMillis() - a}")
+      for (d <- data) {
+        testGraphemes(d.mkString(""))
+      }
+      testGraphemes(data.flatten.mkString(""))
     }
 
-    def testGraphemes(a: String, except: Int) = {
-      val bigUnicode = Unicode(a)
-      val res = bigUnicode.graphemes.toSeq
-      for (a <- 0 until bigUnicode.size) {
-        if (a != except) {
-          val aa = bigUnicode.before(a).toSeq.reverse
-          val bb = bigUnicode.after(a).toSeq
-          assert(aa ++ bb == res)
-        }
-      }
-    }
 
     'graphemeBeforeAndAfterAscii - {
-      testGraphemes("kldsjafkldsjk23jk4j2342", -1)
+      testGraphemes("kldsjafkldsjk23jk4j2342")
     }
     'graphemeBeforeAndAfterAscii2 - {
-      testGraphemes("what\u000d\u000awwhat", 5)
+      testGraphemes("what\u000d\u000awwhat")
     }
   }
 }
