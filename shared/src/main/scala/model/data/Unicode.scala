@@ -327,6 +327,16 @@ case class Unicode(var str: String) extends Seq[Int] {
     val end = toStringPosition(r.until)
     Unicode(str.substring(start, end), r.size, size0 == -2)
   }
+
+  override def drop(a: Int): Unicode = {
+    slice(IntRange(a, size))
+  }
+
+  override def dropRight(a: Int): Unicode = {
+    slice(IntRange(0, size - a))
+  }
+
+
   def insert(at: Int, u: Unicode): Unicode = {
     if (at < 0 || at > size) throw new IllegalArgumentException("Out of bound")
     val index = toStringPosition(at)

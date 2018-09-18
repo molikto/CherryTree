@@ -29,7 +29,6 @@ object GraphemeSplitter {
     return tn == L || tn == LV || tn == LVT || tn == V || tn == T
   }
 
-
   def prevBreak(a: String, from: Int): Int = {
     if (from == 0) {
       0
@@ -137,7 +136,6 @@ object GraphemeSplitter {
     }
     throw new IllegalArgumentException("Not possible here!")
   }
-
 
   def nextBreak(a: String, from: Int = 0): Int = {
     if (from == a.length) return a.length
