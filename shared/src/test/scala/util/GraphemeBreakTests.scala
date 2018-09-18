@@ -3,6 +3,8 @@ package util
 import model.data.{Unicode, UnicodeData}
 import utest._
 
+import scala.util.Random
+
 
 object GraphemeBreakTests extends TestSuite {
 
@@ -45,6 +47,13 @@ object GraphemeBreakTests extends TestSuite {
     }
     'graphemeBeforeAndAfterAscii2 - {
       testGraphemes("what\u000d\u000awwhat")
+    }
+
+
+    'grapemeRandom - {
+      for (_ <- 0 until 10000) {
+        testGraphemes(Random.nextString(100))
+      }
     }
   }
 }

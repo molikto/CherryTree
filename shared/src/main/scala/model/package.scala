@@ -14,7 +14,7 @@ package object model extends Picklers {
 
   var debug_oldDocVersion = false
   val debug_katex = false
-  var debug_view = false
+  var debug_view = true
   val debug_scroll = debug_view && false
   var debug_model = false
   val debug_transmit = false
