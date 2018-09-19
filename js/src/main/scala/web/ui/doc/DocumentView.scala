@@ -367,7 +367,7 @@ abstract class DocumentView extends View with EditorView {
     if (searching == null) {
       fakeSelections.innerHTML = ""
     } else {
-      val ocs = currentDoc.searchInShown(searching, editor.enableModal)
+      val ocs = currentDoc.searchInShown(searching, editor.enableModal, editor.delimitationSettings)
       // render search ocs
     }
   }

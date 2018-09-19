@@ -13,12 +13,9 @@ object SearchBehaviour {
 
 case class SearchOccurrence(
   node: model.cursor.Node,
-  range: IntRange
+  range: Seq[IntRange]
 
-) {
-
-  def +(a: Int): SearchOccurrence = copy(range = range.moveBy(a))
-}
+)
 
 case class Search(
   term: String,

@@ -16,7 +16,6 @@ abstract sealed class Text {
   def toPlainScalaTags: Frag
 
   def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new IllegalArgumentException("not possible")
-  def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
@@ -55,10 +54,6 @@ object Text {
   private[data] def toPlainScalaTags(a: Seq[Text]): Frag = a.map(_.toPlainScalaTags): Frag
   def toHtml(a: Seq[Text]): String = toScalaTags(a).render
   def toPlain(a: Seq[Text]): String = toPlainScalaTags(a).render
-
-  def quickSearch(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
-    text.exists(_.quickSearch(p, deli))
-  }
 
 
   private[model] def serialize(text: Seq[Text]): EncodedSeq = {
@@ -246,8 +241,6 @@ object Text {
   sealed trait DelimitedT[T] extends Delimited {
     def content: T
 
-    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
-      deli.get(delimitation.start).contains(p) || deli.get(delimitation.end).contains(p)
   }
 
   sealed trait Formatted extends DelimitedT[Seq[Text]] {
@@ -257,10 +250,6 @@ object Text {
     override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else content(cur.head)(cur.tail)
 
     override def toPlainScalaTags: Frag = Text.toPlainScalaTags(content)
-
-    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean =
-      super.quickSearch(p, deli) ||
-      Text.quickSearch(content, p, deli)
 
     override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {
       content.foreach(_.serialize(buffer))
@@ -365,9 +354,6 @@ object Text {
       buffer.put(content)
     }
 
-    override def quickSearch(p: Unicode, deli: settings.SpecialKeySettings): Boolean =
-      super.quickSearch(p, deli) || content.containsLowerCase(p)
-
     override def after(myCursor: model.cursor.Node, myIndex: Int, b: Int): Iterator[Atom] = new Iterator[Atom] {
       var i = if (b == 0) 0 else if (b != Coded.this.size) 1 else 2
       var it: Iterator[Atom] = null
@@ -469,10 +455,6 @@ object Text {
       buffer.put(unicode)
     }
 
-    override def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = {
-      unicode.containsLowerCase(p)
-    }
-
     override def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
     override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
 
@@ -538,5 +520,4 @@ object Text {
     }
     None
   }
-
 }

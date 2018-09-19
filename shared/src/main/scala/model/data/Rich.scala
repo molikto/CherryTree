@@ -13,6 +13,7 @@ import scala.util.Random
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+
   def tags: Map[Text.HashTag, Int] =
     if (text.size == 1 && text.head.isInstanceOf[Text.Plain]) Map.empty
     else {
@@ -61,13 +62,13 @@ case class Rich(text: Seq[Text]) {
   }
 
 
-  def search(a: Search, startPos: Int): Option[IntRange] = {
+  def search(a: Search, startPos: Int, settings: SpecialKeySettings): Seq[IntRange] = {
     Text.search(text, a, startPos)
   }
 
-  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings): Boolean = {
-    tt.forall(p => Text.quickSearch(text, p, deli))
-  }
+//  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings): Boolean = {
+//    tt.forall(p => Text.quickSearch(text, p, deli))
+//  }
 
 
   lazy val size: Int = Text.size(text)

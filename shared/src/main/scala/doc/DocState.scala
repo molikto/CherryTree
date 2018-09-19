@@ -7,10 +7,12 @@ import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
 import search.{Search, SearchOccurrence}
-import settings.Settings
+import settings.{Settings, SpecialKeySettings}
+
+import scala.collection.mutable.ArrayBuffer
 
 object DocState {
-  private case class SearchCache(search: Search, mode: model.mode.Node, enableModal: Boolean) {
+  private case class SearchCache(search: Search, mode: model.mode.Node, settings: Settings) {
     var res: Seq[SearchOccurrence] = null
   }
 }
@@ -58,73 +60,96 @@ case class DocState private (
 
 
   private var lastSearch: DocState.SearchCache = null
+
+  private def doSearch(
+    a: Search,
+    scope: cursor.Node,
+    includedFolded: Boolean,
+    startNode: cursor.Node,
+    startPos: Int,
+    settings: Settings,
+    nodeFilter: Node => Boolean,
+    onePerNode: Boolean,
+    goAroundOnEmpty: Boolean): Iterator[SearchOccurrence] = {
+      val mv = new cursor.Node.Mover(node, scope, if (includedFolded) _ => false else a => {
+        assert(cursor.Node.contains(scope, a))
+        val no = node(a)
+        a != scope && userFoldedNodes.getOrElse(no.uuid, no.isH1)
+      })
+      // this is the inclusive position the atom of the match start should be with in
+      // selection/normal/visual mode, search after exclude range, before include range
+      // line mode, after include, before exclude
+      val col= new ArrayBuffer[SearchOccurrence]()
+      def rep(startNode: cursor.Node, startPos: Int, goAround: Boolean): Seq[SearchOccurrence] = {
+        var n = startNode
+        var pos = startPos
+        while (n != null) {
+          val nn = node(n)
+          val res = if (nodeFilter(nn)) nn.content.search(a, pos, settings.delimitationGraphemes) else Seq.empty
+          if (res.nonEmpty) {
+            if (onePerNode) {
+              col.append(SearchOccurrence(n, res.head))
+            } else {
+              col.appendAll(res.map(a => SearchOccurrence(n, a)))
+            }
+            if (res.size >= limit) {
+              return col
+            }
+          } else {
+            if (a.direction == -1) {
+              n = mv.visualUp(n).orNull
+              pos = Int.MaxValue
+            } else {
+              n = mv.visualDown(n).orNull
+              pos = 0
+            }
+          }
+        }
+        if (goAround) {
+          val searchBefore = a.direction == -1
+          if (searchBefore) {
+            rep(mv.visualBottom(zoom), Int.MaxValue, false)
+          } else {
+            rep(zoom, 0, false)
+          }
+        } else {
+          Seq.empty
+        }
+      }
+      rep(startNode, startPos, goAroundOnEmpty)
+    }
   /**
     * we only return the first one now...
     */
-  def searchInShown(a: Search, enableModal: Boolean): Seq[SearchOccurrence] = {
-    val cacheKey = DocState.SearchCache(a, mode0, enableModal)
+  def searchInShown(a: Search, settings: Settings): Seq[SearchOccurrence] = {
+    val cacheKey = DocState.SearchCache(a, mode0, settings)
     if (cacheKey != lastSearch) {
-      def inner(): Seq[SearchOccurrence] = {
-        val mv = mover()
-        // this is the inclusive position the atom of the match start should be with in
-        val searchBefore = a.direction == -1
-        val (startNode, startPos) = mode0 match {
-          case model.mode.Node.Content(node, a) =>
-            def rec(a: model.mode.Content): Int = {
-              a match {
-                case n: model.mode.Content.RichNormalOrVisual =>
-                  if (searchBefore) n.focus.start - 1 else n.focus.until
-                case i: model.mode.Content.RichInsert =>
-                  i.pos
-                case s: model.mode.Content.RichSelection =>
-                  if (searchBefore) s.start - 1 else s.end
-                case a: model.mode.Content.RichSubMode =>
-                  rec(a.modeBefore)
-                case c: model.mode.Content.Code =>
-                  0
-              }
-            }
-            (node, rec(a))
-          case model.mode.Node.Visual(fix, to) =>
-            if (enableModal) {
-              (to, if (searchBefore) 0 else Int.MaxValue)
-            } else {
-              (to, 0)
-            }
-        }
-        // selection/normal/visual mode, search after exclude range, before include range
-        // line mode, after include, before exclude
-        var res: Option[IntRange] = None
-        def rep(startNode: cursor.Node, startPos: Int, isRev: Boolean): Seq[SearchOccurrence] = {
-          var n = startNode
-          var pos = startPos
-          while (n != null) {
-            res = node(n).content.search(a, pos)
-            if (res.isDefined) {
-              return Seq(SearchOccurrence(n, res.get))
-            } else {
-              if (a.direction == -1) {
-                n = mv.visualUp(n).orNull
-                pos = Int.MaxValue
-              } else {
-                n = mv.visualDown(n).orNull
-                pos = 0
-              }
+      val searchBefore = a.direction == -1
+      val (startNode, startPos) = mode0 match {
+        case model.mode.Node.Content(node, a) =>
+          def rec(a: model.mode.Content): Int = {
+            a match {
+              case n: model.mode.Content.RichNormalOrVisual =>
+                if (searchBefore) n.focus.start - 1 else n.focus.until
+              case i: model.mode.Content.RichInsert =>
+                i.pos
+              case s: model.mode.Content.RichSelection =>
+                if (searchBefore) s.start - 1 else s.end
+              case a: model.mode.Content.RichSubMode =>
+                rec(a.modeBefore)
+              case c: model.mode.Content.Code =>
+                0
             }
           }
-          if (!isRev) {
-            if (searchBefore) {
-              rep(mv.visualBottom(zoom), Int.MaxValue, true)
-            } else {
-              rep(zoom, 0, true)
-            }
+          (node, rec(a))
+        case model.mode.Node.Visual(fix, to) =>
+          if (settings.enableModal) {
+            (to, if (searchBefore) 0 else Int.MaxValue)
           } else {
-            Seq.empty
+            (to, 0)
           }
-        }
-        rep(startNode, startPos, false)
       }
-      cacheKey.res = inner()
+     cacheKey.res = doSearch(a, zoom, false, startNode, startPos, 1, settings, _ => true, false, true)
       lastSearch = cacheKey
     }
     lastSearch.res
@@ -138,6 +163,7 @@ case class DocState private (
     deli: settings.SpecialKeySettings, viewport: Boolean): Seq[cursor.Node] = {
     val (n, cur) = if (viewport) (node(zoom), zoom) else (node, cursor.Node.root)
     val code = isLaTeXMacro || code0
+    doSearch()
     n.filter(cur, a => {
       (!isLaTeXMacro || a.isLaTeXMacro) &&
       (!heading || a.isHeading) &&
@@ -146,7 +172,7 @@ case class DocState private (
           a.content match {
             case data.Content.Code(_, _) => code
             case data.Content.Rich(j) =>
-              !code && j.quickSearch(tt, deli)
+              !code && j.search(tt, deli)
           }
         )
     }).sortBy(cur => {
