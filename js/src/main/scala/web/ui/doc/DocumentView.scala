@@ -207,7 +207,15 @@ abstract class DocumentView extends View with EditorView {
   private var visualMotionX = -1
   private val tempSelection: raw.Range = document.createRange()
 
-  protected def flushSelection(force: Boolean = false, userModeUpdate: Boolean = false): Unit = {
+  private var forceFlushSelection = false
+
+  protected def flushSelection(force0: Boolean = false, userModeUpdate: Boolean = false): Unit = {
+    val force = if (forceFlushSelection) {
+      forceFlushSelection = false
+      true
+    } else {
+      force0
+    }
     if (!duringVisualUpDown && userModeUpdate && currentSelection != nonEditableSelection) {
       val sel = currentDoc.mode match {
         case Some(model.mode.Node.Content(_, v: model.mode.Content.RichRange)) =>
@@ -524,15 +532,12 @@ abstract class DocumentView extends View with EditorView {
     }
   }
 
-//  protected override def postFlushSelectionOnArrowKey(): Unit = {
-//    if (currentSelection != nonEditableSelection) {
-//      currentSelection.collapse(false)
-//      flushSelection()
-//    }
-//    editor.disableRemoteStateUpdate(true, true)
-//    clearAllPreviousReading()
-//    readSelectionAfterMouseUpWithDelay(1, null, null, false)
-//  }
+  protected override def postFlushSelectionOnSpellCheckerKey(): Unit = {
+    forceFlushSelection = true
+    editor.disableRemoteStateUpdate(true, true)
+    clearAllPreviousReading()
+    readSelectionAfterMouseUpWithDelay(10, null, null, true)
+  }
 
   event("mousedown", (a: MouseEvent) => {
     editor.flushBeforeMouseDown()

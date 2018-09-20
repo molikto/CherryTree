@@ -44,7 +44,7 @@ abstract sealed class Text {
 object Text {
   def tags(text: Seq[Text], a: ArrayBuffer[HashTag]): Unit = {
     text.foreach {
-      case h: HashTag => a.append(h)
+      case h: HashTag => if (h.content.nonEmpty) a.append(h)
       case f: Formatted => tags(f.content, a)
       case _ =>
     }

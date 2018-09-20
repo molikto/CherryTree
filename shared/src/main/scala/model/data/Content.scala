@@ -72,6 +72,7 @@ object CodeType {
 }
 
 abstract sealed class Content {
+  def defines(hash: Text.HashTag): Option[IntRange] = None
 
 
   def search(a: Search, startPos: Int): Option[IntRange]
@@ -131,6 +132,8 @@ object Content extends DataObject[Content] {
     override def isEmpty: Boolean = content.isEmpty
 
     override def search(a: Search, startPos: Int): Option[IntRange] = content.search(a, startPos)
+
+    override def defines(hash: Text.HashTag): Option[IntRange] = content.defines(hash)
   }
 
   override val pickler: Pickler[Content] = new Pickler[Content] {

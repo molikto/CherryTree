@@ -4,24 +4,19 @@ import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw.{HTMLElement, HTMLOptionElement, HTMLSelectElement}
 import scalatags.JsDom.all._
-import web.view.{UnselectableView, View}
+import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.util.Try
 
-class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView {
+class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView with DelayUpdate {
 
-  private var previousUpdateTime = 0L
-  private var scheduledUpdate: Int = -1
   private var previousZoom: model.cursor.Node = null
   private var previousFocus: Option[String] = None
   private var previousNearestHeading: Option[String] = None
 
-  private var justLookedUp: (String, model.cursor.Node) = null
-
   private def onClick(uuid: String): Unit = {
     client.state.lookup(uuid) match {
       case Some(cur) =>
-        justLookedUp = (uuid, cur)
         client.localChange(client.state.goTo(cur, client))
         doc().focus()
       case _ =>
@@ -30,7 +25,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
 
 
   private def onDoubleClick(uuid: String): Unit = {
-    val cur = if (justLookedUp != null && justLookedUp._1 == uuid) Some(justLookedUp._2) else client.state.lookup(uuid)
+    val cur = client.state.lookup(uuid)
     cur match {
       case Some(cur) =>
         client.localChange(client.state.goTo(cur, client, true))
@@ -96,22 +91,12 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   private def state = client.state
 
   observe(client.stateUpdates.doOnNext(update => {
-    justLookedUp = null
     renderState(update.from.isEmpty)
   }))
 
 
 
-  /**
-    * will also remove from parent
-    * ALSO make sure you destroy child dom attachments!!!
-    */
-  override def destroy(): Unit = {
-    if (scheduledUpdate != -1) {
-      window.clearTimeout(scheduledUpdate)
-    }
-    super.destroy()
-  }
+  override def renderDelayed(): Unit = renderState(false)
 
   def renderState(emptyDataChange: Boolean): Unit = {
     val zoom = state.zoom
@@ -125,45 +110,30 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     } else {
       previousUpdateTime = -1L
     }
-    var t = System.currentTimeMillis()
-    if (t - previousUpdateTime < 1000) {
-      if (scheduledUpdate == -1) {
-        scheduledUpdate = window.setTimeout(() => {
-          scheduledUpdate = -1
-          renderState(false)
-        }, previousUpdateTime + 1100 - t)
+    if (checkShouldUpdate()) {
+      previousZoom = zoom
+      val nearestHeadingCur = zoom.inits.find(l => state.node(l).isH1)
+      val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
+      parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
+      var tocChanged = false
+      if (emptyDataChange && previousNearestHeading == nearestHeading.map(_.uuid)) {
+        // no toc changes
+      } else {
+        tocChanged = true
+        if (previousNearestHeading.isDefined != nearestHeading.isDefined) {
+          tocView.dom.style.display = if (nearestHeading.isDefined) "auto" else "none"
+        }
+        previousNearestHeading = nearestHeading.map(_.uuid)
+        tocView.update(nearestHeading.map(_.childs).getOrElse(Seq.empty))
       }
-      return
-    }
-    previousUpdateTime = t
-    if (scheduledUpdate != -1) {
-      window.clearTimeout(scheduledUpdate)
-      scheduledUpdate = -1
-    }
-    previousZoom = zoom
-    val nearestHeadingCur = zoom.inits.find(l => state.node(l).isH1)
-    val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
-    parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
-    var tocChanged = false
-    if (emptyDataChange && previousNearestHeading == nearestHeading.map(_.uuid)) {
-      // no toc changes
-    } else {
-      tocChanged = true
-      if (previousNearestHeading.isDefined != nearestHeading.isDefined) {
-        tocView.dom.style.display = if (nearestHeading.isDefined) "auto" else "none"
+      if (!focusSame || tocChanged) {
+        previousFocus = currentFocusTitleNode.map(_.uuid)
+        tocView.updateFocus(previousFocus, hideLevel, dom)
       }
-      previousNearestHeading = nearestHeading.map(_.uuid)
-      tocView.update(nearestHeading.map(_.childs).getOrElse(Seq.empty))
-    }
-    if (!focusSame || tocChanged) {
-      previousFocus = currentFocusTitleNode.map(_.uuid)
-      tocView.updateFocus(previousFocus, hideLevel, dom)
-    }
-    t = System.currentTimeMillis() - t
-    if (t > 0 && model.debug_view) {
-      println(s"quick access updated in $t")
     }
   }
 
   renderState(false)
+
+
 }

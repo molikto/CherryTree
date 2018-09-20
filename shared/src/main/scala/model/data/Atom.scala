@@ -34,6 +34,7 @@ sealed trait Atom {
     case _ => false
   }
 
+
   def isWithAttribute(c: SpecialChar): Boolean = this match {
     case a: Atom if a.text.isDelimited => a.text.asDelimited.delimitation.attributes.contains(c)
     case _ => false
