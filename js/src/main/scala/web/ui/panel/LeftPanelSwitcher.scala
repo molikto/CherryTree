@@ -42,7 +42,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   private val tags = span(span(`class` := "ct-tab-icon ct-tab-tags"), a("Tags")).render
 
-  private var childs = Seq(tags, commands, quickAccess)
+  private var childs = Seq(commands, tags, quickAccess)
 
   if (model.debug_view) {
     childs = undoHistory +: childs

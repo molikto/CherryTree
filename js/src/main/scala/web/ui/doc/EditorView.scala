@@ -1,7 +1,7 @@
 package web.ui.doc
 
 import command.Key
-import command.Key.Up
+import command.Key.{Meta, Up}
 import model.data.Unicode
 import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLElement
@@ -67,12 +67,14 @@ trait EditorView extends View {
   }
 
 
-  protected def postFlushSelectionOnArrowKey(): Unit = {
+  protected def postFlushSelectionOnSpellCheckerKey(): Unit = {
   }
 
   protected var hasShift = false
 
 //  def systemHandleArrowKey: Boolean = false
+
+  val triggerReadSelectionKey = Key(";").copy(meta = true)
 
 
   override def onAttach(): Unit = {
@@ -83,11 +85,13 @@ trait EditorView extends View {
         hasShift = event.keyCode == 16
         val kk = EditorView.extractKey(event)
         val isArrow = (kk.a == Key.Up || kk.a == Key.Down) && !kk.meta && !kk.control
-//        if (systemHandleArrowKey && isArrow) {
-//          postFlushSelectionOnArrowKey()
-//        } else {
-//        }
-        if (!kk.a.isInstanceOf[Key.Modifier]) {
+        //        if (systemHandleArrowKey && isArrow) {
+        //          postFlushSelectionOnArrowKey()
+        //        } else {
+        //        }
+        if (kk == triggerReadSelectionKey) {
+          postFlushSelectionOnSpellCheckerKey()
+        } else if (!kk.a.isInstanceOf[Key.Modifier]) {
           if (editor.onKeyDown(kk)) preventDefault(event)
         }
       }

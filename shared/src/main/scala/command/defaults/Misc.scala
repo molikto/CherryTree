@@ -144,35 +144,44 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
 
 
   val visitLink = new Command {
-    override val description: String = "visit link destination"
+    override val description: String = "visit link destination / go to definition"
 
     override def defaultKeys: Seq[KeySeq] = Seq("gx")
 
     override def available(a: DocState): Boolean = a.isRich((cursor, rich, t) => {
-      rich.insideUrlAttributed(t).nonEmpty
+      rich.insideUrlAttributed(t).nonEmpty || rich.insideHashTag(t).nonEmpty
     })
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, t0) = a.asRichAtom
-      val t = rich.insideUrlAttributed(t0).get.text.asDelimited
-      val url = t.attribute(model.data.UrlAttribute).str
-      Node.matchNodeRef(url).foreach { uuid =>
-        a.lookup(uuid) match {
-          case Some(cur) =>
-            return a.goTo(cur, Misc.this)
-          case None =>
-            // TODO report error
-            return DocTransaction.empty
+      val ttt = rich.insideUrlAttributed(t0)
+      if (ttt.nonEmpty) {
+        val t = ttt.get.text.asDelimited
+        val url = t.attribute(model.data.UrlAttribute).str
+        Node.matchNodeRef(url).foreach { uuid =>
+          a.lookup(uuid) match {
+            case Some(cur) =>
+              return a.goTo(cur, Misc.this)
+            case None =>
+              // TODO report error
+              return DocTransaction.empty
+          }
         }
-      }
-      import io.lemonlabs.uri._
-      Try {
-        Url.parse(url)
-      } match {
-        case Success(_) =>
-          DocTransaction.message(Client.ViewMessage.VisitUrl(url))
-        case _ =>
-          DocTransaction.empty
+        import io.lemonlabs.uri._
+        Try {
+          Url.parse(url)
+        } match {
+          case Success(_) =>
+            DocTransaction.message(Client.ViewMessage.VisitUrl(url))
+          case _ =>
+            DocTransaction.empty
+        }
+      } else {
+        val hash = rich.insideHashTag(t0).get
+        a.find(a => a.content.defines(hash)) match {
+          case Some((cur, range)) => a.goTo(cur, Misc.this)
+          case _ => DocTransaction.empty
+        }
       }
     }
   }

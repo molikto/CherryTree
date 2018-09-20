@@ -55,6 +55,7 @@ case class DocState private (
 
 
   def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
+  def find[T](pred: model.data.Node => Option[T]) = node.find(pred, cursor.Node.root)
 
 
   private var lastSearch: DocState.SearchCache = null

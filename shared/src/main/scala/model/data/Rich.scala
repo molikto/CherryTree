@@ -7,12 +7,48 @@ import model.data.Text.Delimited
 import search.{Search, SearchOccurrence}
 import settings.SpecialKeySettings
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 /**
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+
+  def allTexts: Iterator[(Text, Int)] = new Iterator[(Text, Int)] {
+    var start = 0
+    var items: Seq[Any] = text.toList
+
+    override def hasNext: Boolean = items.nonEmpty
+
+    override def next(): (Text, Int) = {
+      val head = items.head
+      val res = head match {
+        case a: Text.Atomic =>
+          items = items.tail
+          a
+        case b: Text.Formatted =>
+          items = b.content ++ Seq(b.deliEndSize) ++ items.tail
+          b
+        case a: Text =>
+          items = items.tail
+          a
+        case _ => throw new IllegalStateException("Not allowed")
+      }
+      start += res.size
+      while (items.nonEmpty && items.head.isInstanceOf[Int]) {
+        start += items.head.asInstanceOf[Int]
+        items = items.tail
+      }
+      (res, start)
+    }
+  }
+
+  def defines(hash: Text.HashTag): Option[IntRange] = allTexts.find {
+    case (Text.HashDef(a), pos) => a == hash.content
+    case _ => false
+  }.map(a => IntRange.len(a._2, a._1.size))
+
   def tags: Map[Text.HashTag, Int] =
     if (text.size == 1 && text.head.isInstanceOf[Text.Plain]) Map.empty
     else {
@@ -261,6 +297,20 @@ case class Rich(text: Seq[Text]) {
     }
   }
 
+
+  def insideHashTag(pos: Atom): Option[Text.HashTag] = {
+    var node = if (pos.isGrapheme) model.cursor.Node.parent(pos.nodeCursor) else pos.nodeCursor
+    while (node.nonEmpty) {
+      val nn = apply(node)
+      nn match {
+        case tag: Text.HashTag =>
+          return Some(tag)
+        case _ =>
+      }
+      node = model.cursor.Node.parent(node)
+    }
+    return None
+  }
 
   def insideUrlAttributed(pos: Atom): Option[Atom] = {
     if (pos.isWithAttribute(UrlAttribute)) {

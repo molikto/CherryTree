@@ -2,15 +2,27 @@ package web.ui.panel
 
 import client.Client
 import command.{Command, Key}
+import model.data.{Content, Text}
 import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 import scalatags.JsDom.all._
-import web.view.{UnselectableView, View}
+import web.ui.ContentListView
+import web.ui.content.ContentView
+import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class TagsPanel(val client: Client, doc: () => View) extends UnselectableView  {
+class TagsPanel(val client: Client, doc: () => View) extends UnselectableView with DelayUpdate {
 
+  val tagsView = new ContentListView[model.data.Text.HashTag](tag => {
+  }) {
+    override def contentOf(t: Text.HashTag): HTMLElement = {
+      val data = model.data.Content.Rich(model.data.Rich(Seq(t)))
+      val view = ContentView.create(data, None).dom
+      view.style.display = "inline-block"
+      view
+    }
+  }
   dom = div(
     minWidth := "150px",
     width := "100%",
@@ -19,93 +31,42 @@ class TagsPanel(val client: Client, doc: () => View) extends UnselectableView  {
     overflowY := "scroll",
     `class` := "ct-scroll ct-panel",
     padding := "24px",
+    tagsView
   ).render
 
-  private val bf = new ArrayBuffer[(Command, HTMLElement)]
+  observe(client.stateUpdates.doOnNext { _ =>
+    render()
+  })
 
+  private def state = client.state
 
-  private val onClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
-    val cmd = ev.currentTarget.asInstanceOf[js.Dynamic].command.asInstanceOf[command.Command]
-    client.runTextualIfAvailable(cmd)
-    doc().focus()
-  }
+  private var previousZoom: model.cursor.Node = null
+  private var previousFocus: Option[String] = None
 
-  private val onPanelClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
-    ev.currentTarget.asInstanceOf[HTMLElement].parentElement.classList.toggle("hide-children")
-    doc().focus()
-  }
+  override def renderDelayed(): Unit = render()
 
-  val res = div(
-    client.commandsByCategory.map {
-      case (name, commands) =>
-        if (commands.isEmpty) {
-          div()
-        } else {
-          div(
-            `class` := "hide-children",
-            marginBottom := "8px",
-            {
-              val h = h4(
-                display := "flex",
-                flexDirection := "row",
-                alignItems := "center",
-                `class` := "ct-flat-selectable",
-                marginLeft := "-6px",
-                marginRight := "-6px",
-                marginBottom := "0px",
-                paddingLeft := "6px",
-                paddingRight := "6px",
-                paddingTop := "4px",
-                paddingBottom := "4px",
-                i(`class` := "ct-general-hold"),
-                div(marginLeft := "4px", name)
-              ).render
-              h.addEventListener("click", onPanelClick)
-              h: Frag
-            },
-            commands.filter(_.description.nonEmpty).map(c => {
-              val dom = div(
-                p(marginLeft := "8px",
-                  marginBottom := "0px",
-                  paddingLeft := "4px",
-                  paddingRight := "4px",
-                  paddingTop := "5px",
-                  paddingBottom := "5px",
-                  Some(span(tag("kbd")(`class` := "ct-kbd2", "N", title := "this command is repeatable when prefixed by a number"), " ")).filter(_ => client.enableModal && c.repeatable),
-                  if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double", title := "double click"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.actTripleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1triple", title := "triple click"), " ") else Seq.empty[Frag] : Frag,
-                  c.inputRule.map(a => span(tag("kbd")(`class` := "ct-kbd", a.shortDesc, title := a.longDesc), " ")),
-                  c.textCommand.map(a => span(tag("kbd")(`class` := "ct-kbd", ":" + a, title := "use command menu to invoke this command"), " ")),
-                  c.keysOn(client.enableModal).map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
-                  if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char", title := "this command needs have a char as argument"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion", title := "this command needs a motion as argument"), " ") else Seq.empty[Frag] : Frag,
-                  c.description)
-              ).render
-              dom.asInstanceOf[js.Dynamic].command = c.asInstanceOf[scala.scalajs.js.Any]
-              if (!c.needsStuff) {
-                dom.className = "ct-flat-selectable"
-                dom.addEventListener("click", onClick)
-              }
-              bf.append((c, dom))
-              dom: Frag
-            })
-          )
-        }
-    }.toSeq
-  ).render
+  private var previousTags: Object = null
 
-  dom.appendChild(res)
-
-
-  observe(client.stateUpdates.map(_ => 0).startWith(Seq(0)).doOnNext(pair => {
-    for (p <- bf) {
-      val av = p._1.available(client.state, client)
-      if (av) {
-        p._2.classList.remove("ct-flat-disabled")
-      } else {
-        p._2.classList.add("ct-flat-disabled")
+  def render(): Unit = {
+    val zoom = state.zoom
+    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
+    val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
+    val zoomSame = previousZoom == zoom
+    if (zoomSame && focusSame) {
+    } else {
+      previousUpdateTime = -1L
+    }
+    if (checkShouldUpdate()) {
+      previousZoom = zoom
+      previousFocus = currentFocusTitleNode.map(_.uuid)
+      val tags = state.node.allTags
+      if (previousTags != tags) {
+        previousTags = tags
+        tagsView.update(tags.toSeq.sortBy(-_._2).map(_._1).toArray)
       }
     }
-  }))
+  }
+
+  render()
 
 }

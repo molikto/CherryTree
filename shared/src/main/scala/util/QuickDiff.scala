@@ -3,7 +3,7 @@ package util
 trait QuickDiff[T] {
 
   protected def idEq(t: T, b: T): Boolean
-  protected def eq(a: T, b: T): Boolean
+  protected def eq(a: T, b: T): Boolean = idEq(a, b)
 
   protected def performChange(index: Int, oldData: T, newData: T)
 

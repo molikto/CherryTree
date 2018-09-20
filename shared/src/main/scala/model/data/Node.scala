@@ -9,6 +9,7 @@ import model.range.IntRange
 import scalatags.Text.all._
 import search.{Search, SearchOccurrence}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -41,9 +42,66 @@ case class Node(
         false
     }
 
-  lazy val selfTags = content match {
+  def map(c: model.cursor.Node, transform: Node => Node): Node = {
+    var noTagChange = false
+    var noMacroChange = false
+    def inner(n: Node, c: model.cursor.Node): Node = {
+      if (c.isEmpty) {
+        val before = n
+        val after = transform(n)
+        if (before.allTags_ != null &&  (if (before.childs == after.childs) before.selfTags == after.selfTags else before.allTags == after.allTags)) {
+          noTagChange = true
+        }
+        if (macros_ != null && before.macros == after.macros) {
+          noMacroChange = true
+        }
+        after
+      } else {
+        val before = n
+        val after = before.copy(childs = before.childs.patch(c.head, Seq(inner(before.childs(c.head), c.tail)), 1))
+        if (noTagChange) {
+          after.allTags_ = before.allTags_
+        }
+        if (noMacroChange) {
+          after.macros_ = before.macros_
+        }
+        after
+      }
+    }
+    inner(this, c)
+  }
+
+
+  lazy val selfTags : Map[Text.HashTag, Int]  = content match {
     case Content.Rich(rich) => rich.tags
     case _ => Map.empty
+  }
+
+  private var allTags_ : Map[Text.HashTag, Int] = null
+
+  private def addMaps(col: mutable.Map[Text.HashTag, Int], allTags: Map[Text.HashTag, Int]): Unit = {
+    for (m <- allTags) {
+      col.get(m._1) match {
+        case None => col.put(m._1, m._2)
+        case Some(j) => col.put(m._1, m._2 + j)
+      }
+    }
+  }
+
+  def allTags: Map[Text.HashTag, Int] = {
+    if (allTags_ == null) {
+      if (childs.isEmpty) {
+        allTags_ = selfTags
+      } else {
+        val col = mutable.Map[Text.HashTag, Int]()
+        for (c <- childs) {
+          addMaps(col, c.allTags)
+        }
+        addMaps(col, selfTags)
+        allTags_ = col.toMap
+      }
+    }
+    allTags_
   }
 
 
@@ -78,18 +136,38 @@ case class Node(
   def count: Int = 1 + childs.map(_.count).sum
   def size: Int = content.size + childs.map(_.size).sum
 
-  def lookup(_2: String, currentCur: model.cursor.Node = model.cursor.Node.root): Option[model.cursor.Node] = {
-    if (uuid == _2) {
+  def findB(pred: Node => Boolean, currentCur: model.cursor.Node): Option[model.cursor.Node] = {
+    val kk = pred(this)
+    if (kk) {
       Some(currentCur)
     } else {
       childs.zipWithIndex.foreach(a =>  {
-        val res = a._1.lookup(_2, currentCur :+ a._2)
+        val res = a._1.findB(pred, currentCur :+ a._2)
         if (res.isDefined) {
           return res
         }
       })
       None
     }
+  }
+
+  def find[T](pred: Node => Option[T], currentCur: model.cursor.Node): Option[(model.cursor.Node, T)] = {
+    val kk = pred(this)
+    if (kk.isDefined) {
+      Some((currentCur, kk.get))
+    } else {
+      childs.zipWithIndex.foreach(a =>  {
+        val res = a._1.find(pred, currentCur :+ a._2)
+        if (res.isDefined) {
+          return res
+        }
+      })
+      None
+    }
+  }
+
+  def lookup(_2: String, currentCur: model.cursor.Node = model.cursor.Node.root): Option[model.cursor.Node] = {
+    findB(_.uuid == _2, currentCur)
   }
 
 
@@ -168,14 +246,6 @@ case class Node(
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
-
-  def map(c: model.cursor.Node, transform: Node => Node): Node = {
-    if (c.isEmpty) {
-      transform(this)
-    } else {
-      copy(childs = childs.patch(c.head, Seq(childs(c.head).map(c.tail, transform)), 1))
-    }
-  }
 
   def get(a: model.cursor.Node): Option[Node] =
     if (a.isEmpty) Some(this) else if (a.head >= childs.size) None else childs(a.head).get(a.tail)
