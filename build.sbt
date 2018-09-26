@@ -1,30 +1,33 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 
+
+
 lazy val server = (project in file("jvm")).settings(
   sharedSettings,
-  scalaVersion := Version.scala,
   scalaJSProjects := Seq(client),
   pipelineStages in Assets := Seq(scalaJSPipeline),
+  pipelineStages := Seq(digest, gzip),
   // triggers scalaJSPipeline when using compile or continuous compilation
   compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
-  libraryDependencies ++= Deps.server.value,
+  libraryDependencies ++= Deps.server.value ++ Seq(guice),
   WebKeys.packagePrefix in Assets := "public/",
   managedClasspath in Runtime += (packageBin in Assets).value
-).enablePlugins(SbtWeb, JavaAppPackaging, SbtTwirl, WebScalaJSBundlerPlugin).
+).enablePlugins(SbtWeb, JavaAppPackaging, PlayScala, WebScalaJSBundlerPlugin).
   dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(
   sharedSettings,
-  scalaVersion := Version.scala,
   webpackBundlingMode := BundlingMode.LibraryAndApplication(),
   npmDependencies in Compile ++= Deps.clientJs,
   libraryDependencies ++= Deps.client.value
 ).enablePlugins(ScalaJSPlugin, ScalaJSWeb, ScalaJSBundlerPlugin).
   dependsOn(sharedJs)
 
-lazy val shared = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared")).
-  settings(
+lazy val shared = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("shared"))
+  .settings(
     sharedSettings,
     scalaVersion := Version.scala,
     libraryDependencies ++= Deps.shared.value,
@@ -42,6 +45,7 @@ autoCompilerPlugins := true
 
 val sharedSettings = Seq(
   // acyclic
+  scalaVersion := Version.scala,
   libraryDependencies += "com.lihaoyi" %% "acyclic" % Version.acyclic % "provided",
   resolvers += Resolver.sonatypeRepo("releases"),
 //  scalacOptions += "-P:acyclic:force",

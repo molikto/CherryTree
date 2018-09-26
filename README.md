@@ -13,6 +13,19 @@ release build with `sbt assembly` for the jar. more info here: https://github.co
 * static assertion is by assert and doc
 * dynamic check use exception
 
+## debug deploy
+
+```
+curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+curl --silent --location https://rpm.nodesource.com/setup_10.x | sudo bash -
+sudo yum -y install java git sbt nodejs
+//  ssh-keygen -t rsa -b 4096 -C "user@domain.com"
+git clone git@github.com:molikto/CherryTree.git
+mv CherryTree codename-cherry-tree
+cd codename-cherry-tree
+./remote_server.sh
+```
+
 
 ## read the code?
 
