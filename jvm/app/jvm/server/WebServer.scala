@@ -46,3 +46,4 @@ class WebServer() {
     println(s"Server online at http://$interface:$port")
   }
 }
+
