@@ -42,6 +42,15 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
    */
   def save(user: User) = userDAO.save(user)
 
+  private def profileName(profile: CommonSocialProfile) =
+    profile.firstName -> profile.lastName match {
+      case (Some(f), Some(l)) => Some(f + " " + l)
+      case (Some(f), None) => Some(f)
+      case (None, Some(l)) => Some(l)
+      case _ => None
+    }
+
+
   /**
    * Saves the social profile for a user.
    *
@@ -54,9 +63,7 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
     userDAO.find(profile.loginInfo).flatMap {
       case Some(user) => // Update user with profile
         userDAO.save(user.copy(
-          firstName = profile.firstName,
-          lastName = profile.lastName,
-          fullName = profile.fullName,
+          name = profileName(profile),
           email = profile.email,
           avatarURL = profile.avatarURL
         ))
@@ -64,9 +71,7 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
         userDAO.save(User(
           userID = UUID.randomUUID(),
           loginInfo = profile.loginInfo,
-          firstName = profile.firstName,
-          lastName = profile.lastName,
-          fullName = profile.fullName,
+          name = profileName(profile),
           email = profile.email,
           avatarURL = profile.avatarURL,
           activated = true
