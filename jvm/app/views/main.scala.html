@@ -57,19 +57,19 @@
 <main class="container">
   <div class="starter-template col align-content-center">
     @request.flash.get("error").map { msg =>
-    <div class="col-md-6 alert alert-danger">
+    <div class="col-md-6 mx-auto alert alert-danger">
       <a href="#" class="close" data-dismiss="alert">&times;</a>
       <strong>@messages("error")</strong> @msg
     </div>
     }
     @request.flash.get("info").map { msg =>
-    <div class="col-md-6 alert alert-info">
+    <div class="col-md-6 mx-auto alert alert-info">
       <a href="#" class="close" data-dismiss="alert">&times;</a>
       <strong>@messages("info")</strong> @msg
     </div>
     }
     @request.flash.get("success").map { msg =>
-    <div class="col-md-6 alert alert-success">
+    <div class="col-md-6 mx-auto alert alert-success">
       <a href="#" class="close" data-dismiss="alert">&times;</a>
       <strong>@messages("success")</strong> @msg
     </div>
