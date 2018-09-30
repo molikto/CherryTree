@@ -16,7 +16,7 @@ toggle.navigation = Toggle navigation
 welcome.signed.in = Welcome, you are now signed in!
 
 sign.up.account = Sign up for a new account
-sign.in.credentials = Sign in with your credentials
+sign.in.credentials = Sign in
 
 error = Error!
 info = Info!
@@ -43,7 +43,7 @@ activate.account = Activate Account
 current.password = Current password
 new.password = New password
 
-remember.me = Remember my login on this computer
+remember.me = Remember me on this computer
 or.use.social = Or use your existing account on one of the following services to sign in:
 forgot.password.info = Please enter your email address and we will send you an email with further instructions to reset your password.
 strong.password.info = Strong passwords include numbers, letters and punctuation marks.
@@ -59,7 +59,7 @@ reset.email.sent = We have sent you an email with further instructions to reset 
 invalid.activation.link = The link isn't valid anymore! Please sign in to send the activation email again.
 invalid.reset.link = The link isn't valid anymore! Please request a new link to reset your password.
 
-password.reset = We have reset your password. You can now sign in with your credentials.
+password.reset = We have reset your password. You can now sign in with your email and password.
 account.activated = Your account is now activated! Please sign in to use your new account.
 password.changed = Your password has been changed.
 

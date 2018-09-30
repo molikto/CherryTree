@@ -10,7 +10,7 @@
 @implicitFieldConstructor = @{ b4.vertical.fieldConstructor() }
 
 @main(messages("sign.in.title")) {
-    <fieldset class="col-md-6">
+    <fieldset class="col-md-6 mx-auto">
         <legend>@messages("sign.in.credentials")</legend>
         @helper.form(action = controllers.routes.SignInController.submit()) {
             @helper.CSRF.formField
