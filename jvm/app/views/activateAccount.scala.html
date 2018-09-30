@@ -1,0 +1,18 @@
+@import play.api.i18n.Messages
+@import play.api.mvc.RequestHeader
+@import play.twirl.api.Html
+@import controllers.AssetsFinder
+
+@(email: String)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+
+@main(messages("activate.account.title")) {
+    <fieldset class="col-md-6 offset-3">
+        <legend>@messages("activate.account")</legend>
+        <div class="info">
+            <p>@messages("activate.account.text1")</p>
+            <p><b>@email</b></p>
+            <p>@messages("activate.account.text2")</p>
+            <p>@Html(messages("activate.account.text3", controllers.routes.ActivateAccountController.send(helper.urlEncode(email))))</p>
+        </div>
+    </fieldset>
+}
