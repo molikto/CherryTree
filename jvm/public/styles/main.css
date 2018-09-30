@@ -1,0 +1,104 @@
+.starter-template {
+    padding: 40px 15px;
+}
+
+.bd-navbar {
+    min-height: 4rem;
+    background-color: #563d7c;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.05), inset 0 -1px 0 rgba(0,0,0,.1);
+}
+
+.provider {
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    outline: none;
+}
+.facebook { background: #3B5998; }
+.google { background: #D14836; }
+.twitter { background: #00ACED; }
+.yahoo { background: #731A8B; }
+.xing { background: #006567; }
+.vk { background: #567ca4; }
+
+.social-providers,
+.sign-in-now,
+.already-member,
+.not-a-member {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.user {
+    margin-top: 50px;
+}
+.user .data {
+    margin-top: 10px;
+}
+
+.form-control {
+    border-radius: 0;
+}
+
+[class^='ion-'] {
+    font-size: 1.2em;
+}
+
+.has-feedback .form-control-feedback {
+    top: 0;
+    left: 0;
+    width: 46px;
+    height: 46px;
+    line-height: 46px;
+    color: #555;
+}
+
+.has-feedback .form-control {
+    padding-left: 42.5px;
+}
+
+.btn {
+    border-radius: 2px;
+}
+
+
+
+meter {
+    /* Reset the default appearance */
+    -moz-appearance: none;
+    appearance: none;
+
+    margin: 0 auto 1em;
+    width: 100%;
+    height: .5em;
+
+    /* Applicable only to Firefox */
+    background: none;
+    background-color: rgba(0,0,0,0.1);
+}
+
+meter::-webkit-meter-bar {
+    background: none;
+    background-color: rgba(0,0,0,0.1);
+}
+
+meter[value="0"]::-webkit-meter-optimum-value,
+meter[value="1"]::-webkit-meter-optimum-value { background: red; }
+meter[value="2"]::-webkit-meter-optimum-value { background: orange; }
+meter[value="3"]::-webkit-meter-optimum-value { background: yellow; }
+meter[value="4"]::-webkit-meter-optimum-value { background: green; }
+
+meter::-webkit-meter-even-less-good-value { background: red; }
+meter::-webkit-meter-suboptimum-value { background: orange; }
+meter::-webkit-meter-optimum-value { background: green; }
+
+meter[value="1"]::-moz-meter-bar,
+meter[value="1"]::-moz-meter-bar { background: red; }
+meter[value="2"]::-moz-meter-bar { background: orange; }
+meter[value="3"]::-moz-meter-bar { background: yellow; }
+meter[value="4"]::-moz-meter-bar { background: green; }
+
+meter::-webkit-meter-optimum-value {
+    transition: width .4s ease-out;
+}
