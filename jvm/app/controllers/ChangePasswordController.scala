@@ -15,17 +15,6 @@ import utils.auth.{ DefaultEnv, WithProvider }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-/**
- * The `Change Password` controller.
- *
- * @param components             The Play controller components.
- * @param silhouette             The Silhouette stack.
- * @param credentialsProvider    The credentials provider.
- * @param authInfoRepository     The auth info repository.
- * @param passwordHasherRegistry The password hasher registry.
- * @param assets                 The Play assets finder.
- * @param ex                     The execution context.
- */
 class ChangePasswordController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
@@ -38,21 +27,11 @@ class ChangePasswordController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport {
 
-  /**
-   * Views the `Change Password` page.
-   *
-   * @return The result to display.
-   */
   def view = silhouette.SecuredAction(WithProvider[DefaultEnv#A](CredentialsProvider.ID)) {
     implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
       Ok(views.html.changePassword(ChangePasswordForm.form, request.identity))
   }
 
-  /**
-   * Changes the password.
-   *
-   * @return The result to display.
-   */
   def submit = silhouette.SecuredAction(WithProvider[DefaultEnv#A](CredentialsProvider.ID)).async {
     implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
       ChangePasswordForm.form.bindFromRequest.fold(

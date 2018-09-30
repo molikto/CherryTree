@@ -18,20 +18,6 @@ import utils.auth.DefaultEnv
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-/**
- * The `Sign Up` controller.
- *
- * @param components             The Play controller components.
- * @param silhouette             The Silhouette stack.
- * @param userService            The user service implementation.
- * @param authInfoRepository     The auth info repository implementation.
- * @param authTokenService       The auth token service implementation.
- * @param avatarService          The avatar service implementation.
- * @param passwordHasherRegistry The password hasher registry.
- * @param mailerClient           The mailer client.
- * @param assets                 The Play assets finder.
- * @param ex                     The execution context.
- */
 class SignUpController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
@@ -47,20 +33,10 @@ class SignUpController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport {
 
-  /**
-   * Views the `Sign Up` page.
-   *
-   * @return The result to display.
-   */
   def view = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
     Future.successful(Ok(views.html.signUp(SignUpForm.form)))
   }
 
-  /**
-   * Handles the submitted form.
-   *
-   * @return The result to display.
-   */
   def submit = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
     SignUpForm.form.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.signUp(form))),

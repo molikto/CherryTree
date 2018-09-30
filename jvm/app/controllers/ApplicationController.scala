@@ -10,13 +10,6 @@ import utils.auth.DefaultEnv
 
 import scala.concurrent.Future
 
-/**
- * The basic application controller.
- *
- * @param components  The Play controller components.
- * @param silhouette  The Silhouette stack.
- * @param assets      The Play assets finder.
- */
 class ApplicationController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv]
@@ -25,20 +18,10 @@ class ApplicationController @Inject() (
   assets: AssetsFinder
 ) extends AbstractController(components) with I18nSupport {
 
-  /**
-   * Handles the index action.
-   *
-   * @return The result to display.
-   */
   def index = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
     Future.successful(Ok(views.html.home(request.identity)))
   }
 
-  /**
-   * Handles the Sign Out action.
-   *
-   * @return The result to display.
-   */
   def signOut = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
     val result = Redirect(routes.ApplicationController.index())
     silhouette.env.eventBus.publish(LogoutEvent(request.identity, request))

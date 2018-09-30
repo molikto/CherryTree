@@ -13,16 +13,6 @@ import utils.auth.DefaultEnv
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-/**
- * The social auth controller.
- *
- * @param components             The Play controller components.
- * @param silhouette             The Silhouette stack.
- * @param userService            The user service implementation.
- * @param authInfoRepository     The auth info service implementation.
- * @param socialProviderRegistry The social provider registry.
- * @param ex                     The execution context.
- */
 class SocialAuthController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
@@ -34,12 +24,6 @@ class SocialAuthController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport with Logger {
 
-  /**
-   * Authenticates a user against a social provider.
-   *
-   * @param provider The ID of the provider to authenticate against.
-   * @return The result to display.
-   */
   def authenticate(provider: String) = Action.async { implicit request: Request[AnyContent] =>
     (socialProviderRegistry.get[SocialProvider](provider) match {
       case Some(p: SocialProvider with CommonSocialProfileBuilder) =>
