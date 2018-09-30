@@ -5,7 +5,7 @@
 @(user: models.User)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
 @main(messages("home.title"), Some(user)) {
-    <div class="user col-md-6 offset-3">
+    <div class="user col-md-6">
         <div class="row">
             <hr class="col-md-12" />
             <h4 class="col-md-8">@messages("welcome.signed.in")</h4>
