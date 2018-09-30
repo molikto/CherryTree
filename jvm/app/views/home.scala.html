@@ -17,13 +17,7 @@
         <div class="row data">
             <div class="col-md-12">
                 <div class="row">
-                    <p class="col-md-6"><strong>@messages("first.name"):</strong></p><p class="col-md-6">@user.firstName.getOrElse("None")</p>
-                </div>
-                <div class="row">
-                    <p class="col-md-6"><strong>@messages("last.name"):</strong></p><p class="col-md-6">@user.lastName.getOrElse("None")</p>
-                </div>
-                <div class="row">
-                    <p class="col-md-6"><strong>@messages("full.name"):</strong></p><p class="col-md-6">@user.fullName.getOrElse("None")</p>
+                    <p class="col-md-6"><strong>@messages("name"):</strong></p><p class="col-md-6">@user.name.getOrElse("None")</p>
                 </div>
                 <div class="row">
                     <p class="col-md-6"><strong>@messages("email"):</strong></p><p class="col-md-6">@user.email.getOrElse("None")</p>
