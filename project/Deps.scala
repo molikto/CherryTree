@@ -34,17 +34,19 @@ object Deps {
   val server = Def.setting(shared.value ++ Seq(
     //"com.vladsch.flexmark" % "flexmark-all" % "0.34.6" ::
     "com.vmunier" %% "scalajs-scripts" % Version.scalajsScripts,
-      "com.mohiva" %% "play-silhouette" % Version.silhouette,
+    "net.codingwell" %% "scala-guice" % "4.1.0",
+    "com.typesafe.play" %% "play-slick" % "3.0.0",
+    "com.typesafe.play" %% "play-slick-evolutions" % "3.0.0",
+    "com.h2database" % "h2" % "1.4.197",
+    "com.mohiva" %% "play-silhouette" % Version.silhouette,
     "com.mohiva" %% "play-silhouette-password-bcrypt" % Version.silhouette,
     "com.mohiva" %% "play-silhouette-persistence" % Version.silhouette,
     "com.mohiva" %% "play-silhouette-crypto-jca" % Version.silhouette,
-    "net.codingwell" %% "scala-guice" % "4.1.0",
     "com.adrianhurt" %% "play-bootstrap" % "1.4-P26-B4-SNAPSHOT",
     "com.iheart" %% "ficus" % "1.4.3",
     "com.typesafe.play" %% "play-mailer" % Version.playMailer,
     "com.typesafe.play" %% "play-mailer-guice" % Version.playMailer,
-  "com.enragedginger" %% "akka-quartz-scheduler" % "1.6.1-akka-2.5.x",
-
+    "com.enragedginger" %% "akka-quartz-scheduler" % "1.6.1-akka-2.5.x",
   ))
 
   val client = Def.setting(shared.value ++ (

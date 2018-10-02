@@ -4,13 +4,13 @@ invalid.credentials = Invalid credentials!
 access.denied = Access denied!
 could.not.authenticate = Could not authenticate with social provider! Please try again!
 
-home.title = Silhouette - Home
-sign.up.title = Silhouette - Sign Up
-sign.in.title = Silhouette - Sign In
-forgot.password.title = Silhouette - Forgot Password
-reset.password.title = Silhouette - Reset Password
-change.password.title = Silhouette - Change Password
-activate.account.title = Silhouette - Activate Account
+home.title = Home - Codename: Cherry Tree
+sign.up.title = Sign Up - Codename: Cherry Tree
+sign.in.title = Sign In - Codename: Cherry Tree
+forgot.password.title = Forgot Password - Codename: Cherry Tree
+reset.password.title = Reset Password - Codename: Cherry Tree
+change.password.title = Change Password - Codename: Cherry Tree
+activate.account.title = Activate Account - Codename: Cherry Tree
 
 toggle.navigation = Toggle navigation
 welcome.signed.in = Welcome, you are now signed in!
