@@ -10,7 +10,7 @@ import com.mohiva.play.silhouette.api.util.PasswordHasherRegistry
 import com.mohiva.play.silhouette.impl.providers._
 import forms.SignUpForm
 import models.User
-import repos.{ AuthTokenService, UserService }
+import repos.{ AuthTokenRepository, UserRepository }
 import play.api.i18n.{ I18nSupport, Messages }
 import play.api.libs.mailer.{ Email, MailerClient }
 import play.api.mvc.{ AbstractController, AnyContent, ControllerComponents, Request }
@@ -21,9 +21,9 @@ import scala.concurrent.{ ExecutionContext, Future }
 class SignUpController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
-  userService: UserService,
+  userService: UserRepository,
   authInfoRepository: AuthInfoRepository,
-  authTokenService: AuthTokenService,
+  authTokenService: AuthTokenRepository,
   avatarService: AvatarService,
   passwordHasherRegistry: PasswordHasherRegistry,
   mailerClient: MailerClient

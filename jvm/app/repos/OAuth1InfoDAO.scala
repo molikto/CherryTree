@@ -34,7 +34,7 @@ class OAuth1InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
   private def updateAction(loginInfo: LoginInfo, authInfo: OAuth1Info) =
     oAuth1InfoSubQuery(loginInfo).
       map(dbOAuthInfo => (dbOAuthInfo.token, dbOAuthInfo.secret)).
-      update((authInfo.token, authInfo.secret))
+      update((authInfo.token, authInfo.secret)).transactionally
 
   /**
     * Finds the auth info which is linked with the specified login info.

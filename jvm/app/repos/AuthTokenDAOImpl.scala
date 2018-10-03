@@ -2,17 +2,20 @@ package repos
 
 import java.util.UUID
 
+import javax.inject.Inject
 import models.AuthToken
 import repos.AuthTokenDAOImpl._
 import org.joda.time.DateTime
+import play.api.db.slick.DatabaseConfigProvider
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Give access to the [[AuthToken]] object.
   */
-class AuthTokenDAOImpl extends AuthTokenDAO {
+class AuthTokenDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
+  extends AuthTokenDAO  with DAOSlick {
 
   /**
     * Finds a token by its ID.

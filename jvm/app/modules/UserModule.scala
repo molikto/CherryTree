@@ -69,9 +69,9 @@ class UserModule extends AbstractModule with ScalaModule {
     bind[UnsecuredErrorHandler].to[CustomUnsecuredErrorHandler]
     bind[SecuredErrorHandler].to[CustomSecuredErrorHandler]
     bind[AuthTokenDAO].to[AuthTokenDAOImpl]
-    bind[AuthTokenService].to[AuthTokenServiceImpl]
+    bind[AuthTokenRepository].to[AuthTokenRepositoryImpl]
     bind[UserDAO].to[UserDAOImpl]
-    bind[UserService].to[UserServiceImpl]
+    bind[UserRepository].to[UserRepositoryImpl]
     bind[CacheLayer].to[PlayCacheLayer]
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))
@@ -104,7 +104,7 @@ class UserModule extends AbstractModule with ScalaModule {
    */
   @Provides
   def provideEnvironment(
-    userService: UserService,
+    userService: UserRepository,
     authenticatorService: AuthenticatorService[CookieAuthenticator],
     eventBus: EventBus): Environment[DefaultEnv] = {
 
