@@ -15,7 +15,7 @@ import scala.concurrent.{ ExecutionContext, Future }
  * @param userDAO The user DAO implementation.
  * @param ex      The execution context.
  */
-class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext) extends UserService {
+class UserRepositoryImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext) extends UserRepository {
 
   /**
    * Retrieves a user that matches the specified ID.

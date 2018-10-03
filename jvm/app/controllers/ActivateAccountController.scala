@@ -6,7 +6,7 @@ import javax.inject.Inject
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import repos.{ AuthTokenService, UserService }
+import repos.{ AuthTokenRepository, UserRepository }
 import play.api.i18n.{ I18nSupport, Messages }
 import play.api.libs.mailer.{ Email, MailerClient }
 import play.api.mvc.{ AbstractController, AnyContent, ControllerComponents, Request }
@@ -27,8 +27,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ActivateAccountController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
-  userService: UserService,
-  authTokenService: AuthTokenService,
+  userService: UserRepository,
+  authTokenService: AuthTokenRepository,
   mailerClient: MailerClient
 )(
   implicit

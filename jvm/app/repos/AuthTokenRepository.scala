@@ -11,7 +11,7 @@ import scala.language.postfixOps
 /**
  * Handles actions to auth tokens.
  */
-trait AuthTokenService {
+trait AuthTokenRepository {
 
   /**
    * Creates a new auth token and saves it in the backing store.

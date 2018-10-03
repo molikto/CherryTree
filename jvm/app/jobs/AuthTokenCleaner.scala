@@ -5,7 +5,7 @@ import javax.inject.Inject
 import akka.actor._
 import com.mohiva.play.silhouette.api.util.Clock
 import jobs.AuthTokenCleaner.Clean
-import repos.AuthTokenService
+import repos.AuthTokenRepository
 import utils.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * @param clock The clock implementation.
  */
 class AuthTokenCleaner @Inject() (
-  service: AuthTokenService,
+  service: AuthTokenRepository,
   clock: Clock)
   extends Actor with Logger {
 

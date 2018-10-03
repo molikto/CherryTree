@@ -101,13 +101,15 @@ trait DBTableDefinitions {
 
   case class DBOpenIDInfo (
     id: String,
-    loginInfoId: Long
+    loginInfoId: Long,
+    attributes: Array[Byte]
   )
 
   class OpenIDInfos(tag: Tag) extends Table[DBOpenIDInfo](tag, "openidinfo") {
     def id = column[String]("id", O.PrimaryKey)
     def loginInfoId = column[Long]("logininfoid")
-    def * = (id, loginInfoId) <> (DBOpenIDInfo.tupled, DBOpenIDInfo.unapply)
+    def attributes = column[Array[Byte]]("attributes")
+    def * = (id, loginInfoId, attributes) <> (DBOpenIDInfo.tupled, DBOpenIDInfo.unapply)
   }
 
   case class DBOpenIDAttribute (
@@ -115,13 +117,6 @@ trait DBTableDefinitions {
     key: String,
     value: String
   )
-
-  class OpenIDAttributes(tag: Tag) extends Table[DBOpenIDAttribute](tag, "openidattributes") {
-    def id = column[String]("id")
-    def key = column[String]("key")
-    def value = column[String]("value")
-    def * = (id, key, value) <> (DBOpenIDAttribute.tupled, DBOpenIDAttribute.unapply)
-  }
 
   // table query definitions
   val slickUsers = TableQuery[Users]
@@ -131,7 +126,6 @@ trait DBTableDefinitions {
   val slickOAuth1Infos = TableQuery[OAuth1Infos]
   val slickOAuth2Infos = TableQuery[OAuth2Infos]
   val slickOpenIDInfos = TableQuery[OpenIDInfos]
-  val slickOpenIDAttributes = TableQuery[OpenIDAttributes]
 
   // queries used in multiple places
   def loginInfoQuery(loginInfo: LoginInfo) =

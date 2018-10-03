@@ -1,7 +1,9 @@
 package repos
 
+import java.nio.ByteBuffer
+
 import com.mohiva.play.silhouette.api.LoginInfo
-import com.mohiva.play.silhouette.impl.providers.OpenIDInfo
+import com.mohiva.play.silhouette.impl.providers.{OAuth1Info, OpenIDInfo}
 import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
 import javax.inject.Inject
 import play.api.db.slick.DatabaseConfigProvider
@@ -21,24 +23,18 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     dbOpenIDInfo <- slickOpenIDInfos if dbOpenIDInfo.loginInfoId === dbLoginInfo.id
   } yield dbOpenIDInfo
 
+  import boopickle.Default._
+
+
   private def addAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
     loginInfoQuery(loginInfo).result.head.flatMap { dbLoginInfo =>
-      DBIO.seq(
-        slickOpenIDInfos += DBOpenIDInfo(authInfo.id, dbLoginInfo.id.get),
-        slickOpenIDAttributes ++= authInfo.attributes.map {
-          case (key, value) => DBOpenIDAttribute(authInfo.id, key, value)
-        })
+      slickOpenIDInfos += DBOpenIDInfo(authInfo.id, dbLoginInfo.id.get, Pickle.intoBytes(authInfo.attributes).array())
     }.transactionally
 
   private def updateAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
-    openIDInfoQuery(loginInfo).result.head.flatMap { dbOpenIDInfo =>
-      DBIO.seq(
-        slickOpenIDInfos filter(_.id === dbOpenIDInfo.id) update dbOpenIDInfo.copy(id = authInfo.id),
-        slickOpenIDAttributes.filter(_.id === dbOpenIDInfo.id).delete,
-        slickOpenIDAttributes ++= authInfo.attributes.map {
-          case (key, value) => DBOpenIDAttribute(authInfo.id, key, value)
-        })
-    }.transactionally
+    openIDInfoQuery(loginInfo).
+      map(dbOpenIDInfo => (dbOpenIDInfo.id, dbOpenIDInfo.attributes)).
+      update((authInfo.id,  Pickle.intoBytes(authInfo.attributes).array())).transactionally
 
   /**
     * Finds the auth info which is linked with the specified login info.
@@ -47,14 +43,8 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     * @return The retrieved auth info or None if no auth info could be retrieved for the given login info.
     */
   def find(loginInfo: LoginInfo): Future[Option[OpenIDInfo]] = {
-    val query = openIDInfoQuery(loginInfo).joinLeft(slickOpenIDAttributes).on(_.id === _.id)
-    val result = db.run(query.result)
-    result.map { openIDInfos =>
-      if (openIDInfos.isEmpty) None
-      else {
-        val attrs = openIDInfos.collect { case (_, Some(attr)) => (attr.key, attr.value) }.toMap
-        Some(OpenIDInfo(openIDInfos.head._1.id, attrs))
-      }
+    db.run(openIDInfoQuery(loginInfo).result.headOption).map { openIDInfos =>
+      openIDInfos.map(dbOAuth1Info => OpenIDInfo(dbOAuth1Info.id, Unpickle[Map[String, String]].fromBytes(ByteBuffer.wrap(dbOAuth1Info.attributes))))
     }
   }
 
@@ -111,7 +101,6 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     // Use subquery workaround instead of join because slick only supports selecting
     // from a single table for update/delete queries (https://github.com/slick/slick/issues/684).
     val openIDInfoSubQuery = slickOpenIDInfos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
-    val attributeSubQuery = slickOpenIDAttributes.filter(_.id in openIDInfoSubQuery.map(_.id))
-    db.run((openIDInfoSubQuery.delete andThen attributeSubQuery.delete).transactionally).map(_ => ())
+    db.run(openIDInfoSubQuery.delete).map(_ => ())
   }
 }
