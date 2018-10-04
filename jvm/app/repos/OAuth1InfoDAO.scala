@@ -18,17 +18,17 @@ class OAuth1InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private def oAuth1InfoQuery(loginInfo: LoginInfo) = for {
     dbLoginInfo <- loginInfoQuery(loginInfo)
-    dbOAuth1Info <- slickOAuth1Infos if dbOAuth1Info.loginInfoId === dbLoginInfo.id
+    dbOAuth1Info <- OAuth1Infos if dbOAuth1Info.loginInfoId === dbLoginInfo.id
   } yield dbOAuth1Info
 
   // Use subquery workaround instead of join to get authinfo because slick only supports selecting
   // from a single table for update/delete queries (https://github.com/slick/slick/issues/684).
   private def oAuth1InfoSubQuery(loginInfo: LoginInfo) =
-    slickOAuth1Infos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
+    OAuth1Infos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
 
   private def addAction(loginInfo: LoginInfo, authInfo: OAuth1Info) =
     loginInfoQuery(loginInfo).result.head.flatMap { dbLoginInfo =>
-      slickOAuth1Infos += DBOAuth1Info(None, authInfo.token, authInfo.secret, dbLoginInfo.id.get)
+      OAuth1Infos += OAuth1InfoRow(None, authInfo.token, authInfo.secret, dbLoginInfo.id.get)
     }.transactionally
 
   private def updateAction(loginInfo: LoginInfo, authInfo: OAuth1Info) =
@@ -43,8 +43,7 @@ class OAuth1InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     * @return The retrieved auth info or None if no auth info could be retrieved for the given login info.
     */
   def find(loginInfo: LoginInfo): Future[Option[OAuth1Info]] = {
-    val result = db.run(oAuth1InfoQuery(loginInfo).result.headOption)
-    result.map { dbOAuth1InfoOption =>
+    db.run(oAuth1InfoQuery(loginInfo).result.headOption).map { dbOAuth1InfoOption =>
       dbOAuth1InfoOption.map(dbOAuth1Info => OAuth1Info(dbOAuth1Info.token, dbOAuth1Info.secret))
     }
   }
@@ -80,7 +79,7 @@ class OAuth1InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     * @return The saved auth info.
     */
   def save(loginInfo: LoginInfo, authInfo: OAuth1Info): Future[OAuth1Info] = {
-    val query = loginInfoQuery(loginInfo).joinLeft(slickOAuth1Infos).on(_.id === _.loginInfoId)
+    val query = loginInfoQuery(loginInfo).joinLeft(OAuth1Infos).on(_.id === _.loginInfoId)
     val action = query.result.head.flatMap {
       case (_, Some(_)) => updateAction(loginInfo, authInfo)
       case (_, None)               => addAction(loginInfo, authInfo)

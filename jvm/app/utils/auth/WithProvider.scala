@@ -8,10 +8,7 @@ import scala.concurrent.Future
 
 case class WithProvider[A <: Authenticator](provider: String) extends Authorization[User, A] {
 
-  override def isAuthorized[B](user: User, authenticator: A)(
-    implicit
-    request: Request[B]): Future[Boolean] = {
-
+  override def isAuthorized[B](user: User, authenticator: A)(implicit request: Request[B]): Future[Boolean] = {
     Future.successful(user.loginInfo.providerID == provider)
   }
 }

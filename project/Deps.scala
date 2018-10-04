@@ -37,6 +37,7 @@ object Deps {
     "net.codingwell" %% "scala-guice" % "4.1.0",
     "com.typesafe.play" %% "play-slick" % "3.0.0",
     "com.typesafe.play" %% "play-slick-evolutions" % "3.0.0",
+    "com.google.inject.extensions" % "guice-grapher" % "4.1.0",
     "com.h2database" % "h2" % "1.4.197",
     "com.mohiva" %% "play-silhouette" % Version.silhouette,
     "com.mohiva" %% "play-silhouette-password-bcrypt" % Version.silhouette,
