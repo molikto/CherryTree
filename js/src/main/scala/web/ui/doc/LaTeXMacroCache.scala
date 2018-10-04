@@ -16,6 +16,7 @@ import scala.scalajs.js.|
 
 class LaTeXMacroException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
+// LATER this should be a field in DocState... shit happens all the time
 object LaTeXMacroCache {
   val instance: LaTeXMacroCache = new LaTeXMacroCache()
 

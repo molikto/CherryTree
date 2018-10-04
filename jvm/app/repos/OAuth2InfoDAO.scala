@@ -18,17 +18,17 @@ class OAuth2InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private def oAuth2InfoQuery(loginInfo: LoginInfo) = for {
     dbLoginInfo <- loginInfoQuery(loginInfo)
-    dbOAuth2Info <- slickOAuth2Infos if dbOAuth2Info.loginInfoId === dbLoginInfo.id
+    dbOAuth2Info <- OAuth2Infos if dbOAuth2Info.loginInfoId === dbLoginInfo.id
   } yield dbOAuth2Info
 
   // Use subquery workaround instead of join to get authinfo because slick only supports selecting
   // from a single table for update/delete queries (https://github.com/slick/slick/issues/684).
   private def oAuth2InfoSubQuery(loginInfo: LoginInfo) =
-    slickOAuth2Infos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
+    OAuth2Infos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
 
   private def addAction(loginInfo: LoginInfo, authInfo: OAuth2Info) =
     loginInfoQuery(loginInfo).result.head.flatMap { dbLoginInfo =>
-      slickOAuth2Infos += DBOAuth2Info(
+      OAuth2Infos += OAuth2InfoRow(
         None,
         authInfo.accessToken,
         authInfo.tokenType,
@@ -89,7 +89,7 @@ class OAuth2InfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     */
   def save(loginInfo: LoginInfo, authInfo: OAuth2Info): Future[OAuth2Info] = {
     val query = for {
-      result <- loginInfoQuery(loginInfo).joinLeft(slickOAuth2Infos).on(_.id === _.loginInfoId)
+      result <- loginInfoQuery(loginInfo).joinLeft(OAuth2Infos).on(_.id === _.loginInfoId)
     } yield result
     val action = query.result.head.flatMap {
       case (_, Some(_)) => updateAction(loginInfo, authInfo)

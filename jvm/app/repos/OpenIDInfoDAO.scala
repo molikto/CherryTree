@@ -20,7 +20,7 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private def openIDInfoQuery(loginInfo: LoginInfo) = for {
     dbLoginInfo <- loginInfoQuery(loginInfo)
-    dbOpenIDInfo <- slickOpenIDInfos if dbOpenIDInfo.loginInfoId === dbLoginInfo.id
+    dbOpenIDInfo <- OpenIDInfos if dbOpenIDInfo.loginInfoId === dbLoginInfo.id
   } yield dbOpenIDInfo
 
   import boopickle.Default._
@@ -28,7 +28,7 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private def addAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
     loginInfoQuery(loginInfo).result.head.flatMap { dbLoginInfo =>
-      slickOpenIDInfos += DBOpenIDInfo(authInfo.id, dbLoginInfo.id.get, Pickle.intoBytes(authInfo.attributes).array())
+      OpenIDInfos += OpenIDInfoRow(authInfo.id, dbLoginInfo.id.get, Pickle.intoBytes(authInfo.attributes).array())
     }.transactionally
 
   private def updateAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
@@ -79,7 +79,7 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     * @return The saved auth info.
     */
   def save(loginInfo: LoginInfo, authInfo: OpenIDInfo): Future[OpenIDInfo] = {
-    val query = loginInfoQuery(loginInfo).joinLeft(slickOpenIDInfos).on(_.id === _.loginInfoId)
+    val query = loginInfoQuery(loginInfo).joinLeft(OpenIDInfos).on(_.id === _.loginInfoId)
     val action = query.result.head.flatMap {
       case (_, Some(_)) => updateAction(loginInfo, authInfo)
       case (_, None)               => addAction(loginInfo, authInfo)
@@ -100,7 +100,7 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     //} yield dbOpenIDAttributes
     // Use subquery workaround instead of join because slick only supports selecting
     // from a single table for update/delete queries (https://github.com/slick/slick/issues/684).
-    val openIDInfoSubQuery = slickOpenIDInfos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
+    val openIDInfoSubQuery = OpenIDInfos.filter(_.loginInfoId in loginInfoQuery(loginInfo).map(_.id))
     db.run(openIDInfoSubQuery.delete).map(_ => ())
   }
 }

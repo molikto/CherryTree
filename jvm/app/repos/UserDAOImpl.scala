@@ -26,8 +26,8 @@ class UserDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
   def find(loginInfo: LoginInfo): Future[Option[User]] = {
     val userQuery = for {
       dbLoginInfo <- loginInfoQuery(loginInfo)
-      dbUserLoginInfo <- slickUserLoginInfos.filter(_.loginInfoId === dbLoginInfo.id)
-      dbUser <- slickUsers.filter(_.id === dbUserLoginInfo.userID)
+      dbUserLoginInfo <- UserLoginInfos.filter(_.loginInfoId === dbLoginInfo.id)
+      dbUser <- Users.filter(_.id === dbUserLoginInfo.userID)
     } yield dbUser
     db.run(userQuery.result.headOption).map { dbUserOption =>
       dbUserOption.map { user =>
@@ -44,9 +44,9 @@ class UserDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
     */
   def find(userID: UUID): Future[Option[User]] = {
     val query = for {
-      dbUser <- slickUsers.filter(_.id === userID.toString)
-      dbUserLoginInfo <- slickUserLoginInfos.filter(_.userID === dbUser.id)
-      dbLoginInfo <- slickLoginInfos.filter(_.id === dbUserLoginInfo.loginInfoId)
+      dbUser <- Users.filter(_.id === userID.toString)
+      dbUserLoginInfo <- UserLoginInfos.filter(_.userID === dbUser.id)
+      dbLoginInfo <- LoginInfos.filter(_.id === dbUserLoginInfo.loginInfoId)
     } yield (dbUser, dbLoginInfo)
     db.run(query.result.headOption).map { resultOption =>
       resultOption.map {
@@ -69,15 +69,15 @@ class UserDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
     * @return The saved user.
     */
   def save(user: User): Future[User] = {
-    val dbUser = DBUser(user.userID.toString, user.name, user.email, user.avatarURL, user.activated)
-    val dbLoginInfo = DBLoginInfo(None, user.loginInfo.providerID, user.loginInfo.providerKey)
+    val dbUser = UserRow(user.userID.toString, user.name, user.email, user.avatarURL, user.activated)
+    val dbLoginInfo = LoginInfoRow(None, user.loginInfo.providerID, user.loginInfo.providerKey)
     // We don't have the LoginInfo id so we try to get it first.
     // If there is no LoginInfo yet for this user we retrieve the id on insertion.
     val loginInfoAction = {
-      val retrieveLoginInfo = slickLoginInfos.filter(
+      val retrieveLoginInfo = LoginInfos.filter(
         info => info.providerID === user.loginInfo.providerID &&
           info.providerKey === user.loginInfo.providerKey).result.headOption
-      val insertLoginInfo = slickLoginInfos.returning(slickLoginInfos.map(_.id)).
+      val insertLoginInfo = LoginInfos.returning(LoginInfos.map(_.id)).
         into((info, id) => info.copy(id = Some(id))) += dbLoginInfo
       for {
         loginInfoOption <- retrieveLoginInfo
@@ -86,9 +86,9 @@ class UserDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvid
     }
     // combine database actions to be run sequentially
     val actions = (for {
-      _ <- slickUsers.insertOrUpdate(dbUser)
+      _ <- Users.insertOrUpdate(dbUser)
       loginInfo <- loginInfoAction
-      _ <- slickUserLoginInfos += DBUserLoginInfo(dbUser.userID, loginInfo.id.get)
+      _ <- UserLoginInfos += UserLoginInfoRow(dbUser.userID, loginInfo.id.get)
     } yield ()).transactionally
     // run actions and return user afterwards
     db.run(actions).map(_ => user)

@@ -12,7 +12,6 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Give access to the [[AuthToken]] object.
   */
 class AuthTokenDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
   extends AuthTokenDAO  with DAOSlick {
