@@ -24,9 +24,11 @@ GET         /account/email/:email            controllers.ActivateAccountControll
 GET         /account/activate/:token         controllers.ActivateAccountController.activate(token)
 
 GET         /document/:id                    controllers.DocumentController.index(id)
+
 # document api
-GET         /document/:id/init               controllers.DocumentController.init(id)
-GET         /document/:id/changes            controllers.DocumentController.changes(id)
+POST        /document/:id/init               controllers.DocumentController.init(id)
+POST        /document/:id/changes            controllers.DocumentController.changes(id)
+
 # web socket
 GET         /document/:id/ws                 controllers.DocumentController.ws(id)
 
