@@ -59,10 +59,6 @@ class UserModule extends AbstractModule with ScalaModule {
     bind[Silhouette[DefaultEnv]].to[SilhouetteProvider[DefaultEnv]]
     bind[UnsecuredErrorHandler].to[CustomUnsecuredErrorHandler]
     bind[SecuredErrorHandler].to[CustomSecuredErrorHandler]
-    bind[AuthTokenDAO].to[AuthTokenDAO]
-    bind[AuthTokenRepository].to[AuthTokenRepository]
-    bind[UserDAO].to[UserDAO]
-    bind[UserRepository].to[UserRepository]
     bind[CacheLayer].to[PlayCacheLayer]
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))
