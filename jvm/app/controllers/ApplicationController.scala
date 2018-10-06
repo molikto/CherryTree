@@ -18,10 +18,7 @@ import scala.concurrent.Future
 class ApplicationController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv]
-)(
-  implicit
-  assets: AssetsFinder
-) extends AbstractController(components) with I18nSupport {
+)(implicit assets: AssetsFinder) extends AbstractController(components) with I18nSupport {
 
   def index = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
     Future.successful(Ok(views.html.home(request.identity)))
