@@ -1,19 +1,19 @@
-package controllers
+package controllers.user
 
 import java.util.UUID
-import javax.inject.Inject
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
-import com.mohiva.play.silhouette.api.util.{ PasswordHasherRegistry, PasswordInfo }
+import com.mohiva.play.silhouette.api.util.{PasswordHasherRegistry, PasswordInfo}
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import forms.ResetPasswordForm
-import repos.{ AuthTokenRepository, UserRepository }
-import play.api.i18n.{ I18nSupport, Messages }
-import play.api.mvc.{ AbstractController, AnyContent, ControllerComponents, Request }
+import javax.inject.Inject
+import play.api.i18n.{I18nSupport, Messages}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
+import repos.{AuthTokenRepository, UserRepository}
 import utils.auth.DefaultEnv
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * The `Reset Password` controller.

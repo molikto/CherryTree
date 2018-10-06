@@ -1,15 +1,10 @@
-package controllers
+package controllers.user
 
-import java.io.{File, PrintWriter}
-import java.lang.reflect.Field
-
-import com.google.inject.grapher.graphviz.{GraphvizGrapher, GraphvizModule}
-import com.google.inject.{Guice, Injector}
-import javax.inject.Inject
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
 import com.mohiva.play.silhouette.api.{LogoutEvent, Silhouette}
+import controllers.{AssetsFinder, routes}
+import javax.inject.Inject
 import play.api.i18n.I18nSupport
-import play.api.inject.guice.GuiceInjector
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents}
 import utils.auth.DefaultEnv
 

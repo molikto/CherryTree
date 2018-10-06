@@ -1,17 +1,17 @@
-package controllers
-
-import javax.inject.Inject
+package controllers.user
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.impl.providers._
+import controllers.routes
+import javax.inject.Inject
+import play.api.i18n.{I18nSupport, Messages}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import repos.UserRepository
-import play.api.i18n.{ I18nSupport, Messages }
-import play.api.mvc.{ AbstractController, AnyContent, ControllerComponents, Request }
 import utils.auth.DefaultEnv
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class SocialAuthController @Inject() (
   components: ControllerComponents,

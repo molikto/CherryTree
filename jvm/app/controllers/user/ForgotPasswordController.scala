@@ -1,17 +1,16 @@
-package controllers
-
-import javax.inject.Inject
+package controllers.user
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import forms.ForgotPasswordForm
-import repos.{ AuthTokenRepository, UserRepository }
-import play.api.i18n.{ I18nSupport, Messages }
-import play.api.libs.mailer.{ Email, MailerClient }
-import play.api.mvc.{ AbstractController, AnyContent, ControllerComponents, Request }
+import javax.inject.Inject
+import play.api.i18n.{I18nSupport, Messages}
+import play.api.libs.mailer.{Email, MailerClient}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
+import repos.{AuthTokenRepository, UserRepository}
 import utils.auth.DefaultEnv
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * The `Forgot Password` controller.
