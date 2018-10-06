@@ -3,25 +3,25 @@
 # ~~~~
 
 # Home page
-GET         /                                controllers.ApplicationController.index
-GET         /signOut                         controllers.ApplicationController.signOut
-GET         /authenticate/:provider          controllers.SocialAuthController.authenticate(provider)
+GET         /                                controllers.user.ApplicationController.index
+GET         /signOut                         controllers.user.ApplicationController.signOut
+GET         /authenticate/:provider          controllers.user.SocialAuthController.authenticate(provider)
 
-GET         /signUp                          controllers.SignUpController.view
-POST        /signUp                          controllers.SignUpController.submit
+GET         /signUp                          controllers.user.SignUpController.view
+POST        /signUp                          controllers.user.SignUpController.submit
 
-GET         /signIn                          controllers.SignInController.view
-POST        /signIn                          controllers.SignInController.submit
+GET         /signIn                          controllers.user.SignInController.view
+POST        /signIn                          controllers.user.SignInController.submit
 
-GET         /password/forgot                 controllers.ForgotPasswordController.view
-POST        /password/forgot                 controllers.ForgotPasswordController.submit
-GET         /password/reset/:token           controllers.ResetPasswordController.view(token: java.util.UUID)
-POST        /password/reset/:token           controllers.ResetPasswordController.submit(token: java.util.UUID)
-GET         /password/change                 controllers.ChangePasswordController.view
-POST        /password/change                 controllers.ChangePasswordController.submit
+GET         /password/forgot                 controllers.user.ForgotPasswordController.view
+POST        /password/forgot                 controllers.user.ForgotPasswordController.submit
+GET         /password/reset/:token           controllers.user.ResetPasswordController.view(token: java.util.UUID)
+POST        /password/reset/:token           controllers.user.ResetPasswordController.submit(token: java.util.UUID)
+GET         /password/change                 controllers.user.ChangePasswordController.view
+POST        /password/change                 controllers.user.ChangePasswordController.submit
 
-GET         /account/email/:email            controllers.ActivateAccountController.send(email: String)
-GET         /account/activate/:token         controllers.ActivateAccountController.activate(token: java.util.UUID)
+GET         /account/email/:email            controllers.user.ActivateAccountController.send(email: String)
+GET         /account/activate/:token         controllers.user.ActivateAccountController.activate(token: java.util.UUID)
 
 # Map static resources from the /public folder to the /assets URL path
 GET  /assets/*file        controllers.Assets.at(path="/public", file)
