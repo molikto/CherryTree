@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider

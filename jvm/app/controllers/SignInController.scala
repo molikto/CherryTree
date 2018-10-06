@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import com.mohiva.play.silhouette.api.Authenticator.Implicits._
 import com.mohiva.play.silhouette.api._
@@ -6,7 +6,6 @@ import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.util.{Clock, Credentials}
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers._
-import controllers.{AssetsFinder, routes}
 import forms.SignInForm
 import javax.inject.Inject
 import net.ceedubs.ficus.Ficus._

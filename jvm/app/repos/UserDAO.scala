@@ -31,7 +31,7 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
     } yield dbUser
     db.run(userQuery.result.headOption).map { dbUserOption =>
       dbUserOption.map { user =>
-        User(UUID.fromString(user.userID), loginInfo, user.name, user.email, user.avatarURL, user.activated)
+        User(user.userID, loginInfo, user.name, user.email, user.avatarURL, user.activated)
       }
     }
   }
@@ -42,7 +42,7 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
     * @param userID The ID of the user to find.
     * @return The found user or None if no user for the given ID could be found.
     */
-  def find(userID: UUID): Future[Option[User]] = {
+  def find(userID: String): Future[Option[User]] = {
     val query = for {
       dbUser <- Users.filter(_.id === userID.toString)
       dbUserLoginInfo <- UserLoginInfos.filter(_.userID === dbUser.id)
@@ -52,7 +52,7 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
       resultOption.map {
         case (user, loginInfo) =>
           User(
-            UUID.fromString(user.userID),
+            user.userID,
             LoginInfo(loginInfo.providerID, loginInfo.providerKey),
             user.name,
             user.email,

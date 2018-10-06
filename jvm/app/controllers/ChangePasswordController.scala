@@ -1,4 +1,4 @@
-package controllers.user
+package controllers
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
@@ -6,7 +6,6 @@ import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.util.{Credentials, PasswordHasherRegistry, PasswordInfo}
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import controllers.{AssetsFinder, routes}
 import forms.ChangePasswordForm
 import javax.inject.Inject
 import play.api.i18n.{I18nSupport, Messages}

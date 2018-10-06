@@ -1,5 +1,4 @@
 object Version {
-  val autowire = "0.2.6"
   val boopickle = "1.3.0"
   val monocle = "1.4.0"
   val scala = "2.12.6"
@@ -22,7 +21,6 @@ object Deps {
 
 
   val shared = Def.setting(
-    "com.lihaoyi" %%% "autowire" % Version.autowire ::
     "com.lihaoyi" %%% "scalatags" % Version.scalatags  ::
     "io.suzaku" %%% "boopickle" % Version.boopickle ::
     "com.lihaoyi" %%% "utest" % Version.utest % "test" ::

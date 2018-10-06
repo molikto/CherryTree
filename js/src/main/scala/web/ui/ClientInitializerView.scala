@@ -3,7 +3,6 @@ package web.ui
 import api.{Api, Authentication}
 import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
-import web.net.JsAutowireClient
 import command.Key
 import model.data.Content
 import org.scalajs.dom.raw._
@@ -52,13 +51,10 @@ object ClientInitializerView {
   * @param where an id of a html element, it is assumed that you don't modify it after handling to us
   */
 @JSExportTopLevel("ClientInitializerView")
-class ClientInitializerView(where: String, global: Boolean) {
+class ClientInitializerView(where: String, documentId: String, global: Boolean) {
   ClientInitializerView.initializeGlobal()
 
   private val rootView = el[dom.html.Element](where)
-  private val token = Authentication.Token(System.currentTimeMillis().toString)
-
-  private val server = new JsAutowireClient()[Api]
 
   var client: Option[Client] = None
 
@@ -68,7 +64,7 @@ class ClientInitializerView(where: String, global: Boolean) {
       p("connecting")
     }.render)
     val ec = scala.concurrent.ExecutionContext.Implicits.global
-    ClientInitializer.init(server, token).onComplete {
+    ClientInitializer.init(documentId).onComplete {
       case Success(c) =>
         goClient(c)
       case Failure(exception) =>
