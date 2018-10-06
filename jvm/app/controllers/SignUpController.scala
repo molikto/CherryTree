@@ -1,4 +1,5 @@
-package controllers.user
+package controllers
+
 
 import java.util.UUID
 
@@ -58,7 +59,7 @@ class SignUpController @Inject() (
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
             val user = User(
-              userID = UUID.randomUUID(),
+              userID = UUID.randomUUID().toString,
               loginInfo = loginInfo,
               name = Some(data.name),
               email = Some(data.email),

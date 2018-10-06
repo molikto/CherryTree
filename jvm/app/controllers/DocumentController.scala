@@ -1,10 +1,9 @@
-package controllers.document
+package controllers
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.stream.Materializer
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
-import com.mohiva.play.silhouette.api.{HandlerResult, LogoutEvent, Silhouette}
-import controllers.{AssetsFinder, routes}
+import com.mohiva.play.silhouette.api.{HandlerResult, Silhouette}
 import javax.inject.Inject
 import models.User
 import play.api.i18n.I18nSupport
@@ -37,7 +36,20 @@ class DocumentController @Inject() (
   ec: ExecutionContext
 ) extends AbstractController(components) with I18nSupport {
 
-  def socket = WebSocket.acceptOrResult[String, String] { request =>
+
+  def index(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+    Future.successful(Ok(views.html.editor(documentId)))
+  }
+
+  def init(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+    Future.successful(Ok(views.html.home(request.identity)))
+  }
+
+  def changes(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+    Future.successful(Ok(views.html.home(request.identity)))
+  }
+
+  def ws(documentId: String) = WebSocket.acceptOrResult[String, String] { request =>
     implicit val req = Request(request, AnyContentAsEmpty)
     silhouette.SecuredRequestHandler { securedRequest =>
       Future.successful(HandlerResult(Ok, Some(securedRequest.identity)))

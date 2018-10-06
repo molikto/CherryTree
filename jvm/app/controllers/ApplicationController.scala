@@ -1,8 +1,9 @@
-package controllers.user
+package controllers
+
+import java.util.UUID
 
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
 import com.mohiva.play.silhouette.api.{LogoutEvent, Silhouette}
-import controllers.{AssetsFinder, routes}
 import javax.inject.Inject
 import play.api.i18n.I18nSupport
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents}
@@ -16,7 +17,7 @@ class ApplicationController @Inject() (
 )(implicit assets: AssetsFinder) extends AbstractController(components) with I18nSupport {
 
   def index = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
-    Future.successful(Ok(views.html.home(request.identity)))
+    Future.successful(Redirect(controllers.routes.DocumentController.index(UUID.randomUUID().toString)))
   }
 
 

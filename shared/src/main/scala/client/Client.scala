@@ -3,7 +3,6 @@ package client
 
 import java.nio.ByteBuffer
 
-import autowire._
 import com.softwaremill.quicklens._
 import monix.execution.Cancelable
 import monix.reactive.Observable
@@ -35,9 +34,6 @@ import scala.util.{Failure, Random, Success, Try}
 
 
 object Client {
-  type Proxy = ClientProxy[Api, ByteBuffer, boopickle.Pickler, boopickle.Pickler]
-
-
 
   sealed trait ViewMessage {
   }
@@ -57,9 +53,7 @@ object Client {
 
 class Client(
   private val docId: String,
-  private val server: Client.Proxy,
-  private val initial: ClientInit,
-  private val authentication: Authentication.Token
+  private val initial: ClientInit
 ) extends CommandHandler
   with RegisterHandler
   with Undoer
@@ -73,7 +67,6 @@ class Client(
 
 
   protected def lockObject: AnyRef  = self
-  def debug_authentication: Authentication.Token = authentication
 
 
   /**
@@ -344,19 +337,19 @@ class Client(
     disableUpdateBecauseLocalNodeDelete != null
   }
 
-  def debug_blockReason = s"$authentication ${disableUpdateBecauseLocalNodeDelete != null} $requesting $disableRemoteStateUpdate"
+  def debug_blockReason = s"${disableUpdateBecauseLocalNodeDelete != null} $requesting $disableRemoteStateUpdate"
 
   private def tryTopRequest(): Boolean = {
     if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !disableRemoteStateUpdate) {
       val submit = uncommitted
       if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
         lastRequestTime = System.currentTimeMillis()
-        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed.hashCode() else 0).call(), succsss => {
-          lockObject.synchronized {
-            flushInner()
-            updateFromServer(succsss)
-          }
-        })
+//        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed.hashCode() else 0).call(), succsss => {
+//          lockObject.synchronized {
+//            flushInner()
+//            updateFromServer(succsss)
+//          }
+//        })
         true
       } else {
         false

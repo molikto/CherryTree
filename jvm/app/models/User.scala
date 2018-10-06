@@ -5,7 +5,7 @@ import java.util.UUID
 import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
 
 case class User(
-  userID: UUID,
+  userID: String,
   loginInfo: LoginInfo,
   name: Option[String],
   email: Option[String],

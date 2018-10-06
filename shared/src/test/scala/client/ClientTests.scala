@@ -29,10 +29,6 @@ object ClientTests extends TestSuite  {
 
       override def debugLoad(a: String): Array[Byte] = Array()
     }
-    val api = {
-      val k = new TestAutowireClient(s)
-      k[Api]
-    }
 
     val random = new Random()
 
@@ -40,7 +36,7 @@ object ClientTests extends TestSuite  {
     def serverChanges = s.debugChanges
 
 
-    def cl(name: String) = ClientInitializer.init(api, Authentication.Token(name))
+    def cl(name: String) = ClientInitializer.init(java.util.UUID.randomUUID())
 
     'init - {
       Await.result(cl("controller"), 1.seconds)
@@ -81,7 +77,7 @@ object ClientTests extends TestSuite  {
           if (debug) {
             println("Server doc " + serverDoc)
             clients.foreach(c => {
-              println(c.debug_authentication + " " + c.debug_committedVersion  + " " + c.debug_committed)
+              println(c.debug_committedVersion  + " " + c.debug_committed)
             })
           }
           clients.foreach(c => {
