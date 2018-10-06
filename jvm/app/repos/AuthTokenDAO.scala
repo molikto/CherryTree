@@ -1,6 +1,5 @@
 package repos
 
-import java.util.UUID
 
 import javax.inject.Inject
 import models.AuthToken

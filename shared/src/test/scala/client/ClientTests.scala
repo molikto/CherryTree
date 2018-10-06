@@ -36,7 +36,7 @@ object ClientTests extends TestSuite  {
     def serverChanges = s.debugChanges
 
 
-    def cl(name: String) = ClientInitializer.init(java.util.UUID.randomUUID())
+    def cl(name: String) = ClientInitializer.init(java.util.UUID.randomUUID().toString)
 
     'init - {
       Await.result(cl("controller"), 1.seconds)

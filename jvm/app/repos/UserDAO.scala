@@ -1,7 +1,6 @@
 package repos
 
 
-import java.util.UUID
 
 import com.mohiva.play.silhouette.api.LoginInfo
 import models.User
