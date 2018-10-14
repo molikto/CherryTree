@@ -7,7 +7,6 @@ import api.{ChangeRequest, ClientInit, ClientUpdate}
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
 import com.mohiva.play.silhouette.api.{HandlerResult, Silhouette}
 import javax.inject.Inject
-import model.Picklers
 import models.User
 import play.api.http.HttpEntity
 import play.api.i18n.I18nSupport
@@ -16,6 +15,7 @@ import play.api.mvc._
 import play.filters.csrf.CSRF
 import server.Server
 import utils.auth.DefaultEnv
+import model._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -41,7 +41,7 @@ class DocumentController @Inject() (
   system: ActorSystem,
   materializer: Materializer,
   ec: ExecutionContext
-) extends AbstractController(components) with I18nSupport with Picklers {
+) extends AbstractController(components) with I18nSupport {
 
 
 

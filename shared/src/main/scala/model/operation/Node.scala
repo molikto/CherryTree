@@ -1,6 +1,6 @@
 package model.operation
 
-import model.{data, _}
+import model._
 import Type.Type
 import com.softwaremill.quicklens._
 import doc.DocState
