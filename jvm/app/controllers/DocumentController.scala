@@ -16,6 +16,7 @@ import play.filters.csrf.CSRF
 import server.Server
 import utils.auth.DefaultEnv
 import model._
+import api._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -53,7 +54,7 @@ class DocumentController @Inject() (
   }
 
   def init(documentId: String) = silhouette.SecuredAction { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
-    val res = Pickle[ClientInit](tempServer.init()).toByteBuffer
+    val res = Pickle.intoBytes[ClientInit](tempServer.init())(implicitly, implicitly)
     Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
   }
 
@@ -69,7 +70,7 @@ class DocumentController @Inject() (
     val change = Unpickle[ChangeRequest](implicitly)(bytes.toByteBuffer)
     tempServer.change(change) match {
       case Success(suc) =>
-        val res = Pickle[ClientUpdate](suc).toByteBuffer
+        val res = Pickle.intoBytes[ClientUpdate](suc)(implicitly, implicitly)
         Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
       case Failure(exc) =>
         Ok("")
