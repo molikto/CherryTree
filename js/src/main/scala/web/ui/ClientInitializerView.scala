@@ -1,6 +1,7 @@
 package web.ui
 
-import api.{Api, Authentication}
+import java.nio.ByteBuffer
+
 import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
 import command.Key
@@ -15,11 +16,11 @@ import web.view._
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import scala.util.{Failure, Random, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
 
 
 object ClientInitializerView {
 
-  model.debug_oldDocVersion = false
 
   private var globalInitialized = false
   def initializeGlobal(): Unit = {
@@ -42,7 +43,14 @@ object ClientInitializerView {
       }
       model.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
       model.parseFromHtml = web.util.parseFromHtml
-
+      model.apiRequest = (url: String, body: ByteBuffer) => {
+        dom.ext.Ajax.post(
+          url = url,
+          data = body,
+          responseType = "arraybuffer",
+          headers = Map("Content-Type" -> "application/octet-stream")
+        ).map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
+      }
     }
   }
 }

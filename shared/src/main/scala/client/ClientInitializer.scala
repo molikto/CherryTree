@@ -1,5 +1,7 @@
 package client
 
+import java.nio.ByteBuffer
+
 import com.softwaremill.quicklens._
 import model._
 import api._
@@ -12,7 +14,12 @@ import scala.util.{Failure, Success}
 
 object ClientInitializer {
   def init(documentId: String): Future[Client] = {
-    Future.successful(new Client(documentId, ClientInit(Node.create(), 0, ServerStatus(1, false, false))))
-    //transform(server.init(token).call()).map { it => new Client("debugDoc", server, it, token) }
+    model.apiRequest(s"/document/$documentId/init", ByteBuffer.wrap(Array.empty[Byte])).map { value =>
+      val init = Unpickle[ClientInit](implicitly)(value)
+      if (debug_transmit) {
+        println(init)
+      }
+      new Client(documentId, init)
+    }
   }
 }

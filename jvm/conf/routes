@@ -26,12 +26,15 @@ GET         /account/activate/:token         controllers.ActivateAccountControll
 GET         /document/:id                    controllers.DocumentController.index(id)
 
 # document api
++ nocsrf
 POST        /document/:id/init               controllers.DocumentController.init(id)
++ nocsrf
 POST        /document/:id/changes            controllers.DocumentController.changes(id)
 
 # web socket
++ nocsrf
 GET         /document/:id/ws                 controllers.DocumentController.ws(id)
 
-# Map static resources from the /public folder to the /assets URL path
-GET  /assets/*file        controllers.Assets.at(path="/public", file)
+# Prefix must match `play.assets.urlPrefix`
+GET  /assets/*file  controllers.Assets.versioned(path="/public", file: Asset)
 

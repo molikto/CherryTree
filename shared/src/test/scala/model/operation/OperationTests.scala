@@ -1,7 +1,7 @@
 package model.operation
 
 
-import api.{ApiError, ClientInit, ErrorT}
+import api.{ApiError, ClientInit}
 import model._
 import model.data.DataObject
 import model.mode.Mode

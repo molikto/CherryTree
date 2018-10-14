@@ -1,6 +1,7 @@
 package server
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import model._
 import api._
@@ -8,11 +9,12 @@ import model.data.{Node, Text, Unicode}
 import model.ot.Rebased
 
 import scala.collection.mutable
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
-trait Server extends Api {
-  def debugSave(a: String, bs: Array[Byte])
-  def debugLoad(a: String): Array[Byte]
+class Server(documentId: String) {
+
+  def debugSave(a: String, bs: Array[Byte]) = {}
+  def debugLoad(a: String): Array[Byte] = new Array[Byte](0)
 
   // states, now in single thread fashion
 
@@ -23,16 +25,14 @@ trait Server extends Api {
     lastWs: Seq[transaction.Node])
 
   private var document = {
-    model.debug_oldDocVersion = true
     val bs = debugLoad("saved")
     val res = if (bs.isEmpty) Node.create()
     else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))
-    model.debug_oldDocVersion = false
     res
   }
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
-  private val clients: mutable.Map[Authentication.Token, ClientInfo] = mutable.Map.empty
+  private val clients: mutable.Map[String, ClientInfo] = mutable.Map.empty
   private var debugHistoryDocuments = Seq(document)
 
   def debugDocument = document
@@ -40,14 +40,19 @@ trait Server extends Api {
 
   private def onlineCount = clients.values.count(_.lastSeen > System.currentTimeMillis() - ApiConstants.ClientDeathTime)
 
-  override def init(token: Authentication.Token): Either[ApiError, ClientInit] = synchronized {
+  def init(): ClientInit = synchronized {
+    val session = UUID.randomUUID().toString
     val state = ClientInit(
+      session,
       document,
       version,
       ServerStatus(onlineCount + 1, false, false)
     )
-    clients.update(token, ClientInfo(version, System.currentTimeMillis(), 0, Seq.empty))
-    Right(state)
+    if (debug_transmit) {
+      println(state)
+    }
+    clients.update(session, ClientInfo(version, System.currentTimeMillis(), 0, Seq.empty))
+    state
   }
 
   /**
@@ -64,26 +69,28 @@ trait Server extends Api {
 
   def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  override def change(authentication: Authentication.Token, clientVersion: Int, ts: Seq[transaction.Node], mode: Option[model.mode.Node], debugClientDoc: Int): ErrorT[ClientUpdate] = synchronized {
-    clients.get(authentication) match {
+  def change(changeRequest: ChangeRequest): Try[ClientUpdate] = synchronized {
+    val ChangeRequest(session, clientVersion, ts, mode, debugClientDoc) = changeRequest
+    clients.get(session) match {
       case None =>
-        Left(ApiError.InvalidToken)
+        Failure(ApiError.InvalidToken)
       case Some(cached) =>
         val diff = clientVersion - cached.version
         if (diff < 0) {
           if (ts.size >= cached.lastAccepted) {
             if (model.debug_model) println("previous data back failed")
-            Right(ClientUpdate(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
+            Success(ClientUpdate(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
           } else {
-            Left(ApiError.ClientVersionIsOlderThanServerCache)
+            Failure(ApiError.ClientVersionIsOlderThanServerCache)
           }
         } else if (diff > 0) {
-          Left(ApiError.ClientVersionIsHigherThanServerCache)
+          Failure(ApiError.ClientVersionIsHigherThanServerCache)
         } else {
           val ws = changes.drop(clientVersion)
-          if (debug_transmit) {
-            if (debugClientDoc != debugHistoryDocuments(clientVersion).hashCode()) {
-              throw new IllegalStateException("transmit error??")
+          if (debug_transmit && debugClientDoc != 0) {
+            val oldCode = debugHistoryDocuments(clientVersion).hashCode()
+            if (debugClientDoc != oldCode) {
+              throw new IllegalStateException(s"transmit error?? $clientVersion, ${document.size} $debugClientDoc $oldCode")
             }
           }
           val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
@@ -100,9 +107,9 @@ trait Server extends Api {
             }
           }
           val cu = ClientUpdate(ws, ts.size, version, serverStatus)
-          clients.update(authentication, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
+          clients.update(session, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
           // LATER don't accept conflicting items
-          Right(cu)
+          Success(cu)
         }
     }
   }
