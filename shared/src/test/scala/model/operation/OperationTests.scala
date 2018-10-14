@@ -1,12 +1,13 @@
 package model.operation
 
 
-import api.{ApiError, ClientInit}
+import api._
 import model._
 import model.data.DataObject
 import model.mode.Mode
 import model.range.IntRange
 import utest._
+
 
 import scala.util.Random
 
@@ -26,8 +27,8 @@ object OperationTests extends TestSuite {
           //        println(o)
           val res = o(a)
           val kk = res.hashCode()
-          val bytes = Pickle.intoBytes(o)(implicitly, obj.pickler)
-          val b = Unpickle[O](obj.pickler).fromBytes(bytes)
+          val bytes = Pickle.intoBytes(o)(pickleState, obj.pickler)
+          val b = Unpickle[O](obj.pickler).fromBytes(bytes)(unpickleState)
           if (o.isEmpty) assert(a == res)
           assert(o == b)
           assert(a == o.reverse(a).asInstanceOf[Operation[T]].apply(res))

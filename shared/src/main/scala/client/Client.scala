@@ -348,18 +348,18 @@ class Client(
         import model._
         // if (debug_transmit) committed.hashCode() else
         val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
-        val bytes = Pickle.intoBytes(rq)
+        val bytes = Pickle.intoBytes(rq)(pickleState, implicitly)
         if (model.debug_transmit) {
           val arr = new Array[Byte](bytes.limit())
           bytes.get(arr, 0, arr.length)
-          Unpickle[ChangeRequest](implicitly).fromBytes(ByteBuffer.wrap(arr))
+          Unpickle[ChangeRequest](implicitly).fromBytes(ByteBuffer.wrap(arr))(unpickleState)
           println(arr.mkString(","))
           bytes.position(0)
         }
         request[ByteBuffer](0, model.apiRequest(s"/document/$docId/changes", bytes), value => {
           lockObject.synchronized {
             flushInner()
-            val res = Unpickle[ClientUpdate](implicitly)(value)
+            val res = Unpickle[ClientUpdate](implicitly).fromBytes(value)(unpickleState)
             updateFromServer(res)
           }
         })

@@ -29,13 +29,13 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private def addAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
     loginInfoQuery(loginInfo).result.head.flatMap { dbLoginInfo =>
-      OpenIDInfos += OpenIDInfoRow(authInfo.id, dbLoginInfo.id.get, Pickle.intoBytes(authInfo.attributes).array())
+      OpenIDInfos += OpenIDInfoRow(authInfo.id, dbLoginInfo.id.get, Pickle.intoBytes(authInfo.attributes)(pickleState, implicitly).array())
     }.transactionally
 
   private def updateAction(loginInfo: LoginInfo, authInfo: OpenIDInfo) =
     openIDInfoQuery(loginInfo).
       map(dbOpenIDInfo => (dbOpenIDInfo.id, dbOpenIDInfo.attributes)).
-      update((authInfo.id,  Pickle.intoBytes(authInfo.attributes).array())).transactionally
+      update((authInfo.id,  Pickle.intoBytes(authInfo.attributes)(pickleState, implicitly).array())).transactionally
 
   /**
     * Finds the auth info which is linked with the specified login info.
@@ -45,7 +45,7 @@ class OpenIDInfoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     */
   def find(loginInfo: LoginInfo): Future[Option[OpenIDInfo]] = {
     db.run(openIDInfoQuery(loginInfo).result.headOption).map { openIDInfos =>
-      openIDInfos.map(dbOAuth1Info => OpenIDInfo(dbOAuth1Info.id, Unpickle[Map[String, String]].fromBytes(ByteBuffer.wrap(dbOAuth1Info.attributes))))
+      openIDInfos.map(dbOAuth1Info => OpenIDInfo(dbOAuth1Info.id, Unpickle[Map[String, String]](implicitly).fromBytes(ByteBuffer.wrap(dbOAuth1Info.attributes))(unpickleState)))
     }
   }
 
