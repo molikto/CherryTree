@@ -1,5 +1,6 @@
 package model
 
+import api.ChangeRequest
 import boopickle._
 
 
@@ -21,4 +22,7 @@ trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers wi
 
   implicit val pickler_EncodedSeq: Pickler[data.EncodedSeq] = data.EncodedSeq.pickler
   implicit val operationPickler_EncodedSeq: Pickler[operation.EncodedSeq] = operation.EncodedSeq.pickler
+
+  implicit val pickler_api_change =  generatePickler[ChangeRequest]
+
 }
