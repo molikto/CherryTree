@@ -6,7 +6,7 @@ import api.ChangeRequest
 import boopickle._
 
 
-trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers with MaterializePicklerFallback {
+trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers {
 
 
   implicit val pickler_Node: Pickler[data.Node] = data.Node.pickler

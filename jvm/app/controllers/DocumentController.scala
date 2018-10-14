@@ -54,7 +54,7 @@ class DocumentController @Inject() (
   }
 
   def init(documentId: String) = silhouette.SecuredAction { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
-    val res = Pickle.intoBytes[ClientInit](tempServer.init())(implicitly, implicitly)
+    val res = Pickle.intoBytes[ClientInit](tempServer.init())(pickleState, implicitly)
     Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
   }
 
@@ -67,10 +67,10 @@ class DocumentController @Inject() (
       println(bytes.mkString(","))
     }
     if (bytes == null) bytes = request.body.asRaw.get.asBytes(parse.UNLIMITED).get
-    val change = Unpickle[ChangeRequest](implicitly)(bytes.toByteBuffer)
+    val change = Unpickle[ChangeRequest](implicitly).fromBytes(bytes.toByteBuffer)(unpickleState)
     tempServer.change(change) match {
       case Success(suc) =>
-        val res = Pickle.intoBytes[ClientUpdate](suc)(implicitly, implicitly)
+        val res = Pickle.intoBytes[ClientUpdate](suc)(pickleState, implicitly)
         Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
       case Failure(exc) =>
         Ok("")

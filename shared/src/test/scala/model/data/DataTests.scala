@@ -1,6 +1,6 @@
 package model.data
 
-import api.{ApiError, ClientInit, ServerStatus}
+import api._
 import model._
 import model.range.IntRange
 import utest._
@@ -14,8 +14,8 @@ object DataTests extends TestSuite {
     def testDataObject[T](obj: DataObject[T]): Unit = {
       for (_ <- 0 until 100) {
         val a = obj.random(r)
-        val bytes = Pickle.intoBytes(a)(implicitly, obj.pickler)
-        val b = Unpickle[T](obj.pickler).fromBytes(bytes)
+        val bytes = Pickle.intoBytes(a)(pickleState, obj.pickler)
+        val b = Unpickle[T](obj.pickler).fromBytes(bytes)(unpickleState)
         assert(a == b)
       }
     }
@@ -104,8 +104,8 @@ object DataTests extends TestSuite {
     'implicitlyGenerated - {
       for (i <- 0 until 10) {
         val a: Try[ClientInit] = Success(ClientInit("falsdfjkdjf", data.Node.random(r), i, ServerStatus(1, false, false)))
-        val bytes = Pickle.intoBytes(a)
-        val b = Unpickle[Try[ClientInit]](implicitly).fromBytes(bytes)
+        val bytes = Pickle.intoBytes(a)(pickleState, implicitly)
+        val b = Unpickle[Try[ClientInit]](implicitly).fromBytes(bytes)(unpickleState)
         assert(a == b)
       }
     }
