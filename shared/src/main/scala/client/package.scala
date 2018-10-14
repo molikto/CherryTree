@@ -1,7 +1,5 @@
 import java.nio.ByteBuffer
 
-import api.{Api, ErrorT}
-
 import scala.concurrent.Future
 
 

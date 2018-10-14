@@ -118,7 +118,6 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     docView.focus()
     if (rootUrl == null) {
       rootUrl = window.location.href
-      if (!rootUrl.endsWith("/")) rootUrl = rootUrl + "/"
     }
     window.history.replaceState(client.state.zoomId, document.title, rootUrl)
     observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {

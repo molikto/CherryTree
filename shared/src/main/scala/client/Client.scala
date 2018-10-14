@@ -53,7 +53,7 @@ object Client {
 
 class Client(
   private val docId: String,
-  private val initial: ClientInit
+  initial: ClientInit
 ) extends CommandHandler
   with RegisterHandler
   with Undoer
@@ -69,6 +69,7 @@ class Client(
   protected def lockObject: AnyRef  = self
 
 
+  private val sessionId = initial.session
   /**
     * connection state
     */
@@ -297,9 +298,9 @@ class Client(
     connection_.modify(_.copy(offline = true))
   }
 
-  private def request[T](head: Int, a: Future[ErrorT[T]], onSuccess: T => Unit): Unit = {
+  private def request[T](head: Int, a: Future[T], onSuccess: T => Unit): Unit = {
     requesting = true
-    transform(a).onComplete {
+    a.onComplete {
       case Success(r) =>
         self.synchronized {
           requesting = false
@@ -344,12 +345,24 @@ class Client(
       val submit = uncommitted
       if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
         lastRequestTime = System.currentTimeMillis()
-//        request[ClientUpdate](0, server.change(authentication, committedVersion, submit, state.mode, if (debug_transmit) committed.hashCode() else 0).call(), succsss => {
-//          lockObject.synchronized {
-//            flushInner()
-//            updateFromServer(succsss)
-//          }
-//        })
+        import model._
+        // if (debug_transmit) committed.hashCode() else
+        val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
+        val bytes = Pickle.intoBytes(rq)
+        if (model.debug_transmit) {
+          val arr = new Array[Byte](bytes.limit())
+          bytes.get(arr, 0, arr.length)
+          Unpickle[ChangeRequest](implicitly).fromBytes(ByteBuffer.wrap(arr))
+          println(arr.mkString(","))
+          bytes.position(0)
+        }
+        request[ByteBuffer](0, model.apiRequest(s"/document/$docId/changes", bytes), value => {
+          lockObject.synchronized {
+            flushInner()
+            val res = Unpickle[ClientUpdate](implicitly)(value)
+            updateFromServer(res)
+          }
+        })
         true
       } else {
         false

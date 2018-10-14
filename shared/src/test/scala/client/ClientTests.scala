@@ -1,7 +1,6 @@
 
 package client
 
-import api.{Api, Authentication}
 import command.{CommandInterface, CommandInterfaceAvailable, FindCommand, Part}
 import command.Key.Grapheme
 import command.Part.IdentifiedCommand
@@ -23,7 +22,7 @@ object ClientTests extends TestSuite  {
   model.debug_view = false
 
   val tests = Tests {
-    val s = new server.Server() {
+    val s = new server.Server("fjdlsa") {
       override def debugSave(a: String, bs: Array[Byte]): Unit = {
       }
 

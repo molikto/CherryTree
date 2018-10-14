@@ -1,6 +1,10 @@
+import java.nio.ByteBuffer
+
 import boopickle._
 import client.LocalStorage
 import register.Registerable
+
+import scala.concurrent.Future
 
 package object model extends Picklers {
 
@@ -9,10 +13,10 @@ package object model extends Picklers {
 
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
+  var apiRequest: (String, ByteBuffer) => Future[ByteBuffer] = null
   var parseFromCommonMarkMarkdown: String => data.Node = null
   var parseFromHtml: String => Registerable = null
 
-  var debug_oldDocVersion = false
   val debug_katex = false
   var debug_view = true
   val debug_scroll = debug_view && false
