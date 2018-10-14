@@ -7,6 +7,7 @@ import com.mohiva.play.silhouette.impl.providers.{OAuth1Info, OpenIDInfo}
 import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
 import javax.inject.Inject
 import play.api.db.slick.DatabaseConfigProvider
+import api._
 
 import scala.concurrent.{ExecutionContext, Future}
 

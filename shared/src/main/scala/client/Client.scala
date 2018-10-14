@@ -11,11 +11,11 @@ import monix.reactive._
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
-import api._
 import command.Key.{Delete, KeySeq}
 import model.ot.Rebased
 import util._
 import model._
+import api._
 import model.data.{CodeType, SpecialChar, Text, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
