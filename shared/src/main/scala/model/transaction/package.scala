@@ -40,5 +40,19 @@ package object transaction {
         case _ => None
       }
     }
+
+    val pickler: Pickler[Node] =new Pickler[Node] {
+      override def pickle(obj: Node)(implicit state: PickleState): Unit = {
+        import state.enc._
+        writeInt(obj.size)
+        for (o <- obj) operation.Node.pickler.pickle(o)
+      }
+
+      override def unpickle(implicit state: UnpickleState): Node = {
+        import state.dec._
+        (0 until readInt).map(_ => operation.Node.pickler.unpickle)
+      }
+    }
+
   }
 }
