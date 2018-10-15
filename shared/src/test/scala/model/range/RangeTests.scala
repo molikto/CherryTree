@@ -1,7 +1,7 @@
 package model.range
 
 
-import api.{ApiError, ClientInit}
+import api.{ApiError, InitResponse}
 import model._
 import model.data.DataObject
 import utest._

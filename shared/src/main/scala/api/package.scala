@@ -10,10 +10,13 @@ package object api {
   object PicklerGenerator extends MaterializePicklerFallback {
 
   }
+
+
   implicit val serverStatus = PicklerGenerator.generatePickler[ServerStatus]
+  implicit val initRequst = PicklerGenerator.generatePickler[InitRequest]
+  implicit val clientInit = PicklerGenerator.generatePickler[InitResponse]
   implicit val changeRequest = PicklerGenerator.generatePickler[ChangeRequest]
-  implicit val clientInit = PicklerGenerator.generatePickler[ClientInit]
-  implicit val clientUpdate = PicklerGenerator.generatePickler[ClientUpdate]
+  implicit val clientUpdate = PicklerGenerator.generatePickler[ChangeResponse]
 
 
   def pickleState = new PickleState(new EncoderSpeed(), false, false)

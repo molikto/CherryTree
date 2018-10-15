@@ -46,7 +46,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
             `class` := "hide-children",
             marginBottom := "8px",
             {
-              val h = h4(
+              val h = h6(
                 display := "flex",
                 flexDirection := "row",
                 alignItems := "center",

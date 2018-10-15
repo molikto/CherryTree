@@ -40,9 +40,9 @@ class Server(documentId: String) {
 
   private def onlineCount = clients.values.count(_.lastSeen > System.currentTimeMillis() - ApiConstants.ClientDeathTime)
 
-  def init(): ClientInit = synchronized {
+  def init(): InitResponse = synchronized {
     val session = UUID.randomUUID().toString
-    val state = ClientInit(
+    val state = InitResponse(
       session,
       document,
       version,
@@ -69,7 +69,7 @@ class Server(documentId: String) {
 
   def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  def change(changeRequest: ChangeRequest): Try[ClientUpdate] = synchronized {
+  def change(changeRequest: ChangeRequest): Try[ChangeResponse] = synchronized {
     val ChangeRequest(session, clientVersion, ts, mode, debugClientDoc) = changeRequest
     clients.get(session) match {
       case None =>
@@ -79,7 +79,7 @@ class Server(documentId: String) {
         if (diff < 0) {
           if (ts.size >= cached.lastAccepted) {
             if (model.debug_model) println("previous data back failed")
-            Success(ClientUpdate(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
+            Success(ChangeResponse(cached.lastWs, cached.lastAccepted, cached.version, serverStatus))
           } else {
             Failure(ApiError.ClientVersionIsOlderThanServerCache)
           }
@@ -106,7 +106,7 @@ class Server(documentId: String) {
               debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
             }
           }
-          val cu = ClientUpdate(ws, ts.size, version, serverStatus)
+          val cu = ChangeResponse(ws, ts.size, version, serverStatus)
           clients.update(session, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
           // LATER don't accept conflicting items
           Success(cu)
