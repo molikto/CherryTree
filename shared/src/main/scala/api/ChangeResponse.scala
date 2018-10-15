@@ -3,7 +3,7 @@ package api
 import model._
 
 
-final case class ClientUpdate(
+final case class ChangeResponse(
   winners: Seq[transaction.Node],
   acceptedLosersCount: Int,
   finalVersion: Int,

@@ -103,9 +103,9 @@ object DataTests extends TestSuite {
 
     'implicitlyGenerated - {
       for (i <- 0 until 10) {
-        val a: Try[ClientInit] = Success(ClientInit("falsdfjkdjf", data.Node.random(r), i, ServerStatus(1, false, false)))
+        val a: Try[InitResponse] = Success(InitResponse("falsdfjkdjf", data.Node.random(r), i, ServerStatus(1, false, false)))
         val bytes = Pickle.intoBytes(a)(pickleState, implicitly)
-        val b = Unpickle[Try[ClientInit]](implicitly).fromBytes(bytes)(unpickleState)
+        val b = Unpickle[Try[InitResponse]](implicitly).fromBytes(bytes)(unpickleState)
         assert(a == b)
       }
     }

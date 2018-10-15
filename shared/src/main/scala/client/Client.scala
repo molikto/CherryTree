@@ -53,7 +53,7 @@ object Client {
 
 class Client(
   private val docId: String,
-  initial: ClientInit
+  initial: InitResponse
 ) extends CommandHandler
   with RegisterHandler
   with Undoer
@@ -182,7 +182,7 @@ class Client(
 
 
 
-  private val disabledStateUpdates = ArrayBuffer[ClientUpdate]()
+  private val disabledStateUpdates = ArrayBuffer[ChangeResponse]()
 
   private val stateUpdates_ : PublishSubject[DocUpdate] = PublishSubject[DocUpdate]()
 
@@ -359,7 +359,7 @@ class Client(
         request[ByteBuffer](0, model.apiRequest(s"/document/$docId/changes", bytes), value => {
           lockObject.synchronized {
             flushInner()
-            val res = Unpickle[ClientUpdate](implicitly).fromBytes(value)(unpickleState)
+            val res = Unpickle[ChangeResponse](implicitly).fromBytes(value)(unpickleState)
             updateFromServer(res)
           }
         })
@@ -391,7 +391,7 @@ class Client(
   /**
     * update committed, committed version, uncommited, state
     */
-  private def updateFromServer(success: ClientUpdate): Unit = {
+  private def updateFromServer(success: ChangeResponse): Unit = {
     if (updateDisableUpdateBecauseLocalNodeDelete()) {
       if (model.debug_model) {
         println("ignore returned server stuff because we just performed a delete...")
@@ -746,7 +746,7 @@ class Client(
   ): Unit = this.synchronized {
     var update: DocTransaction = update0
     if (debug_view) {
-      println("local change", update)
+      println(s"local change $update")
     }
 
     val extra = update.extra match {
