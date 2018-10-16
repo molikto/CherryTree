@@ -27,19 +27,6 @@ import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 
 
-
-object MyWebSocketActor {
-  def props(out: ActorRef) = Props(new MyWebSocketActor(out))
-}
-
-class MyWebSocketActor(out: ActorRef) extends Actor {
-  def receive = {
-    case msg: String =>
-      out ! (s"Hi I received your message: " + msg)
-  }
-}
-
-
 object DocumentActor {
   def props(id: String) = Props(new DocumentActor(id))
 }
@@ -56,18 +43,25 @@ class DocumentActor(id: String) extends Actor {
       sender ! tempServer.init()
     case c: ChangeRequest =>
       sender ! tempServer.change(c)
+      if (c.ts.nonEmpty) context.children.foreach(_ ! "update")
     case out: ActorRef =>
-      sender !  context.actorOf(Props(new Actor {
-        val flowActor = context.watch(context.actorOf(MyWebSocketActor.props(out), "flowActor"))
+      sender ! context.actorOf(Props(new Actor {
 
-        def receive = {
-          case Status.Success(_) | Status.Failure(_) => flowActor ! PoisonPill
-          case Terminated(_) => context.stop(self)
-          case other => flowActor ! other
+
+        override def preStart(): Unit = {
+          Logger.debug("starting a WebSocket actor")
         }
 
-        override def supervisorStrategy = OneForOneStrategy() {
-          case _ => SupervisorStrategy.Stop
+
+        override def postStop(): Unit = {
+          Logger.debug("stopping a WebSocket actor")
+        }
+
+        def receive = {
+          case Status.Success(_) | Status.Failure(_) => context.stop(self)
+          case other =>
+            Logger.debug(s"sending websocket message $other")
+            out ! other
         }
       }))
   }
@@ -129,18 +123,21 @@ class DocumentController @Inject() (
   }
 
   def ws(documentId: String) = WebSocket.acceptOrResult[String, String] { request =>
-    implicit val req = Request(request, AnyContentAsEmpty)
+    implicit val req = Request(request, AnyContentAsEmpty) // dummy request
     silhouette.SecuredRequestHandler { securedRequest =>
       Future.successful(HandlerResult(Ok, Some(securedRequest.identity)))
     }.flatMap {
       case HandlerResult(r, Some(user)) =>
-        val (outActor, publisher) = Source.actorRef[String](16, OverflowStrategy.dropNew)
-          .toMat(Sink.asPublisher(false))(Keep.both).run()
         implicit val timeout: Timeout = 1.minute
-        (documents ? documentId).mapTo[ActorRef].flatMap(_ ? outActor).mapTo[ActorRef].map { actor =>
+        (documents ? documentId).mapTo[ActorRef].flatMap { a =>
+          // TODO stop the actor created in Source.actorRef
+            val (outActor, publisher) = Source.actorRef[String](16, OverflowStrategy.dropNew)
+              .toMat(Sink.asPublisher(false))(Keep.both).run()
+          (a ? outActor).mapTo[ActorRef].map(ref => (ref, publisher))
+        }.map { pair =>
           val flow = Flow.fromSinkAndSource(
-            Sink.actorRef(actor, akka.actor.Status.Success(())),
-            Source.fromPublisher(publisher)
+            Sink.actorRef(pair._1, akka.actor.Status.Success(())),
+            Source.fromPublisher(pair._2)
           )
           Right(flow)
         }
