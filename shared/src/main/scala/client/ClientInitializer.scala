@@ -19,7 +19,9 @@ object ClientInitializer {
       if (debug_transmit) {
         println(init)
       }
-      new Client(documentId, init)
+      val c = new Client(documentId, init)
+      c.start()
+      c
     }
   }
 }

@@ -93,10 +93,14 @@ class Client(
   private var subscription: Cancelable = null
 
   def start(): Unit = this.synchronized {
-    subscription = Observable.interval(1000.millis).doOnNext(_ => sync()).subscribe()
+    val (ws, obs) = model.setupWebSocket(s"/document/$docId/ws")
+    subscription = obs.doOnNext(_ => sync()).doAfterTerminate(_ => model.stopWebSocket(ws)).subscribe()
   }
 
-  def stop(): Unit = this.synchronized {
+  private var stopped = false
+
+  def destory(): Unit = this.synchronized {
+    stopped = true
     if (subscription != null) {
       subscription.cancel()
       subscription = null
@@ -112,7 +116,7 @@ class Client(
   def version: Int = committedVersion + uncommitted.size
   private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
 
-  
+
   /**
     * document observable
     *
@@ -292,6 +296,7 @@ class Client(
   /**
     * request queue
     */
+  private var lastSyncRequest = 0l
   private var requesting = false
 
   private def putBackAndMarkNotConnected(head: Int): Unit = {
@@ -343,8 +348,8 @@ class Client(
   private def tryTopRequest(): Boolean = {
     if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !disableRemoteStateUpdate) {
       val submit = uncommitted
-      if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000) {
-        lastRequestTime = System.currentTimeMillis()
+      if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000 || lastSyncRequest > lastRequestTime) {
+        lastRequestTime = lastSyncRequest + 1
         import model._
         // if (debug_transmit) committed.hashCode() else
         val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
@@ -380,6 +385,8 @@ class Client(
     * sync with remote server
     */
   def sync(): Boolean = self.synchronized {
+    if (model.debug_view) println("requested sync")
+    lastSyncRequest = System.currentTimeMillis()
     if (!requesting) {
       return tryTopRequest()
     } else {

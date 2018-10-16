@@ -2,6 +2,7 @@ import java.nio.ByteBuffer
 
 import boopickle._
 import client.LocalStorage
+import monix.reactive.Observable
 import register.Registerable
 
 import scala.concurrent.Future
@@ -16,6 +17,9 @@ package object model extends Picklers {
   var apiRequest: (String, ByteBuffer) => Future[ByteBuffer] = null
   var parseFromCommonMarkMarkdown: String => data.Node = null
   var parseFromHtml: String => Registerable = null
+
+  var setupWebSocket: String => (Any, Observable[String]) = null
+  var stopWebSocket: Any => Unit = null
 
   val debug_katex = false
   var debug_view = true

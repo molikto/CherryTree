@@ -6,6 +6,8 @@ import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
 import command.Key
 import model.data.Content
+import monix.reactive.Observable
+import monix.reactive.subjects.PublishSubject
 import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
@@ -21,6 +23,13 @@ import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
 
 object ClientInitializerView {
 
+
+  class WebSocketHolder {
+    var webSocket: WebSocket = null
+    var stopped: Boolean = false
+    var observable: PublishSubject[String] = null
+    var backoff = 1000
+  }
 
   private var globalInitialized = false
   def initializeGlobal(): Unit = {
@@ -50,6 +59,46 @@ object ClientInitializerView {
           responseType = "arraybuffer",
           headers = Map("Content-Type" -> "application/octet-stream")
         ).map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
+      }
+      model.setupWebSocket = (path: String) => {
+        val wsProtocol = if (dom.document.location.protocol == "https:") "wss" else "ws"
+        val url = s"$wsProtocol://${dom.document.location.host}$path"
+        val holder = new WebSocketHolder()
+        holder.observable = PublishSubject[String]()
+        def create(): Unit = {
+          if (holder.stopped) return
+          holder.backoff = 600000 min (holder.backoff * 2)
+          val ws = new WebSocket(url)
+          ws.onopen = { event: Event =>
+            holder.backoff = 1000
+          }
+          ws.onclose = { event: Event =>
+            window.console.log(event)
+            if (holder.stopped) {
+              holder.observable.onComplete()
+            } else {
+              window.setTimeout(() => create(), holder.backoff)
+            }
+          }
+          ws.onerror = { event: Event =>
+            window.console.log(event)
+            window.setTimeout(() => create(), holder.backoff)
+          }
+          ws.onmessage = { event: MessageEvent =>
+            window.console.log(event)
+            holder.observable.onNext(event.data.toString)
+          }
+          holder.webSocket = ws
+        }
+
+        create()
+        (holder.webSocket, holder.observable)
+      }
+
+      model.stopWebSocket = (any: Any) => {
+        val holder = any.asInstanceOf[WebSocketHolder]
+        holder.stopped = true
+        holder.webSocket.close()
       }
     }
   }
@@ -98,7 +147,6 @@ class ClientInitializerView(where: String, documentId: String, global: Boolean) 
   private def goClient(client: Client): Unit = {
     this.client = Some(client)
     removeAllChild(rootView)
-    client.start()
     new ClientView(rootView, client, global)
   }
 }
