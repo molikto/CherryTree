@@ -73,7 +73,6 @@ object ClientInitializerView {
             holder.backoff = 1000
           }
           ws.onclose = { event: Event =>
-            window.console.log(event)
             if (holder.stopped) {
               holder.observable.onComplete()
             } else {
@@ -81,11 +80,9 @@ object ClientInitializerView {
             }
           }
           ws.onerror = { event: Event =>
-            window.console.log(event)
             window.setTimeout(() => create(), holder.backoff)
           }
           ws.onmessage = { event: MessageEvent =>
-            window.console.log(event)
             holder.observable.onNext(event.data.toString)
           }
           holder.webSocket = ws

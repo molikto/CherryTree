@@ -32,7 +32,7 @@ object DocumentActor {
 }
 class DocumentActor(id: String) extends Actor {
 
-  val tempServer = new Server("tempNothing")
+  private val server = new Server(id)
 
   override def preStart(): Unit = {
     Logger.debug(s"starting actor for document $id")
@@ -40,9 +40,9 @@ class DocumentActor(id: String) extends Actor {
 
   override def receive: Receive = {
     case i: InitRequest =>
-      sender ! tempServer.init()
+      sender ! server.init()
     case c: ChangeRequest =>
-      sender ! tempServer.change(c)
+      sender ! server.change(c)
       if (c.ts.nonEmpty) context.children.foreach(_ ! "update")
     case out: ActorRef =>
       sender ! context.actorOf(Props(new Actor {
