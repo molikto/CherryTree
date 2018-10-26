@@ -4,10 +4,10 @@ package models
 import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
 
 case class User(
-  userID: String,
+  userId: String,
   loginInfo: LoginInfo,
   name: Option[String],
   email: Option[String],
-  avatarURL: Option[String],
+  avatarUrl: Option[String],
   activated: Boolean) extends Identity {
 }

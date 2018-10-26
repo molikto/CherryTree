@@ -24,7 +24,7 @@ class UserRepository @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext)
    * @param id The ID to retrieve a user.
    * @return The retrieved user or None if no user could be retrieved for the given ID.
    */
-  def retrieve(id: String) = userDAO.find(id)
+  def retrieve(id: String) : Future[Option[User]] = userDAO.find(id)
 
   /**
    * Retrieves a user that matches the specified login info.
@@ -65,15 +65,15 @@ class UserRepository @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext)
         userDAO.save(user.copy(
           name = profileName(profile),
           email = profile.email,
-          avatarURL = profile.avatarURL
+          avatarUrl = profile.avatarURL
         ))
       case None => // Insert a new user
         userDAO.save(User(
-          userID = UUID.randomUUID().toString,
+          userId = UUID.randomUUID().toString,
           loginInfo = profile.loginInfo,
           name = profileName(profile),
           email = profile.email,
-          avatarURL = profile.avatarURL,
+          avatarUrl = profile.avatarURL,
           activated = true
         ))
     }
