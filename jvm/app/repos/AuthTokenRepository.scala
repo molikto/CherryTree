@@ -29,12 +29,12 @@ class AuthTokenRepository @Inject() (
   /**
    * Creates a new auth token and saves it in the backing store.
    *
-   * @param userID The user ID for which the token should be created.
+   * @param userId The user ID for which the token should be created.
    * @param expiry The duration a token expires.
    * @return The saved auth token.
    */
-  def create(userID: String, expiry: FiniteDuration = 5 minutes): Future[AuthToken] = {
-    val token = AuthToken(UUID.randomUUID().toString, userID, clock.now.withZone(DateTimeZone.UTC).plusSeconds(expiry.toSeconds.toInt))
+  def create(userId: String, expiry: FiniteDuration = 5 minutes): Future[AuthToken] = {
+    val token = AuthToken(UUID.randomUUID().toString, userId, clock.now.withZone(DateTimeZone.UTC).plusSeconds(expiry.toSeconds.toInt))
     authTokenDAO.save(token)
   }
 

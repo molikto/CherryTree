@@ -26,11 +26,11 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
     val userQuery = for {
       dbLoginInfo <- loginInfoQuery(loginInfo)
       dbUserLoginInfo <- UserLoginInfos.filter(_.loginInfoId === dbLoginInfo.id)
-      dbUser <- Users.filter(_.id === dbUserLoginInfo.userID)
+      dbUser <- Users.filter(_.id === dbUserLoginInfo.userId)
     } yield dbUser
     db.run(userQuery.result.headOption).map { dbUserOption =>
       dbUserOption.map { user =>
-        User(user.userID, loginInfo, user.name, user.email, user.avatarURL, user.activated)
+        User(user.userId, loginInfo, user.name, user.email, user.avatarUrl, user.activated)
       }
     }
   }
@@ -38,24 +38,24 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
   /**
     * Finds a user by its user ID.
     *
-    * @param userID The ID of the user to find.
+    * @param userId The ID of the user to find.
     * @return The found user or None if no user for the given ID could be found.
     */
-  def find(userID: String): Future[Option[User]] = {
+  def find(userId: String): Future[Option[User]] = {
     val query = for {
-      dbUser <- Users.filter(_.id === userID.toString)
-      dbUserLoginInfo <- UserLoginInfos.filter(_.userID === dbUser.id)
+      dbUser <- Users.filter(_.id === userId.toString)
+      dbUserLoginInfo <- UserLoginInfos.filter(_.userId === dbUser.id)
       dbLoginInfo <- LoginInfos.filter(_.id === dbUserLoginInfo.loginInfoId)
     } yield (dbUser, dbLoginInfo)
     db.run(query.result.headOption).map { resultOption =>
       resultOption.map {
         case (user, loginInfo) =>
           User(
-            user.userID,
-            LoginInfo(loginInfo.providerID, loginInfo.providerKey),
+            user.userId,
+            LoginInfo(loginInfo.providerId, loginInfo.providerKey),
             user.name,
             user.email,
-            user.avatarURL,
+            user.avatarUrl,
             user.activated)
       }
     }
@@ -68,13 +68,13 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
     * @return The saved user.
     */
   def save(user: User): Future[User] = {
-    val dbUser = UserRow(user.userID.toString, user.name, user.email, user.avatarURL, user.activated)
+    val dbUser = UserRow(user.userId.toString, user.name, user.email, user.avatarUrl, user.activated)
     val dbLoginInfo = LoginInfoRow(None, user.loginInfo.providerID, user.loginInfo.providerKey)
     // We don't have the LoginInfo id so we try to get it first.
     // If there is no LoginInfo yet for this user we retrieve the id on insertion.
     val loginInfoAction = {
       val retrieveLoginInfo = LoginInfos.filter(
-        info => info.providerID === user.loginInfo.providerID &&
+        info => info.providerId === user.loginInfo.providerID &&
           info.providerKey === user.loginInfo.providerKey).result.headOption
       val insertLoginInfo = LoginInfos.returning(LoginInfos.map(_.id)).
         into((info, id) => info.copy(id = Some(id))) += dbLoginInfo
@@ -87,7 +87,7 @@ class UserDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(
     val actions = (for {
       _ <- Users.insertOrUpdate(dbUser)
       loginInfo <- loginInfoAction
-      _ <- UserLoginInfos += UserLoginInfoRow(dbUser.userID, loginInfo.id.get)
+      _ <- UserLoginInfos += UserLoginInfoRow(dbUser.userId, loginInfo.id.get)
     } yield ()).transactionally
     // run actions and return user afterwards
     db.run(actions).map(_ => user)
