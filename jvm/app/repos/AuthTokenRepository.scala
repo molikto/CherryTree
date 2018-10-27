@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
   */
-class AuthTokenDAO (implicit ec: ExecutionContext)
+class AuthTokenDAO @Inject() (implicit ec: ExecutionContext)
 {
 
   def find(id: String): Future[Option[AuthToken]] = Future.successful(tokens.get(id))
