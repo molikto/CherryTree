@@ -64,12 +64,6 @@ class UserModule extends AbstractModule with ScalaModule {
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))
     bind[EventBus].toInstance(EventBus())
     bind[Clock].toInstance(Clock())
-
-    // Replace this with the bindings to your concrete DAOs
-    bind[DelegableAuthInfoDAO[PasswordInfo]].to[PasswordInfoDAO]
-    bind[DelegableAuthInfoDAO[OAuth1Info]].to[OAuth1InfoDAO]
-    bind[DelegableAuthInfoDAO[OAuth2Info]].to[OAuth2InfoDAO]
-    bind[DelegableAuthInfoDAO[OpenIDInfo]].to[OpenIDInfoDAO]
  }
 
   @Provides
@@ -152,12 +146,8 @@ class UserModule extends AbstractModule with ScalaModule {
 
   @Provides
   def provideAuthInfoRepository(
-    passwordInfoDAO: DelegableAuthInfoDAO[PasswordInfo],
-    oauth1InfoDAO: DelegableAuthInfoDAO[OAuth1Info],
-    oauth2InfoDAO: DelegableAuthInfoDAO[OAuth2Info],
-    openIDInfoDAO: DelegableAuthInfoDAO[OpenIDInfo]): AuthInfoRepository = {
-
-    new DelegableAuthInfoRepository(passwordInfoDAO, oauth1InfoDAO, oauth2InfoDAO, openIDInfoDAO)
+    ): AuthInfoRepository = {
+    new UserRepository()
   }
 
   @Provides

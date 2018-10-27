@@ -1,13 +1,19 @@
 package models
 
 
-import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
+import com.mohiva.play.silhouette.api.util.PasswordInfo
+import com.mohiva.play.silhouette.api.{AuthInfo, Identity, LoginInfo}
+
+
+sealed trait AuthenticationInfo
+
 
 case class User(
   userId: String,
-  loginInfo: LoginInfo,
-  name: Option[String],
-  email: Option[String],
+  name: String,
+  email: String,
   avatarUrl: Option[String],
-  activated: Boolean) extends Identity {
+  activated: Boolean,
+  loginInfo: LoginInfo
+) extends Identity {
 }

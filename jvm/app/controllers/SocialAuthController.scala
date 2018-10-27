@@ -30,8 +30,7 @@ class SocialAuthController @Inject() (
           case Left(result) => Future.successful(result)
           case Right(authInfo) => for {
             profile <- p.retrieveProfile(authInfo)
-            user <- userService.save(profile)
-            authInfo <- authInfoRepository.save(profile.loginInfo, authInfo)
+            user <- userService.save(profile, authInfo)
             authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
             value <- silhouette.env.authenticatorService.init(authenticator)
             result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.index()))

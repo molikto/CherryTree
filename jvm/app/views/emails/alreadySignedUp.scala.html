@@ -5,7 +5,7 @@
 
 <html>
     <body>
-        <p>@messages("email.already.signed.up.hello", user.name.getOrElse("user"))</p>
+        <p>@messages("email.already.signed.up.hello", user.name)</p>
         <p>@Html(messages("email.already.signed.up.html.text", url))</p>
     </body>
 </html>
