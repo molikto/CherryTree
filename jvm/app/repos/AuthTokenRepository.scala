@@ -11,6 +11,45 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import javax.inject.Inject
+import models.AuthToken
+import repos.AuthTokenDAOImpl._
+import org.joda.time.DateTime
+import play.api.db.slick.DatabaseConfigProvider
+
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+
+/**
+  */
+class AuthTokenDAO (implicit ec: ExecutionContext)
+{
+
+  def find(id: String): Future[Option[AuthToken]] = Future.successful(tokens.get(id))
+
+  def findExpired(dateTime: DateTime): Future[Seq[AuthToken]] = Future.successful {
+    tokens.filter {
+      case (_, token) =>
+        token.expiry.isBefore(dateTime)
+    }.values.toSeq
+  }
+
+  def save(token: AuthToken): Future[AuthToken] = {
+    tokens += (token.id -> token)
+    Future.successful(token)
+  }
+
+  def remove(id: String): Future[Unit] = {
+    tokens -= id
+    Future.successful(())
+  }
+}
+
+object AuthTokenDAOImpl {
+
+  val tokens: mutable.HashMap[String, AuthToken] = mutable.HashMap()
+}
+
 /**
  * Handles actions to auth tokens.
  *

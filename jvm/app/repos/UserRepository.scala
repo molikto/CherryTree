@@ -3,44 +3,26 @@ package repos
 import java.util.UUID
 
 import javax.inject.Inject
-import com.mohiva.play.silhouette.api.LoginInfo
+import com.mohiva.play.silhouette.api.{AuthInfo, LoginInfo}
+import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.services.IdentityService
 import com.mohiva.play.silhouette.impl.providers.CommonSocialProfile
 import models.User
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
-/**
- * Handles actions to users.
- *
- * @param userDAO The user DAO implementation.
- * @param ex      The execution context.
- */
-class UserRepository @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext) extends IdentityService[User] {
+class UserRepository @Inject()(implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository {
 
-  /**
-   * Retrieves a user that matches the specified ID.
-   *
-   * @param id The ID to retrieve a user.
-   * @return The retrieved user or None if no user could be retrieved for the given ID.
-   */
-  def retrieve(id: String) : Future[Option[User]] = userDAO.find(id)
+  def retrieve(id: String) : Future[Option[User]] = ???
 
-  /**
-   * Retrieves a user that matches the specified login info.
-   *
-   * @param loginInfo The login info to retrieve a user.
-   * @return The retrieved user or None if no user could be retrieved for the given login info.
-   */
-  def retrieve(loginInfo: LoginInfo): Future[Option[User]] = userDAO.find(loginInfo)
+  def retrieve(loginInfo: LoginInfo): Future[Option[User]] = ???
 
-  /**
-   * Saves a user.
-   *
-   * @param user The user to save.
-   * @return The saved user.
-   */
-  def save(user: User) = userDAO.save(user)
+  def save(user: User, authInfo: AuthInfo): Future[User] = ???
+
+  def save(profile: CommonSocialProfile, authInfo: AuthInfo): Future[User] = ???
+
+  def update(user: User): Future[User] = ???
 
   private def profileName(profile: CommonSocialProfile) =
     profile.firstName -> profile.lastName match {
@@ -52,30 +34,19 @@ class UserRepository @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext)
 
 
   /**
-   * Saves the social profile for a user.
-   *
-   * If a user exists for this profile then update the user, otherwise create a new user with the given profile.
-   *
-   * @param profile The social profile to save.
-   * @return The user for whom the profile was saved.
-   */
-  def save(profile: CommonSocialProfile) = {
-    userDAO.find(profile.loginInfo).flatMap {
-      case Some(user) => // Update user with profile
-        userDAO.save(user.copy(
-          name = profileName(profile),
-          email = profile.email,
-          avatarUrl = profile.avatarURL
-        ))
-      case None => // Insert a new user
-        userDAO.save(User(
-          userId = UUID.randomUUID().toString,
-          loginInfo = profile.loginInfo,
-          name = profileName(profile),
-          email = profile.email,
-          avatarUrl = profile.avatarURL,
-          activated = true
-        ))
-    }
-  }
+    * this is only used by password authenticator to find a password auth info
+    */
+  override def find[T <: AuthInfo](loginInfo: LoginInfo)(implicit tag: ClassTag[T]): Future[Option[T]] = ???
+
+
+  /**
+    * this is used when user change/reset password and also hasher needs to be updated
+    */
+  override def update[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = ???
+
+  override def add[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = throw new IllegalStateException("This is not used")
+
+  override def save[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = throw new IllegalStateException("This is not used")
+
+  override def remove[T <: AuthInfo](loginInfo: LoginInfo)(implicit tag: ClassTag[T]): Future[Unit] = throw new IllegalStateException("This is not used")
 }
