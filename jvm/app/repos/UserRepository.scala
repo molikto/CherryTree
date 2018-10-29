@@ -11,11 +11,11 @@ import com.mohiva.play.silhouette.api.util.PasswordInfo
 import com.mohiva.play.silhouette.impl.providers.{CommonSocialProfile, OAuth1Info, OAuth2Info, OpenIDInfo}
 import models.User
 import play.api.db.slick.DatabaseConfigProvider
-import slick.jdbc.GetResult
+import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import play.api.libs.json.{JsObject, JsValue, Json, Writes}
+import play.api.libs.json.{Json, Reads, Writes, JsValue, JsObject}
 
 
 @Singleton
@@ -32,7 +32,18 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   private val oauth1InfoReads = Json.reads[OAuth1Info]
   private val oauth2InfoReads = Json.reads[OAuth2Info]
   private val openIdInfoReads = Json.reads[OpenIDInfo]
-
+  private val authInfoReads: Reads[AuthInfo] = (j: JsValue) => {
+    val keys = j.asInstanceOf[JsObject].keys
+    if (keys.contains("hasher")) {
+      passwordInfoReads.reads(j)
+    } else if (keys.contains("accessToken")) {
+      oauth2InfoReads.reads(j)
+    } else if (keys.contains("secret")) {
+      oauth1InfoReads.reads(j)
+    } else {
+      openIdInfoReads.reads(j)
+    }
+  }
   private val passwordInfoWrites = Json.writes[PasswordInfo]
   private val oauth1InfoWrites = Json.writes[OAuth1Info]
   private val oauth2InfoWrites = Json.writes[OAuth2Info]
@@ -47,18 +58,12 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
 
   private implicit val authInfoDbPickler: GetResult[AuthInfo] = {
     val a: GetResult[JsValue] = implicitly
-    a.andThen(j => {
-      val keys = j.asInstanceOf[JsObject].keys
-      if (keys.contains("hasher")) {
-        passwordInfoReads.reads(j).get
-      } else if (keys.contains("accessToken")) {
-        oauth2InfoReads.reads(j).get
-      } else if (keys.contains("secret")) {
-        oauth1InfoReads.reads(j).get
-      } else {
-        openIdInfoReads.reads(j).get
-      }
-    })
+    a.andThen(j => authInfoReads.reads(j).get)
+  }
+
+  private implicit val authInfoSet: SetParameter[AuthInfo] = (v1: AuthInfo, v2: PositionedParameters) => {
+    val prev: SetParameter[JsValue] = implicitly
+    prev.applied(authInfoWrites.writes(v1))
   }
 
 
