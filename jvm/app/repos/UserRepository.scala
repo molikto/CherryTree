@@ -56,14 +56,14 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     case _ => throw new IllegalStateException("Not supported")
   }
 
-  private implicit val authInfoDbPickler: GetResult[AuthInfo] = {
+  private implicit val authInfoGetResult: GetResult[AuthInfo] = {
     val a: GetResult[JsValue] = implicitly
     a.andThen(j => authInfoReads.reads(j).get)
   }
 
   private implicit val authInfoSet: SetParameter[AuthInfo] = (v1: AuthInfo, v2: PositionedParameters) => {
     val prev: SetParameter[JsValue] = implicitly
-    prev.applied(authInfoWrites.writes(v1))
+    prev(authInfoWrites.writes(v1), v2)
   }
 
 
@@ -76,15 +76,14 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   def create(u: User, authInfo: AuthInfo): Future[User] = {
     assert(u.userId == "")
     val randomId = UUID.randomUUID().toString
-    val res = authInfoWrites.writes(authInfo)
     db.run(
       sqlu"""insert into users values
-            ($randomId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $res)"""
+            ($randomId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"""
     ).map(_ => u.copy(userId = randomId))
   }
 
   def activate(userId: String, activate: Boolean = true): Future[Option[Unit]] =
-    db.run(sqlu"update users set activated = $activate where user_id = $userId").map(a => util.positiveOrNone(a).map(_ => Unit))
+    db.run(sqlu"update users set activated = $activate where user_id = $userId").map(a => util.positiveOrNoneUnit(a))
 
 
 
@@ -99,7 +98,18 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   /**
     * this is used when user change/reset password and also hasher needs to be updated
     */
-  override def update[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = ???
+  override def update[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = {
+    val a: AuthInfo = authInfo
+    db.run(sqlu"update users set auth_info = $a where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}").map(_ => authInfo)
+  }
+
+
+
+  ////
+
+
+
+
 
   override def add[T <: AuthInfo](loginInfo: LoginInfo, authInfo: T): Future[T] = throw new IllegalStateException("This is not used")
 
