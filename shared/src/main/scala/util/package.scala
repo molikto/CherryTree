@@ -110,6 +110,10 @@ package object util extends ObservablePropertyImplicits with Picklers {
     }
   }
 
+  def positiveOrNoneUnit(a: Int): Option[Unit] = {
+    if (a <= 0) None else Some(Unit)
+  }
+
   def positiveOrNone(a: Int) = {
     if (a <= 0) None else Some(a)
   }
