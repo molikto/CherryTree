@@ -97,26 +97,16 @@ class DocumentController @Inject() (
     //val init = Unpickle[InitRequest](implicitly).fromBytes(bytes.toByteBuffer)(unpickleState)
     val init = InitRequest()
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? init).mapTo[InitResponse].map { response =>
-      val res = Pickle.intoBytes[InitResponse](response)(pickleState, implicitly)
-      Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
+      Ok.sendEntity(toEntity(response))
     }
   }
 
   def changes(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
     implicit val timeout: Timeout = 1.minute
-    var bytes: ByteString = null
-    if (model.debug_transmit) {
-      println(request.body)
-      println(request.body.getClass.getCanonicalName)
-      bytes = request.body.asRaw.get.asBytes(parse.UNLIMITED).get
-      println(bytes.mkString(","))
-    }
-    if (bytes == null) bytes = request.body.asRaw.get.asBytes(parse.UNLIMITED).get
-    val change = Unpickle[ChangeRequest](implicitly).fromBytes(bytes.toByteBuffer)(unpickleState)
+    val change = fromRequest[ChangeRequest](request)
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? change).mapTo[Try[ChangeResponse]].map {
       case Success(suc) =>
-        val res = Pickle.intoBytes[ChangeResponse](suc)(pickleState, implicitly)
-        Ok.sendEntity(HttpEntity.Strict(ByteString(res), None))
+        Ok.sendEntity(toEntity(suc))
       case Failure(exc) =>
         Ok("")
     }

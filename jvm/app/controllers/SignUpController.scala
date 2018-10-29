@@ -59,7 +59,7 @@ class SignUpController @Inject() (
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
             val user = User(
-              userId = UUID.randomUUID().toString,
+              userId = "",
               name = data.name,
               email = data.email,
               avatarUrl = None,
@@ -68,7 +68,7 @@ class SignUpController @Inject() (
             )
             for {
               avatar <- avatarService.retrieveURL(data.email)
-              user <- userService.save(user.copy(avatarUrl = avatar), authInfo)
+              user <- userService.create(user.copy(avatarUrl = avatar), authInfo)
               authToken <- authTokenService.create(user.userId)
             } yield {
               val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()

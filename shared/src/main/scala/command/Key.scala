@@ -5,6 +5,8 @@ import util.GraphemeSplitter
 
 import scala.collection.mutable.ArrayBuffer
 
+import scala.language.implicitConversions
+
 // key is a unicode codepoint
 
 import Key.KeySeq

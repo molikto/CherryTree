@@ -1,5 +1,7 @@
 package model.data
 
+import java.nio.ByteBuffer
+
 import api._
 import model._
 import model.range.IntRange
@@ -14,7 +16,7 @@ object DataTests extends TestSuite {
     def testDataObject[T](obj: DataObject[T]): Unit = {
       for (_ <- 0 until 100) {
         val a = obj.random(r)
-        val bytes = Pickle.intoBytes(a)(pickleState, obj.pickler)
+        val bytes = Pickle.intoBytes(a)(implicitly, obj.pickler)
         val b = Unpickle[T](obj.pickler).fromBytes(bytes)(unpickleState)
         assert(a == b)
       }

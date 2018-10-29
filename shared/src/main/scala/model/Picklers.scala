@@ -6,6 +6,9 @@ import api.ChangeRequest
 import boopickle._
 
 
+/**
+  * picklers for data objects,
+  */
 trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers with TuplePicklers {
 
 

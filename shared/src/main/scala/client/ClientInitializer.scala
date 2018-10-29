@@ -14,7 +14,7 @@ import scala.util.{Failure, Success}
 
 object ClientInitializer {
   def init(documentId: String): Future[Client] = {
-    model.apiRequest(s"/document/$documentId/init", Pickle.intoBytes[InitRequest](InitRequest())(pickleState, implicitly)).map { value =>
+    model.apiRequest(s"/document/$documentId/init", Pickle.intoBytes[InitRequest](InitRequest())).map { value =>
       val init = Unpickle[InitResponse](implicitly).fromBytes(value)(unpickleState)
       if (debug_transmit) {
         println(init)

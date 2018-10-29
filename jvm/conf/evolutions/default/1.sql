@@ -1,19 +1,20 @@
 # --- !Ups
 
-CREATE TABLE "user" (
-    "user_id" VARCHAR NOT NULL PRIMARY KEY,
-    "name" VARCHAR,
-    "email" VARCHAR,
-    "avatar_url" VARCHAR,
-    "activated" BIT,
+create table users (
+    user_id varchar not null primary key,
+    name_ varchar not null,
+    email varchar not null,
+    avatar_url varchar,
+    activated bool,
 
-    "provider_id" VARCHAR NOT NULL,
-    "provider_key" VARCHAR NOT NULL,
+    provider_id varchar not null,
+    provider_key varchar not null,
 
-    "auth_info" VARBINARY
+    auth_info jsonb not null
 );
 
 
 # --- !Downs
 
-DROP TABLE "user";
+drop table users;
+
