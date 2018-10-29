@@ -19,7 +19,7 @@ package object api {
   implicit val clientUpdate = PicklerGenerator.generatePickler[ChangeResponse]
 
 
-  def pickleState = new PickleState(new EncoderSpeed(), false, false)
-  val unpickleState = (bb: ByteBuffer) => new UnpickleState(new DecoderSpeed(bb), false, false)
+  implicit def pickleState: model.PickleState = new PickleState(new EncoderSpeed(), false, false)
+  implicit val unpickleState: ByteBuffer => model.UnpickleState = (bb: ByteBuffer) => new UnpickleState(new DecoderSpeed(bb), false, false)
 
 }

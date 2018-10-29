@@ -353,7 +353,7 @@ class Client(
         import model._
         // if (debug_transmit) committed.hashCode() else
         val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
-        val bytes = Pickle.intoBytes(rq)(pickleState, implicitly)
+        val bytes = Pickle.intoBytes(rq)(implicitly, implicitly)
         if (model.debug_transmit) {
           val arr = new Array[Byte](bytes.limit())
           bytes.get(arr, 0, arr.length)

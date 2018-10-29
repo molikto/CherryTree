@@ -98,7 +98,7 @@ class Server(documentId: String) {
           document = operation.Node.applyT(transformed, document)
           changes = changes ++ transformed
           if (transformed.nonEmpty) {
-            debugSave("saved", Pickle.intoBytes(document)(pickleState, Node.pickler).array())
+            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
           }
           if (debug_transmit) {
             for (t <- transformed) {

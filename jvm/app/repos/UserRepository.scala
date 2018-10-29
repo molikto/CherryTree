@@ -1,42 +1,94 @@
 package repos
 
+import java.nio.ByteBuffer
 import java.util.UUID
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import com.mohiva.play.silhouette.api.{AuthInfo, LoginInfo}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.services.IdentityService
-import com.mohiva.play.silhouette.impl.providers.CommonSocialProfile
+import com.mohiva.play.silhouette.api.util.PasswordInfo
+import com.mohiva.play.silhouette.impl.providers.{CommonSocialProfile, OAuth1Info, OAuth2Info, OpenIDInfo}
 import models.User
+import play.api.db.slick.DatabaseConfigProvider
+import slick.jdbc.GetResult
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
+import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 
-class UserRepository @Inject()(implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository {
 
-  def retrieve(id: String) : Future[Option[User]] = ???
+@Singleton
+class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
+  (implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository with DatabaseAccessing {
 
-  def retrieve(loginInfo: LoginInfo): Future[Option[User]] = ???
+  import utils.MyPostgresProfile.plainApi._
 
-  def save(user: User, authInfo: AuthInfo): Future[User] = ???
 
-  def save(profile: CommonSocialProfile, authInfo: AuthInfo): Future[User] = ???
+  private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
+  private val AllUserColumns = "user_id, name_, email, avatar_url, activated, provider_id, provider_key"
 
-  def update(user: User): Future[User] = ???
+  private val passwordInfoReads = Json.reads[PasswordInfo]
+  private val oauth1InfoReads = Json.reads[OAuth1Info]
+  private val oauth2InfoReads = Json.reads[OAuth2Info]
+  private val openIdInfoReads = Json.reads[OpenIDInfo]
 
-  private def profileName(profile: CommonSocialProfile) =
-    profile.firstName -> profile.lastName match {
-      case (Some(f), Some(l)) => Some(f + " " + l)
-      case (Some(f), None) => Some(f)
-      case (None, Some(l)) => Some(l)
-      case _ => None
-    }
+  private val passwordInfoWrites = Json.writes[PasswordInfo]
+  private val oauth1InfoWrites = Json.writes[OAuth1Info]
+  private val oauth2InfoWrites = Json.writes[OAuth2Info]
+  private val openIdInfoWrites = Json.writes[OpenIDInfo]
+  private val authInfoWrites: Writes[AuthInfo] = {
+    case p: PasswordInfo => passwordInfoWrites.writes(p)
+    case p: OAuth1Info => oauth1InfoWrites.writes(p)
+    case p: OAuth2Info => oauth2InfoWrites.writes(p)
+    case p: OpenIDInfo => openIdInfoWrites.writes(p)
+    case _ => throw new IllegalStateException("Not supported")
+  }
+
+  private implicit val authInfoDbPickler: GetResult[AuthInfo] = {
+    val a: GetResult[JsValue] = implicitly
+    a.andThen(j => {
+      val keys = j.asInstanceOf[JsObject].keys
+      if (keys.contains("hasher")) {
+        passwordInfoReads.reads(j).get
+      } else if (keys.contains("accessToken")) {
+        oauth2InfoReads.reads(j).get
+      } else if (keys.contains("secret")) {
+        oauth1InfoReads.reads(j).get
+      } else {
+        openIdInfoReads.reads(j).get
+      }
+    })
+  }
+
+
+  def retrieve(id: String) : Future[Option[User]] =
+    db.run(sql"select #$AllUserColumns from users where user_id = $id".as[User].headOption)
+
+  def retrieve(loginInfo: LoginInfo): Future[Option[User]] =
+    db.run(sql"select #$AllUserColumns from users where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}".as[User].headOption)
+
+  def create(u: User, authInfo: AuthInfo): Future[User] = {
+    assert(u.userId == "")
+    val randomId = UUID.randomUUID().toString
+    val res = authInfoWrites.writes(authInfo)
+    db.run(
+      sqlu"""insert into users values
+            ($randomId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $res)"""
+    ).map(_ => u.copy(userId = randomId))
+  }
+
+  def activate(userId: String, activate: Boolean = true): Future[Option[Unit]] =
+    db.run(sqlu"update users set activated = $activate where user_id = $userId").map(a => util.positiveOrNone(a).map(_ => Unit))
+
 
 
   /**
     * this is only used by password authenticator to find a password auth info
     */
-  override def find[T <: AuthInfo](loginInfo: LoginInfo)(implicit tag: ClassTag[T]): Future[Option[T]] = ???
+  override def find[T <: AuthInfo](loginInfo: LoginInfo)(implicit tag: ClassTag[T]): Future[Option[T]] = {
+    db.run(sql"select auth_info from users where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}".as[AuthInfo].headOption).map(_.asInstanceOf[Option[T]])
+  }
 
 
   /**

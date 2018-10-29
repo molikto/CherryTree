@@ -27,7 +27,7 @@ object OperationTests extends TestSuite {
           //        println(o)
           val res = o(a)
           val kk = res.hashCode()
-          val bytes = Pickle.intoBytes(o)(pickleState, obj.pickler)
+          val bytes = Pickle.intoBytes(o)(implicitly, obj.pickler)
           val b = Unpickle[O](obj.pickler).fromBytes(bytes)(unpickleState)
           if (o.isEmpty) assert(a == res)
           assert(o == b)

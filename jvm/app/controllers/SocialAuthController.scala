@@ -5,6 +5,7 @@ import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.impl.providers._
 import javax.inject.Inject
+import models.User
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import repos.UserRepository
@@ -23,6 +24,16 @@ class SocialAuthController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport with Logger {
 
+  def createUser(profile: CommonSocialProfile) = {
+    val name = profile.firstName -> profile.lastName match {
+      case (Some(f), Some(l)) => f + " " + l
+      case (Some(f), None) => f
+      case (None, Some(l)) => l
+      case _ => ""
+    }
+    User("", name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
+  }
+
   def authenticate(provider: String) = Action.async { implicit request: Request[AnyContent] =>
     (socialProviderRegistry.get[SocialProvider](provider) match {
       case Some(p: SocialProvider with CommonSocialProfileBuilder) =>
@@ -30,7 +41,7 @@ class SocialAuthController @Inject() (
           case Left(result) => Future.successful(result)
           case Right(authInfo) => for {
             profile <- p.retrieveProfile(authInfo)
-            user <- userService.save(profile, authInfo)
+            user <- userService.create(createUser(profile), authInfo)
             authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
             value <- silhouette.env.authenticatorService.init(authenticator)
             result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.index()))

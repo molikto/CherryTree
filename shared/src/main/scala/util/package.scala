@@ -4,8 +4,7 @@ import model.data.Unicode
 
 import scala.util.Random
 
-
-package object util extends ObservablePropertyImplicits  {
+package object util extends ObservablePropertyImplicits with Picklers {
 
 
   var debug_fpsView: String => Unit = null
@@ -58,6 +57,7 @@ package object util extends ObservablePropertyImplicits  {
   def matchCommandSearch(str: String, term: String) = str.contains(term)
 
   def head[T](a: Iterator[T]): Option[T] = if (a.hasNext) Some(a.next()) else None
+
   def last[T](a: Iterator[T]): Option[T] = {
     var n: Option[T] = None
     while (a.hasNext) {
@@ -107,6 +107,30 @@ package object util extends ObservablePropertyImplicits  {
       (a, b)
     } else {
       (b, a)
+    }
+  }
+
+  def positiveOrNone(a: Int) = {
+    if (a <= 0) None else Some(a)
+  }
+
+  def negativeAsNone(a: Int) = {
+    if (a < 0) None else Some(a)
+  }
+
+  def emptyToOption(a: Map[String, String]) = {
+    if (a.isEmpty) {
+      None
+    } else {
+      Some(a)
+    }
+  }
+
+  def emptyToOption(a: String) = {
+    if (a.isEmpty) {
+      None
+    } else {
+      Some(a)
     }
   }
 }

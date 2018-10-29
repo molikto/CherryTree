@@ -30,6 +30,7 @@ import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.ValueReader
 import net.codingwell.scalaguice.ScalaModule
 import play.api.Configuration
+import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.openid.OpenIdClient
 import play.api.libs.ws.WSClient
 import play.api.mvc.{Cookie, CookieHeaderEncoding}
@@ -146,8 +147,9 @@ class UserModule extends AbstractModule with ScalaModule {
 
   @Provides
   def provideAuthInfoRepository(
+    dbConfigProvider: DatabaseConfigProvider
     ): AuthInfoRepository = {
-    new UserRepository()
+    new UserRepository(dbConfigProvider)
   }
 
   @Provides
