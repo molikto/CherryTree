@@ -10,6 +10,7 @@ object Version {
   val monix = "2.3.3"
   val utest = "0.6.4"
   val playMailer = "6.0.1"
+  val playJson = "2.6.9"
 }
 
 object Deps {
@@ -23,6 +24,7 @@ object Deps {
   val shared = Def.setting(
     "com.lihaoyi" %%% "scalatags" % Version.scalatags  ::
     "io.suzaku" %%% "boopickle" % Version.boopickle ::
+    "com.typesafe.play" %%% "play-json" % "2.6.9" ::
     "com.lihaoyi" %%% "utest" % Version.utest % "test" ::
     "io.monix" %%% "monix" % Version.monix ::
     "com.softwaremill.quicklens" %%% "quicklens" % "1.4.11" ::
