@@ -15,7 +15,7 @@ import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import play.api.libs.json.{Json, Reads, Writes, JsValue, JsObject}
+import play.api.libs.json.{Json, Format, JsValue, JsObject, JsResult}
 
 
 @Singleton
@@ -28,42 +28,41 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
   private val AllUserColumns = "user_id, name_, email, avatar_url, activated, provider_id, provider_key"
 
-  private val passwordInfoReads = Json.reads[PasswordInfo]
-  private val oauth1InfoReads = Json.reads[OAuth1Info]
-  private val oauth2InfoReads = Json.reads[OAuth2Info]
-  private val openIdInfoReads = Json.reads[OpenIDInfo]
-  private val authInfoReads: Reads[AuthInfo] = (j: JsValue) => {
-    val keys = j.asInstanceOf[JsObject].keys
-    if (keys.contains("hasher")) {
-      passwordInfoReads.reads(j)
-    } else if (keys.contains("accessToken")) {
-      oauth2InfoReads.reads(j)
-    } else if (keys.contains("secret")) {
-      oauth1InfoReads.reads(j)
-    } else {
-      openIdInfoReads.reads(j)
+  implicit val passwordInfoFormat = Json.format[PasswordInfo]
+  implicit val oauth1InfoFormat = Json.format[OAuth1Info]
+  implicit val oauth2InfoFormat = Json.format[OAuth2Info]
+  implicit val openIdInfoFormat = Json.format[OpenIDInfo]
+  private val authInfoFormat: Format[AuthInfo] = new Format[AuthInfo] {
+    override def reads(j: JsValue): JsResult[AuthInfo] = {
+      val keys = j.asInstanceOf[JsObject].keys
+      if (keys.contains("hasher")) {
+        passwordInfoFormat.reads(j)
+      } else if (keys.contains("accessToken")) {
+        oauth2InfoFormat.reads(j)
+      } else if (keys.contains("secret")) {
+        oauth1InfoFormat.reads(j)
+      } else {
+        openIdInfoFormat.reads(j)
+      }
     }
-  }
-  private val passwordInfoWrites = Json.writes[PasswordInfo]
-  private val oauth1InfoWrites = Json.writes[OAuth1Info]
-  private val oauth2InfoWrites = Json.writes[OAuth2Info]
-  private val openIdInfoWrites = Json.writes[OpenIDInfo]
-  private val authInfoWrites: Writes[AuthInfo] = {
-    case p: PasswordInfo => passwordInfoWrites.writes(p)
-    case p: OAuth1Info => oauth1InfoWrites.writes(p)
-    case p: OAuth2Info => oauth2InfoWrites.writes(p)
-    case p: OpenIDInfo => openIdInfoWrites.writes(p)
-    case _ => throw new IllegalStateException("Not supported")
+
+    override def writes(o: AuthInfo): JsValue = o match {
+      case p: PasswordInfo => passwordInfoFormat.writes(p)
+      case p: OAuth1Info => oauth1InfoFormat.writes(p)
+      case p: OAuth2Info => oauth2InfoFormat.writes(p)
+      case p: OpenIDInfo => openIdInfoFormat.writes(p)
+      case _ => throw new IllegalStateException("Not supported")
+    }
   }
 
   private implicit val authInfoGetResult: GetResult[AuthInfo] = {
     val a: GetResult[JsValue] = implicitly
-    a.andThen(j => authInfoReads.reads(j).get)
+    a.andThen(j => authInfoFormat.reads(j).get)
   }
 
   private implicit val authInfoSet: SetParameter[AuthInfo] = (v1: AuthInfo, v2: PositionedParameters) => {
     val prev: SetParameter[JsValue] = implicitly
-    prev(authInfoWrites.writes(v1), v2)
+    prev(authInfoFormat.writes(v1), v2)
   }
 
 
