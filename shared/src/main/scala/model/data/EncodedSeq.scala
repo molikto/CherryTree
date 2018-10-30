@@ -1,9 +1,9 @@
 package model.data
-import boopickle.{PickleState, Pickler, UnpickleState}
 import model.range.IntRange
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+import play.api.libs.json._
 
 /**
   * normalized so that: there is no empty unicode, there is no unicode adjacent
@@ -211,38 +211,32 @@ object EncodedSeq extends DataObject[EncodedSeq] {
 
   override def random(r: Random): EncodedSeq = throw new IllegalArgumentException("don't just create random ones")
 
-  override val pickler: Pickler[EncodedSeq] = new Pickler[EncodedSeq] {
-    override def pickle(obj: EncodedSeq)(implicit state: PickleState): Unit = {
-      import state.enc._
-      writeInt(obj.seq.size)
-      for (j <- obj.seq) {
-        j match {
-          case s: SpecialChar =>
-            writeInt(-s.id - 1)
-          case a: Unicode =>
-            writeString(a.str)
-          case _ => throw new IllegalStateException("not possible")
-        }
+  override val jsonFormat: Format[EncodedSeq] = new Format[EncodedSeq] {
+
+    override def reads(json: JsValue): JsResult[EncodedSeq] = {
+      json match {
+        case JsArray(seq) =>
+          val bf = new ArrayBuffer[Any]()
+          seq.foreach {
+            case JsNumber(value) =>
+              bf.append(SpecialChar(value.intValue()))
+            case JsString(value) =>
+              bf.append(Unicode(value))
+            case _ => throw new IllegalStateException("not possible")
+          }
+          JsSuccess(EncodedSeq(bf, Unit))
+        case _ => JsError()
       }
     }
 
-    override def unpickle(implicit state: UnpickleState): EncodedSeq = {
-      import state.dec._
-      val bf = new ArrayBuffer[Any]()
-      var previousIsString = false
-      val size = readInt
-      for (_ <- 0 until size) {
-        val a = readInt
-        if (a < 0) {
-          previousIsString = false
-          bf.append(SpecialChar(- a - 1))
-        } else {
-          assert(!previousIsString)
-          previousIsString = true
-          bf.append(Unicode(readString(a)))
-        }
-      }
-      EncodedSeq(bf, Unit)
+    override def writes(o: EncodedSeq): JsValue = {
+      JsArray(o.seq.map {
+        case s: SpecialChar =>
+          JsNumber(s.id)
+        case u: Unicode =>
+          Unicode.jsonFormat.writes(u)
+        case _ => throw new IllegalStateException("not possible")
+      })
     }
   }
 

@@ -24,7 +24,7 @@ class SocialAuthController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport with Logger {
 
-  def createUser(profile: CommonSocialProfile) = {
+  private def createUser(profile: CommonSocialProfile) = {
     val name = profile.firstName -> profile.lastName match {
       case (Some(f), Some(l)) => f + " " + l
       case (Some(f), None) => f
@@ -34,7 +34,7 @@ class SocialAuthController @Inject() (
     User("", name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
   }
 
-  def authenticate(provider: String) = Action.async { implicit request: Request[AnyContent] =>
+  def authenticate(provider: String) = Action.async { implicit request =>
     (socialProviderRegistry.get[SocialProvider](provider) match {
       case Some(p: SocialProvider with CommonSocialProfileBuilder) =>
         p.authenticate().flatMap {

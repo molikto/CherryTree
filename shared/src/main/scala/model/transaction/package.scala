@@ -45,12 +45,12 @@ package object transaction {
       override def pickle(obj: Node)(implicit state: PickleState): Unit = {
         import state.enc._
         writeInt(obj.size)
-        for (o <- obj) operation.Node.pickler.pickle(o)
+        for (o <- obj) operation.Node.jsonFormat.pickle(o)
       }
 
       override def unpickle(implicit state: UnpickleState): Node = {
         import state.dec._
-        (0 until readInt).map(_ => operation.Node.pickler.unpickle)
+        (0 until readInt).map(_ => operation.Node.jsonFormat.unpickle)
       }
     }
 

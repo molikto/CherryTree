@@ -3,7 +3,7 @@ package controllers
 import akka.actor.{Actor, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, Status, SupervisorStrategy, Terminated}
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.{ByteString, Timeout}
-import api.{ChangeRequest, ChangeResponse, InitResponse}
+import api.{ChangeRequest, ChangeResponse, InitRequest, InitResponse}
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
 import com.mohiva.play.silhouette.api.{HandlerResult, Silhouette}
 import javax.inject.{Inject, Singleton}
@@ -17,9 +17,8 @@ import play.api.mvc._
 import play.filters.csrf.CSRF
 import server.Server
 import utils.auth.DefaultEnv
-import model._
-import api._
 import play.api.Logger
+import play.api.libs.json.{JsError, JsSuccess, Json, Reads}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -83,30 +82,28 @@ class DocumentController @Inject() (
   system: ActorSystem,
   materializer: Materializer,
   ec: ExecutionContext
-) extends AbstractController(components) with I18nSupport {
+) extends JsonController(components) with I18nSupport {
 
   private val documents = system.actorOf(Props(new DocumentsActor()))
 
-  def index(documentId: String) = silhouette.SecuredAction { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def index(documentId: String) = silhouette.SecuredAction { implicit request =>
     Ok(views.html.editor(documentId))
   }
 
-  def init(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def init(documentId: String) = silhouette.SecuredAction.async { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    //val bytes = request.body.asRaw.get.asBytes(parse.UNLIMITED).get
-    //val init = Unpickle[InitRequest](implicitly).fromBytes(bytes.toByteBuffer)(unpickleState)
-    val init = InitRequest()
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? init).mapTo[InitResponse].map { response =>
-      Ok.sendEntity(toEntity(response))
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? InitRequest()).mapTo[InitResponse].map { response =>
+      Ok(Json.toJson(response))
     }
   }
 
-  def changes(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+
+
+  def changes(documentId: String) = silhouette.SecuredAction.async(validateJson[ChangeRequest]) { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    val change = fromRequest[ChangeRequest](request)
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? change).mapTo[Try[ChangeResponse]].map {
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? request.request).mapTo[Try[ChangeResponse]].map {
       case Success(suc) =>
-        Ok.sendEntity(toEntity(suc))
+        Ok(Json.toJson(suc))
       case Failure(exc) =>
         Ok("")
     }

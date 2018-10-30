@@ -6,7 +6,8 @@ import java.util.stream.IntStream
 
 import model._
 import model.range.IntRange
-import util.GraphemeSplitter
+import _root_.util.GraphemeSplitter
+import play.api.libs.json.{Format, JsValue, JsResult, JsString, JsError, JsSuccess}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -14,9 +15,13 @@ import scala.util.Random
 
 
 object Unicode extends DataObject[Unicode] {
-  override val pickler: boopickle.Pickler[Unicode] = new boopickle.Pickler[Unicode] {
-    override def pickle(obj: Unicode)(implicit state: PickleState): Unit = state.enc.writeString(obj.str)
-    override def unpickle(implicit state: UnpickleState): Unicode = Unicode(state.dec.readString)
+  override val jsonFormat: Format[Unicode] = new Format[Unicode] {
+    override def reads(json: JsValue): JsResult[Unicode] = json match {
+      case JsString(value) => JsSuccess(Unicode(value))
+      case _ => JsError()
+    }
+
+    override def writes(o: Unicode): JsValue = JsString(o.str)
   }
 
   def apply(a: Seq[String]): Unicode = {

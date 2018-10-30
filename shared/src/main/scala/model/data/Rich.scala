@@ -1,9 +1,9 @@
 package model.data
 
-import boopickle._
 import model.range.IntRange
 import model.cursor
 import model.data.Text.Delimited
+import play.api.libs.json.{Format, JsResult, JsValue}
 import search.{Search, SearchOccurrence}
 import settings.SpecialKeySettings
 
@@ -410,9 +410,9 @@ object Rich extends DataObject[Rich] {
     Rich(Text.parseAll(reader))
   }
 
-  override val pickler: Pickler[Rich] = new Pickler[Rich] {
-    override def pickle(obj: Rich)(implicit state: PickleState): Unit = EncodedSeq.pickler.pickle(obj.serialize())
-    override def unpickle(implicit state: UnpickleState): Rich = parse(EncodedSeq.pickler.unpickle)
+  override val jsonFormat: Format[Rich] = new Format[Rich] {
+    override def reads(json: JsValue): JsResult[Rich] = EncodedSeq.jsonFormat.reads(json).map(parse)
+    override def writes(o: Rich): JsValue = EncodedSeq.jsonFormat.writes(o.serialize())
   }
 
 

@@ -16,8 +16,8 @@ object DataTests extends TestSuite {
     def testDataObject[T](obj: DataObject[T]): Unit = {
       for (_ <- 0 until 100) {
         val a = obj.random(r)
-        val bytes = Pickle.intoBytes(a)(implicitly, obj.pickler)
-        val b = Unpickle[T](obj.pickler).fromBytes(bytes)(unpickleState)
+        val bytes = Pickle.intoBytes(a)(implicitly, obj.jsonFormat)
+        val b = Unpickle[T](obj.jsonFormat).fromBytes(bytes)(unpickleState)
         assert(a == b)
       }
     }

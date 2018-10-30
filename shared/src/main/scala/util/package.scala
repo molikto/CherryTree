@@ -4,7 +4,7 @@ import model.data.Unicode
 
 import scala.util.Random
 
-package object util extends ObservablePropertyImplicits with Picklers {
+package object util extends ObservablePropertyImplicits with Formats {
 
 
   var debug_fpsView: String => Unit = null

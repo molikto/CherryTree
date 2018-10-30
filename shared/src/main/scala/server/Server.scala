@@ -27,7 +27,7 @@ class Server(documentId: String) {
   private var document = {
     val bs = debugLoad("saved")
     val res = if (bs.isEmpty) Node.create()
-    else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))(unpickleState)
+    else Unpickle[Node](Node.jsonFormat).fromBytes(ByteBuffer.wrap(bs))(unpickleState)
     res
   }
   private var changes = Seq.empty[transaction.Node]
@@ -98,7 +98,7 @@ class Server(documentId: String) {
           document = operation.Node.applyT(transformed, document)
           changes = changes ++ transformed
           if (transformed.nonEmpty) {
-            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.jsonFormat).array())
           }
           if (debug_transmit) {
             for (t <- transformed) {

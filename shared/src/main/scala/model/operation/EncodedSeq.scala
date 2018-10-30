@@ -368,26 +368,26 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
     }
   }
 
-  override val pickler: Pickler[EncodedSeq] = new Pickler[EncodedSeq] {
+  override val jsonFormat: Pickler[EncodedSeq] = new Pickler[EncodedSeq] {
     override def pickle(obj: EncodedSeq)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
         case Insert(at, childs, leftGlued) =>
           writeInt(if (leftGlued) 1 else 0)
           writeInt(at)
-          data.EncodedSeq.pickler.pickle(childs)
+          data.EncodedSeq.jsonFormat.pickle(childs)
         case Delete(range) =>
           writeInt(2)
           IntRange.pickler.pickle(range)
         case ReplaceAtomic(range, unicode) =>
           writeInt(3)
           IntRange.pickler.pickle(range)
-          data.EncodedSeq.pickler.pickle(unicode)
+          data.EncodedSeq.jsonFormat.pickle(unicode)
         case Surround(r, start, end, id) =>
           writeInt(if (id) 5 else 6)
           IntRange.pickler.pickle(r)
-          data.EncodedSeq.pickler.pickle(start)
-          data.EncodedSeq.pickler.pickle(end)
+          data.EncodedSeq.jsonFormat.pickle(start)
+          data.EncodedSeq.jsonFormat.pickle(end)
       }
     }
     override def unpickle(implicit state: UnpickleState): EncodedSeq = {
@@ -395,13 +395,13 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       val k = readInt
       k match {
         case 0 | 1 =>
-          Insert(readInt, data.EncodedSeq.pickler.unpickle, leftGlued = k == 1)
+          Insert(readInt, data.EncodedSeq.jsonFormat.unpickle, leftGlued = k == 1)
         case 2 =>
           Delete(IntRange.pickler.unpickle)
         case 3 =>
-          ReplaceAtomic(IntRange.pickler.unpickle, data.EncodedSeq.pickler.unpickle)
+          ReplaceAtomic(IntRange.pickler.unpickle, data.EncodedSeq.jsonFormat.unpickle)
         case 5 | 6 =>
-          Surround(IntRange.pickler.unpickle, data.EncodedSeq.pickler.unpickle, data.EncodedSeq.pickler.unpickle, idempotent = k == 5)
+          Surround(IntRange.pickler.unpickle, data.EncodedSeq.jsonFormat.unpickle, data.EncodedSeq.jsonFormat.unpickle, idempotent = k == 5)
       }
     }
   }

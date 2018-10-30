@@ -87,19 +87,19 @@ object Content extends OperationObject[data.Content, Content] {
   }
 
 
-  override val pickler: Pickler[Content] = new Pickler[Content] {
+  override val jsonFormat: Pickler[Content] = new Pickler[Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
         case CodeContent(u) =>
           writeInt(0)
-          Unicode.pickler.pickle(u)
+          Unicode.jsonFormat.pickle(u)
         case CodeLang(l) =>
           writeInt(1)
           writeString(l)
         case Rich(u) =>
           writeInt(2)
-          operation.Rich.pickler.pickle(u)
+          operation.Rich.jsonFormat.pickle(u)
       }
     }
 
@@ -107,11 +107,11 @@ object Content extends OperationObject[data.Content, Content] {
       import state.dec._
       readInt match {
         case 0 =>
-          Content.CodeContent(Unicode.pickler.unpickle)
+          Content.CodeContent(Unicode.jsonFormat.unpickle)
         case 1 =>
           Content.CodeLang(readString)
         case 2 =>
-          Content.Rich(operation.Rich.pickler.unpickle)
+          Content.Rich(operation.Rich.jsonFormat.unpickle)
       }
     }
   }

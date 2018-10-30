@@ -2,6 +2,7 @@ package model
 
 
 import model.mode.Mode
+import play.api.libs.json.Format
 
 import scala.util.Random
 
@@ -44,7 +45,7 @@ package object operation {
 
     type TRANSACTION = Seq[OPERATION]
 
-    val pickler: Pickler[OPERATION]
+    val jsonFormat: Format[OPERATION]
 
     def random(data: DATA): OPERATION = random(data, new Random())
 

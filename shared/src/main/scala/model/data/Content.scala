@@ -1,9 +1,11 @@
 package model.data
 
-import boopickle._
+import boopickle.Pickler
 import model.range.IntRange
 import model.{data, mode}
+import play.api.libs.json._
 import search.{Search, SearchOccurrence}
+import util.CaseFormat
 
 import scala.util.Random
 
@@ -120,6 +122,7 @@ object Content extends DataObject[Content] {
 
   object Code {
     val empty: Content = Code(Unicode.empty, "")
+    val jsonFormat: Format[Code] = Json.format[Code]
   }
 
   case class Rich(content: data.Rich) extends Content {
@@ -136,30 +139,14 @@ object Content extends DataObject[Content] {
     override def defines(hash: Text.HashTag): Option[IntRange] = content.defines(hash)
   }
 
-  override val pickler: Pickler[Content] = new Pickler[Content] {
-    override def pickle(obj: Content)(implicit state: PickleState): Unit = {
-      import state.enc._
-      obj match {
-        case Code(u, l) =>
-          writeInt(0)
-          Unicode.pickler.pickle(u)
-          writeString(l)
-        case Rich(p) =>
-          writeInt(1)
-          data.Rich.pickler.pickle(p)
-      }
-    }
-
-    override def unpickle(implicit state: UnpickleState): Content = {
-      import state.dec._
-      readInt match {
-        case 0 =>
-          Code(Unicode.pickler.unpickle, readString)
-        case 1 =>
-          Rich(data.Rich.pickler.unpickle)
-      }
-    }
+  object Rich {
+    val jsonFormat: Format[Rich] = Json.format[Rich]
   }
+
+  override val jsonFormat: Format[Content] = new _root_.util.CaseFormat[Content](
+    (classOf[Code], "code", Code.jsonFormat),
+    (classOf[Rich], "rich", Rich.jsonFormat),
+  )
 
   override def random(r: Random): Content =
     if (r.nextBoolean()) {

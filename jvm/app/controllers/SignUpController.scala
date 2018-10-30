@@ -34,11 +34,11 @@ class SignUpController @Inject() (
   ex: ExecutionContext
 ) extends AbstractController(components) with I18nSupport {
 
-  def view = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
+  def view = silhouette.UnsecuredAction.async { implicit request =>
     Future.successful(Ok(views.html.signUp(SignUpForm.form)))
   }
 
-  def submit = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
+  def submit = silhouette.UnsecuredAction.async { implicit request =>
     SignUpForm.form.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.signUp(form))),
       data => {

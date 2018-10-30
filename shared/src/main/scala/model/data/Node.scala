@@ -6,6 +6,7 @@ import doc.DocTransaction
 import model._
 import Node.{ChildrenType, ContentType}
 import model.range.IntRange
+import play.api.libs.json.{Format, JsObject, Json}
 import scalatags.Text.all._
 import search.{Search, SearchOccurrence}
 
@@ -23,7 +24,7 @@ trait NodeTag[T] {
 case class Node(
   uuid: String,
   content: Content,
-  attributes: Map[String, String],
+  attributes: JsObject,
   childs: Seq[Node]) {
 
 
@@ -419,31 +420,7 @@ object Node extends DataObject[Node] {
 
 
 
-  val pickler: Pickler[Node] = new Pickler[Node] {
-    override def pickle(obj: Node)(implicit state: PickleState): Unit = {
-      import state.enc._
-      writeString(obj.uuid)
-      Content.pickler.pickle(obj.content)
-      writeInt(obj.attributes.size)
-      for (c <- obj.attributes) {
-        if (c._2.nonEmpty) {
-          writeString(c._1)
-          writeString(c._2)
-        }
-      }
-      writeInt(obj.childs.size)
-      for (c <- obj.childs) Node.pickler.pickle(c)
-    }
-
-    override def unpickle(implicit state: UnpickleState): Node = {
-      import state.dec._
-      Node(
-        readString,
-        Content.pickler.unpickle,
-        (0 until readInt).map(_ => readString -> readString).toMap,
-        (0 until readInt).map(_ => Node.pickler.unpickle))
-    }
-  }
+  val jsonFormat: Format[Node] = Json.format[Node]
 
   override def random(r: Random): Node = randomWithDepth(r, 0)
 
@@ -456,7 +433,7 @@ object Node extends DataObject[Node] {
       case _ => 1
     }
     Node(r.nextInt.toString, Content.random(r),
-      Map.empty,
+      JsObject.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }
 }

@@ -16,12 +16,12 @@ class ApplicationController @Inject() (
   silhouette: Silhouette[DefaultEnv]
 )(implicit assets: AssetsFinder) extends AbstractController(components) with I18nSupport {
 
-  def index = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def index = silhouette.SecuredAction.async { implicit request =>
     Future.successful(Redirect(controllers.routes.DocumentController.index(UUID.randomUUID().toString)))
   }
 
 
-  def signOut = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def signOut = silhouette.SecuredAction.async { implicit request =>
     val result = Redirect(routes.ApplicationController.index())
     silhouette.env.eventBus.publish(LogoutEvent(request.identity, request))
     silhouette.env.authenticatorService.discard(request.authenticator, result)

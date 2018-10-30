@@ -1,6 +1,5 @@
 package model.operation
 
-import boopickle.{PickleState, Pickler, UnpickleState}
 import model.{data, mode}
 import model.operation.Type.Type
 import model.range.IntRange
@@ -93,14 +92,14 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
     }
   }
 
-  override val pickler: Pickler[Unicode] = new Pickler[Unicode] {
+  override val jsonFormat: Pickler[Unicode] = new Pickler[Unicode] {
     override def pickle(obj: Unicode)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
         case Insert(at, childs, leftGlued) =>
           writeInt(if (leftGlued) 1 else 0)
           writeInt(at)
-          data.Unicode.pickler.pickle(childs)
+          data.Unicode.jsonFormat.pickle(childs)
         case Delete(range) =>
           writeInt(2)
           IntRange.pickler.pickle(range)
@@ -111,7 +110,7 @@ object Unicode extends OperationObject[data.Unicode, Unicode] {
       val k = readInt
       k match {
         case 0 | 1 =>
-          Insert(readInt, data.Unicode.pickler.unpickle, leftGlued = k == 1)
+          Insert(readInt, data.Unicode.jsonFormat.unpickle, leftGlued = k == 1)
         case 2 =>
           Delete(IntRange.pickler.unpickle)
       }

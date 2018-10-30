@@ -295,23 +295,23 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def isEmpty: Boolean = r.isEmpty || r.until == to
   }
 
-  override val pickler: Pickler[Node] = new Pickler[Node] {
+  override val jsonFormat: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._
       obj match {
         case Content(c, content) =>
           writeInt(0)
           writeIntArray(c.toArray)
-          operation.Content.pickler.pickle(content)
+          operation.Content.jsonFormat.pickle(content)
         case Replace(c, content) =>
           writeInt(1)
           writeIntArray(c.toArray)
-          data.Content.pickler.pickle(content)
+          data.Content.jsonFormat.pickle(content)
         case Insert(c, childs) =>
           writeInt(2)
           writeIntArray(c.toArray)
           writeInt(childs.size)
-          childs.foreach(a => data.Node.pickler.pickle(a))
+          childs.foreach(a => data.Node.jsonFormat.pickle(a))
         case Delete(r) =>
           writeInt(3)
           range.Node.pickler.pickle(r)
@@ -331,11 +331,11 @@ object Node extends OperationObject[data.Node, operation.Node] {
       import state.dec._
       readInt match {
         case 0 =>
-          Content(readIntArray, operation.Content.pickler.unpickle)
+          Content(readIntArray, operation.Content.jsonFormat.unpickle)
         case 1 =>
-          Replace(readIntArray, data.Content.pickler.unpickle)
+          Replace(readIntArray, data.Content.jsonFormat.unpickle)
         case 2 =>
-          Insert(readIntArray, (0 until readInt).map(_ => data.Node.pickler.unpickle))
+          Insert(readIntArray, (0 until readInt).map(_ => data.Node.jsonFormat.unpickle))
         case 3 =>
           Delete(range.Node.pickler.unpickle)
         case 4 =>

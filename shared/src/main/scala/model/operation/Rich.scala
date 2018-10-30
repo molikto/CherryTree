@@ -322,17 +322,17 @@ object Rich extends OperationObject[data.Rich, Rich] {
   def insert(p: Int, unicode: Seq[data.Text]): Rich = Rich(Seq(EncodedSeq.Insert(p, Text.serialize(unicode))), Type.Add)
 
 
-  override val pickler: Pickler[Rich] = new Pickler[Rich] {
+  override val jsonFormat: Pickler[Rich] = new Pickler[Rich] {
     override def pickle(obj: Rich)(implicit state: PickleState): Unit = {
       import state.enc._
       writeInt(obj.u.size)
-      obj.u.foreach(a => EncodedSeq.pickler.pickle(a))
+      obj.u.foreach(a => EncodedSeq.jsonFormat.pickle(a))
       writeInt(obj.ty.id)
     }
 
     override def unpickle(implicit state: UnpickleState): Rich = {
       import state.dec._
-      Rich((0 until readInt).map(_ => EncodedSeq.pickler.unpickle), Type(readInt))
+      Rich((0 until readInt).map(_ => EncodedSeq.jsonFormat.unpickle), Type(readInt))
     }
   }
 
