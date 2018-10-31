@@ -1,7 +1,7 @@
 # --- !Ups
 
 create table users (
-    user_id varchar not null primary key,
+    user_id varchar primary key,
     name_ varchar not null,
     email varchar not null,
     avatar_url varchar,
@@ -14,7 +14,7 @@ create table users (
 );
 
 create table documents (
-    document_id varchar not null primary key,
+    document_id varchar primary key,
     root_node_id varchar not null,
     current_version bigint not null
 );
@@ -27,9 +27,7 @@ create table permissions (
 
 create table nodes (
     document_id varchar not null references documents(document_id),
-    node_id varchar not null, /* this is NOT unique, because a node can have multiple versions */
-    from_version bigint not null,
-    until_version bigint not null,
+    node_id varchar primary key, /* this is NOT unique, because a node can have multiple versions */
     childs varchar[], /* null means root node */
     attrs bytea,
     cont bytea not null

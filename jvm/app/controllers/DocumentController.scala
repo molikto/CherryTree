@@ -19,6 +19,8 @@ import server.Server
 import utils.auth.{DefaultEnv, HasPermission}
 import model._
 import api._
+import model.operation.Node
+import model.transaction.Node
 import play.api.Logger
 import repos.{DocumentRepository, UserRepository}
 
@@ -43,7 +45,13 @@ class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
     case i: InitRequest =>
       if (server == null) {
         val root = Await.result(docs.init(id), 10.seconds)
-        server = new Server(id, root)
+        server = new Server(id, root._1, root._2) {
+          override def persist(changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
+            Await.result(docs.changes(id, version, changes), 10.seconds)
+          }
+
+          override def loadChanges(from: Int, until: Int): Option[Seq[model.transaction.Node]] = None
+        }
       }
       sender ! server.init()
     case c: ChangeRequest =>

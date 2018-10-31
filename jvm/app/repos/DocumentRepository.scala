@@ -20,6 +20,8 @@ import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json}
 import model._
 import api._
 import model.data.Content
+import model.operation.Node
+import model.transaction.Node
 
 object DocumentRepository {
 
@@ -57,25 +59,53 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   }
 
 
+  private implicit val transGetResult: GetResult[model.transaction.Node] = {
+    val a: GetResult[Array[Byte]] = implicitly
+    a.andThen(j => Unpickle[model.transaction.Node](implicitly).fromBytes(ByteBuffer.wrap(j))(implicitly))
+  }
+
+  private implicit val transSet: SetParameter[model.transaction.Node] = (v1: model.transaction.Node, v2: PositionedParameters) => {
+    val prev: SetParameter[Array[Byte]] = implicitly
+    prev(Pickle.intoBytes(v1).array(), v2)
+  }
+
+
 
   private implicit val nodeGetResult: GetResult[NodeResult] = GetResult[NodeResult](r => (r.<<, r.<<, r.<<(attrsGetResult), r.<<(contGetResult)))
 
 
-  def init(a: String): Future[model.data.Node] = {
+  def init(a: String): Future[(model.data.Node, Int)] = {
     val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, String)].head.flatMap {
       case (version, root) =>
-        sql"select node_id, childs, attrs, cont from nodes where document_id = $a and from_version <= $version and until_version > $version".as[NodeResult]
-          .map(a => (root, a))
+        sql"select node_id, childs, attrs, cont from nodes where document_id = $a".as[NodeResult]
+          .map(a => (root, a, version))
     }
-    db.run(query.transactionally).map(res => {
-      val rootId = res._1
-      val nodes = res._2.map(a => (a._1, a)).toMap
+    db.run(query.transactionally).map(kk => {
+      val rootId = kk._1
+      val nodes = kk._2.map(a => (a._1, a)).toMap
       def materializeNode(id: String): model.data.Node = {
         val res = nodes(id)
         model.data.Node(id, res._4, res._3, res._2.map(materializeNode))
       }
-      materializeNode(rootId)
+      (materializeNode(rootId), kk._3)
     })
+  }
+  
+
+  def changes(did: String, version: Int, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Future[Unit] = {
+    val ops = changes.zipWithIndex.flatMap(p => {
+      val c = p._1
+      val v = version + p._2
+      c._2.map {
+        case model.operation.Node.Diff.Insert(id, childs, attributes, content) =>
+          sqlu"insert into nodes values ($did, $id, $childs, $attributes, $content)"
+        case model.operation.Node.Diff.Update(id, childs, attributes, content) =>
+          sqlu"update nodes set childs = $childs, attrs = $attributes, cont = $content where node_id = $id"
+        case model.operation.Node.Diff.Delete(id) =>
+          sqlu"delete from nodes where node_id = $id"
+      } :+ sqlu"insert into changes values ($did, $v, ${c._1})"
+    })
+    db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }
 
 }

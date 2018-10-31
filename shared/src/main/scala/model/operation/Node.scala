@@ -7,6 +7,7 @@ import doc.DocState
 import model.data.NodeTag
 import model.range.IntRange
 
+import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -15,10 +16,30 @@ abstract sealed class Node extends Operation[data.Node] {
   override type This = Node
 
   def apply(a: DocState, enableModal: Boolean): DocState
+
+  def applyWithDiff(node: data.Node): (Seq[Node.Diff], data.Node)
 }
 
 object Node extends OperationObject[data.Node, operation.Node] {
 
+  sealed abstract class Diff
+  object Diff {
+
+    case class Update(id: String, childs: Seq[String], attributes: Map[String, String], content: data.Content) extends Diff
+    object Update {
+      def apply(at: cursor.Node, res: data.Node): Update = {
+        val node = res(at)
+        Update(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
+      }
+    }
+    case class Insert(id: String, childs: Seq[String], attributes: Map[String, String], content: data.Content) extends Diff
+    case class Delete(id: String) extends Diff
+  }
+
+
+  def applyWithDiff(a: model.transaction.Node, node: data.Node): (Seq[Diff], data.Node) = {
+    a.foldLeft((Seq.empty[Diff], node)) { (n, op) =>  op.applyWithDiff(n._2) match { case (a, b) => (n._1 ++ a, b)} }
+  }
 
   def apply(transforms: transaction.Node, a: DocState, enableModal: Boolean): (DocState, Seq[(DocState, operation.Node)]) = {
     var aa = a
@@ -51,6 +72,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
   }
   case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
 
+    override def ty: Type = Type.Structural
+
     override def apply(a: DocState, enableModal: Boolean): DocState = {
       var m= a.mode0
       var zoom = a.zoom
@@ -71,9 +94,13 @@ object Node extends OperationObject[data.Node, operation.Node] {
       }
       DocState(apply(a.node), zoom, m, a.badMode, a.userFoldedNodes)
     }
-    override def ty: Type = Type.Structural
 
     override def apply(d: data.Node): data.Node = d.map(at, nn => if (to.isEmpty) nn.clear(tag) else nn.attribute(tag, to))
+
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val res = apply(node)
+      (Seq(Diff.Update(at, res)), res)
+    }
 
     override def reverse(d: data.Node): Node = AttributeChange(at, tag, d(at).attribute(tag))
 
@@ -88,6 +115,11 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = content.ty
     override def apply(d: data.Node): data.Node = {
       d.map(at, a => a.copy(content = content(a.content)))
+    }
+
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val res = apply(node)
+      (Seq(Diff.Update(at, res)), res)
     }
 
 
@@ -120,6 +152,11 @@ object Node extends OperationObject[data.Node, operation.Node] {
       d.map(at, a => a.copy(content = content))
     }
 
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val res = apply(node)
+      (Seq(Diff.Update(at, res)), res)
+    }
+
     override def toString: String = s"Replace(${at.mkString("-")})"
 
 
@@ -150,6 +187,17 @@ object Node extends OperationObject[data.Node, operation.Node] {
       }
       d.insert(at, childs)
     }
+
+
+
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val res = apply(node)
+      def createInsert(node: data.Node) : Seq[Diff.Insert] = {
+        node.childs.flatMap(createInsert) :+ Diff.Insert(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
+      }
+      (childs.flatMap(createInsert) :+ Diff.Update(model.cursor.Node.parent(at), res), res)
+    }
+
 
 
     override def toString: String = s"Insert(${at.mkString("-")}, ${childs.size})"
@@ -194,6 +242,16 @@ object Node extends OperationObject[data.Node, operation.Node] {
   case class Delete(r: range.Node) extends Node {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Node): data.Node = d.delete(r)
+
+
+
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val res = apply(node)
+      def createDelete(node: data.Node) : Seq[Diff.Delete] = {
+        node.childs.flatMap(createDelete) :+ Diff.Delete(node.uuid)
+      }
+      (node(r).flatMap(createDelete) :+ Diff.Update(r.parent, res), res)
+    }
 
     override def apply(a: DocState, enableModal: Boolean): DocState = {
       val applied = apply(a.node)
@@ -242,6 +300,14 @@ object Node extends OperationObject[data.Node, operation.Node] {
     assert(!r.contains(to))
     override def ty: Type = Type.Structural
     override def apply(d: data.Node): data.Node = d.move(r, to)
+
+    override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
+      val check1 = r.transformNodeAfterMoved(to, r.parent)
+      val check2 = r.transformNodeAfterMoved(to, model.cursor.Node.parent(to))
+      val nodes = if (check1 == check2) Seq(check1) else Seq(check1, check2)
+      val res = apply(node)
+      (nodes.map(pos => Diff.Update(pos, res)), res)
+    }
 
 
     override def apply(a: DocState, enableModal: Boolean): DocState = {
