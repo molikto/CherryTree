@@ -11,10 +11,7 @@ import model.ot.Rebased
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success, Try}
 
-class Server(documentId: String) {
-
-  def debugSave(a: String, bs: Array[Byte]) = {}
-  def debugLoad(a: String): Array[Byte] = new Array[Byte](0)
+class Server(documentId: String, private var document: Node) {
 
   // states, now in single thread fashion
 
@@ -24,12 +21,6 @@ class Server(documentId: String) {
     lastAccepted: Int,
     lastWs: Seq[transaction.Node])
 
-  private var document = {
-    val bs = debugLoad("saved")
-    val res = if (bs.isEmpty) Node.create()
-    else Unpickle[Node](Node.pickler).fromBytes(ByteBuffer.wrap(bs))(unpickleState)
-    res
-  }
   private var changes = Seq.empty[transaction.Node]
   def version: Int = changes.size
   private val clients: mutable.Map[String, ClientInfo] = mutable.Map.empty
@@ -40,7 +31,7 @@ class Server(documentId: String) {
 
   private def onlineCount = clients.values.count(_.lastSeen > System.currentTimeMillis() - ApiConstants.ClientDeathTime)
 
-  def init(): InitResponse = synchronized {
+  def init(): InitResponse = {
     val session = UUID.randomUUID().toString
     val state = InitResponse(
       session,
@@ -69,7 +60,7 @@ class Server(documentId: String) {
 
   def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  def change(changeRequest: ChangeRequest): Try[ChangeResponse] = synchronized {
+  def change(changeRequest: ChangeRequest): Try[ChangeResponse] = {
     val ChangeRequest(session, clientVersion, ts, mode, debugClientDoc) = changeRequest
     clients.get(session) match {
       case None =>
@@ -97,9 +88,9 @@ class Server(documentId: String) {
           var debugTopDocument = document
           document = operation.Node.applyT(transformed, document)
           changes = changes ++ transformed
-          if (transformed.nonEmpty) {
-            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
-          }
+//          if (transformed.nonEmpty) {
+//            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+//          }
           if (debug_transmit) {
             for (t <- transformed) {
               debugTopDocument = operation.Node.apply(t, debugTopDocument)

@@ -3,6 +3,7 @@ package repos
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import api.PermissionLevel
 import javax.inject.{Inject, Singleton}
 import com.mohiva.play.silhouette.api.{AuthInfo, LoginInfo}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
@@ -15,12 +16,15 @@ import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import play.api.libs.json.{Json, Format, JsValue, JsObject, JsResult}
+import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json}
+import model._
+import api._
 
 
 @Singleton
 class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
   (implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository with DatabaseAccessing {
+
 
   import utils.MyPostgresProfile.plainApi._
 
@@ -72,13 +76,28 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   def retrieve(loginInfo: LoginInfo): Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}".as[User].headOption)
 
-  def create(u: User, authInfo: AuthInfo): Future[User] = {
+  def create(u: User, authInfo: AuthInfo, documentTitle: String): Future[User] = {
     assert(u.userId == "")
-    val randomId = UUID.randomUUID().toString
-    db.run(
-      sqlu"""insert into users values
-            ($randomId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"""
-    ).map(_ => u.copy(userId = randomId))
+    val userId = UUID.randomUUID().toString
+    val createUser =
+      sqlu"insert into users values ($userId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
+    val documentId = UUID.randomUUID().toString
+    val node = model.data.Node.create(documentTitle)
+    val createDefaultDocument =
+      sqlu"insert into documents values ($documentId, ${node.uuid}, 0)"
+    val createPermission =
+      sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
+    val createInitDocumentNodes =
+      sqlu"insert into nodes values ($documentId, ${node.uuid}, ${0}, ${Long.MaxValue}, ${Seq.empty[String]}, ${model.toArray(node.attributes)}, ${model.toArray(node.content)})"
+    db.run(DBIO.seq(createUser, createDefaultDocument, createPermission, createInitDocumentNodes).transactionally).map(_ => u.copy(userId = userId))
+  }
+
+  def indexDocumentId(userId: String): Future[Option[String]] = {
+    db.run(sql"select document_id from permissions where user_id = $userId and permission_level = ${PermissionLevel.Admin}".as[String].headOption)
+  }
+
+  def hasReadPermission(userId: String, documentId: String): _root_.scala.concurrent.Future[Boolean] = {
+    db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= ${PermissionLevel.ReadOnly}".as[String].headOption).map(_.isDefined)
   }
 
   def activate(userId: String, activate: Boolean = true): Future[Option[Unit]] =

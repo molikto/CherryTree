@@ -5,7 +5,7 @@ import api.{ChangeRequest, unpickleState}
 import boopickle.{PickleState, Pickler, UnpickleState}
 import play.api.http.HttpEntity
 import model._
-import play.api.mvc.{AnyContent, Request}
+import play.api.mvc.{AnyContent, BodyParser, Request}
 
 
 package object controllers {

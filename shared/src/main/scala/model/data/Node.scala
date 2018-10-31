@@ -417,6 +417,8 @@ object Node extends DataObject[Node] {
 
   def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID().toString, content, Map.empty, Seq.empty)
 
+  def create(title: String): Node =  create(Content.Rich(Rich(Seq(Text.Plain(Unicode(title))))))
+
 
 
   val pickler: Pickler[Node] = new Pickler[Node] {
