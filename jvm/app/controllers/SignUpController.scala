@@ -68,7 +68,7 @@ class SignUpController @Inject() (
             )
             for {
               avatar <- avatarService.retrieveURL(data.email)
-              user <- userService.create(user.copy(avatarUrl = avatar), authInfo)
+              user <- userService.create(user.copy(avatarUrl = avatar), authInfo, request.messages.apply("default.document.title", user.name))
               authToken <- authTokenService.create(user.userId)
             } yield {
               val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()

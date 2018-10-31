@@ -16,23 +16,24 @@ import play.api.libs.streams.ActorFlow
 import play.api.mvc._
 import play.filters.csrf.CSRF
 import server.Server
-import utils.auth.DefaultEnv
+import utils.auth.{DefaultEnv, HasPermission}
 import model._
 import api._
 import play.api.Logger
+import repos.{DocumentRepository, UserRepository}
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 
 
 object DocumentActor {
-  def props(id: String) = Props(new DocumentActor(id))
+  def props(id: String, docs: DocumentRepository) = Props(new DocumentActor(id, docs))
 }
-class DocumentActor(id: String) extends Actor {
+class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
 
-  private val server = new Server(id)
+  private var server: Server = null
 
   override def preStart(): Unit = {
     Logger.debug(s"starting actor for document $id")
@@ -40,6 +41,10 @@ class DocumentActor(id: String) extends Actor {
 
   override def receive: Receive = {
     case i: InitRequest =>
+      if (server == null) {
+        val root = Await.result(docs.init(id), 10.seconds)
+        server = new Server(id, root)
+      }
       sender ! server.init()
     case c: ChangeRequest =>
       sender ! server.change(c)
@@ -51,7 +56,6 @@ class DocumentActor(id: String) extends Actor {
         override def preStart(): Unit = {
           Logger.debug("starting a WebSocket actor")
         }
-
 
         override def postStop(): Unit = {
           Logger.debug("stopping a WebSocket actor")
@@ -68,9 +72,9 @@ class DocumentActor(id: String) extends Actor {
 }
 
 
-class DocumentsActor extends Actor {
+class DocumentsActor(val docs: DocumentRepository) extends Actor {
   override def receive: Receive = {
-    case id: String => sender ! context.child(id).getOrElse(context.actorOf(DocumentActor.props(id), id))
+    case id: String => sender ! context.child(id).getOrElse(context.actorOf(DocumentActor.props(id, docs), id))
   }
 }
 
@@ -78,43 +82,41 @@ class DocumentsActor extends Actor {
 class DocumentController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
-
+  users: UserRepository,
+  docs: DocumentRepository
 )(implicit assets: AssetsFinder,
   system: ActorSystem,
   materializer: Materializer,
   ec: ExecutionContext
 ) extends AbstractController(components) with I18nSupport {
 
-  private val documents = system.actorOf(Props(new DocumentsActor()))
+  private val documents = system.actorOf(Props(new DocumentsActor(docs)))
 
-  def index(documentId: String) = silhouette.SecuredAction { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def index(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
     Ok(views.html.editor(documentId))
   }
 
-  def init(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
+  def init(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    //val bytes = request.body.asRaw.get.asBytes(parse.UNLIMITED).get
-    //val init = Unpickle[InitRequest](implicitly).fromBytes(bytes.toByteBuffer)(unpickleState)
-    val init = InitRequest()
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? init).mapTo[InitResponse].map { response =>
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? InitRequest()).mapTo[InitResponse].map { response =>
       Ok.sendEntity(toEntity(response))
     }
   }
 
-  def changes(documentId: String) = silhouette.SecuredAction.async { implicit request: SecuredRequest[DefaultEnv, AnyContent] =>
-    implicit val timeout: Timeout = 1.minute
+  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     val change = fromRequest[ChangeRequest](request)
+    implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? change).mapTo[Try[ChangeResponse]].map {
       case Success(suc) =>
         Ok.sendEntity(toEntity(suc))
       case Failure(exc) =>
-        Ok("")
+        ???
     }
   }
 
   def ws(documentId: String) = WebSocket.acceptOrResult[String, String] { request =>
     implicit val req = Request(request, AnyContentAsEmpty) // dummy request
-    silhouette.SecuredRequestHandler { securedRequest =>
+    silhouette.SecuredRequestHandler(HasPermission[DefaultEnv#A](documentId, users)) { securedRequest =>
       Future.successful(HandlerResult(Ok, Some(securedRequest.identity)))
     }.flatMap {
       case HandlerResult(r, Some(user)) =>

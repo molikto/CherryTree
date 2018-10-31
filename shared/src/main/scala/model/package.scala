@@ -7,7 +7,7 @@ import register.Registerable
 
 import scala.concurrent.Future
 
-package object model extends Picklers {
+package object model extends Picklers with util.Picklers {
 
 
   def map[T, R](t: (Seq[T], Seq[T]), f: T => R): (Seq[R], Seq[R]) = (t._1.map(f), t._2.map(f))

@@ -15,26 +15,37 @@ create table users (
 
 create table documents (
     document_id varchar not null primary key,
-    owner_id varchar not null references users(user_id) /* owner can delete a document */
+    root_node_id varchar not null,
+    current_version bigint not null
 );
 
-/* currently our access control is very simple, users have permission of a document has full access to that document */
-create table permissions(
+create table permissions (
     user_id varchar not null references users(user_id),
-    document_id varchar not null references documents(document_id)
-)
+    document_id varchar not null references documents(document_id),
+    permission_level integer not null
+);
 
-create table document_node(
+create table nodes (
     document_id varchar not null references documents(document_id),
     node_id varchar not null, /* this is NOT unique, because a node can have multiple versions */
     from_version bigint not null,
     until_version bigint not null,
-    parent_node_id varchar references document_node(node_id), /* null means root node */
-    attrs jsonb, /* we store it as jsonb, but it is just a map(string -> string) */
-    content
-)
+    childs varchar[], /* null means root node */
+    attrs bytea,
+    cont bytea not null
+);
+
+create table changes (
+    document_id varchar not null references documents(document_id),
+    from_version bigint not null,
+    cont bytea not null
+);
 
 # --- !Downs
 
+drop table changes;
+drop table nodes;
+drop table permissions;
+drop table documents;
 drop table users;
 

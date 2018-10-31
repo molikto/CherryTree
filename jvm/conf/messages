@@ -70,6 +70,9 @@ vk = VK
 xing = Xing
 yahoo = Yahoo
 
+
+default.document.title = {0}’s place
+
 ##########
 # Emails
 ##########

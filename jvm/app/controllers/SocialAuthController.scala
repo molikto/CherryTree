@@ -6,6 +6,7 @@ import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.impl.providers._
 import javax.inject.Inject
 import models.User
+import play.api.i18n.Messages.Message
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import repos.UserRepository
@@ -41,7 +42,10 @@ class SocialAuthController @Inject() (
           case Left(result) => Future.successful(result)
           case Right(authInfo) => for {
             profile <- p.retrieveProfile(authInfo)
-            user <- userService.create(createUser(profile), authInfo)
+            user <- {
+              val obj = createUser(profile)
+              userService.create(obj, authInfo, request.messages.apply("default.document.title", obj))
+            }
             authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
             value <- silhouette.env.authenticatorService.init(authenticator)
             result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.index()))
