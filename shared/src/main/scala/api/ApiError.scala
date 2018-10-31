@@ -14,4 +14,6 @@ object ApiError {
   case object ClientVersionIsOlderThanServerCache extends ApiError
 
   case object ClientVersionIsHigherThanServerCache extends ApiError
+
+  case object ClientVersionTooOld extends ApiError
 }

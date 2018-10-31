@@ -11,7 +11,7 @@ import model.ot.Rebased
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success, Try}
 
-class Server(documentId: String, private var document: Node) {
+class Server(documentId: String, private var document: Node, private var baseVersion: Int) {
 
   // states, now in single thread fashion
 
@@ -22,9 +22,10 @@ class Server(documentId: String, private var document: Node) {
     lastWs: Seq[transaction.Node])
 
   private var changes = Seq.empty[transaction.Node]
-  def version: Int = changes.size
+
+  def version: Int = baseVersion + changes.size
   private val clients: mutable.Map[String, ClientInfo] = mutable.Map.empty
-  private var debugHistoryDocuments = Seq(document)
+//  private var debugHistoryDocuments = Seq(document)
 
   def debugDocument = document
   def debugChanges = changes
@@ -77,31 +78,62 @@ class Server(documentId: String, private var document: Node) {
         } else if (diff > 0) {
           Failure(ApiError.ClientVersionIsHigherThanServerCache)
         } else {
-          val ws = changes.drop(clientVersion)
-          if (debug_transmit && debugClientDoc != 0) {
-            val oldCode = debugHistoryDocuments(clientVersion).hashCode()
-            if (debugClientDoc != oldCode) {
-              throw new IllegalStateException(s"transmit error?? $clientVersion, ${document.size} $debugClientDoc $oldCode")
+
+          def normalCase() = {
+
+            val ws = changes.drop(clientVersion - baseVersion)
+            //          if (debug_transmit && debugClientDoc != 0) {
+            //            val oldCode = debugHistoryDocuments(clientVersion).hashCode()
+            //            if (debugClientDoc != oldCode) {
+            //              throw new IllegalStateException(s"transmit error?? $clientVersion, ${document.size} $debugClientDoc $oldCode")
+            //            }
+            //          }
+            val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
+            //var debugTopDocument = document
+
+            val (transformedDocument, diffs) = transformed.foldLeft((document, Seq.empty[Seq[model.operation.Node.Diff]])) {
+              (model, c) => operation.Node.applyWithDiff(c, model._1) match { case (d, nn) => (nn, model._2 :+ d) }
             }
+            assert(diffs.size == transformed.size)
+            val toPersist = transformed.zip(diffs)
+            //
+            persist(toPersist)
+            // commit to memory
+            document = transformedDocument
+            changes = changes ++ transformed
+            val cu = ChangeResponse(ws, ts.size, version, serverStatus)
+            //          if (transformed.nonEmpty) {
+            //            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
+            //          }
+            //          if (debug_transmit) {
+            //            for (t <- transformed) {
+            //              debugTopDocument = operation.Node.apply(t, debugTopDocument)
+            //              debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+            //            }
+            //          }
+            clients.update(session, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
+            // LATER don't accept conflicting items
+            Success(cu)
           }
-          val Rebased(conflicts, (wws, transformed)) = ot.Node.rebaseT(ws.flatten, ts)
-          var debugTopDocument = document
-          document = operation.Node.applyT(transformed, document)
-          changes = changes ++ transformed
-//          if (transformed.nonEmpty) {
-//            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
-//          }
-          if (debug_transmit) {
-            for (t <- transformed) {
-              debugTopDocument = operation.Node.apply(t, debugTopDocument)
-              debugHistoryDocuments = debugHistoryDocuments :+ debugTopDocument
+          if (clientVersion < baseVersion) {
+            loadChanges(clientVersion, baseVersion) match {
+              case Some(list) =>
+                assert(list.size == baseVersion - clientVersion)
+                changes = list ++ changes
+                baseVersion = clientVersion
+                normalCase()
+              case None =>
+                Failure(ApiError.ClientVersionIsHigherThanServerCache)
             }
+          } else {
+            normalCase()
           }
-          val cu = ChangeResponse(ws, ts.size, version, serverStatus)
-          clients.update(session, ClientInfo(cu.finalVersion, System.currentTimeMillis(), cu.acceptedLosersCount, cu.winners))
-          // LATER don't accept conflicting items
-          Success(cu)
         }
     }
   }
+
+  def persist(changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
+  }
+
+  def loadChanges(from: Int, until: Int): Option[Seq[model.transaction.Node]] = None
 }

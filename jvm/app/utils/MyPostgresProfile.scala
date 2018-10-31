@@ -10,7 +10,7 @@ trait MyPostgresProfile extends ExPostgresProfile
   with PgNetSupport
   with PgLTreeSupport
   with PgRangeSupport
-  with PgHStoreSupport
+  //with PgHStoreSupport
   with PgSearchSupport {
 
   override val pgjson = "jsonb"
@@ -21,7 +21,7 @@ trait MyPostgresProfile extends ExPostgresProfile
     with NetImplicits
     with LTreeImplicits
     with RangeImplicits
-    with HStoreImplicits
+    //with HStoreImplicits
     with SearchImplicits
     with SearchAssistants {}
 
@@ -32,7 +32,7 @@ trait MyPostgresProfile extends ExPostgresProfile
     with SimpleNetPlainImplicits
     with SimpleLTreePlainImplicits
     with SimpleRangePlainImplicits
-    with SimpleHStorePlainImplicits
+    //with SimpleHStorePlainImplicits
     with SimpleSearchPlainImplicits {}
 
 }

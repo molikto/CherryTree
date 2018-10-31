@@ -88,7 +88,7 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
     val createInitDocumentNodes =
-      sqlu"insert into nodes values ($documentId, ${node.uuid}, ${0}, ${Long.MaxValue}, ${Seq.empty[String]}, ${model.toArray(node.attributes)}, ${model.toArray(node.content)})"
+      sqlu"insert into nodes values ($documentId, ${node.uuid}, ${Seq.empty[String]}, ${model.toArray(node.attributes)}, ${model.toArray(node.content)})"
     db.run(DBIO.seq(createUser, createDefaultDocument, createPermission, createInitDocumentNodes).transactionally).map(_ => u.copy(userId = userId))
   }
 
