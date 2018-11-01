@@ -1,36 +1,30 @@
 package util
 
-import boopickle.{PickleState, Pickler, UnpickleState}
-
-trait Picklers {
+import play.api.libs.json._
 
 
-  implicit val stringMapPickler: Pickler[Map[String, String]] = new Pickler[Map[String, String]] {
-    override def pickle(obj: Map[String, String])(implicit state: PickleState): Unit = {
-      writeStringMap(obj)
+class CaseFormat[T](vals: (Class[_], String, Format[_])*) extends Format[T] {
+
+  override def reads(json: JsValue): JsResult[T] =
+    json match {
+      case o: JsObject =>
+        val keys = o.keys
+        if (keys.size == 1) {
+          val key = keys.head
+          vals.find(_._2 == key) match {
+            case Some(k) =>
+              k._3.reads(o(key)).asInstanceOf[JsResult[T]]
+            case None =>
+              JsError()
+          }
+        } else {
+          JsError()
+        }
+      case _ => JsError()
     }
 
-    override def unpickle(implicit state: UnpickleState): Map[String, String] = {
-      readStringMap
-    }
-  }
-
-  def toArray[T](a: T)(implicit state: PickleState, pickler: Pickler[T]) = {
-    pickler.pickle(a)
-    state.toByteBuffer.array()
-  }
-
-  def writeStringMap(map: Map[String, String])(implicit a: PickleState) = {
-    import a.enc._
-    writeInt(map.size)
-    map.foreach(pair => {
-      writeString(pair._1)
-      writeString(pair._2)
-    })
-  }
-
-  def readStringMap(implicit a: UnpickleState): Map[String, String] = {
-    import a.dec._
-    (0 until readInt).map(_ => readString -> readString).toMap
+  override def writes(o: T): JsValue = {
+    vals.find(_._1 == o.getClass).get._3.asInstanceOf[Format[T]].writes(o)
   }
 }
+
