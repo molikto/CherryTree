@@ -1,6 +1,8 @@
 package model.data
+
 import boopickle.{PickleState, Pickler, UnpickleState}
 import model.range.IntRange
+import play.api.libs.json._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -9,7 +11,6 @@ import scala.util.Random
   * normalized so that: there is no empty unicode, there is no unicode adjacent
   */
 case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
-
 
 
   if (model.debug_model) {
@@ -30,6 +31,7 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
         }
         true
       }
+
       test()
     })
   }
@@ -43,7 +45,9 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
     } catch {
       case e: Throwable => throw e
     }
+
   private[data] def fragmentSize = seq.size
+
   lazy val size: Int = {
     var i = 0
     for (s <- seq) {
@@ -78,7 +82,7 @@ case class EncodedSeq private(seq: Seq[Any], unit: Unit) {
       }
     }
 
-  def replace(r: IntRange, a: EncodedSeq): EncodedSeq = slice(IntRange(0, r.start))  + a + slice(IntRange(r.until, size))
+  def replace(r: IntRange, a: EncodedSeq): EncodedSeq = slice(IntRange(0, r.start)) + a + slice(IntRange(r.until, size))
 
   def delete(r: IntRange): EncodedSeq = slice(IntRange(0, r.start)) + slice(IntRange(r.until, size))
 
@@ -193,6 +197,7 @@ object EncodedSeq extends DataObject[EncodedSeq] {
   private[model] def apply(a: Seq[SpecialChar]): EncodedSeq = {
     EncodedSeq(a, Unit)
   }
+
   private[model] def apply(a: String): EncodedSeq = {
     if (a.isEmpty) {
       empty
@@ -205,11 +210,14 @@ object EncodedSeq extends DataObject[EncodedSeq] {
     if (a.isEmpty) empty
     else EncodedSeq(Seq(a), Unit)
   }
+
   private[model] def apply(a: SpecialChar): EncodedSeq = {
     EncodedSeq(Seq(a))
   }
 
   override def random(r: Random): EncodedSeq = throw new IllegalArgumentException("don't just create random ones")
+
+  val empty: EncodedSeq = EncodedSeq(Seq.empty)
 
   override val pickler: Pickler[EncodedSeq] = new Pickler[EncodedSeq] {
     override def pickle(obj: EncodedSeq)(implicit state: PickleState): Unit = {
@@ -235,7 +243,7 @@ object EncodedSeq extends DataObject[EncodedSeq] {
         val a = readInt
         if (a < 0) {
           previousIsString = false
-          bf.append(SpecialChar(- a - 1))
+          bf.append(SpecialChar(-a - 1))
         } else {
           assert(!previousIsString)
           previousIsString = true
@@ -246,5 +254,35 @@ object EncodedSeq extends DataObject[EncodedSeq] {
     }
   }
 
-  val empty: EncodedSeq = EncodedSeq(Seq.empty)
+  val jsonFormat: Format[EncodedSeq] = new Format[EncodedSeq] {
+
+    override def reads(json: JsValue): JsResult[EncodedSeq] = {
+      json match {
+        case JsArray(seq) =>
+          val bf = new ArrayBuffer[Any]()
+          seq.foreach {
+            case JsNumber(value) =>
+              bf.append(SpecialChar(value.intValue()))
+            case JsString(value) =>
+              bf.append(Unicode(value))
+            case _ => throw new IllegalStateException("not possible")
+          }
+          JsSuccess(EncodedSeq(bf, Unit))
+        case _ => JsError()
+
+      }
+    }
+
+    override def writes(o: EncodedSeq): JsValue = {
+      JsArray(o.seq.map {
+        case s: SpecialChar =>
+          JsNumber(s.id)
+        case u: Unicode =>
+          JsString(u.str)
+        case _ => throw new IllegalStateException("not possible")
+      })
+    }
+  }
+
+
 }

@@ -25,6 +25,7 @@ create table permissions (
     permission_level integer not null
 );
 
+
 create table nodes (
     document_id varchar not null references documents(document_id),
     node_id varchar primary key, /* this is NOT unique, because a node can have multiple versions */

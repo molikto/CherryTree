@@ -3,6 +3,7 @@ package model.data
 import boopickle._
 import model.range.IntRange
 import model.{data, mode}
+import play.api.libs.json.{Format, Json}
 import search.{Search, SearchOccurrence}
 
 import scala.util.Random
@@ -120,6 +121,7 @@ object Content extends DataObject[Content] {
 
   object Code {
     val empty: Content = Code(Unicode.empty, "")
+    val jsonFormat: Format[Code] = Json.format[Code]
   }
 
   case class Rich(content: data.Rich) extends Content {
@@ -135,6 +137,16 @@ object Content extends DataObject[Content] {
 
     override def defines(hash: Text.HashTag): Option[IntRange] = content.defines(hash)
   }
+
+  object Rich {
+    val jsonFormat: Format[Rich] = Json.format[Rich]
+  }
+
+  val jsonFormat: Format[Content] = new _root_.util.CaseFormat[Content](
+    (classOf[Code], "code", Code.jsonFormat),
+    (classOf[Rich], "rich", Rich.jsonFormat),
+  )
+
 
   override val pickler: Pickler[Content] = new Pickler[Content] {
     override def pickle(obj: Content)(implicit state: PickleState): Unit = {

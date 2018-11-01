@@ -90,7 +90,9 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
       (materializeNode(rootId), kk._3)
     })
   }
-  
+
+
+
 
   def changes(did: String, version: Int, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Future[Unit] = {
     val ops = changes.zipWithIndex.flatMap(p => {
@@ -104,7 +106,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
         case model.operation.Node.Diff.Delete(id) =>
           sqlu"delete from nodes where node_id = $id"
       } :+ sqlu"insert into changes values ($did, $v, ${c._1})"
-    })
+    }) :+ sqlu"update documents set current_version = ${version + changes.size} where document_id = $did"
     db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }
 

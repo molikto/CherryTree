@@ -6,6 +6,7 @@ import doc.DocTransaction
 import model._
 import Node.{ChildrenType, ContentType}
 import model.range.IntRange
+import play.api.libs.json.{Format, Json}
 import scalatags.Text.all._
 import search.{Search, SearchOccurrence}
 
@@ -420,6 +421,7 @@ object Node extends DataObject[Node] {
   def create(title: String): Node =  create(Content.Rich(Rich(Seq(Text.Plain(Unicode(title))))))
 
 
+  val jsonFormat: Format[Node] = Json.format[Node]
 
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
