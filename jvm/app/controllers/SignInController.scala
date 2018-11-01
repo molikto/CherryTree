@@ -52,7 +52,7 @@ class SignInController @Inject() (
       data => {
         val credentials = Credentials(data.email, data.password)
         credentialsProvider.authenticate(credentials).flatMap { loginInfo =>
-          val result = Redirect(routes.ApplicationController.index())
+          val result = Redirect(routes.ApplicationController.default())
           userService.retrieve(loginInfo).flatMap {
             case Some(user) if !user.activated =>
               Future.successful(Ok(views.html.activateAccount(data.email)))

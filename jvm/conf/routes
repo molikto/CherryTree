@@ -3,15 +3,17 @@
 # ~~~~
 
 # Home page
-GET         /                                controllers.ApplicationController.index
-GET         /signOut                         controllers.ApplicationController.signOut
+GET         /                                controllers.ApplicationController.default
+GET         /index                           controllers.ApplicationController.index
+GET         /home                            controllers.ApplicationController.home
+GET         /sign_out                        controllers.ApplicationController.signOut
 GET         /authenticate/:provider          controllers.SocialAuthController.authenticate(provider)
 
-GET         /signUp                          controllers.SignUpController.view
-POST        /signUp                          controllers.SignUpController.submit
+GET         /sign_up                          controllers.SignUpController.view
+POST        /sign_up                          controllers.SignUpController.submit
 
-GET         /signIn                          controllers.SignInController.view
-POST        /signIn                          controllers.SignInController.submit
+GET         /sign_in                          controllers.SignInController.view
+POST        /sign_in                          controllers.SignInController.submit
 
 GET         /password/forgot                 controllers.ForgotPasswordController.view
 POST        /password/forgot                 controllers.ForgotPasswordController.submit

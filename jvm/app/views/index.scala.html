@@ -1,0 +1,12 @@
+@import play.api.data.Form
+@import play.api.i18n.Messages
+@import play.api.mvc.RequestHeader
+@import controllers.AssetsFinder
+@import com.mohiva.play.silhouette.impl.providers.SocialProviderRegistry
+@import forms.SignInForm.Data
+
+@(user: Option[models.User] = None)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+
+@main(messages("index"), user) {
+<p>this is the index</p>
+}

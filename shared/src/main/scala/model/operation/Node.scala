@@ -6,6 +6,7 @@ import com.softwaremill.quicklens._
 import doc.DocState
 import model.data.NodeTag
 import model.range.IntRange
+import play.api.libs.json.{JsNull, JsObject, JsValue}
 
 import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
@@ -25,14 +26,14 @@ object Node extends OperationObject[data.Node, operation.Node] {
   sealed abstract class Diff
   object Diff {
 
-    case class Update(id: String, childs: Seq[String], attributes: Map[String, String], content: data.Content) extends Diff
+    case class Update(id: String, childs: Seq[String], attributes: JsObject, content: data.Content) extends Diff
     object Update {
       def apply(at: cursor.Node, res: data.Node): Update = {
         val node = res(at)
         Update(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
       }
     }
-    case class Insert(id: String, childs: Seq[String], attributes: Map[String, String], content: data.Content) extends Diff
+    case class Insert(id: String, childs: Seq[String], attributes: JsObject, content: data.Content) extends Diff
     case class Delete(id: String) extends Diff
   }
 
@@ -68,9 +69,9 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
   object AttributeChange {
     def apply[T](at: cursor.Node, tag: NodeTag[T], to: Option[T]): AttributeChange =
-      AttributeChange(at, tag.name, to.map(tag.serialize).getOrElse(""))
+      AttributeChange(at, tag.name, to.map(tag.serialize).getOrElse(JsNull))
   }
-  case class AttributeChange(at: cursor.Node, tag: String, to: String) extends Node {
+  case class AttributeChange(at: cursor.Node, tag: String, to: JsValue) extends Node {
 
     override def ty: Type = Type.Structural
 
@@ -95,7 +96,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
       DocState(apply(a.node), zoom, m, a.badMode, a.userFoldedNodes)
     }
 
-    override def apply(d: data.Node): data.Node = d.map(at, nn => if (to.isEmpty) nn.clear(tag) else nn.attribute(tag, to))
+    override def apply(d: data.Node): data.Node = d.map(at, nn => if (to == JsNull) nn.clear(tag) else nn.attribute(tag, to))
 
     override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
       val res = apply(node)
@@ -389,7 +390,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
           writeInt(5)
           writeIntArray(at.toArray)
           writeString(t)
-          writeString(t2)
+          jsonValuePickler.pickle(t2)
       }
     }
 
@@ -407,7 +408,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
         case 4 =>
           Move(range.Node.pickler.unpickle, readIntArray)
         case 5 =>
-          AttributeChange(readIntArray, readString, readString)
+          AttributeChange(readIntArray, readString, jsonValuePickler.unpickle)
       }
     }
   }
