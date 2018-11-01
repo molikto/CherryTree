@@ -10,6 +10,7 @@ sealed trait AuthenticationInfo
 
 case class User(
   userId: String,
+  createdTime: Long,
   name: String,
   email: String,
   avatarUrl: Option[String],

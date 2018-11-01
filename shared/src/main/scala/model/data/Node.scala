@@ -6,7 +6,7 @@ import doc.DocTransaction
 import model._
 import Node.{ChildrenType, ContentType}
 import model.range.IntRange
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json._
 import scalatags.Text.all._
 import search.{Search, SearchOccurrence}
 
@@ -16,15 +16,15 @@ import scala.util.Random
 
 trait NodeTag[T] {
   private[model] val name: String
-  private[model] def parse(a: String): T
-  private[model] def serialize(t: T): String
+  private[model] def parse(a: JsValue): T
+  private[model] def serialize(t: T): JsValue
 }
 
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(
   uuid: String,
   content: Content,
-  attributes: Map[String, String],
+  attributes: JsObject,
   childs: Seq[Node]) {
 
 
@@ -224,8 +224,8 @@ case class Node(
   def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
 
 
-  def has[T](t: NodeTag[T]): Boolean = attributes.get(t.name).exists(_.nonEmpty)
-  def has(t: String): Boolean = attributes.get(t).exists(_.nonEmpty)
+  def has[T](t: NodeTag[T]): Boolean = attributes.value.get(t.name).exists(_ != JsNull)
+  def has(t: String): Boolean = attributes.value.get(t).exists(_ != JsNull)
 
   def clear[T](a: NodeTag[T]) : Node = copy(attributes = attributes - a.name)
   def clear(a: String) : Node = copy(attributes = attributes - a)
@@ -236,11 +236,11 @@ case class Node(
     case None => clear(t)
   }
 
-  def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.updated(t.name, t.serialize(a)))
-  def attribute(t: String, a: String): Node = copy(attributes = attributes.updated(t, a))
+  def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes + (t.name, t.serialize(a)))
+  def attribute(t: String, a: JsValue): Node = if (a == JsNull) copy (attributes = attributes - t) else copy(attributes = attributes + (t, a))
 
-  def attribute[T](a: NodeTag[T]): Option[T] = attributes.get(a.name).filter(_.nonEmpty).map(a.parse)
-  def attribute(a: String): String = attributes.getOrElse(a, "")
+  def attribute[T](a: NodeTag[T]): Option[T] = attributes.value.get(a.name).filter(_ != JsNull).map(a.parse)
+  def attribute(a: String): JsValue = attributes.value.getOrElse(a, JsNull)
 
   def contentType: Option[ContentType] = attribute(ContentType)
 
@@ -358,21 +358,24 @@ object Node extends DataObject[Node] {
 
     override private[model] val name = "ChildrenType"
 
-    override private[model] def parse(a: String) =
-      a match {
-        case "0" => Paragraphs
-        case "1" => OrderedList
-        case "2" => UnorderedList
-        case "3" => DashList
-        case _ => Paragraphs
-      }
+    override private[model] def parse(aa: JsValue) = aa match {
+      case JsString(a) =>
+        a match {
+          case "0" => Paragraphs
+          case "1" => OrderedList
+          case "2" => UnorderedList
+          case "3" => DashList
+          case _ => Paragraphs
+        }
+      case _ => Paragraphs
+    }
 
-    override private[model] def serialize(t: ChildrenType) = t match {
+    override private[model] def serialize(t: ChildrenType) = JsString(t match {
       case Paragraphs => "0"
       case OrderedList => "1"
       case UnorderedList => "2"
       case DashList => "3"
-    }
+    })
   }
 
   sealed trait ContentType {
@@ -394,17 +397,20 @@ object Node extends DataObject[Node] {
 
     override private[model] val name = "ContentType"
 
-    override private[model] def parse(a: String) =
-      if (a.startsWith("h")) Heading(a.substring(1).toInt)
-      else if (a == "cite") Cite
-      else if (a == "br") Hr // history reason
-      else throw new IllegalStateException("Not possible")
+    override private[model] def parse(aa: JsValue) = aa match {
+      case JsString(a) =>
+        if (a.startsWith("h")) Heading(a.substring(1).toInt)
+        else if (a == "cite") Cite
+        else if (a == "br") Hr // history reason
+        else throw new IllegalStateException("Not possible")
+      case _ => throw new IllegalStateException("Not possible")
+    }
 
-    override private[model] def serialize(t: ContentType) = t match {
+    override private[model] def serialize(t: ContentType) = JsString(t match {
       case Heading(a) => "h" + a
       case Cite => "cite"
       case Hr => "br"  // history reason
-    }
+    })
   }
   def cloneNodes(n: Seq[Node]): Seq[Node] = {
     n.map(_.cloneNode())
@@ -414,9 +420,9 @@ object Node extends DataObject[Node] {
     model.mode.Node.Content(node, root(node).content.defaultMode(enableModal))
   }
 
-  val debug_empty = Node("", Content.Rich(Rich.empty), Map.empty, Seq.empty)
+  val debug_empty = Node("", Content.Rich(Rich.empty), JsObject.empty, Seq.empty)
 
-  def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID().toString, content, Map.empty, Seq.empty)
+  def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID().toString, content, JsObject.empty, Seq.empty)
 
   def create(title: String): Node =  create(Content.Rich(Rich(Seq(Text.Plain(Unicode(title))))))
 
@@ -428,13 +434,7 @@ object Node extends DataObject[Node] {
       import state.enc._
       writeString(obj.uuid)
       Content.pickler.pickle(obj.content)
-      writeInt(obj.attributes.size)
-      for (c <- obj.attributes) {
-        if (c._2.nonEmpty) {
-          writeString(c._1)
-          writeString(c._2)
-        }
-      }
+      model.jsonObjectPickler.pickle(obj.attributes)
       writeInt(obj.childs.size)
       for (c <- obj.childs) Node.pickler.pickle(c)
     }
@@ -444,7 +444,7 @@ object Node extends DataObject[Node] {
       Node(
         readString,
         Content.pickler.unpickle,
-        (0 until readInt).map(_ => readString -> readString).toMap,
+        model.jsonObjectPickler.unpickle,
         (0 until readInt).map(_ => Node.pickler.unpickle))
     }
   }
@@ -460,7 +460,7 @@ object Node extends DataObject[Node] {
       case _ => 1
     }
     Node(r.nextInt.toString, Content.random(r),
-      Map.empty,
+      JsObject.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }
 }

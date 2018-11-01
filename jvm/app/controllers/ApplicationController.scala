@@ -18,18 +18,34 @@ class ApplicationController @Inject() (
   users: UserRepository
 )(implicit assets: AssetsFinder, ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
-  def index = silhouette.SecuredAction.async { implicit request =>
-    users.indexDocumentId(request.identity.userId).map {
-      case Some(documentId) =>
-        Redirect(controllers.routes.DocumentController.index(documentId))
+  def home = silhouette.SecuredAction.async { implicit  request =>
+    Future.successful(Ok(views.html.home(request.identity)))
+  }
+
+
+  def index = silhouette.UserAwareAction.async { implicit request =>
+    Future.successful(Ok(views.html.index(request.identity)))
+  }
+
+  def default = silhouette.UserAwareAction.async { implicit request =>
+    request.identity match {
+      case Some(user) =>
+        users.indexDocumentId(user.userId).map {
+          case Some(documentId) =>
+            Redirect(controllers.routes.DocumentController.index(documentId))
+          case None =>
+            Redirect(controllers.routes.ApplicationController.home())
+        }
       case None =>
-        ??? /// create a document list page
+        Future.successful(Ok(views.html.index()))
     }
   }
 
 
+
+
   def signOut = silhouette.SecuredAction.async { implicit request =>
-    val result = Redirect(routes.ApplicationController.index())
+    val result = Redirect(routes.ApplicationController.default())
     silhouette.env.eventBus.publish(LogoutEvent(request.identity, request))
     silhouette.env.authenticatorService.discard(request.authenticator, result)
   }

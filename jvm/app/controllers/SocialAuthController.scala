@@ -32,7 +32,7 @@ class SocialAuthController @Inject() (
       case (None, Some(l)) => l
       case _ => ""
     }
-    User("", name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
+    User("", 0, name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
   }
 
   def authenticate(provider: String) = Action.async { implicit request: Request[AnyContent] =>
@@ -48,7 +48,7 @@ class SocialAuthController @Inject() (
             }
             authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
             value <- silhouette.env.authenticatorService.init(authenticator)
-            result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.index()))
+            result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.default()))
           } yield {
             silhouette.env.eventBus.publish(LoginEvent(user, request))
             result

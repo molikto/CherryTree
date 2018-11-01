@@ -3,6 +3,9 @@ package util
 import play.api.libs.json._
 
 
+object Formats {
+
+}
 class CaseFormat[T](vals: (Class[_], String, Format[_])*) extends Format[T] {
 
   override def reads(json: JsValue): JsResult[T] =
@@ -24,7 +27,8 @@ class CaseFormat[T](vals: (Class[_], String, Format[_])*) extends Format[T] {
     }
 
   override def writes(o: T): JsValue = {
-    vals.find(_._1 == o.getClass).get._3.asInstanceOf[Format[T]].writes(o)
+    val stuff = vals.find(_._1 == o.getClass).get
+    JsObject(Seq(stuff._2 -> stuff._3.asInstanceOf[Format[T]].writes(o)))
   }
 }
 

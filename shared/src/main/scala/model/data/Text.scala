@@ -3,7 +3,6 @@ package model.data
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
-import scalatags.Text
 import settings.SpecialKeySettings
 
 import scala.collection.mutable.ArrayBuffer

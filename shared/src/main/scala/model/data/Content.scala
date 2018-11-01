@@ -1,10 +1,10 @@
 package model.data
 
-import boopickle._
 import model.range.IntRange
 import model.{data, mode}
 import play.api.libs.json.{Format, Json}
 import search.{Search, SearchOccurrence}
+import model._
 
 import scala.util.Random
 

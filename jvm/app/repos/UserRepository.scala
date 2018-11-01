@@ -1,7 +1,7 @@
 package repos
 
 import java.nio.ByteBuffer
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import api.PermissionLevel
 import javax.inject.{Inject, Singleton}
@@ -28,47 +28,8 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
 
   import utils.MyPostgresProfile.plainApi._
 
-
-  private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
-  private val AllUserColumns = "user_id, name_, email, avatar_url, activated, provider_id, provider_key"
-
-  implicit val passwordInfoFormat = Json.format[PasswordInfo]
-  implicit val oauth1InfoFormat = Json.format[OAuth1Info]
-  implicit val oauth2InfoFormat = Json.format[OAuth2Info]
-  implicit val openIdInfoFormat = Json.format[OpenIDInfo]
-  private val authInfoFormat: Format[AuthInfo] = new Format[AuthInfo] {
-    override def reads(j: JsValue): JsResult[AuthInfo] = {
-      val keys = j.asInstanceOf[JsObject].keys
-      if (keys.contains("hasher")) {
-        passwordInfoFormat.reads(j)
-      } else if (keys.contains("accessToken")) {
-        oauth2InfoFormat.reads(j)
-      } else if (keys.contains("secret")) {
-        oauth1InfoFormat.reads(j)
-      } else {
-        openIdInfoFormat.reads(j)
-      }
-    }
-
-    override def writes(o: AuthInfo): JsValue = o match {
-      case p: PasswordInfo => passwordInfoFormat.writes(p)
-      case p: OAuth1Info => oauth1InfoFormat.writes(p)
-      case p: OAuth2Info => oauth2InfoFormat.writes(p)
-      case p: OpenIDInfo => openIdInfoFormat.writes(p)
-      case _ => throw new IllegalStateException("Not supported")
-    }
-  }
-
-  private implicit val authInfoGetResult: GetResult[AuthInfo] = {
-    val a: GetResult[JsValue] = implicitly
-    a.andThen(j => authInfoFormat.reads(j).get)
-  }
-
-  private implicit val authInfoSet: SetParameter[AuthInfo] = (v1: AuthInfo, v2: PositionedParameters) => {
-    val prev: SetParameter[JsValue] = implicitly
-    prev(authInfoFormat.writes(v1), v2)
-  }
-
+  private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
+  private val AllUserColumns = "user_id, created_time, name_, email, avatar_url, activated, provider_id, provider_key"
 
   def retrieve(id: String) : Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where user_id = $id".as[User].headOption)
@@ -78,17 +39,18 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
 
   def create(u: User, authInfo: AuthInfo, documentTitle: String): Future[User] = {
     assert(u.userId == "")
+    val time = System.currentTimeMillis()
     val userId = UUID.randomUUID().toString
     val createUser =
-      sqlu"insert into users values ($userId, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
+      sqlu"insert into users values ($userId, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
     val documentId = UUID.randomUUID().toString
     val node = model.data.Node.create(documentTitle)
     val createDefaultDocument =
-      sqlu"insert into documents values ($documentId, ${node.uuid}, 0)"
+      sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, 0)"
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
     val createInitDocumentNodes =
-      sqlu"insert into nodes values ($documentId, ${node.uuid}, ${Seq.empty[String]}, ${model.toArray(node.attributes)}, ${model.toArray(node.content)})"
+      sqlu"insert into nodes values ($documentId, ${node.uuid}, $time, $time, ${Seq.empty[String]}, ${node.attributes}, ${node.content})"
     db.run(DBIO.seq(createUser, createDefaultDocument, createPermission, createInitDocumentNodes).transactionally).map(_ => u.copy(userId = userId))
   }
 

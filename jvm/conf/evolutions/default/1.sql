@@ -2,6 +2,7 @@
 
 create table users (
     user_id varchar primary key,
+    created_time bigint not null,
     name_ varchar not null,
     email varchar not null,
     avatar_url varchar,
@@ -16,6 +17,8 @@ create table users (
 create table documents (
     document_id varchar primary key,
     root_node_id varchar not null,
+    created_time bigint not null,
+    last_updated_time bigint not null,
     current_version bigint not null
 );
 
@@ -28,15 +31,19 @@ create table permissions (
 
 create table nodes (
     document_id varchar not null references documents(document_id),
-    node_id varchar primary key, /* this is NOT unique, because a node can have multiple versions */
-    childs varchar[], /* null means root node */
-    attrs bytea,
-    cont bytea not null
+    node_id varchar primary key,
+    created_time bigint not null,
+    last_updated_time bigint not null,
+    childs varchar[],
+    attrs jsonb not null,
+    cont jsonb not null
 );
+
 
 create table changes (
     document_id varchar not null references documents(document_id),
     from_version bigint not null,
+    updated_time bigint not null,
     cont bytea not null
 );
 
