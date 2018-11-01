@@ -1,6 +1,7 @@
 package client
 
 
+import java.io.Closeable
 import java.nio.ByteBuffer
 
 import com.softwaremill.quicklens._
@@ -33,6 +34,12 @@ import scala.concurrent.Future
 import scala.util.{Failure, Random, Success, Try}
 
 
+trait Api {
+  def request(path: String, content: ByteBuffer): Future[ByteBuffer]
+
+  def setupWebSocket(path: String): (Closeable, Observable[String])
+}
+
 object Client {
 
   sealed trait ViewMessage {
@@ -53,7 +60,8 @@ object Client {
 
 class Client(
   private val docId: String,
-  initial: InitResponse
+  initial: InitResponse,
+  private val api: Api,
 ) extends CommandHandler
   with RegisterHandler
   with Undoer
@@ -93,8 +101,8 @@ class Client(
   private var subscription: Cancelable = null
 
   def start(): Unit = this.synchronized {
-    val (ws, obs) = model.setupWebSocket(s"/document/$docId/ws")
-    subscription = obs.doOnNext(_ => sync()).doAfterTerminate(_ => model.stopWebSocket(ws)).subscribe()
+    val (ws, obs) = api.setupWebSocket(s"/document/$docId/ws")
+    subscription = obs.doOnNext(_ => sync()).doAfterTerminate(_ => ws.close()).subscribe()
   }
 
   private var stopped = false
@@ -361,7 +369,7 @@ class Client(
           println(arr.mkString(","))
           bytes.position(0)
         }
-        request[ByteBuffer](0, model.apiRequest(s"/document/$docId/changes", bytes), value => {
+        request[ByteBuffer](0, api.request(s"/document/$docId/changes", bytes), value => {
           lockObject.synchronized {
             flushInner()
             val res = Unpickle[ChangeResponse](implicitly).fromBytes(value)(unpickleState)

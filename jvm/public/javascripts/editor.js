@@ -1,0 +1,4 @@
+
+
+
+new ClientInitializerView("editor", true)

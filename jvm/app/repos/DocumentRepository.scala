@@ -33,6 +33,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
 
 
 
+  def list(uid: String): Future[Seq[ListResult]] = ???
 
   def init(a: String): Future[(model.data.Node, Int)] = {
     val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, String)].head.flatMap {
