@@ -35,6 +35,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 
 trait Api {
+  def localStorage: LocalStorage
   def request(path: String, content: ByteBuffer): Future[ByteBuffer]
 
   def setupWebSocket(path: String): (Closeable, Observable[String])
@@ -131,7 +132,7 @@ class Client(
     * editor queue
     */
   private var state_ = {
-    val zoom = localStorage.get(docId + ".zoom1") match {
+    val zoom = api.localStorage.get(docId + ".zoom1") match {
       case Some(uuid) =>
         committed.lookup(uuid).getOrElse(model.cursor.Node.root)
       case _ => cursor.Node.root
@@ -139,7 +140,7 @@ class Client(
     DocState(committed,
       zoom,
       model.mode.Node.Content(zoom, committed(zoom).content.defaultMode(enableModal)),
-      badMode = false, localStorage.get(docId + ".folded0") match {
+      badMode = false, api.localStorage.get(docId + ".folded0") match {
       case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
         val c = a.split(" ")
         c(0) -> c(1).toBoolean
@@ -246,11 +247,11 @@ class Client(
       }).delaySubscription(2.seconds).subscribe()
     }
     if (userFolds.nonEmpty) {
-      localStorage.set(docId + ".folded0", state_.userFoldedNodes.toSeq.map(a => s"${a._1} ${a._2}").mkString(","))
+      api.localStorage.set(docId + ".folded0", state_.userFoldedNodes.toSeq.map(a => s"${a._1} ${a._2}").mkString(","))
     }
     val zoomNow = state.zoomId
     if (zoomPrev != zoomNow) {
-      localStorage.set(docId + ".zoom1", zoomNow)
+      api.localStorage.set(docId + ".zoom1", zoomNow)
     }
 
 

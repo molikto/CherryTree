@@ -3,6 +3,7 @@ package web.ui.panel
 import client.Client
 import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all.{a, _}
+import web.WebApi
 import web.view.{UnselectableView, View, indexOf}
 
 class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean => Unit) extends UnselectableView {
@@ -57,13 +58,13 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
           enabledAll(true)
         }
         active = a
-        client.localStorage.set(".left-panel", indexOf(active).toString)
+        WebApi.localStorage.set(".left-panel", indexOf(active).toString)
         create()
       } else if (active != null) {
         active.classList.remove("ct-tab-selected")
         current.destroy()
         active = null
-        client.localStorage.set(".left-panel", "")
+        WebApi.localStorage.set(".left-panel", "")
         enabledAll(false)
       }
       doc().focus()
@@ -91,7 +92,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
   }
 
   private var active = {
-    client.localStorage.get(".left-panel") match {
+    WebApi.localStorage.get(".left-panel") match {
       case Some(a) if a.nonEmpty && a.toInt < childs.size => childs(a.toInt)
       case _ => null
     }
