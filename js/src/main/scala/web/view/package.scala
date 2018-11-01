@@ -13,10 +13,6 @@ import scala.scalajs.js
 
 package object view {
 
-
-
-  def el[T <: dom.raw.HTMLElement] (id: String) = dom.document.getElementById(id).asInstanceOf[T]
-
   def elementParent(a: Node): HTMLElement = {
     a match {
       case element: HTMLElement => element

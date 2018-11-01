@@ -1,4 +1,5 @@
 
 
+var root = document.getElementById("editor")
 
-new ClientInitializerView("editor", true)
+new ClientInitializerView(root, root.getAttribute("data-document-id"), true)
