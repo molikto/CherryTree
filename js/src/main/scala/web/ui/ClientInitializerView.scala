@@ -1,27 +1,14 @@
 package web.ui
 
-import java.io.Closeable
-import java.nio.ByteBuffer
 
 import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
-import command.Key
-import model.data.Content
-import monix.reactive.Observable
-import monix.reactive.subjects.PublishSubject
-import org.scalajs.dom.raw._
-import org.scalajs.dom.{html, window}
-import org.scalajs.dom.{document, html, window}
-import scalatags.JsDom.all._
-import view.EditorInterface
 import web.WebApi
 import web.view._
 
-import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
-import scala.util.{Failure, Random, Success}
+import scala.scalajs.js.annotation.JSExportTopLevel
+import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
 
 
 object ClientInitializerView {
@@ -34,19 +21,6 @@ object ClientInitializerView {
       model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
       globalInitialized = true
 
-      client.localStorage = new LocalStorage {
-        override def set(key: String, str: String): Unit = {
-          window.localStorage.setItem(key, str)
-        }
-
-        override def remove(key: String): Unit = {
-          window.localStorage.removeItem(key)
-        }
-
-        override def get(key: String): Option[String] = {
-          Option(window.localStorage.getItem(key))
-        }
-      }
       model.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
       model.parseFromHtml = web.util.parseFromHtml
 

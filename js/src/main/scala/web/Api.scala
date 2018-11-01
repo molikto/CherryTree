@@ -3,6 +3,7 @@ package web
 import java.io.Closeable
 import java.nio.ByteBuffer
 
+import client.LocalStorage
 import monix.reactive.Observable
 import monix.reactive.subjects.PublishSubject
 import org.scalajs.dom
@@ -12,7 +13,6 @@ import scalatags.JsDom.all.s
 
 import scala.concurrent.Future
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -29,6 +29,20 @@ class WebSocketHolder extends Closeable {
 }
 
 object WebApi extends client.Api {
+
+  override val localStorage: LocalStorage = new LocalStorage {
+    override def set(key: String, str: String): Unit = {
+      window.localStorage.setItem(key, str)
+    }
+
+    override def remove(key: String): Unit = {
+      window.localStorage.removeItem(key)
+    }
+
+    override def get(key: String): Option[String] = {
+      Option(window.localStorage.getItem(key))
+    }
+  }
   override def request(url: String, body: ByteBuffer): Future[ByteBuffer] = {
     dom.ext.Ajax.post(
       url = url,

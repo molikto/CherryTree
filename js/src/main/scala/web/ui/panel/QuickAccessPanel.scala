@@ -4,6 +4,7 @@ import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw.{HTMLElement, HTMLOptionElement, HTMLSelectElement}
 import scalatags.JsDom.all._
+import web.WebApi
 import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.util.Try
@@ -40,7 +41,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
   private val tocView = new StaticDiffTocView(onClick, onDoubleClick, 1)
 
-  private var hideLevel: Int = Try {_root_.client.localStorage.get("hide_level").get.toInt }.getOrElse(3)
+  private var hideLevel: Int = Try {WebApi.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 
   private val selectView: HTMLSelectElement = select(
     height := "24px",
@@ -55,7 +56,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
       val level = e.target.asInstanceOf[HTMLOptionElement].value.toInt
       if (hideLevel != level) {
         hideLevel = level
-        _root_.client.localStorage.set("hide_level", hideLevel.toString)
+        WebApi.localStorage.set("hide_level", hideLevel.toString)
         tocView.updateFocus(previousFocus, hideLevel, dom)
       }
       doc().focus()

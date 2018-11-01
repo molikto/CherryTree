@@ -1,7 +1,6 @@
 import java.nio.ByteBuffer
 
 import boopickle._
-import client.LocalStorage
 import monix.reactive.Observable
 import register.Registerable
 
