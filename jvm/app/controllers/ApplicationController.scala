@@ -7,7 +7,7 @@ import com.mohiva.play.silhouette.api.{LogoutEvent, Silhouette}
 import javax.inject.Inject
 import play.api.i18n.I18nSupport
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents}
-import repos.UserRepository
+import repos.{DocumentRepository, UserRepository}
 import utils.auth.DefaultEnv
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,16 +15,18 @@ import scala.concurrent.{ExecutionContext, Future}
 class ApplicationController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
-  users: UserRepository
+  users: UserRepository,
+  docs: DocumentRepository
 )(implicit assets: AssetsFinder, ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
-  def home = silhouette.SecuredAction.async { implicit  request =>
-    Future.successful(Ok(views.html.home(request.identity)))
-  }
 
 
   def index = silhouette.UserAwareAction.async { implicit request =>
     Future.successful(Ok(views.html.index(request.identity)))
+  }
+
+  def home = silhouette.SecuredAction { implicit  request =>
+     Ok(views.html.home(request.identity))
   }
 
   def default = silhouette.UserAwareAction.async { implicit request =>

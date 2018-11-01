@@ -13,13 +13,13 @@ import scala.util.{Failure, Success}
 
 
 object ClientInitializer {
-  def init(documentId: String): Future[Client] = {
-    model.apiRequest(s"/document/$documentId/init", Pickle.intoBytes[InitRequest](InitRequest())).map { value =>
+  def init(api: Api, documentId: String): Future[Client] = {
+    api.request(s"/document/$documentId/init", Pickle.intoBytes[InitRequest](InitRequest())).map { value =>
       val init = Unpickle[InitResponse](implicitly).fromBytes(value)(unpickleState)
       if (debug_transmit) {
         println(init)
       }
-      val c = new Client(documentId, init)
+      val c = new Client(documentId, init, api)
       c.start()
       c
     }

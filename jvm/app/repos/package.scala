@@ -14,6 +14,8 @@ package object repos {
 
   type NodeResult = (String, Seq[String], JsValue, model.data.Content)
 
+  type ListResult = (String, model.data.Content, Long, Long, Int)
+
 
   implicit val passwordInfoFormat = Json.format[PasswordInfo]
   implicit val oauth1InfoFormat = Json.format[OAuth1Info]
