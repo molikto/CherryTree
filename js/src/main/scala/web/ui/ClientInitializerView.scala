@@ -3,6 +3,7 @@ package web.ui
 
 import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
+import org.scalajs.dom.raw.HTMLElement
 import web.WebApi
 import web.view._
 
@@ -31,10 +32,9 @@ object ClientInitializerView {
 /**
   */
 @JSExportTopLevel("ClientInitializerView")
-class ClientInitializerView(where: String, global: Boolean) {
+class ClientInitializerView(rootView: HTMLElement, documentId: String, global: Boolean) {
   ClientInitializerView.initializeGlobal()
 
-  private val rootView = el[dom.html.Element](where)
 
   var client: Option[Client] = None
 
@@ -43,7 +43,6 @@ class ClientInitializerView(where: String, global: Boolean) {
       import scalatags.JsDom.all._
       p("connecting")
     }.render)
-    val documentId = rootView.getAttribute("data-document-id")
     val ec = scala.concurrent.ExecutionContext.Implicits.global
     ClientInitializer.init(WebApi, documentId).onComplete {
       case Success(c) =>
