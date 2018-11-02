@@ -23,6 +23,10 @@ abstract sealed class Node extends Operation[data.Node] {
 
 object Node extends OperationObject[data.Node, operation.Node] {
 
+  def createInsert(node: data.Node) : Seq[Diff.Insert] = {
+    node.childs.flatMap(createInsert) :+ Diff.Insert(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
+  }
+
   sealed abstract class Diff
   object Diff {
 
@@ -193,9 +197,6 @@ object Node extends OperationObject[data.Node, operation.Node] {
 
     override def applyWithDiff(node: data.Node): (Seq[Diff], data.Node) = {
       val res = apply(node)
-      def createInsert(node: data.Node) : Seq[Diff.Insert] = {
-        node.childs.flatMap(createInsert) :+ Diff.Insert(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
-      }
       (childs.flatMap(createInsert) :+ Diff.Update(model.cursor.Node.parent(at), res), res)
     }
 

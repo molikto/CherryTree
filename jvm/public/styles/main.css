@@ -103,6 +103,10 @@ meter::-webkit-meter-optimum-value {
     transition: width .4s ease-out;
 }
 
+/**
+
+part that is in editor before, but extracted
+*/
 
 .ct-document-style {
   word-wrap: break-word;

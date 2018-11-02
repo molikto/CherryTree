@@ -43,15 +43,9 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     val userId = UUID.randomUUID().toString
     val createUser =
       sqlu"insert into users values ($userId, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
-    val documentId = UUID.randomUUID().toString
     val node = model.data.Node.create(documentTitle)
-    val createDefaultDocument =
-      sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, 0)"
-    val createPermission =
-      sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
-    val createInitDocumentNodes =
-      sqlu"insert into nodes values ($documentId, ${node.uuid}, $time, $time, ${Seq.empty[String]}, ${node.attributes}, ${node.content})"
-    db.run(DBIO.seq(createUser, createDefaultDocument, createPermission, createInitDocumentNodes).transactionally).map(_ => u.copy(userId = userId))
+    val documentQuery = createDocumentQuery(u.userId, node, time)
+    db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u.copy(userId = userId))
   }
 
   def indexDocumentId(userId: String): Future[Option[String]] = {

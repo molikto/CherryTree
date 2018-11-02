@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
 import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json}
 import model._
 import api._
-import model.data.Content
+import model.data.{Content, Node}
 import model.operation.Node
 import model.transaction.Node
 
@@ -29,8 +29,12 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   (implicit ex: ExecutionContext) extends  DatabaseAccessing {
 
 
+
   import utils.MyPostgresProfile.plainApi._
 
+  def create(userId: String, node: model.data.Node) = {
+    db.run(DBIO.seq(createDocumentQuery(userId, node, System.currentTimeMillis()) : _*).transactionally)
+  }
 
 
   def list(uid: String): Future[Seq[ListResult]] =
@@ -68,14 +72,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
     val ops = changes.zipWithIndex.flatMap(p => {
       val c = p._1
       val v = version + p._2
-      c._2.map {
-        case model.operation.Node.Diff.Insert(id, childs, attributes, content) =>
-          sqlu"insert into nodes values ($did, $id, $time, $time, $childs, $attributes, $content)"
-        case model.operation.Node.Diff.Update(id, childs, attributes, content) =>
-          sqlu"update nodes set childs = $childs, attrs = $attributes, cont = $content, last_updated_time = $time where node_id = $id"
-        case model.operation.Node.Diff.Delete(id) =>
-          sqlu"delete from nodes where node_id = $id"
-      } :+ sqlu"insert into changes values ($did, $v, $time, ${c._1})"
+      c._2.map(d => diffToQuery(did, time, d)) :+ sqlu"insert into changes values ($did, $v, $time, ${c._1})"
     }) :+ sqlu"update documents set current_version = ${version + changes.size}, last_updated_time = $time where document_id = $did"
     db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }
