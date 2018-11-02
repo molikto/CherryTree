@@ -102,3 +102,11 @@ meter[value="4"]::-moz-meter-bar { background: green; }
 meter::-webkit-meter-optimum-value {
     transition: width .4s ease-out;
 }
+
+
+.ct-document-style {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: 'Gentium Book Basic', serif, sans-serif;
+  font-size: 18px;
+}

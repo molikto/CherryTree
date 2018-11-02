@@ -1,5 +1,6 @@
 import java.nio.ByteBuffer
 
+import api.ListResult
 import com.mohiva.play.silhouette.api.AuthInfo
 import com.mohiva.play.silhouette.api.util.PasswordInfo
 import com.mohiva.play.silhouette.impl.providers.{OAuth1Info, OAuth2Info, OpenIDInfo}
@@ -13,9 +14,6 @@ package object repos {
   import utils.MyPostgresProfile.plainApi._
 
   type NodeResult = (String, Seq[String], JsValue, model.data.Content)
-
-  type ListResult = (String, model.data.Content, Long, Long, Int)
-
 
   implicit val passwordInfoFormat = Json.format[PasswordInfo]
   implicit val oauth1InfoFormat = Json.format[OAuth1Info]
@@ -84,4 +82,5 @@ package object repos {
 
   implicit val nodeGetResult: GetResult[NodeResult] = GetResult[NodeResult](r => (r.<<, r.<<, r.<<(getJson), r.<<))
 
+  implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, r.<<))
 }

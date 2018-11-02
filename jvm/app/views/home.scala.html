@@ -5,7 +5,8 @@
 @(user: models.User)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
 @main(messages("home.title"), Some(user)) {
-    <div class="user col-md-6 mx-auto" id="list">
+    <div class="user col-md-6 mx-auto ct-document-style" id="list">
     </div>
+@jsBundle()
 <script src="@assets.path("javascripts/list.js")"></script>
 }

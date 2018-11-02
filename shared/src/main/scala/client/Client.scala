@@ -16,7 +16,8 @@ import command.Key.{Delete, KeySeq}
 import model.ot.Rebased
 import util._
 import model._
-import api._
+import api.{unpickleState, _}
+import boopickle.{PickleState, Pickler}
 import model.data.{CodeType, SpecialChar, Text, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
@@ -36,7 +37,20 @@ import scala.util.{Failure, Random, Success, Try}
 
 trait Api {
   def localStorage: LocalStorage
-  def request(path: String, content: ByteBuffer): Future[ByteBuffer]
+
+  def request[S](path: String)
+    (implicit s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
+    val bytes = ByteBuffer.wrap(Array.empty)
+    requestBytes(path, bytes).map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
+  }
+
+  def request[R, S](path: String, content: R)
+    (implicit pickleState: PickleState, r: Pickler[R], s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
+    val bytes = Pickle.intoBytes(content)(implicitly, implicitly)
+    requestBytes(path, bytes).map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
+  }
+
+  def requestBytes(path: String, content: ByteBuffer = ByteBuffer.wrap(Array.empty[Byte])): Future[ByteBuffer]
 
   def setupWebSocket(path: String): (Closeable, Observable[String])
 }
@@ -362,19 +376,10 @@ class Client(
         import model._
         // if (debug_transmit) committed.hashCode() else
         val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
-        val bytes = Pickle.intoBytes(rq)(implicitly, implicitly)
-        if (model.debug_transmit) {
-          val arr = new Array[Byte](bytes.limit())
-          bytes.get(arr, 0, arr.length)
-          Unpickle[ChangeRequest](implicitly).fromBytes(ByteBuffer.wrap(arr))(unpickleState)
-          println(arr.mkString(","))
-          bytes.position(0)
-        }
-        request[ByteBuffer](0, api.request(s"/document/$docId/changes", bytes), value => {
+        request(0, api.request[ChangeRequest, ChangeResponse](s"/document/$docId/changes", rq), (value: ChangeResponse) => {
           lockObject.synchronized {
             flushInner()
-            val res = Unpickle[ChangeResponse](implicitly).fromBytes(value)(unpickleState)
-            updateFromServer(res)
+            updateFromServer(value)
           }
         })
         true
