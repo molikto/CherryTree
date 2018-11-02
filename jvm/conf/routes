@@ -6,6 +6,8 @@
 GET         /                                controllers.ApplicationController.default
 GET         /index                           controllers.ApplicationController.index
 GET         /home                            controllers.ApplicationController.home
++ nocsrf
+POST        /documents                       controllers.ApplicationController.documents
 GET         /sign_out                        controllers.ApplicationController.signOut
 GET         /authenticate/:provider          controllers.SocialAuthController.authenticate(provider)
 

@@ -43,7 +43,7 @@ object WebApi extends client.Api {
       Option(window.localStorage.getItem(key))
     }
   }
-  override def request(url: String, body: ByteBuffer): Future[ByteBuffer] = {
+  override def requestBytes(url: String, body: ByteBuffer): Future[ByteBuffer] = {
     dom.ext.Ajax.post(
       url = url,
       data = body,

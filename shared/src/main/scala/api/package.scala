@@ -12,11 +12,13 @@ package object api {
   }
 
 
+
   implicit val serverStatus = PicklerGenerator.generatePickler[ServerStatus]
   implicit val initRequst = PicklerGenerator.generatePickler[InitRequest]
   implicit val clientInit = PicklerGenerator.generatePickler[InitResponse]
   implicit val changeRequest = PicklerGenerator.generatePickler[ChangeRequest]
   implicit val clientUpdate = PicklerGenerator.generatePickler[ChangeResponse]
+  implicit val listResultPickler = PicklerGenerator.generatePickler[ListResult]
 
 
   implicit def pickleState: model.PickleState = new PickleState(new EncoderSpeed(), false, false)

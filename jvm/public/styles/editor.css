@@ -290,12 +290,6 @@
   color: #abb2bf;
 }
 
-.ct-document-style {
-  word-wrap: break-word;
-  white-space: pre-wrap;
-  font-family: 'Gentium Book Basic', serif, sans-serif;
-  font-size: 18px;
-}
 
 .ct-d-frame {
    display: flex;

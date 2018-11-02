@@ -33,7 +33,15 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
 
 
 
-  def list(uid: String): Future[Seq[ListResult]] = ???
+  def list(uid: String): Future[Seq[ListResult]] =
+    db.run(
+      sql"""select documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level
+           from documents, nodes, permissions where
+              permissions.user_id = $uid and
+              permissions.document_id = documents.document_id and
+              permissions.permission_level > ${0} and
+              documents.root_node_id = nodes.node_id
+        """.as[ListResult])
 
   def init(a: String): Future[(model.data.Node, Int)] = {
     val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, String)].head.flatMap {

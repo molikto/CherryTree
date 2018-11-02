@@ -9,6 +9,8 @@ import play.api.i18n.I18nSupport
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents}
 import repos.{DocumentRepository, UserRepository}
 import utils.auth.DefaultEnv
+import model._
+import api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,6 +29,12 @@ class ApplicationController @Inject() (
 
   def home = silhouette.SecuredAction { implicit  request =>
      Ok(views.html.home(request.identity))
+  }
+
+  def documents = silhouette.SecuredAction.async { implicit request =>
+    docs.list(request.identity.userId).map(res => {
+      Ok.sendEntity(toEntity(res))
+    })
   }
 
   def default = silhouette.UserAwareAction.async { implicit request =>
