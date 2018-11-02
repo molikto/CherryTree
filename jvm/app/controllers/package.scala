@@ -15,10 +15,9 @@ package object controllers {
     HttpEntity.Strict(ByteString(Pickle.intoBytes(a)), None)
   }
 
-  def fromRequest[A](request: Request[AnyContent])
+  def fromRequest[A](request: Request[ByteString])
     (implicit buildState: ByteBuffer => UnpickleState, pickler: Pickler[A]) = {
-    val bytes: ByteString = request.body.asRaw.get.asBytes(Long.MaxValue).get
-    Unpickle[A](pickler).fromBytes(bytes.toByteBuffer)(buildState)
+    Unpickle[A](pickler).fromBytes(request.body.toByteBuffer)(buildState)
   }
 
 }
