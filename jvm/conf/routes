@@ -5,9 +5,6 @@
 # Home page
 GET         /                                controllers.ApplicationController.default
 GET         /index                           controllers.ApplicationController.index
-GET         /home                            controllers.ApplicationController.home
-+ nocsrf
-POST        /documents                       controllers.ApplicationController.documents
 GET         /sign_out                        controllers.ApplicationController.signOut
 GET         /authenticate/:provider          controllers.SocialAuthController.authenticate(provider)
 
@@ -27,15 +24,17 @@ POST        /password/change                 controllers.ChangePasswordControlle
 GET         /account/email/:email            controllers.ActivateAccountController.send(email: String)
 GET         /account/activate/:token         controllers.ActivateAccountController.activate(token)
 
-GET         /document/:id                    controllers.DocumentController.index(id)
+GET         /home                            controllers.DocumentsController.home
++ nocsrf
+POST        /documents                       controllers.DocumentsController.documents
++ nocsrf
+POST        /documents/upload/boopickle      controllers.DocumentsController.uploadBoopickle
 
-# document api
+GET         /document/:id                    controllers.DocumentController.index(id)
 + nocsrf
 POST        /document/:id/init               controllers.DocumentController.init(id)
 + nocsrf
 POST        /document/:id/changes            controllers.DocumentController.changes(id)
-
-# web socket
 + nocsrf
 GET         /document/:id/ws                 controllers.DocumentController.ws(id)
 

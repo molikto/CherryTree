@@ -3,6 +3,7 @@ package web
 import java.io.Closeable
 import java.nio.ByteBuffer
 
+import boopickle.Pickler
 import client.LocalStorage
 import monix.reactive.Observable
 import monix.reactive.subjects.PublishSubject
@@ -43,6 +44,7 @@ object WebApi extends client.Api {
       Option(window.localStorage.getItem(key))
     }
   }
+
   override def requestBytes(url: String, body: ByteBuffer): Future[ByteBuffer] = {
     dom.ext.Ajax.post(
       url = url,

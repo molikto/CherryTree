@@ -12,19 +12,17 @@ lazy val server = (project in file("jvm")).settings(
   compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
   libraryDependencies ++= Deps.server.value ++ Seq(ehcache, guice, filters),
   WebKeys.packagePrefix in Assets := "public/",
-  managedClasspath in Runtime += (packageBin in Assets).value,
   routesImport += "utils.route.Binders._",
   // https://github.com/playframework/twirl/issues/105
   TwirlKeys.templateImports := Seq(),
-).enablePlugins(SbtWeb, PlayScala, WebScalaJSBundlerPlugin).
-  dependsOn(sharedJvm)
+).enablePlugins(PlayScala, WebScalaJSBundlerPlugin).dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(
   sharedSettings,
   webpackBundlingMode := BundlingMode.LibraryAndApplication(),
   npmDependencies in Compile ++= Deps.clientJs,
   libraryDependencies ++= Deps.client.value
-).enablePlugins(ScalaJSPlugin, ScalaJSWeb, ScalaJSBundlerPlugin).
+).enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, ScalaJSWeb).
   dependsOn(sharedJs)
 
 lazy val shared = crossProject(JSPlatform, JVMPlatform)

@@ -27,15 +27,7 @@ class ApplicationController @Inject() (
     Future.successful(Ok(views.html.index(request.identity)))
   }
 
-  def home = silhouette.SecuredAction { implicit  request =>
-     Ok(views.html.home(request.identity))
-  }
 
-  def documents = silhouette.SecuredAction.async { implicit request =>
-    docs.list(request.identity.userId).map(res => {
-      Ok.sendEntity(toEntity(res))
-    })
-  }
 
   def default = silhouette.UserAwareAction.async { implicit request =>
     request.identity match {
@@ -44,7 +36,7 @@ class ApplicationController @Inject() (
           case Some(documentId) =>
             Redirect(controllers.routes.DocumentController.index(documentId))
           case None =>
-            Redirect(controllers.routes.ApplicationController.home())
+            Redirect(controllers.routes.DocumentsController.home())
         }
       case None =>
         Future.successful(Ok(views.html.index()))

@@ -18,7 +18,6 @@
 
   @headersShared()
 
-  <link rel="stylesheet" href="@assets.path("styles/main.css")">
 </head>
 <body>
 
@@ -37,7 +36,7 @@
   <ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
 
     @user.map { u =>
-    <li class="nav-item"><a class="nav-link p-2" href="@controllers.routes.ApplicationController.home">@u.name</a></li>
+    <li class="nav-item"><a class="nav-link p-2" href="@controllers.routes.DocumentsController.home">@u.name</a></li>
     @if(u.loginInfo.providerID == com.mohiva.play.silhouette.impl.providers.CredentialsProvider.ID) {
     <li class="nav-item"><a class="nav-link p-2"
        href="@controllers.routes.ChangePasswordController.view">@messages("change.password")</a></li>
