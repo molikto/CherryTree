@@ -1,6 +1,6 @@
 import java.nio.ByteBuffer
 
-import boopickle._
+import boopickle.{PickleState, UnpickleState, _}
 
 
 package object api {
@@ -21,7 +21,9 @@ package object api {
   implicit val listResultPickler = PicklerGenerator.generatePickler[ListResult]
 
 
-  implicit def pickleState: model.PickleState = new PickleState(new EncoderSpeed(), false, false)
-  implicit val unpickleState: ByteBuffer => model.UnpickleState = (bb: ByteBuffer) => new UnpickleState(new DecoderSpeed(bb), false, false)
+  implicit def pickleState: PickleState = new PickleState(new EncoderSize, false, false)
+
+  implicit def unpickleState: ByteBuffer => UnpickleState =
+    bytes => new UnpickleState(new DecoderSize(bytes), false, false)
 
 }

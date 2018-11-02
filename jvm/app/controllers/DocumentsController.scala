@@ -28,16 +28,11 @@ class DocumentsController @Inject() (
     Ok(views.html.home(request.identity))
   }
 
-  def uploadBoopickle = silhouette.SecuredAction(parse.multipartFormData).async { implicit request =>
-    request.body.file("file").map { file =>
-      val bytes = Files.readAllBytes(file.ref.path)
-      val node = Unpickle[model.data.Node](implicitly).fromBytes(ByteBuffer.wrap(bytes))(boopickle.Default.Unpickle)
-      docs.create(request.identity.userId, node).map(_ =>
-        Redirect(routes.DocumentsController.home()).flashing("success" -> "Success!"))
-    }.getOrElse {
-      Future.successful(Redirect(routes.DocumentsController.home()).flashing(
-        "error" -> "Missing Boopickle file"))
-    }
+  def uploadBoopickle = silhouette.SecuredAction.async(parse.multipartFormData) { implicit request =>
+    val bytes = ByteBuffer.wrap(Files.readAllBytes(request.body.file("file").get.ref.path))
+    val node = Unpickle[model.data.Node](implicitly).fromBytes(bytes)
+    docs.create(request.identity.userId, node).map(_ =>
+      Redirect(routes.DocumentsController.home()).flashing("success" -> "Success!"))
   }
 
   def documents = silhouette.SecuredAction.async { implicit request =>

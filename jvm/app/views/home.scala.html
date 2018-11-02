@@ -5,14 +5,8 @@
 @(user: models.User)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
 @main(messages("home.title"), Some(user)) {
-    <div class="user col-md-6 mx-auto ct-document-style" id="list">
-        @helper.form(action = controllers.routes.DocumentsController.uploadBoopickle, 'enctype -> "multipart/form-data") {
-        <div class="custom-file">
-            <input type="file" class="custom-file-input" id="boopickle" name="file">
-            <label class="custom-file-label" for="boopickle">Boopickle backup</label>
-        </div>
-        <button type="submit" class="btn btn-primary">Upload</button>
-        }
+    <div class="user col-md-6 mx-auto " id="list">
+
 
     </div>
 

@@ -111,7 +111,7 @@ class DocumentController @Inject() (
     }
   }
 
-  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async(parse.byteString) { implicit request =>
     val change = fromRequest[ChangeRequest](request)
     implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? change).mapTo[Try[ChangeResponse]].map {
