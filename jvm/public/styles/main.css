@@ -63,6 +63,21 @@
 }
 
 
+.small-hr {
+    margin-top: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+
+.document-list-title {
+    font-size: 2rem;
+}
+
+.secondary-text {
+  margin-bottom : 0px;
+  font-size: 13px;
+  color: #cccccc;
+}
 
 meter {
     /* Reset the default appearance */
@@ -112,5 +127,9 @@ part that is in editor before, but extracted
   word-wrap: break-word;
   white-space: pre-wrap;
   font-family: 'Gentium Book Basic', serif, sans-serif;
-  font-size: 18px;
+}
+
+.ct-rich {
+    margin-bottom: 0rem;
+    font-size: 22px;
 }

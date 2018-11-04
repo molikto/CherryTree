@@ -2,6 +2,8 @@
 
 @()(implicit assets: AssetsFinder)
 
+<link rel="shortcut icon" type="image/png" href="@assets.path("images/favicon.png")">
+
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 
 <!--<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.2/css/bootstrap-reboot.min.css" rel="stylesheet" type="text/css"/>-->
@@ -15,5 +17,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@@0.10.0-beta/dist/katex.min.css" integrity="sha384-9tPv11A+glH/on/wEu99NVwDPwkMQESOocs/ZGXPoIiLE8MU/qkqUcZ3zzL+6DuH" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/katex@@0.10.0-beta/dist/katex.min.js" integrity="sha384-U8Vrjwb8fuHMt6ewaCy8uqeUXv4oitYACKdB0VziCerzt011iQ/0TqlSlv8MReCm" crossorigin="anonymous"></script>
+
+<script type="text/javascript" src="@controllers.routes.ApplicationController.messages()"></script>
 
 <link rel="stylesheet" href="@assets.path("styles/main.css")">

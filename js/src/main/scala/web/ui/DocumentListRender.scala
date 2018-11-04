@@ -1,6 +1,7 @@
 package web.ui
 
 import java.nio.ByteBuffer
+import java.util.Date
 
 import api.ListResult
 import org.scalajs.dom
@@ -27,10 +28,11 @@ import scala.util.{Failure, Success}
 class DocumentListRender(rootView: HTMLElement) extends View {
 
   val list = div(
-     `class` := "ct-document-style"
   ).render
   val ff: Form =
-    form(action := "/documents/upload/boopickle", method := "post", enctype := "multipart/form-data",
+    form(
+      marginTop := "120px",
+      action := "/documents/upload/boopickle", method := "post", enctype := "multipart/form-data",
       div(`class` := "custom-file",
         input(`type` := "file", `class` := "custom-file-input", id := "boopickle", name := "file", onchange := ((ev: UIEvent) => {
           ff.submit()
@@ -46,15 +48,23 @@ class DocumentListRender(rootView: HTMLElement) extends View {
   attachToNode(rootView)
 
 
-
   WebApi.request[Seq[ListResult]]("/documents").onComplete {
     case Success(res) =>
       res.foreach(item => {
         val contentView = ContentView.create(item.title, None)
-        val conta = a(href := s"/document/${item.id}").render
-        contentView.attachToNode(conta)
-        list.appendChild(conta)
-        list.appendChild(hr().render)
+        list.appendChild(div(
+          a(
+            `class` := "ct-document-style document-list-title",
+            href := s"/document/${item.id}", contentView),
+          p(
+            `class` := "secondary-text",
+            Messages("last.updated", formatDate(item.updatedTime))
+          ),
+          p(
+            `class` := "secondary-text",
+            Messages("created.at", formatDate(item.createdTime)))
+        ).render)
+        list.appendChild(hr(`class` := "small-hr").render)
       })
     case Failure(exception) =>
       exception.printStackTrace()

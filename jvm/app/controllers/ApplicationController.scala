@@ -11,15 +11,24 @@ import repos.{DocumentRepository, UserRepository}
 import utils.auth.DefaultEnv
 import model._
 import api._
+import jsmessages.JsMessagesFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ApplicationController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
+  jsMessagesFactory: JsMessagesFactory,
   users: UserRepository,
   docs: DocumentRepository
 )(implicit assets: AssetsFinder, ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
+
+
+  private val jsMessages = jsMessagesFactory.subset("last.updated", "created.at")
+
+  val messages = Action { implicit request =>
+    Ok(jsMessages(Some("window.Messages")))
+  }
 
 
 

@@ -52,6 +52,7 @@ object Deps {
     "com.typesafe.play" %% "play-mailer" % Version.playMailer,
     "com.typesafe.play" %% "play-mailer-guice" % Version.playMailer,
     "com.enragedginger" %% "akka-quartz-scheduler" % "1.6.1-akka-2.5.x",
+    "org.julienrf" %% "play-jsmessages" % "3.0.0"
   ))
 
   val client = Def.setting(shared.value ++ (
