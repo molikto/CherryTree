@@ -44,7 +44,7 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     val createUser =
       sqlu"insert into users values ($userId, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
     val node = model.data.Node.create(documentTitle)
-    val documentQuery = createDocumentQuery(u.userId, node, time)
+    val documentQuery = createDocumentQuery(userId, node, time)
     db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u.copy(userId = userId))
   }
 

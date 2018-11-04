@@ -4,6 +4,7 @@ invalid.credentials = Invalid credentials!
 access.denied = Access denied!
 could.not.authenticate = Could not authenticate with social provider! Please try again!
 
+app.name = Codename: Cherry Tree
 home.title = Home - Codename: Cherry Tree
 sign.up.title = Sign Up - Codename: Cherry Tree
 sign.in.title = Sign In - Codename: Cherry Tree
@@ -72,6 +73,11 @@ yahoo = Yahoo
 
 
 default.document.title = {0}’s place
+
+
+last.updated = last updated at {0}
+created.at = created at {0}
+
 
 ##########
 # Emails

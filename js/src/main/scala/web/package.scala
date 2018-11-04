@@ -11,4 +11,5 @@ package object web {
     a(k)
     k.asInstanceOf[js.Object]
   }
+
 }

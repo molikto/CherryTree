@@ -1,5 +1,7 @@
 package web
 
+import java.text.{SimpleDateFormat}
+
 import command.Key
 
 import scala.scalajs.js
@@ -41,6 +43,26 @@ package object ui {
 
   val KaTeX = window.asInstanceOf[js.Dynamic].katex
 
+
+  def jsDate(a: Long) = {
+    new js.Date(a.toDouble)
+  }
+
+  def formatDate(a: Long) = {
+    jsDate(a).asInstanceOf[js.Dynamic].toLocaleString("en-US", jsObject(a => {
+      a.hour12 = false
+      a.year = "numeric"
+      a.month = "short"
+      a.day = "numeric"
+      a.hour = "2-digit"
+      a.minute = "2-digit"
+    }))
+  }
+
+  def Messages(key: String, args: js.Any*): String = {
+    val arr: Seq[js.Any] = Seq(key : js.Any) ++ args
+    window.asInstanceOf[js.Dynamic].applyDynamic("Messages")(arr: _*).asInstanceOf[String]
+  }
 
   def svgSourceToBackgroundStr(svg: String): String = {
     val encoded = window.btoa(svg)
