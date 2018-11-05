@@ -34,10 +34,13 @@ POST        /documents                       controllers.DocumentsController.doc
 POST        /documents/upload/boopickle      controllers.DocumentsController.uploadBoopickle
 
 GET         /document/:id                    controllers.DocumentController.index(id)
+GET         /document/:id/node/:nid          controllers.DocumentController.node(id, nid)
 + nocsrf
 POST        /document/:id/init               controllers.DocumentController.init(id)
 + nocsrf
 POST        /document/:id/changes            controllers.DocumentController.changes(id)
++ nocsrf
+POST        /document/:id/node/:nid/info     controllers.DocumentController.nodeInfo(id, nid)
 + nocsrf
 GET         /document/:id/ws                 controllers.DocumentController.ws(id)
 

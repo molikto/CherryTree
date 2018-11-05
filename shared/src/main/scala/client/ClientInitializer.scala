@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 
 object ClientInitializer {
-  def init(api: Api, documentId: String): Future[Client] = {
+  def init(api: Api, documentId: String, nodeId: String): Future[Client] = {
     api.request[InitRequest, InitResponse](s"/document/$documentId/init", InitRequest()).map { value =>
       val c = new Client(documentId, value, api)
       c.start()

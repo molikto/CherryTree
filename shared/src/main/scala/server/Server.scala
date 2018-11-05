@@ -61,7 +61,7 @@ class Server(documentId: String, private var document: Node, private var baseVer
 
   def serverStatus: ServerStatus = ServerStatus(onlineCount, false, false)
 
-  def change(changeRequest: ChangeRequest): Try[ChangeResponse] = {
+  def change(userId: String, changeRequest: ChangeRequest): Try[ChangeResponse] = {
     val ChangeRequest(session, clientVersion, ts, mode, debugClientDoc) = changeRequest
     clients.get(session) match {
       case None =>
@@ -97,7 +97,7 @@ class Server(documentId: String, private var document: Node, private var baseVer
             assert(diffs.size == transformed.size)
             val toPersist = transformed.zip(diffs)
             //
-            persist(toPersist)
+            persist(userId, toPersist)
             // commit to memory
             document = transformedDocument
             changes = changes ++ transformed
@@ -132,7 +132,7 @@ class Server(documentId: String, private var document: Node, private var baseVer
     }
   }
 
-  def persist(changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
+  def persist(userId: String, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
   }
 
   def loadChanges(from: Int, until: Int): Option[Seq[model.transaction.Node]] = None

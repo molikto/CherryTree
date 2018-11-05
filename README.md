@@ -3,6 +3,8 @@
 
 compile/run/deploy as a standard Play app
 
+for local deployment, you need a Postgres database instance at `localhost:5678/cherrytree`, details see `application.conf`
+
 test with `sbt sharedJVM/test`, `sbt sharedJVM/testOnly xxx` etc.
 
 ## coding guideline

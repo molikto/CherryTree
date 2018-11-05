@@ -1,7 +1,7 @@
 import java.nio.ByteBuffer
 import java.util.UUID
 
-import api.{ListResult, PermissionLevel}
+import api.{Collaborator, ListResult, NodeInfo, PermissionLevel}
 import com.mohiva.play.silhouette.api.AuthInfo
 import com.mohiva.play.silhouette.api.util.PasswordInfo
 import com.mohiva.play.silhouette.impl.providers.{OAuth1Info, OAuth2Info, OpenIDInfo}
@@ -86,18 +86,20 @@ package object repos {
   implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, r.<<))
 
 
+  implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<)))
+
   def createDocumentQuery(userId: String, node: model.data.Node, time: Long) = {
     val documentId = UUID.randomUUID().toString
     val createDocument =
       sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, 0)"
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
-    Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(documentId, time, d))
+    Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, d))
   }
 
-  def diffToQuery(did: String, time: Long, a: model.operation.Node.Diff) = a match {
+  def diffToQuery(userId: String, did: String, time: Long, a: model.operation.Node.Diff) = a match {
     case model.operation.Node.Diff.Insert(id, childs, attributes, content) =>
-      sqlu"insert into nodes values ($did, $id, $time, $time, $childs, $attributes, $content)"
+      sqlu"insert into nodes values ($did, $id, $time, $time, $childs, $attributes, $content, $userId)"
     case model.operation.Node.Diff.Update(id, childs, attributes, content) =>
       sqlu"update nodes set childs = $childs, attrs = $attributes, cont = $content, last_updated_time = $time where node_id = $id"
     case model.operation.Node.Diff.Delete(id) =>

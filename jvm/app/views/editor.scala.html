@@ -3,12 +3,12 @@
 @import play.twirl.api.Html
 @import controllers.AssetsFinder
 
-@(documentId: String)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+@(documentId: String, nodeId: String)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cherry Tree Dev Test</title>
+  <title>@messages("app.name")</title>
 
   @headersShared()
 
@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="@assets.path("styles/editor.css")"/>
 </head>
 <body style="overscroll-behavior-y: none; overflow: hidden;">
-<div style="height:100vh; width: 100%; overflow: hidden;" id="editor" data-document-id="@documentId">
+<div style="height:100vh; width: 100%; overflow: hidden;" id="editor" data-document-id="@documentId" data-node-id="@nodeId">
 </div>
 @jsBundle()
 <script src="@assets.path("javascripts/editor.js")"></script>
