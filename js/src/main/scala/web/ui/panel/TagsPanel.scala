@@ -1,5 +1,7 @@
 package web.ui.panel
 
+import java.util.UUID
+
 import client.Client
 import command.{Command, Key}
 import model.data.{Content, Text}
@@ -41,7 +43,7 @@ class TagsPanel(val client: Client, doc: () => View) extends UnselectableView wi
   private def state = client.state
 
   private var previousZoom: model.cursor.Node = null
-  private var previousFocus: Option[String] = None
+  private var previousFocus: Option[UUID] = None
 
   override def renderDelayed(): Unit = render()
 

@@ -32,12 +32,12 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
 
   import utils.MyPostgresProfile.plainApi._
 
-  def create(userId: String, node: model.data.Node) = {
+  def create(userId: UUID, node: model.data.Node) = {
     db.run(DBIO.seq(createDocumentQuery(userId, node, System.currentTimeMillis()) : _*).transactionally)
   }
 
 
-  def nodeInfo(did: String, nid: String): Future[Option[NodeInfo]] = {
+  def nodeInfo(did: UUID, nid: UUID): Future[Option[NodeInfo]] = {
     db.run(
       sql"""
             select nodes.created_time, nodes.last_updated_time, users.email, users.name_
@@ -46,7 +46,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   }
 
 
-  def list(uid: String): Future[Seq[ListResult]] =
+  def list(uid: UUID): Future[Seq[ListResult]] =
     db.run(
       sql"""select documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level
            from documents, nodes, permissions where
@@ -57,8 +57,8 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
            order by documents.last_updated_time desc
         """.as[ListResult])
 
-  def init(a: String): Future[(model.data.Node, Int)] = {
-    val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, String)].head.flatMap {
+  def init(a: UUID): Future[(model.data.Node, Int)] = {
+    val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, UUID)].head.flatMap {
       case (version, root) =>
         sql"select node_id, childs, attrs, cont from nodes where document_id = $a".as[NodeResult]
           .map(a => (root, a, version))
@@ -66,7 +66,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
     db.run(query.transactionally).map(kk => {
       val rootId = kk._1
       val nodes = kk._2.map(a => (a._1, a)).toMap
-      def materializeNode(id: String): model.data.Node = {
+      def materializeNode(id: UUID): model.data.Node = {
         val res = nodes(id)
         model.data.Node(id, res._4, res._3.asInstanceOf[JsObject], res._2.map(materializeNode))
       }
@@ -77,12 +77,12 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
 
 
 
-  def changes(userId: String, did: String, version: Int, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Future[Unit] = {
+  def changes(userId: UUID, did: UUID, version: Int, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Future[Unit] = {
     val time = System.currentTimeMillis()
     val ops = changes.zipWithIndex.flatMap(p => {
       val c = p._1
       val v = version + p._2
-      c._2.map(d => diffToQuery(userId, did, time, d)) :+ sqlu"insert into changes values ($did, $v, $time, ${c._1})"
+      c._3.map(d => diffToQuery(userId, did, time, c._2, d)) :+ sqlu"insert into changes values ($did, $v, ${c._2}, $time, ${c._1})"
     }) :+ sqlu"update documents set current_version = ${version + changes.size}, last_updated_time = $time where document_id = $did"
     db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }

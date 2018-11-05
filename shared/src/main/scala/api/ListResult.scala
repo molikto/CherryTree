@@ -1,3 +1,5 @@
 package api
 
-case class ListResult(id: String, title: model.data.Content, createdTime: Long, updatedTime: Long, permissionLevel: Int)
+import java.util.UUID
+
+case class ListResult(id: UUID, title: model.data.Content, createdTime: Long, updatedTime: Long, permissionLevel: Int)

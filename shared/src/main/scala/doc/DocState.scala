@@ -1,5 +1,7 @@
 package doc
 
+import java.util.UUID
+
 import client.Client.ViewMessage
 import model.{cursor, data, mode, operation, transaction}
 import model.cursor.Node
@@ -20,7 +22,7 @@ case class DocState private (
   zoom: cursor.Node,
   mode0: model.mode.Node,
   badMode: Boolean,
-  userFoldedNodes: Map[String, Boolean]
+  userFoldedNodes: Map[UUID, Boolean]
 ) {
 
   def changeContentType(cur: cursor.Node,
@@ -36,7 +38,7 @@ case class DocState private (
       opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren, None)
   }
 
-  def nodeRefRelative(uuid: String): String = {
+  def nodeRefRelative(uuid: UUID): String = {
     if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
   }
 
@@ -54,7 +56,7 @@ case class DocState private (
   def breakWhiteSpaceInserts: Boolean = mode.exists(_.breakWhiteSpaceInserts)
 
 
-  def lookup(uuid: String) = node.lookup(uuid, cursor.Node.root)
+  def lookup(uuid: UUID) = node.lookup(uuid, cursor.Node.root)
   def find[T](pred: model.data.Node => Option[T]) = node.find(pred, cursor.Node.root)
 
 
@@ -157,7 +159,7 @@ case class DocState private (
   }
 
 
-  def zoomId: String = node(zoom).uuid
+  def zoomId: UUID = node(zoom).uuid
 
   def mode: Option[model.mode.Node] = if (badMode) None else Some(mode0)
 

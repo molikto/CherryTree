@@ -1,5 +1,7 @@
 package web.ui
 
+import java.util.UUID
+
 import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw._
@@ -119,15 +121,15 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     if (rootUrl == null) {
       rootUrl = window.location.href
     }
-    window.history.replaceState(client.state.zoomId, document.title, rootUrl)
+    window.history.replaceState(client.state.zoomId.toString, document.title, rootUrl)
     observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {
       if (!duringGoTo) {
-        window.history.pushState(uuid, document.title)
+        window.history.pushState(uuid.toString, document.title)
          //, rootUrl + client.state.nodeRefRelative(uuid))
       }
     }))
     event(window, "popstate", (ev: PopStateEvent) => {
-      val uuid = ev.state.asInstanceOf[String]
+      val uuid = UUID.fromString(ev.state.asInstanceOf[String])
       duringGoTo = true
       client.state.lookup(uuid).foreach(cur => {
         client.localChange(client.state.goTo(cur, client, mustZoom = true))

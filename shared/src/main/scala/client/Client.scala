@@ -3,6 +3,7 @@ package client
 
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import com.softwaremill.quicklens._
 import monix.execution.Cancelable
@@ -74,7 +75,7 @@ object Client {
 }
 
 class Client(
-  private val docId: String,
+  private val docId: UUID,
   initial: InitResponse,
   private val api: Api,
 ) extends CommandHandler
@@ -91,8 +92,6 @@ class Client(
 
   protected def lockObject: AnyRef  = self
 
-
-  private val sessionId = initial.session
   /**
     * connection state
     */
@@ -136,6 +135,7 @@ class Client(
   private var committed: data.Node = initial.node
   def debug_committed = committed
   private var uncommitted = Seq.empty[transaction.Node]
+  private var uncommittedIds = Seq.empty[UUID]
   def version: Int = committedVersion + uncommitted.size
   private var disableUpdateBecauseLocalNodeDelete: (operation.Node.Delete, Long, Seq[data.Node], DocState) = null
 
@@ -148,7 +148,7 @@ class Client(
   private var state_ = {
     val zoom = api.localStorage.get(docId + ".zoom1") match {
       case Some(uuid) =>
-        committed.lookup(uuid).getOrElse(model.cursor.Node.root)
+        committed.lookup(UUID.fromString(uuid)).getOrElse(model.cursor.Node.root)
       case _ => cursor.Node.root
     }
     DocState(committed,
@@ -157,7 +157,7 @@ class Client(
       badMode = false, api.localStorage.get(docId + ".folded0") match {
       case Some(s) => s.split(",").filter(_.nonEmpty).map(a => {
         val c = a.split(" ")
-        c(0) -> c(1).toBoolean
+        UUID.fromString(c(0)) -> c(1).toBoolean
       }).toMap
       case _ => Map.empty
     })
@@ -265,7 +265,7 @@ class Client(
     }
     val zoomNow = state.zoomId
     if (zoomPrev != zoomNow) {
-      api.localStorage.set(docId + ".zoom1", zoomNow)
+      api.localStorage.set(docId + ".zoom1", zoomNow.toString)
     }
 
 
@@ -327,9 +327,11 @@ class Client(
   }
 
 
-  override def getNodeInfo(uuid: String): Future[Option[NodeInfo]] = {
+  override def getNodeInfo(uuid: UUID): Future[Option[NodeInfo]] = {
     val request = api.request[Option[NodeInfo]](s"/document/$docId/node/$uuid/info")
-    request.failed.foreach(e => e.printStackTrace())
+    request.failed.foreach {
+      case e => e.printStackTrace()
+    }
     request
   }
 
@@ -348,13 +350,8 @@ class Client(
           requesting = false
           connection_.modify(_.copy(offline = true))
           t match {
-            case ApiError.ClientVersionIsOlderThanServerCache =>
-              // LATER properly handle this!
-              putBackAndMarkNotConnected(head)
-            case ApiError.InvalidToken =>
-              // LATER properly handle this!
-              putBackAndMarkNotConnected(head)
             case _ =>
+              // LATER properly handle this!
               putBackAndMarkNotConnected(head)
           }
         }
@@ -378,11 +375,15 @@ class Client(
   private def tryTopRequest(): Boolean = {
     if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !disableRemoteStateUpdate) {
       val submit = uncommitted
+      while (uncommittedIds.size < uncommitted.size) {
+        uncommittedIds = uncommittedIds :+ UUID.randomUUID()
+      }
+      val submitIds = uncommittedIds
       if (submit.nonEmpty || System.currentTimeMillis() - lastRequestTime >= 1000 || lastSyncRequest > lastRequestTime) {
         lastRequestTime = lastSyncRequest + 1
         import model._
         // if (debug_transmit) committed.hashCode() else
-        val rq = ChangeRequest(sessionId, committedVersion, submit, state.mode, 0)
+        val rq = ChangeRequest(committedVersion, submit.zip(submitIds), state.mode, 0)
         request(0, api.request[ChangeRequest, ChangeResponse](s"/document/$docId/changes", rq), (value: ChangeResponse) => {
           lockObject.synchronized {
             flushInner()
@@ -440,6 +441,7 @@ class Client(
         committedVersion = success.finalVersion
         val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
         uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
+        uncommittedIds = Seq.empty // each time we got a new return, it is safe to discard the previous ids
         connection_.update(success.serverStatus)
         if (wp0.nonEmpty) {
           val (last, from) = operation.Node.apply(wp0, state, enableModal)
@@ -735,7 +737,7 @@ class Client(
   private def applyFolds(folded0: DocState,
     unfold0: Set[cursor.Node],
     toggle0: Set[cursor.Node]
-  ): (Map[String, Boolean], Map[cursor.Node, Boolean]) = {
+  ): (Map[UUID, Boolean], Map[cursor.Node, Boolean]) = {
     if (unfold0.isEmpty && toggle0.isEmpty) {
       (folded0.userFoldedNodes, Map.empty)
     } else {

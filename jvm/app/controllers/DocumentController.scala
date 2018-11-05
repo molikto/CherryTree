@@ -1,5 +1,7 @@
 package controllers
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, Status, SupervisorStrategy, Terminated}
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.{ByteString, Timeout}
@@ -26,15 +28,16 @@ import repos.{DocumentRepository, UserRepository}
 
 import scala.collection.mutable
 import monix.execution.Scheduler.Implicits.global
+
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 
 
 object DocumentActor {
-  def props(id: String, docs: DocumentRepository) = Props(new DocumentActor(id, docs))
+  def props(id: UUID, docs: DocumentRepository) = Props(new DocumentActor(id, docs))
 }
-class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
+class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
 
   private var server: Server = null
 
@@ -47,11 +50,11 @@ class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
       if (server == null) {
         val root = Await.result(docs.init(id), 10.seconds)
         server = new Server(id, root._1, root._2) {
-          override def persist(userId: String, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
+          override def persist(userId: UUID, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
             Await.result(docs.changes(userId, id, version, changes), 10.seconds)
           }
 
-          override def loadChanges(from: Int, until: Int): Option[Seq[model.transaction.Node]] = None
+          override def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
         }
       }
       sender ! server.init()
@@ -83,7 +86,7 @@ class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
 
 class DocumentsActor(val docs: DocumentRepository) extends Actor {
   override def receive: Receive = {
-    case id: String => sender ! context.child(id).getOrElse(context.actorOf(DocumentActor.props(id, docs), id))
+    case id: UUID => sender ! context.child(id.toString).getOrElse(context.actorOf(DocumentActor.props(id, docs), id.toString))
   }
 }
 
@@ -101,26 +104,26 @@ class DocumentController @Inject() (
 
   private val documents = system.actorOf(Props(new DocumentsActor(docs)))
 
-  def index(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
-    Ok(views.html.editor(documentId, ""))
+  def index(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
+    Ok(views.html.editor(documentId, None))
   }
 
-  def node(documentId: String, nid: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
-    Ok(views.html.editor(documentId, nid))
+  def node(documentId: UUID, nid: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
+    Ok(views.html.editor(documentId, Some(nid)))
   }
 
-  def nodeInfo(documentId: String, nid: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+  def nodeInfo(documentId: UUID, nid: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     docs.nodeInfo(documentId, nid).map(a => Ok.sendEntity(toEntity(a)))
   }
 
-  def init(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+  def init(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? InitRequest()).mapTo[InitResponse].map { response =>
       Ok.sendEntity(toEntity(response))
     }
   }
 
-  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Edit)).async(parse.byteString) { implicit request =>
+  def changes(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Edit)).async(parse.byteString) { implicit request =>
     val change = fromRequest[ChangeRequest](request)
     implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? (request.identity, change)).mapTo[Try[ChangeResponse]].map {
@@ -131,7 +134,7 @@ class DocumentController @Inject() (
     }
   }
 
-  def ws(documentId: String) = WebSocket.acceptOrResult[String, String] { request =>
+  def ws(documentId: UUID) = WebSocket.acceptOrResult[String, String] { request =>
     implicit val req = Request(request, AnyContentAsEmpty) // dummy request
     silhouette.SecuredRequestHandler(HasPermission[DefaultEnv#A](documentId, users)) { securedRequest =>
       Future.successful(HandlerResult(Ok, Some(securedRequest.identity)))

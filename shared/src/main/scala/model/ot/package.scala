@@ -1,5 +1,7 @@
 package model
 
+import java.util.UUID
+
 import model._
 import model.mode.Mode
 import model.operation.OperationObject
@@ -136,6 +138,17 @@ package object ot {
           case Rebased(t, (wi, lp)) =>
             val Rebased(t0, (wi0, lp0)) = rebase(wi, ll)
             val ret = if (lp0.isEmpty) lp else lp :+ lp0
+            Rebased(t ++ t0, (wi0, ret))
+        }
+      }
+    }
+
+    def rebaseTIded(winner: TRANSACTION, loser: Seq[(TRANSACTION, UUID)]): Rebased[CONFLICT, (TRANSACTION, Seq[(TRANSACTION, UUID)])] = {
+      loser.foldLeft(Rebased(Set.empty[CONFLICT], (winner, Seq.empty[(TRANSACTION, UUID)]))) { (pair, ll) =>
+        pair match {
+          case Rebased(t, (wi, lp)) =>
+            val Rebased(t0, (wi0, lp0)) = rebase(wi, ll._1)
+            val ret = lp :+ (lp0, ll._2)
             Rebased(t ++ t0, (wi0, ret))
         }
       }

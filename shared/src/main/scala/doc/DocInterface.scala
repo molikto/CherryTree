@@ -1,5 +1,7 @@
 package doc
 
+import java.util.UUID
+
 import api.NodeInfo
 import monix.reactive.Observable
 import search.SearchInterface
@@ -13,5 +15,5 @@ trait DocInterface extends SearchInterface {
   def state: DocState
   def stateUpdates: Observable[DocUpdate]
 
-  def getNodeInfo(uuid: String): Future[Option[NodeInfo]]
+  def getNodeInfo(uuid: UUID): Future[Option[NodeInfo]]
 }

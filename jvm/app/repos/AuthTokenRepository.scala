@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AuthTokenDAO @Inject() (implicit ec: ExecutionContext)
 {
 
-  def find(id: String): Future[Option[AuthToken]] = Future.successful(tokens.get(id))
+  def find(id: UUID): Future[Option[AuthToken]] = Future.successful(tokens.get(id))
 
   def findExpired(dateTime: DateTime): Future[Seq[AuthToken]] = Future.successful {
     tokens.filter {
@@ -39,7 +39,7 @@ class AuthTokenDAO @Inject() (implicit ec: ExecutionContext)
     Future.successful(token)
   }
 
-  def remove(id: String): Future[Unit] = {
+  def remove(id: UUID): Future[Unit] = {
     tokens -= id
     Future.successful(())
   }
@@ -47,7 +47,7 @@ class AuthTokenDAO @Inject() (implicit ec: ExecutionContext)
 
 object AuthTokenDAOImpl {
 
-  val tokens: mutable.HashMap[String, AuthToken] = mutable.HashMap()
+  val tokens: mutable.HashMap[UUID, AuthToken] = mutable.HashMap()
 }
 
 /**
@@ -72,8 +72,8 @@ class AuthTokenRepository @Inject() (
    * @param expiry The duration a token expires.
    * @return The saved auth token.
    */
-  def create(userId: String, expiry: FiniteDuration = 5 minutes): Future[AuthToken] = {
-    val token = AuthToken(UUID.randomUUID().toString, userId, clock.now.withZone(DateTimeZone.UTC).plusSeconds(expiry.toSeconds.toInt))
+  def create(userId: UUID, expiry: FiniteDuration = 5 minutes): Future[AuthToken] = {
+    val token = AuthToken(UUID.randomUUID(), userId, clock.now.withZone(DateTimeZone.UTC).plusSeconds(expiry.toSeconds.toInt))
     authTokenDAO.save(token)
   }
 
@@ -83,7 +83,7 @@ class AuthTokenRepository @Inject() (
    * @param id The token ID to validate.
    * @return The token if it's valid, None otherwise.
    */
-  def validate(id: String) = authTokenDAO.find(id)
+  def validate(id: UUID) = authTokenDAO.find(id)
 
   /**
    * Cleans expired tokens.

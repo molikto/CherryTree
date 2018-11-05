@@ -1,6 +1,8 @@
 package web.ui
 
 
+import java.util.UUID
+
 import client.{Client, ClientInitializer, LocalStorage}
 import org.scalajs.dom
 import org.scalajs.dom.raw.HTMLElement
@@ -44,7 +46,7 @@ class ClientInitializerView(rootView: HTMLElement, documentId: String, nodeId: S
       p("connecting")
     }.render)
     val ec = scala.concurrent.ExecutionContext.Implicits.global
-    ClientInitializer.init(WebApi, documentId, nodeId).onComplete {
+    ClientInitializer.init(WebApi, UUID.fromString(documentId), UUID.fromString(nodeId)).onComplete {
       case Success(c) =>
         goClient(c)
       case Failure(exception) =>

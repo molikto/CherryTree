@@ -59,7 +59,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
       alignItems := "center",
       `class` := "ct-menu-item ",
       paddingLeft := "5px",
-      tag("kbd")(`class` := "ct-kbd-small", t._1.toChar.toString),
+      tag("kbd")(`class` := "ct-kbd-small", Character.toString(t._1.toChar)),
       div(
         marginLeft := "10px",
         t._2.map {

@@ -31,32 +31,30 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
   private val AllUserColumns = "user_id, created_time, name_, email, avatar_url, activated, provider_id, provider_key"
 
-  def retrieve(id: String) : Future[Option[User]] =
+  def retrieve(id: UUID) : Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where user_id = $id".as[User].headOption)
 
   def retrieve(loginInfo: LoginInfo): Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}".as[User].headOption)
 
   def create(u: User, authInfo: AuthInfo, documentTitle: String): Future[User] = {
-    assert(u.userId == "")
     val time = System.currentTimeMillis()
-    val userId = UUID.randomUUID().toString
     val createUser =
-      sqlu"insert into users values ($userId, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
+      sqlu"insert into users values (${u.userId}, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
     val node = model.data.Node.create(documentTitle)
-    val documentQuery = createDocumentQuery(userId, node, time)
-    db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u.copy(userId = userId))
+    val documentQuery = createDocumentQuery(u.userId, node, time)
+    db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u)
   }
 
-  def indexDocumentId(userId: String): Future[Option[String]] = {
-    db.run(sql"select document_id from permissions where user_id = $userId and permission_level = ${PermissionLevel.Admin}".as[String].headOption)
+  def indexDocumentId(userId: UUID): Future[Option[UUID]] = {
+    db.run(sql"select document_id from permissions where user_id = $userId and permission_level = ${PermissionLevel.Admin}".as[UUID].headOption)
   }
 
-  def hasPermission(userId: String, documentId: String, level: Int): _root_.scala.concurrent.Future[Boolean] = {
-    db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= $level".as[String].headOption).map(_.isDefined)
+  def hasPermission(userId: UUID, documentId: UUID, level: Int): _root_.scala.concurrent.Future[Boolean] = {
+    db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= $level".as[UUID].headOption).map(_.isDefined)
   }
 
-  def activate(userId: String, activate: Boolean = true): Future[Option[Unit]] =
+  def activate(userId: UUID, activate: Boolean = true): Future[Option[Unit]] =
     db.run(sqlu"update users set activated = $activate where user_id = $userId").map(a => util.positiveOrNoneUnit(a))
 
 

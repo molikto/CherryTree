@@ -1,5 +1,7 @@
 package model.operation
 
+import java.util.UUID
+
 import model._
 import Type.Type
 import com.softwaremill.quicklens._
@@ -30,15 +32,15 @@ object Node extends OperationObject[data.Node, operation.Node] {
   sealed abstract class Diff
   object Diff {
 
-    case class Update(id: String, childs: Seq[String], attributes: JsObject, content: data.Content) extends Diff
+    case class Update(id: UUID, childs: Seq[UUID], attributes: JsObject, content: data.Content) extends Diff
     object Update {
       def apply(at: cursor.Node, res: data.Node): Update = {
         val node = res(at)
         Update(node.uuid, node.childs.map(_.uuid), node.attributes, node.content)
       }
     }
-    case class Insert(id: String, childs: Seq[String], attributes: JsObject, content: data.Content) extends Diff
-    case class Delete(id: String) extends Diff
+    case class Insert(id: UUID, childs: Seq[UUID], attributes: JsObject, content: data.Content) extends Diff
+    case class Delete(id: UUID) extends Diff
   }
 
 

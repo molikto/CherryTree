@@ -5,6 +5,7 @@ import java.util.UUID
 import doc.DocTransaction
 import model._
 import Node.{ChildrenType, ContentType}
+import boopickle.BasicPicklers
 import model.range.IntRange
 import play.api.libs.json._
 import scalatags.Text.all._
@@ -22,13 +23,13 @@ trait NodeTag[T] {
 
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(
-  uuid: String,
+  uuid: UUID,
   content: Content,
   attributes: JsObject,
   childs: Seq[Node]) {
 
 
-  def assertNewNodes(strings: Seq[String]): Unit = {
+  def assertNewNodes(strings: Seq[UUID]): Unit = {
     if (strings.contains(uuid)) {
       throw new IllegalStateException("Not allowed")
     }
@@ -132,7 +133,7 @@ case class Node(
 
   private var macros_ : Seq[String] = null
 
-  def refOfThis() = Node.nodRef( uuid)
+  def refOfThis() = Node.nodRef(uuid)
 
   def count: Int = 1 + childs.map(_.count).sum
   def size: Int = content.size + childs.map(_.size).sum
@@ -167,7 +168,7 @@ case class Node(
     }
   }
 
-  def lookup(_2: String, currentCur: model.cursor.Node = model.cursor.Node.root): Option[model.cursor.Node] = {
+  def lookup(_2: UUID, currentCur: model.cursor.Node = model.cursor.Node.root): Option[model.cursor.Node] = {
     findB(_.uuid == _2, currentCur)
   }
 
@@ -214,14 +215,14 @@ case class Node(
     childs.zipWithIndex.foreach(p => p._1.foreach(a, cur :+ p._2))
   }
 
-  def allChildrenUuids(cur: model.cursor.Node, in: Map[String, Boolean]): Seq[model.cursor.Node] = {
+  def allChildrenUuids(cur: model.cursor.Node, in: Map[UUID, Boolean]): Seq[model.cursor.Node] = {
     childs.zipWithIndex.flatMap(c => {
       val cs = c._1.allChildrenUuids(cur :+ c._2, in)
       if (in.get(c._1.uuid).contains(true)) cs :+ (cur :+ c._2) else cs
     })
   }
 
-  def cloneNode(): Node = copy(uuid = UUID.randomUUID().toString, childs = Node.cloneNodes(childs))
+  def cloneNode(): Node = copy(uuid = UUID.randomUUID(), childs = Node.cloneNodes(childs))
 
 
   def has[T](t: NodeTag[T]): Boolean = attributes.value.get(t.name).exists(_ != JsNull)
@@ -326,14 +327,14 @@ object Node extends DataObject[Node] {
     else ul(a.map(a => li(a.toScalaTags))).render
 
 
-  def matchNodeRef(url: String): Option[String] = if (url.startsWith(NodeRefScheme)) Some(url.substring(NodeRefScheme.length + "node?node=".length)) else None
+  def matchNodeRef(url: String): Option[UUID] = if (url.startsWith(NodeRefScheme)) Some(UUID.fromString(url.substring(NodeRefScheme.length + "node?node=".length))) else None
 
-  def nodeRefRelative(nodeId: String): String = {
+  def nodeRefRelative(nodeId: UUID): String = {
     val query = s"?node=$nodeId"
     s"node$query"
   }
 
-  def nodRef(nodeId: String): String = {
+  def nodRef(nodeId: UUID): String = {
     s"$NodeRefScheme${nodeRefRelative(nodeId)}"
   }
 
@@ -420,9 +421,9 @@ object Node extends DataObject[Node] {
     model.mode.Node.Content(node, root(node).content.defaultMode(enableModal))
   }
 
-  val debug_empty = Node("", Content.Rich(Rich.empty), JsObject.empty, Seq.empty)
+  val debug_empty = Node(UUID.randomUUID(), Content.Rich(Rich.empty), JsObject.empty, Seq.empty)
 
-  def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID().toString, content, JsObject.empty, Seq.empty)
+  def create(content: Content = Content.Rich(Rich.empty)): Node =  Node(UUID.randomUUID(), content, JsObject.empty, Seq.empty)
 
   def create(title: String): Node =  create(Content.Rich(Rich(Seq(Text.Plain(Unicode(title))))))
 
@@ -432,7 +433,7 @@ object Node extends DataObject[Node] {
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._
-      writeString(obj.uuid)
+      BasicPicklers.UUIDPickler.pickle(obj.uuid)
       Content.pickler.pickle(obj.content)
       model.jsonObjectPickler.pickle(obj.attributes)
       writeInt(obj.childs.size)
@@ -442,7 +443,7 @@ object Node extends DataObject[Node] {
     override def unpickle(implicit state: UnpickleState): Node = {
       import state.dec._
       Node(
-        readString,
+        BasicPicklers.UUIDPickler.unpickle,
         Content.pickler.unpickle,
         model.jsonObjectPickler.unpickle,
         (0 until readInt).map(_ => Node.pickler.unpickle))
@@ -459,7 +460,7 @@ object Node extends DataObject[Node] {
       case 3 => 2
       case _ => 1
     }
-    Node(r.nextInt.toString, Content.random(r),
+    Node(UUID.randomUUID(), Content.random(r),
       JsObject.empty,
       (0 until r.nextInt(childsAtDepth)).map(_ => randomWithDepth(r, depth + 1)))
   }

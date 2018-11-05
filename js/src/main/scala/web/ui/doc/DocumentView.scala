@@ -1,5 +1,7 @@
 package web.ui.doc
 
+import java.util.UUID
+
 import doc.{DocInterface, DocState}
 import model.data.Content
 import model.data.Node.ContentType
@@ -33,7 +35,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
   // this can temp be null during state update
   protected var currentDoc: DocState = null
   protected def currentZoom: model.cursor.Node = currentDoc.zoom
-  protected def currentZoomId: String = currentDoc.zoomId
+  protected def currentZoomId: UUID = currentDoc.zoomId
 
   private val noEditable = div(
     `class` := "unselectable",

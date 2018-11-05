@@ -1,5 +1,7 @@
 package models
 
+import java.util.UUID
+
 import org.joda.time.DateTime
 
 /**
@@ -10,6 +12,6 @@ import org.joda.time.DateTime
  * @param expiry The date-time the token expires.
  */
 case class AuthToken(
-  id: String,
-  userId: String,
+  id: UUID,
+  userId: UUID,
   expiry: DateTime)

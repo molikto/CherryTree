@@ -1,12 +1,14 @@
 package web.ui.panel
 
+import java.util.UUID
+
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
 
 class StaticDiffTocView(
-  onClick: String => Unit,
-  onDoubleClick: String => Unit,
+  onClick: UUID => Unit,
+  onDoubleClick: UUID => Unit,
   override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick, onDoubleClick) {
 
   protected override def eq(a: Node, b: Node): Boolean = a == b
@@ -32,7 +34,7 @@ class StaticDiffTocView(
     super.update(newData0.filter(a => a.isHeading && !a.isH1))
   }
 
-  def updateFocus(uuid: Option[String], hideLevel: Int, list: HTMLElement): Boolean = {
+  def updateFocus(uuid: Option[UUID], hideLevel: Int, list: HTMLElement): Boolean = {
     var containsId = super.updateFocus(uuid, list)
     var contains = containsId.isDefined
     (0 until size).foreach(i => {

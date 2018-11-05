@@ -1,11 +1,12 @@
 package api
 
+import java.util.UUID
+
 import model.transaction
 
 final case class ChangeRequest(
-  session: String,
   clientVersion: Int,
-  ts: Seq[transaction.Node],
+  ts: Seq[(transaction.Node, UUID)],
   mode: Option[model.mode.Node],
   debugClientDoc: Int
 )

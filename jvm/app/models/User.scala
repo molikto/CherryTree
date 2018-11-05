@@ -1,6 +1,8 @@
 package models
 
 
+import java.util.UUID
+
 import com.mohiva.play.silhouette.api.util.PasswordInfo
 import com.mohiva.play.silhouette.api.{AuthInfo, Identity, LoginInfo}
 
@@ -9,7 +11,7 @@ sealed trait AuthenticationInfo
 
 
 case class User(
-  userId: String,
+  userId: UUID,
   createdTime: Long,
   name: String,
   email: String,

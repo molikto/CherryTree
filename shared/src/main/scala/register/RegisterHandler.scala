@@ -1,5 +1,7 @@
 package register
 
+import java.util.UUID
+
 import model.data.{Text, Unicode}
 
 import scala.collection.mutable
@@ -201,8 +203,8 @@ trait RegisterHandler extends RegisterInterface {
     }
   }
 
-  private def uuids(u: Seq[model.data.Node]): mutable.Set[String] = {
-    val c = mutable.Set.empty[String]
+  private def uuids(u: Seq[model.data.Node]): mutable.Set[UUID] = {
+    val c = mutable.Set.empty[UUID]
     u.foreach(_.foreachNode(a => c.add(a.uuid)))
     c
   }

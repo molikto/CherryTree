@@ -19,13 +19,13 @@ POST        /sign_in                          controllers.SignInController.submi
 
 GET         /password/forgot                 controllers.ForgotPasswordController.view
 POST        /password/forgot                 controllers.ForgotPasswordController.submit
-GET         /password/reset/:token           controllers.ResetPasswordController.view(token)
-POST        /password/reset/:token           controllers.ResetPasswordController.submit(token)
+GET         /password/reset/:token           controllers.ResetPasswordController.view(token: java.util.UUID)
+POST        /password/reset/:token           controllers.ResetPasswordController.submit(token: java.util.UUID)
 GET         /password/change                 controllers.ChangePasswordController.view
 POST        /password/change                 controllers.ChangePasswordController.submit
 
 GET         /account/email/:email            controllers.ActivateAccountController.send(email: String)
-GET         /account/activate/:token         controllers.ActivateAccountController.activate(token)
+GET         /account/activate/:token         controllers.ActivateAccountController.activate(token: java.util.UUID)
 
 GET         /home                            controllers.DocumentsController.home
 + nocsrf
@@ -33,16 +33,16 @@ POST        /documents                       controllers.DocumentsController.doc
 + nocsrf
 POST        /documents/upload/boopickle      controllers.DocumentsController.uploadBoopickle
 
-GET         /document/:id                    controllers.DocumentController.index(id)
-GET         /document/:id/node/:nid          controllers.DocumentController.node(id, nid)
+GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)
+GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)
 + nocsrf
-POST        /document/:id/init               controllers.DocumentController.init(id)
+POST        /document/:id/init               controllers.DocumentController.init(id: java.util.UUID)
 + nocsrf
-POST        /document/:id/changes            controllers.DocumentController.changes(id)
+POST        /document/:id/changes            controllers.DocumentController.changes(id: java.util.UUID)
 + nocsrf
-POST        /document/:id/node/:nid/info     controllers.DocumentController.nodeInfo(id, nid)
+POST        /document/:id/node/:nid/info     controllers.DocumentController.nodeInfo(id: java.util.UUID, nid: java.util.UUID)
 + nocsrf
-GET         /document/:id/ws                 controllers.DocumentController.ws(id)
+GET         /document/:id/ws                 controllers.DocumentController.ws(id: java.util.UUID)
 
 # Prefix must match `play.assets.urlPrefix`
 GET  /assets/*file  controllers.Assets.versioned(path="/public", file: Asset)

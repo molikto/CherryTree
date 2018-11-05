@@ -1,5 +1,7 @@
 package controllers
 
+import java.util.UUID
+
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
@@ -32,7 +34,7 @@ class SocialAuthController @Inject() (
       case (None, Some(l)) => l
       case _ => ""
     }
-    User("", 0, name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
+    User(UUID.randomUUID(), 0, name, profile.email.get, profile.avatarURL, true, profile.loginInfo)
   }
 
   def authenticate(provider: String) = Action.async { implicit request: Request[AnyContent] =>

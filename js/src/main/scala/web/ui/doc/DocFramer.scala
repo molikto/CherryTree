@@ -1,5 +1,7 @@
 package web.ui.doc
 
+import java.util.UUID
+
 import org.scalajs.dom.raw.HTMLElement
 import client.Client
 import _root_.doc.DocTransaction
@@ -24,8 +26,8 @@ trait DocFramer {
 
   protected val parentHeadingLevel: Int = -1
 
-  val onClick: String => Unit = null
-  val onDoubleClick: String => Unit = null
+  val onClick: UUID => Unit = null
+  val onDoubleClick: UUID => Unit = null
 
   val useFoldedIcon: Boolean = false
 
@@ -44,17 +46,17 @@ trait DocFramer {
     a.childNodes(0).childNodes(1).asInstanceOf[HTMLElement]
   }
 
-  def uuidOf(a: ContentView.General): String = {
-    a.dom.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String]
+  def uuidOf(a: ContentView.General): UUID = {
+    UUID.fromString(a.dom.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String])
   }
 
   private val onClickListener: js.Function1[Event, _] = (ev: Event) => {
-    val uuid = ev.currentTarget.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String]
+    val uuid = UUID.fromString(ev.currentTarget.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String])
     onClick(uuid)
   }
 
   private val onDoubleClickListener: js.Function1[Event, _] = (ev: Event) => {
-    val uuid = ev.currentTarget.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String]
+    val uuid = UUID.fromString(ev.currentTarget.asInstanceOf[js.Dynamic].ctUuid.asInstanceOf[String])
     onDoubleClick(uuid)
   }
 
@@ -64,7 +66,7 @@ trait DocFramer {
       cv.dom.classList.add(docFramerExtraClass)
     }
     if (onClick != null || onDoubleClick != null) {
-      cv.dom.asInstanceOf[js.Dynamic].ctUuid = a.uuid
+      cv.dom.asInstanceOf[js.Dynamic].ctUuid = a.uuid.toString
     }
     if (onClick != null) {
       cv.dom.addEventListener("click", onClickListener)

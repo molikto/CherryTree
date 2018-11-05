@@ -1,5 +1,7 @@
 package web.ui.dialog
 
+import java.util.UUID
+
 import client.Client
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all._
@@ -12,7 +14,7 @@ import web.view._
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
   val coveringElement: HTMLElement
-) extends StaticFilteringView[Boolean, (model.cursor.Node, String)]
+) extends StaticFilteringView[Boolean, (model.cursor.Node, UUID)]
   with UnselectableView with Settings with DocFramer {
 
 
@@ -62,7 +64,7 @@ class QuickSearchDialog(val client: Client,
   }
 
 
-  override def data(term: String): Seq[(model.cursor.Node, String)] = {
+  override def data(term: String): Seq[(model.cursor.Node, UUID)] = {
     val tt = term.split("\\s").toSeq.filter(complexTerm)
     if (tt.isEmpty) {
       Seq.empty
@@ -109,14 +111,14 @@ class QuickSearchDialog(val client: Client,
 
   override val docFramerIsSmall: Int = 1
 
-  override def renderItem(t: (model.cursor.Node, String), index: Int): HTMLElement = {
+  override def renderItem(t: (model.cursor.Node, UUID), index: Int): HTMLElement = {
     val node = client.state.node(t._1)
     val ct = contentViewAndHold(node)
     ct.classList.add("ct-menu-item")
     ct
   }
 
-  override def onSelected(t: (model.cursor.Node, String)): Unit = {
+  override def onSelected(t: (model.cursor.Node, UUID)): Unit = {
     var n = t._1
     if (client.state.node(n).uuid != t._2) {
       val find = client.state.lookup(t._2)

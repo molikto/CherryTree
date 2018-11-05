@@ -14,7 +14,7 @@ package object repos {
 
   import utils.MyPostgresProfile.plainApi._
 
-  type NodeResult = (String, Seq[String], JsValue, model.data.Content)
+  type NodeResult = (UUID, Seq[UUID], JsValue, model.data.Content)
 
   implicit val passwordInfoFormat = Json.format[PasswordInfo]
   implicit val oauth1InfoFormat = Json.format[OAuth1Info]
@@ -88,16 +88,16 @@ package object repos {
 
   implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<)))
 
-  def createDocumentQuery(userId: String, node: model.data.Node, time: Long) = {
-    val documentId = UUID.randomUUID().toString
+  def createDocumentQuery(userId: UUID, node: model.data.Node, time: Long) = {
+    val documentId = UUID.randomUUID()
     val createDocument =
       sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, 0)"
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
-    Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, d))
+    Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, UUID.randomUUID(), d))
   }
 
-  def diffToQuery(userId: String, did: String, time: Long, a: model.operation.Node.Diff) = a match {
+  def diffToQuery(userId: UUID, did: UUID, time: Long, cid: UUID, a: model.operation.Node.Diff) = a match {
     case model.operation.Node.Diff.Insert(id, childs, attributes, content) =>
       sqlu"insert into nodes values ($did, $id, $time, $time, $childs, $attributes, $content, $userId)"
     case model.operation.Node.Diff.Update(id, childs, attributes, content) =>

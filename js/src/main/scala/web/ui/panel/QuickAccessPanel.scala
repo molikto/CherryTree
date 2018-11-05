@@ -1,5 +1,7 @@
 package web.ui.panel
 
+import java.util.UUID
+
 import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw.{HTMLElement, HTMLOptionElement, HTMLSelectElement}
@@ -12,10 +14,10 @@ import scala.util.Try
 class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView with DelayUpdate {
 
   private var previousZoom: model.cursor.Node = null
-  private var previousFocus: Option[String] = None
-  private var previousNearestHeading: Option[String] = None
+  private var previousFocus: Option[UUID] = None
+  private var previousNearestHeading: Option[UUID] = None
 
-  private def onClick(uuid: String): Unit = {
+  private def onClick(uuid: UUID): Unit = {
     client.state.lookup(uuid) match {
       case Some(cur) =>
         client.localChange(client.state.goTo(cur, client))
@@ -25,7 +27,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
   }
 
 
-  private def onDoubleClick(uuid: String): Unit = {
+  private def onDoubleClick(uuid: UUID): Unit = {
     val cur = client.state.lookup(uuid)
     cur match {
       case Some(cur) =>

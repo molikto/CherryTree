@@ -1,6 +1,7 @@
 package client
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import com.softwaremill.quicklens._
 import model._
@@ -13,7 +14,7 @@ import scala.util.{Failure, Success}
 
 
 object ClientInitializer {
-  def init(api: Api, documentId: String, nodeId: String): Future[Client] = {
+  def init(api: Api, documentId: UUID, nodeId: UUID): Future[Client] = {
     api.request[InitRequest, InitResponse](s"/document/$documentId/init", InitRequest()).map { value =>
       val c = new Client(documentId, value, api)
       c.start()

@@ -1,5 +1,7 @@
 package web.ui.panel
 
+import java.util.UUID
+
 import model.NodeQuickDiff
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
@@ -9,8 +11,8 @@ import web.view.View
 
 
 class StaticDiffContentListView(
-  override val onClick: String => Unit,
-  override val onDoubleClick: String => Unit,
+  override val onClick: UUID => Unit,
+  override val onDoubleClick: UUID => Unit,
 ) extends View with NodeQuickDiff with DocFramer {
 
   dom = div().render
@@ -64,7 +66,7 @@ class StaticDiffContentListView(
     listData = newData
   }
 
-  def updateFocus(uuid: Option[String], list: HTMLElement): Option[Int] = {
+  def updateFocus(uuid: Option[UUID], list: HTMLElement): Option[Int] = {
     var contains: Option[Int] = None
     (0 until size).foreach(i => {
       val ct = contentViewFromWithHold(domAt(i))
