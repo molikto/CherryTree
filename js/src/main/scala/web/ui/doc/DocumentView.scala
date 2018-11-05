@@ -14,14 +14,15 @@ import util.Rect
 import view.EditorInterface
 import scalatags.JsDom.all.{s, _}
 import search.Search
-import web.ui
+import web.{Implicits, ui}
 import web.ui.content.{ContentView, ContentViewEditor, RichView}
 import web.view._
 import web.ui.dialog._
 
 import scala.scalajs.js
+import scala.util.Success
 
-abstract class DocumentView extends View with EditorView {
+abstract class DocumentView extends View with EditorView with Implicits {
 
 
   private val latexMacroCache = LaTeXMacroCache.instance
@@ -419,14 +420,24 @@ abstract class DocumentView extends View with EditorView {
     val ee = contentOfHold(hold)
     val cur = cursorOf(ee)
     val node = client.state.node(cur)
-    hold.title =
-      Seq(
-        node.contentType.map("content type: " + _.toString).getOrElse(""),
-        node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
-        s"items: ${node.count}",
-        s"text size: ${node.content.size}",
-        s"total text size: ${node.size}"
-      ).filter(_.nonEmpty).mkString("\n")
+    client.getNodeInfo(node.uuid).onComplete(res => {
+      val info = res match {
+        case Success(Some(i)) =>
+          Seq(s"created time: ${ui.formatDate(i.createdTime)}",
+            s"updated time: ${ui.formatDate(i.updatedTime)}",
+            s"created by: ${i.createdBy.name} (${i.createdBy.email})")
+        case _ =>
+          Seq.empty
+      }
+
+      hold.title = (info ++ Seq(
+          node.contentType.map("content type: " + _.toString).getOrElse(""),
+          node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
+          s"items: ${node.count}",
+          s"text size: ${node.content.size}",
+          s"total text size: ${node.size}"
+        )).filter(_.nonEmpty).mkString("\n")
+    })
   }
 
 

@@ -19,6 +19,8 @@ package object api {
   implicit val changeRequest = PicklerGenerator.generatePickler[ChangeRequest]
   implicit val clientUpdate = PicklerGenerator.generatePickler[ChangeResponse]
   implicit val listResultPickler = PicklerGenerator.generatePickler[ListResult]
+  implicit val collabratorPickler = PicklerGenerator.generatePickler[Collaborator]
+  implicit val nodeInfoPickler = PicklerGenerator.generatePickler[NodeInfo]
 
 
   implicit def pickleState: PickleState = new PickleState(new EncoderSize, false, false)

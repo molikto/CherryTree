@@ -1,6 +1,6 @@
 # --- !Ups
 
-create table users (
+create table if not exists users (
     user_id varchar primary key,
     created_time bigint not null,
     name_ varchar not null,
@@ -14,7 +14,7 @@ create table users (
     auth_info jsonb not null
 );
 
-create table documents (
+create table if not exists documents (
     document_id varchar primary key,
     root_node_id varchar not null,
     created_time bigint not null,
@@ -22,25 +22,26 @@ create table documents (
     current_version bigint not null
 );
 
-create table permissions (
+create table if not exists permissions (
     user_id varchar not null references users(user_id),
     document_id varchar not null references documents(document_id),
     permission_level integer not null
 );
 
 
-create table nodes (
+create table if not exists nodes (
     document_id varchar not null references documents(document_id),
     node_id varchar primary key,
     created_time bigint not null,
     last_updated_time bigint not null,
     childs varchar[],
     attrs jsonb not null,
-    cont jsonb not null
+    cont jsonb not null,
+    creator_id varchar not null references users(user_id)
 );
 
 
-create table changes (
+create table if not exists changes (
     document_id varchar not null references documents(document_id),
     from_version bigint not null,
     updated_time bigint not null,

@@ -122,8 +122,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     window.history.replaceState(client.state.zoomId, document.title, rootUrl)
     observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {
       if (!duringGoTo) {
-        // , rootUrl + client.state.nodeRefRelative(uuid)
         window.history.pushState(uuid, document.title)
+         //, rootUrl + client.state.nodeRefRelative(uuid))
       }
     }))
     event(window, "popstate", (ev: PopStateEvent) => {
@@ -164,7 +164,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
   private val fpsDisplay = div(
     position := "absolute",
     left := "16px",
-    top := "16px",
+    bottom := "16px",
     color := "#FFFFFF",
     padding := "8px",
     backgroundColor := "#FFFFFF22"

@@ -326,6 +326,13 @@ class Client(
     connection_.modify(_.copy(offline = true))
   }
 
+
+  override def getNodeInfo(uuid: String): Future[Option[NodeInfo]] = {
+    val request = api.request[Option[NodeInfo]](s"/document/$docId/node/$uuid/info")
+    request.failed.foreach(e => e.printStackTrace())
+    request
+  }
+
   private def request[T](head: Int, a: Future[T], onSuccess: T => Unit): Unit = {
     requesting = true
     a.onComplete {

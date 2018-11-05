@@ -25,6 +25,7 @@ import play.api.Logger
 import repos.{DocumentRepository, UserRepository}
 
 import scala.collection.mutable
+import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
@@ -46,17 +47,17 @@ class DocumentActor(id: String, docs: DocumentRepository) extends Actor {
       if (server == null) {
         val root = Await.result(docs.init(id), 10.seconds)
         server = new Server(id, root._1, root._2) {
-          override def persist(changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
-            Await.result(docs.changes(id, version, changes), 10.seconds)
+          override def persist(userId: String, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Unit = {
+            Await.result(docs.changes(userId, id, version, changes), 10.seconds)
           }
 
           override def loadChanges(from: Int, until: Int): Option[Seq[model.transaction.Node]] = None
         }
       }
       sender ! server.init()
-    case c: ChangeRequest =>
-      sender ! server.change(c)
-      if (c.ts.nonEmpty) context.children.foreach(_ ! "update")
+    case c: (User, ChangeRequest) =>
+      sender ! server.change(c._1.userId, c._2)
+      if (c._2.ts.nonEmpty) context.children.foreach(_ ! "update")
     case out: ActorRef =>
       sender ! context.actorOf(Props(new Actor {
 
@@ -101,7 +102,15 @@ class DocumentController @Inject() (
   private val documents = system.actorOf(Props(new DocumentsActor(docs)))
 
   def index(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
-    Ok(views.html.editor(documentId))
+    Ok(views.html.editor(documentId, ""))
+  }
+
+  def node(documentId: String, nid: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
+    Ok(views.html.editor(documentId, nid))
+  }
+
+  def nodeInfo(documentId: String, nid: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+    docs.nodeInfo(documentId, nid).map(a => Ok.sendEntity(toEntity(a)))
   }
 
   def init(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
@@ -111,10 +120,10 @@ class DocumentController @Inject() (
     }
   }
 
-  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async(parse.byteString) { implicit request =>
+  def changes(documentId: String) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Edit)).async(parse.byteString) { implicit request =>
     val change = fromRequest[ChangeRequest](request)
     implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? change).mapTo[Try[ChangeResponse]].map {
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? (request.identity, change)).mapTo[Try[ChangeResponse]].map {
       case Success(suc) =>
         Ok.sendEntity(toEntity(suc))
       case Failure(exc) =>

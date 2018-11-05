@@ -52,8 +52,8 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     db.run(sql"select document_id from permissions where user_id = $userId and permission_level = ${PermissionLevel.Admin}".as[String].headOption)
   }
 
-  def hasReadPermission(userId: String, documentId: String): _root_.scala.concurrent.Future[Boolean] = {
-    db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= ${PermissionLevel.ReadOnly}".as[String].headOption).map(_.isDefined)
+  def hasPermission(userId: String, documentId: String, level: Int): _root_.scala.concurrent.Future[Boolean] = {
+    db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= $level".as[String].headOption).map(_.isDefined)
   }
 
   def activate(userId: String, activate: Boolean = true): Future[Option[Unit]] =

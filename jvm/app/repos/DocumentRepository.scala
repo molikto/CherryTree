@@ -37,6 +37,15 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   }
 
 
+  def nodeInfo(did: String, nid: String): Future[Option[NodeInfo]] = {
+    db.run(
+      sql"""
+            select nodes.created_time, nodes.last_updated_time, users.email, users.name_
+             from nodes, users where nodes.document_id = $did and nodes.node_id = $nid and users.user_id = nodes.creator_id
+         """.as[NodeInfo].headOption)
+  }
+
+
   def list(uid: String): Future[Seq[ListResult]] =
     db.run(
       sql"""select documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level
@@ -68,12 +77,12 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
 
 
 
-  def changes(did: String, version: Int, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Future[Unit] = {
+  def changes(userId: String, did: String, version: Int, changes: Seq[(model.transaction.Node, Seq[model.operation.Node.Diff])]): Future[Unit] = {
     val time = System.currentTimeMillis()
     val ops = changes.zipWithIndex.flatMap(p => {
       val c = p._1
       val v = version + p._2
-      c._2.map(d => diffToQuery(did, time, d)) :+ sqlu"insert into changes values ($did, $v, $time, ${c._1})"
+      c._2.map(d => diffToQuery(userId, did, time, d)) :+ sqlu"insert into changes values ($did, $v, $time, ${c._1})"
     }) :+ sqlu"update documents set current_version = ${version + changes.size}, last_updated_time = $time where document_id = $did"
     db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }

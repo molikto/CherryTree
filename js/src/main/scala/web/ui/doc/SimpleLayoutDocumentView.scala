@@ -34,7 +34,7 @@ class SimpleLayoutDocumentView(
 
   dom.appendChild(div(`class` := "unselectable", height := "36px",  display := "block", contenteditable := "false").render)
   dom.appendChild(rootFrame)
-  dom.appendChild(div(`class` := "unselectable", height := "36px",  display := "block", contenteditable := "false").render)
+  dom.appendChild(div(`class` := "unselectable", height := "246px",  display := "block", contenteditable := "false").render)
 
   /**
     *
