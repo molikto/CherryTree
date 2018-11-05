@@ -34,7 +34,7 @@ object ClientInitializerView {
 /**
   */
 @JSExportTopLevel("ClientInitializerView")
-class ClientInitializerView(rootView: HTMLElement, documentId: String, nodeId: String, global: Boolean) {
+class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Option[UUID], global: Boolean) {
   ClientInitializerView.initializeGlobal()
 
 
@@ -46,7 +46,7 @@ class ClientInitializerView(rootView: HTMLElement, documentId: String, nodeId: S
       p("connecting")
     }.render)
     val ec = scala.concurrent.ExecutionContext.Implicits.global
-    ClientInitializer.init(WebApi, UUID.fromString(documentId), UUID.fromString(nodeId)).onComplete {
+    ClientInitializer.init(WebApi, documentId, nodeId).onComplete {
       case Success(c) =>
         goClient(c)
       case Failure(exception) =>

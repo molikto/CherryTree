@@ -430,6 +430,7 @@ object Node extends DataObject[Node] {
 
   val jsonFormat: Format[Node] = Json.format[Node]
 
+
   val pickler: Pickler[Node] = new Pickler[Node] {
     override def pickle(obj: Node)(implicit state: PickleState): Unit = {
       import state.enc._

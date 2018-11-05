@@ -82,7 +82,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
     val ops = changes.zipWithIndex.flatMap(p => {
       val c = p._1
       val v = version + p._2
-      c._3.map(d => diffToQuery(userId, did, time, c._2, d)) :+ sqlu"insert into changes values ($did, $v, ${c._2}, $time, ${c._1})"
+      c._3.map(d => diffToQuery(userId, did, time, c._2, d)) :+ sqlu"insert into changes values ($did, ${c._2}, $v, $time, ${c._1})"
     }) :+ sqlu"update documents set current_version = ${version + changes.size}, last_updated_time = $time where document_id = $did"
     db.run(DBIO.seq(ops : _*).transactionally).map(_ => Unit)
   }

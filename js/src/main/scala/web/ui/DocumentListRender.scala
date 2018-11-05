@@ -24,6 +24,7 @@ import scala.scalajs.js
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer, Uint8Array}
 import scala.util.{Failure, Success}
 
+
 @JSExportTopLevel("DocumentListRender")
 class DocumentListRender(rootView: HTMLElement) extends View {
 
