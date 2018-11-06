@@ -47,13 +47,13 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     display := "flex",
     flexDirection := "column",
     justifyContent := "center",
-    `class` := "ct-desc").render
+    cls := "ct-desc").render
 
   protected def predefined: Seq[SourceEditType]  = SourceEditType.all
 
   private val selectView: HTMLSelectElement = select(
       height := "24px",
-      `class` := "ct-select",
+      cls := "ct-select",
       flex := "0 1 auto",
       alignSelf := "right",
       onchange := { e: Event => {
@@ -71,7 +71,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     display := "flex",
     flexDirection := "column",
     padding := "8px",
-    `class` := "ct-card unselectable",
+    cls := "ct-card unselectable",
     ta,
     div(height := "24px",
       marginTop := "8px",

@@ -69,7 +69,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
     *
     */
 
-  dom = p(`class` := (if (isHr) "ct-rich-hr ct-rich" else "ct-rich")).render
+  dom = p(cls := (if (isHr) "ct-rich-hr ct-rich" else "ct-rich")).render
 
   updateContent(initData)
 
@@ -107,11 +107,11 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       && root.childNodes(0).asInstanceOf[Span].className == "ct-hint-color") {
     } else {
       removeAllChild(root)
-      root.appendChild(span(`class` := "ct-hint-color", emptyStr).render)
+      root.appendChild(span(cls := "ct-hint-color", emptyStr).render)
     }
   }
 
-  private def cg(a: String, extraClass: String = "") = span(`class` := "ct-cg " + extraClass,
+  private def cg(a: String, extraClass: String = "") = span(cls := "ct-cg " + extraClass,
     contenteditable := "false", a)
 
   override def tempEditableTempDuringSelectionChange(b: Boolean): Unit = {
@@ -145,54 +145,54 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
   private def rec(seq: Seq[model.data.Text]): Seq[Frag] = {
     seq.map {
       case Text.Emphasis(c) => span(
-        `class` := "ct-cg-node",
+        cls := "ct-cg-node",
         cg("*"),
-        em(`class` := "ct-c-em", rec(c)),
+        em(cls := "ct-c-em", rec(c)),
         cg("*")
       )
       case Text.Strong(c) => span(
-        `class` := "ct-cg-node",
+        cls := "ct-cg-node",
         cg("*", "ct-cg-shadow"),
-        strong(`class` := "ct-c-strong", rec(c)),
+        strong(cls := "ct-c-strong", rec(c)),
         cg("*", "ct-cg-shadow")
       )
       case Text.StrikeThrough(c) => span(
-        `class` := "ct-cg-node",
+        cls := "ct-cg-node",
         cg("~"),
-        del(`class` := "ct-c-del", rec(c)),
+        del(cls := "ct-c-del", rec(c)),
         cg("~")
       )
       case Text.HashTag(c) => span(
-        `class` := "ct-cg-node ct-cg-node-hashtag",
+        cls := "ct-cg-node ct-cg-node-hashtag",
         cg("#"),
-        span(`class` := "ct-c-hashtag", rec(c)),
+        span(cls := "ct-c-hashtag", rec(c)),
         cg("#")
       )
       case Text.HashDef(c) => span(
-        `class` := "ct-cg-node ct-cg-node-hashdef",
+        cls := "ct-cg-node ct-cg-node-hashdef",
         cg("#", "ct-cg-shadow"),
-        span(`class` := "ct-c-hashdef", rec(c)),
+        span(cls := "ct-c-hashdef", rec(c)),
         cg("#", "ct-cg-shadow")
       )
       case l@Text.Link(t, b, c) =>
         val tt: String = if (c.isEmpty) b.str else s"${c.str}\n${b.str}"
         span(
-          `class` := "ct-cg-node",
+          cls := "ct-cg-node",
           title := tt,
           cg("["),
-          span(`class` := (if (l.isNodeRef) "ct-c-link-node" else "ct-c-link"), rec(t)),
+          span(cls := (if (l.isNodeRef) "ct-c-link-node" else "ct-c-link"), rec(t)),
           cg("]")
         )
       case Text.Image(b, c) =>
         val sp = span(
-          `class` := "ct-cg-node ct-cg-atom",
+          cls := "ct-cg-node ct-cg-atom",
           contenteditable := false,
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (b.isEmpty) {
           sp.appendChild(warningInline("empty image").render)
         } else {
-          sp.appendChild(img(`class` := "ct-image", title := c.str, src := b.str, onerror := {e: Event => {
+          sp.appendChild(img(cls := "ct-image", title := c.str, src := b.str, onerror := {e: Event => {
             sp.removeChild(sp.childNodes(1))
             sp.insertBefore(errorInline("image error").render, sp.childNodes(1))
           }}).render)
@@ -202,7 +202,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       case Text.HTML(c) =>
         val a = span(
          contenteditable := "false",
-          `class` := "ct-cg-node ct-cg-atom",
+          cls := "ct-cg-node ct-cg-atom",
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (c.isBlank) {
@@ -210,7 +210,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
         } else {
           try {
             val b = span(
-              `class` := "ct-inline-html"
+              cls := "ct-inline-html"
             ).render
             b.innerHTML = c.str
             a.appendChild(b)
@@ -224,7 +224,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       case Text.LaTeX(c) =>
         val a = span(
           contenteditable := "false",
-          `class` := "ct-cg-node ct-cg-atom ct-latex-p",
+          cls := "ct-cg-node ct-cg-atom ct-latex-p",
           data := c.str,
           span(EvilChar)
         ).render
@@ -233,9 +233,9 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
         a: Frag
       case Text.Code(c) =>
         span(
-          `class` := "ct-cg-node",
+          cls := "ct-cg-node",
           cg("`"),
-          span(`class` := "ct-c-code",
+          span(cls := "ct-c-code",
             if (c.str.isEmpty) Seq.empty[Frag] : Frag else c.str),
           cg("`")
         )

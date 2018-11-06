@@ -40,14 +40,14 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
 
 
   private val parentsView = new StaticDiffContentListView(onClick, onDoubleClick)
-  parentsView.addHeader(div(`class` := "ct-section-label", "go up").render)
+  parentsView.addHeader(div(cls := "ct-section-label", "go up").render)
   private val tocView = new StaticDiffTocView(onClick, onDoubleClick, 1)
 
   private var hideLevel: Int = Try {WebApi.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 
   private val selectView: HTMLSelectElement = select(
     height := "24px",
-    `class` := "ct-select",
+    cls := "ct-select",
     flex := "0 1 auto",
     alignSelf := "right",
     (3 to 6).map(a => option(s"hide heading $a", value := a.toString)),
@@ -72,7 +72,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     display := "flex",
     justifyContent := "space-between",
     flexDirection := "row",
-    `class` := "ct-section-label",
+    cls := "ct-section-label",
     "contents",
     selectView
   ).render)
@@ -82,7 +82,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     width := "100%",
     height := "100%",
     overflowY := "scroll",
-    `class` := "ct-scroll ct-panel ct-document-style ",
+    cls := "ct-scroll ct-panel ct-document-style ",
     fontSize := "16px",
     padding := "24px",
     parentsView,

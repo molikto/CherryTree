@@ -25,7 +25,7 @@ class QuickSearchDialog(val client: Client,
 
   override protected val search = input(
     width := "100%",
-    `class` := "ct-input ct-input-large"
+    cls := "ct-input ct-input-large"
   ).render
 
 
@@ -40,12 +40,12 @@ class QuickSearchDialog(val client: Client,
     flex := "1 1 auto",
     width := "100%",
     height := "calc(100% - 57px)",
-    `class` := "ct-scroll ct-document-style ct-panel",
-    div(`class` := "ct-desc", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc)
+    cls := "ct-scroll ct-document-style ct-panel",
+    div(cls := "ct-desc", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc)
   ).render
 
   dom = div(
-    `class` := "ct-card",
+    cls := "ct-card",
     display := "flex",
     flexDirection := "column",
     div(width := "100%", padding := "10px", search),

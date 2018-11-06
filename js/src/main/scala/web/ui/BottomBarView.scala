@@ -35,16 +35,16 @@ class BottomBarView(val client: Client) extends UnselectableView  {
 
   private val debugVersionInfo = span(marginLeft := "12px", "0").render
 
-  private val debugErrorInfo = span(`class` := "ct-error-color", marginLeft := "12px", "").render
+  private val debugErrorInfo = span(cls := "ct-error-color", marginLeft := "12px", "").render
 
   private val connection = span(alignSelf.flexEnd).render
 
-  private def divider() = span(" | ", `class` := "ct-hint-color")
+  private def divider() = span(" | ", cls := "ct-hint-color")
 
 
   dom = div(
     width := "100%",
-    `class` := "ct-panel",
+    cls := "ct-panel",
     paddingTop := "1px",
     paddingLeft := "8px",
     paddingRight := "8px",

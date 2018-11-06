@@ -29,7 +29,14 @@ class ApplicationController @Inject() (
     "created.at",
     "options",
     "new.from.backup",
-    "backup")
+    "backup",
+    "delete",
+    "delete.confirm.title",
+      "delete.confirm.message",
+    "confirm",
+    "cancel",
+    "create.new.document"
+  )
 
   val messages = Action { implicit request =>
     Ok(jsMessages(Some("window.Messages")))

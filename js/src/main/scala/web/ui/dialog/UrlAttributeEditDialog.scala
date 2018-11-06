@@ -16,12 +16,12 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
 
   private val urlInput = input(
     width := "100%",
-    `class` := "ct-input text-selectable"
+    cls := "ct-input text-selectable"
   ).render
 
   private val titleInput = input(
     width := "100%",
-    `class` := "ct-input text-selectable"
+    cls := "ct-input text-selectable"
   ).render
 
 
@@ -30,11 +30,11 @@ class UrlAttributeEditDialog(protected val layer: OverlayLayer) extends MountedO
   }
 
   dom = div(
-    `class` := "ct-card unselectable",
+    cls := "ct-card unselectable",
     padding := "6px",
-    span("URL", `class` := "ct-input-label"),
+    span("URL", cls := "ct-input-label"),
     div(width := "100%", urlInput, marginBottom := "6px"),
-    span("title", `class` := "ct-input-label"),
+    span("title", cls := "ct-input-label"),
     div(width := "100%", titleInput),
   ).render
 

@@ -73,7 +73,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
       for (rect <- ar.reverse) {
         dom.appendChild(
           div(
-            `class` := "ct-rich-selection",
+            cls := "ct-rich-selection",
             contenteditable := "false",
             left := rect.left - p.left,
             top := rect.top - p.top,

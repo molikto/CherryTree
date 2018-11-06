@@ -12,7 +12,7 @@ class UndoHistoryPanel(val client: Client) extends UnselectableView  {
     width := "100%",
     height := "100%",
     overflowY := "scroll",
-    `class` := "ct-scroll ct-panel",
+    cls := "ct-scroll ct-panel",
     padding := "24px",
   ).render
 

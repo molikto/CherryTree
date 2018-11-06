@@ -8,8 +8,10 @@ import client.LocalStorage
 import monix.reactive.Observable
 import monix.reactive.subjects.PublishSubject
 import org.scalajs.dom
+import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.ext.Ajax.InputData
 import org.scalajs.dom.raw.{Event, MessageEvent, WebSocket}
-import org.scalajs.dom.window
+import org.scalajs.dom.{XMLHttpRequest, window}
 import scalatags.JsDom.all.s
 
 import scala.concurrent.Future
@@ -45,12 +47,22 @@ object WebApi extends client.Api {
     }
   }
 
-  override def requestBytes(url: String, body: ByteBuffer): Future[ByteBuffer] = {
-    dom.ext.Ajax.post(
+  def delete(url: String): Future[XMLHttpRequest] = {
+    dom.ext.Ajax.delete(
+      url = url,
+      responseType = "arraybuffer",
+      headers = Map("Csrf-Token" -> "nocheck")
+    )
+  }
+
+  override def requestBytes(url: String, body: ByteBuffer, method: String = "POST"): Future[ByteBuffer] = {
+    dom.ext.Ajax.apply(method = method,
       url = url,
       data = body,
       responseType = "arraybuffer",
-      headers = Map("Content-Type" -> "application/octet-stream")
+      headers = Map("Content-Type" -> "application/octet-stream", "Csrf-Token" -> "nocheck"),
+      timeout = 0,
+      withCredentials = false
     ).map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
   }
 

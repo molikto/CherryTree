@@ -35,13 +35,13 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
   }
 
   private val commands =
-    span(span(`class` := "ct-tab-icon ct-tab-keyboard"), a("Commands")).render
+    span(span(cls := "ct-tab-icon ct-tab-keyboard"), a("Commands")).render
 
-  private val quickAccess = span(span(`class` := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
+  private val quickAccess = span(span(cls := "ct-tab-icon ct-tab-quick"), a("Quick Access")).render
 
-  private val undoHistory = span(span(`class` := "ct-tab-icon ct-tab-bug"), a("Undo History")).render
+  private val undoHistory = span(span(cls := "ct-tab-icon ct-tab-bug"), a("Undo History")).render
 
-  private val tags = span(span(`class` := "ct-tab-icon ct-tab-tags"), a("Tags")).render
+  private val tags = span(span(cls := "ct-tab-icon ct-tab-tags"), a("Tags")).render
 
   private var childs = Seq(commands, tags, quickAccess)
 
@@ -101,12 +101,12 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   dom = div(
     flex := "0 0 auto",
-    `class` := "ct-panel",
+    cls := "ct-panel",
     minWidth := minWidthOpen,
     width := "350px",
     height := "100%",
     div(position := "absolute", width := "22px", height := "100%", background := "#333842"),
-    div(`class` := "ct-tabs",
+    div(cls := "ct-tabs",
       childs,
     ),
     container

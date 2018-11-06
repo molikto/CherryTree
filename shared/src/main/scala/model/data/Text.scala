@@ -424,7 +424,7 @@ object Text {
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
 
-    override def toScalaTags: Frag = code(`class` := "latex", content.str)
+    override def toScalaTags: Frag = code(cls := "latex", content.str)
 
     override def toPlainScalaTags: Frag = raw(content.str)
   }

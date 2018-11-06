@@ -28,7 +28,7 @@ object LaTeXMacroCache {
       a.insertBefore(warningInline("empty LaTeX").render, a.childNodes(index))
     } else {
       val b = span(
-        `class` := "ct-latex"
+        cls := "ct-latex"
       ).render
       try {
         instance.opts.asInstanceOf[js.Dynamic].displayMode = display

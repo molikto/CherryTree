@@ -18,7 +18,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
     height := "100%",
     whiteSpace := "pre-wrap",
     overflowY := "scroll",
-    `class` := "ct-scroll ct-panel",
+    cls := "ct-scroll ct-panel",
     padding := "24px",
   ).render
 
@@ -43,14 +43,14 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
           div()
         } else {
           div(
-            `class` := "hide-children",
+            cls := "hide-children",
             marginBottom := "8px",
             {
               val h = h6(
                 display := "flex",
                 flexDirection := "row",
                 alignItems := "center",
-                `class` := "ct-flat-selectable",
+                cls := "ct-flat-selectable",
                 marginLeft := "-6px",
                 marginRight := "-6px",
                 marginBottom := "0px",
@@ -58,7 +58,7 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                 paddingRight := "6px",
                 paddingTop := "4px",
                 paddingBottom := "4px",
-                i(`class` := "ct-general-hold"),
+                i(cls := "ct-general-hold"),
                 div(marginLeft := "4px", name)
                 ).render
               h.addEventListener("click", onPanelClick)
@@ -72,14 +72,14 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
                   paddingRight := "4px",
                   paddingTop := "5px",
                   paddingBottom := "5px",
-                  Some(span(tag("kbd")(`class` := "ct-kbd2", "N", title := "this command is repeatable when prefixed by a number"), " ")).filter(_ => client.enableModal && c.repeatable),
-                  if (c.actDoubleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1️double", title := "double click"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.actTripleClick) span(tag("kbd")(`class` := "ct-kbd2", "\uD83D\uDDB1triple", title := "triple click"), " ") else Seq.empty[Frag] : Frag,
-                  c.inputRule.map(a => span(tag("kbd")(`class` := "ct-kbd", a.shortDesc, title := a.longDesc), " ")),
-                  c.textCommand.map(a => span(tag("kbd")(`class` := "ct-kbd", ":" + a, title := "use command menu to invoke this command"), " ")),
-                  c.keysOn(client.enableModal).map(a => span(tag("kbd")(`class` := "ct-kbd", Key.toString(a)), " ")),
-                  if (c.needsChar) span(tag("kbd")(`class` := "ct-kbd2", "char", title := "this command needs have a char as argument"), " ") else Seq.empty[Frag] : Frag,
-                  if (c.needsMotion) span(tag("kbd")(`class` := "ct-kbd2", "motion", title := "this command needs a motion as argument"), " ") else Seq.empty[Frag] : Frag,
+                  Some(span(tag("kbd")(cls := "ct-kbd2", "N", title := "this command is repeatable when prefixed by a number"), " ")).filter(_ => client.enableModal && c.repeatable),
+                  if (c.actDoubleClick) span(tag("kbd")(cls := "ct-kbd2", "\uD83D\uDDB1️double", title := "double click"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.actTripleClick) span(tag("kbd")(cls := "ct-kbd2", "\uD83D\uDDB1triple", title := "triple click"), " ") else Seq.empty[Frag] : Frag,
+                  c.inputRule.map(a => span(tag("kbd")(cls := "ct-kbd", a.shortDesc, title := a.longDesc), " ")),
+                  c.textCommand.map(a => span(tag("kbd")(cls := "ct-kbd", ":" + a, title := "use command menu to invoke this command"), " ")),
+                  c.keysOn(client.enableModal).map(a => span(tag("kbd")(cls := "ct-kbd", Key.toString(a)), " ")),
+                  if (c.needsChar) span(tag("kbd")(cls := "ct-kbd2", "char", title := "this command needs have a char as argument"), " ") else Seq.empty[Frag] : Frag,
+                  if (c.needsMotion) span(tag("kbd")(cls := "ct-kbd2", "motion", title := "this command needs a motion as argument"), " ") else Seq.empty[Frag] : Frag,
                   c.description)
               ).render
               dom.asInstanceOf[js.Dynamic].command = c.asInstanceOf[scala.scalajs.js.Any]

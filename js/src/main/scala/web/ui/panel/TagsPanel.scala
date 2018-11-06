@@ -31,7 +31,7 @@ class TagsPanel(val client: Client, doc: () => View) extends UnselectableView wi
     height := "100%",
     whiteSpace := "pre-wrap",
     overflowY := "scroll",
-    `class` := "ct-scroll ct-panel",
+    cls := "ct-scroll ct-panel",
     padding := "24px",
     tagsView
   ).render

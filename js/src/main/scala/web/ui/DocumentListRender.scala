@@ -23,63 +23,93 @@ import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer, Uint8Array}
 import scala.util.{Failure, Success}
+import web.ui
 
 
 @JSExportTopLevel("DocumentListRender")
 class DocumentListRender(rootView: HTMLElement) extends View {
+
+  private val modal = ui.createModal()
 
   private val list = div(
   ).render
   private val ff: Form =
     form(
       marginTop := "120px",
-      action := "/documents/upload/boopickle", method := "post", enctype := "multipart/form-data",
-      div(`class` := "custom-file",
-        input(`type` := "file", `class` := "custom-file-input", id := "boopickle", name := "file", onchange := ((ev: UIEvent) => {
+      action := "/documents/upload/json", method := "post", enctype := "multipart/form-data",
+      div(cls := "custom-file",
+        input(`type` := "file", cls := "custom-file-input", id := "upload_json", name := "file", onchange := ((ev: UIEvent) => {
           ff.submit()
         })),
-        tag("label")(`class` := "custom-file-label", `for` := "boopickle", Messages("new.from.backup"))
+        tag("label")(cls := "custom-file-label", `for` := "upload_json", Messages("new.from.backup"))
       )
     ).render
+
+  private val createDoc: Form =
+    form(
+      marginTop := "24px",
+      action := "/documents/create", method := "post", enctype := "multipart/form-data",
+      button(
+        `type` := "button",
+        cls := "btn btn-primary",
+        Messages("create.new.document"),
+        onclick := ((ev: MouseEvent) => {
+          createDoc.submit()
+        }))
+    ).render
+
   dom = div(
     list,
-    ff
+    ff,
+    createDoc,
+    modal.root
   ).render
 
   attachToNode(rootView)
 
 
-  WebApi.request[Seq[ListResult]]("/documents").onComplete {
+  WebApi.get[Seq[ListResult]]("/documents").onComplete {
     case Success(res) =>
       res.foreach(item => {
         val contentView = ContentView.create(item.title, None)
         list.appendChild(div(
           a(
-            `class` := "ct-document-style document-list-title",
+            cls := "ct-document-style document-list-title",
             href := s"/document/${item.id}", contentView),
           p(
-            `class` := "secondary-text",
+            cls := "secondary-text",
             Messages("last.updated", formatDate(item.updatedTime))
           ),
           div(
             display := "flex",
             p(
-              `class` := "secondary-text",
+              cls := "secondary-text",
               flex := "1 1",
               Messages("created.at", formatDate(item.createdTime))),
-            div(`class` := "dropdown",
-              a(`class` := "secondary-text-button dropdown-toggle",
+            div(cls := "dropdown",
+              a(cls := "secondary-text-button dropdown-toggle",
                 href := "",
                 attr("data-toggle") := "dropdown",
                 Messages("options")
               ),
-              ul(`class` := "dropdown-menu", role := "menu",
-                a(`class` := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
+              ul(cls := "dropdown-menu", role := "menu",
+                a(cls := "dropdown-item", Messages("delete"), href := "", onclick := ((ev: MouseEvent) => {
+                  modal.body.textContent = Messages("delete.confirm.message")
+                  modal.positive.textContent = Messages("confirm")
+                  modal.negative.textContent = Messages("cancel")
+                  modal.positive.onclick = (ev: MouseEvent) => {
+                    modal.positiveForm.action = s"/document/${item.id}/delete"
+                    modal.positiveForm.submit()
+                  }
+                  jQ(modal.root).modal()
+                  ev.preventDefault()
+                })),
+                a(cls := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
               )
             )
           )
         ).render)
-        list.appendChild(hr(`class` := "small-hr").render)
+        list.appendChild(hr(cls := "small-hr").render)
       })
     case Failure(exception) =>
       exception.printStackTrace()

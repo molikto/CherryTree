@@ -27,7 +27,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   dom = div(
     width := "100%",
-    `class` := "cherrytree",
+    cls := "cherrytree",
     height := "100%",
     display :="flex",
     position := "relative",
@@ -36,7 +36,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       div(
         position := "absolute",
         zIndex := "-2",
-        `class` := "ct-document-view-background",
+        cls := "ct-document-view-background",
         width := "100%",
         height := "100%"
       ) : Frag
@@ -47,7 +47,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
   private var leftPanel: View = null
 
 
-  private val panelSplitter = div(id := "ctTopPanelSplitter", `class` := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
+  private val panelSplitter = div(id := "ctTopPanelSplitter", cls := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
   leftPanel = new LeftPanelSwitcher(client, () => this, enableResizePanel).attachTo(this)
 

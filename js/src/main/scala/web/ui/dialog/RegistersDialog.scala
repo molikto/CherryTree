@@ -22,7 +22,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
 
   override protected val search = input(
     width := "100%",
-    `class` := "ct-input"
+    cls := "ct-input"
   ).render
 
   override protected val list = div(
@@ -31,12 +31,12 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
     minHeight := "0px",
     overflowY := "scroll",
     overflowX := "hidden",
-    `class` := "ct-scroll ct-panel"
+    cls := "ct-scroll ct-panel"
   ).render
 
 
   dom = div(
-    `class` := "ct-card",
+    cls := "ct-card",
     div(width := "100%", padding := "6px", search),
     width := "480px",
     list
@@ -57,13 +57,13 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
       display := "flex",
       flexDirection := "row",
       alignItems := "center",
-      `class` := "ct-menu-item ",
+      cls := "ct-menu-item ",
       paddingLeft := "5px",
-      tag("kbd")(`class` := "ct-kbd-small", Character.toString(t._1.toChar)),
+      tag("kbd")(cls := "ct-kbd-small", Character.toString(t._1.toChar)),
       div(
         marginLeft := "10px",
         t._2.map {
-          case Registerable.Unicode(u) => code(`class` := "ct-c-code", u.str)
+          case Registerable.Unicode(u) => code(cls := "ct-c-code", u.str)
           case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, false) : Frag
           case Registerable.Node(a, _) =>
             if (a.isEmpty) "": Frag

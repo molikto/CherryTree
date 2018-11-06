@@ -28,13 +28,13 @@ class SimpleLayoutDocumentView(
 
 
   private val rootFrame = div(
-    `class` := "ct-document-style ct-d-frame",
+    cls := "ct-document-style ct-d-frame",
     width := "100%"
   ).render
 
-  dom.appendChild(div(`class` := "unselectable", height := "36px",  display := "block", contenteditable := "false").render)
+  dom.appendChild(div(cls := "unselectable", height := "36px",  display := "block", contenteditable := "false").render)
   dom.appendChild(rootFrame)
-  dom.appendChild(div(`class` := "unselectable", height := "246px",  display := "block", contenteditable := "false").render)
+  dom.appendChild(div(cls := "unselectable", height := "246px",  display := "block", contenteditable := "false").render)
 
   /**
     *
@@ -195,7 +195,7 @@ class SimpleLayoutDocumentView(
   private def insertNodes(parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
     val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
     contents.zipWithIndex.foreach(a => {
-      val frame = div(`class` := "ct-d-frame").render
+      val frame = div(cls := "ct-d-frame").render
       list.insertBefore(frame, before)
       insertNodeRec(parentCur :+ a._2, a._1, frame)
     })
@@ -229,12 +229,12 @@ class SimpleLayoutDocumentView(
 
   private def insertNodeRec(cur: model.cursor.Node, root: model.data.Node, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val box = div(`class` := classesFromNodeAttribute(root)).render
+    val box = div(cls := classesFromNodeAttribute(root)).render
     parent.insertBefore(box, firstChild)
-    val hold = tag("div")(contenteditable := "false", `class` := "ct-d-hold").render
+    val hold = tag("div")(contenteditable := "false", cls := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
     createContent(root.content, root.contentType).attachToNode(box)
-    val list = div(`class` := "ct-d-childlist").render
+    val list = div(cls := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
     hold.addEventListener("mouseover", handleHoverEvent)

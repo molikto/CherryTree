@@ -12,11 +12,11 @@ class SearchBar(
 
 
   private val search = input(
-    `class` := "ct-input",
+    cls := "ct-input",
   ).render
 
   dom = div(
-    `class` := "ct-card",
+    cls := "ct-card",
     div(width := "100%", padding := "6px", search),
     minWidth := "250px",
     position := "absolute",

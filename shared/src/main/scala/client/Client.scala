@@ -39,19 +39,25 @@ import scala.util.{Failure, Random, Success, Try}
 trait Api {
   def localStorage: LocalStorage
 
+  def get[S](path: String)
+    (implicit s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
+    val bytes = ByteBuffer.wrap(Array.empty)
+    requestBytes(path, bytes, "GET").map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
+  }
+
   def request[S](path: String)
     (implicit s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
     val bytes = ByteBuffer.wrap(Array.empty)
-    requestBytes(path, bytes).map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
+    requestBytes(path, bytes, "POST").map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
   }
 
   def request[R, S](path: String, content: R)
     (implicit pickleState: PickleState, r: Pickler[R], s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
     val bytes = Pickle.intoBytes(content)(implicitly, implicitly)
-    requestBytes(path, bytes).map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
+    requestBytes(path, bytes, "POST").map(b => Unpickle[S](implicitly).fromBytes(b)(unpickleState))
   }
 
-  def requestBytes(path: String, content: ByteBuffer = ByteBuffer.wrap(Array.empty[Byte])): Future[ByteBuffer]
+  def requestBytes(path: String, content: ByteBuffer = ByteBuffer.wrap(Array.empty[Byte]), method: String): Future[ByteBuffer]
 
   def setupWebSocket(path: String): (Closeable, Observable[Either[String, Throwable]])
 }
@@ -334,7 +340,7 @@ class Client(
 
 
   override def getNodeInfo(uuid: UUID): Future[Option[NodeInfo]] = {
-    val request = api.request[Option[NodeInfo]](s"/document/$docId/node/$uuid/info")
+    val request = api.get[Option[NodeInfo]](s"/document/$docId/node/$uuid/info")
     request.failed.foreach {
       case e => e.printStackTrace()
     }

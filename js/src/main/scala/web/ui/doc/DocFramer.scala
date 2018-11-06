@@ -91,15 +91,15 @@ trait DocFramer {
 
   def contentViewAndHold(node: model.data.Node): HTMLElement = {
     div(
-      `class` := "ct-d-folded",
+      cls := "ct-d-folded",
       display := "flex",
       flexDirection := "row",
       div(
-        `class` := classesFromNodeAttribute(node),
+        cls := classesFromNodeAttribute(node),
         create(node)
       ),
       tag("span")(
-        `class` := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded " else "ct-d-hold "),
+        cls := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded " else "ct-d-hold "),
         if (docFramerIsSmall >= 2) {
           marginLeft := "-8px"
           marginTop := "6px"

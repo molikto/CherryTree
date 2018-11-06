@@ -19,10 +19,10 @@ class SourceView(
 ) extends StaticCodeView {
 
   // background := "#304148",
-  private val preCode = pre(`class` := "ct-code-pre cm-s-oceanic-next").render
+  private val preCode = pre(cls := "ct-code-pre cm-s-oceanic-next").render
 
   private val remainingView = p(
-    `class` := "ct-sans ct-hint-color",
+    cls := "ct-sans ct-hint-color",
     marginTop := "0px",
     marginLeft := "4px",
     marginBottom := "4px",

@@ -48,6 +48,14 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   }
 
 
+  def delete(uuid: UUID): Future[Unit] = {
+    db.run(DBIO.seq(
+      sqlu"delete from changes where document_id = $uuid",
+      sqlu"delete from nodes where document_id = $uuid",
+      sqlu"delete from permissions where document_id = $uuid",
+      sqlu"delete from documents where document_id = $uuid"
+    ).transactionally)
+  }
 
 
   def list(uid: UUID): Future[Seq[ListResult]] = {

@@ -38,7 +38,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
   protected def currentZoomId: UUID = currentDoc.zoomId
 
   private val noEditable = div(
-    `class` := "unselectable",
+    cls := "unselectable",
     position := "absolute",
     top := "-30px",
     width := "1000px",
@@ -62,7 +62,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
 
   dom = div(
     position := "relative",
-    `class` := "ct-scroll ct-document-view-root " + (if (!web.debug_fakeSelection) "ct-document-view-background" else ""),
+    cls := "ct-scroll ct-document-view-root " + (if (!web.debug_fakeSelection) "ct-document-view-background" else ""),
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",

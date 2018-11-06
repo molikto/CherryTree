@@ -292,7 +292,7 @@ case class Node(
         else ol(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
       case Some(ChildrenType.DashList) =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ul(`class` := "dashed", childs.map(a => li(a.toScalaTags(hasWrapper = true))))
+        else ul(cls := "dashed", childs.map(a => li(a.toScalaTags(hasWrapper = true))))
       case _ =>
         if (childs.isEmpty) Seq.empty[Frag]: Frag
         else ul(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
@@ -398,7 +398,7 @@ object Node extends DataObject[Node] {
       override def toString: String = s"heading $i"
     }
 
-    override private[model] val name = "ContentType"
+    override private[model] val name = "content_type"
 
     override private[model] def parse(aa: JsValue) = aa match {
       case JsString(a) =>

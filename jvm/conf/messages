@@ -80,6 +80,14 @@ created.at = created at {0}
 options = options
 new.from.backup = import from backup…
 backup = backup
+delete = delete
+delete.confirm.title = Confirm delete
+delete.confirm.message = Are you sure to delete this document?
+confirm = confirm
+cancel = cancel
+create.new.document = create new document
+new.document = New document
+
 
 
 ##########

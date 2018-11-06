@@ -12,7 +12,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
 
   override protected val search = input(
     width := "100%",
-    `class` := "ct-input"
+    cls := "ct-input"
   ).render
 
   override protected val list = div(
@@ -21,11 +21,11 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     minHeight := "0px",
     overflowY := "scroll",
     overflowX := "hidden",
-    `class` := "ct-scroll ct-panel"
+    cls := "ct-scroll ct-panel"
   ).render
 
   dom = div(
-    `class` := "ct-card",
+    cls := "ct-card",
     div(width := "100%", padding := "6px", search),
     width := "480px",
     list
@@ -65,7 +65,7 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
       display := "flex",
       flexDirection := "row",
       alignContent := "center",
-      `class` := "ct-menu-item ",
+      cls := "ct-menu-item ",
       t.description
     ).render
   }
