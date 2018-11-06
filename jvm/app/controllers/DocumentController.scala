@@ -28,6 +28,7 @@ import repos.{DocumentRepository, UserRepository}
 
 import scala.collection.mutable
 import monix.execution.Scheduler.Implicits.global
+import play.api.libs.json.Json
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -165,6 +166,13 @@ class DocumentController @Inject() (
     implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
       Ok.sendEntity(toEntity(response))
+    }
+  }
+
+  def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+    implicit val timeout: Timeout = 1.minute
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
+      Ok(Json.toJson(response.node))
     }
   }
 

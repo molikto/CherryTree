@@ -1,3 +1,8 @@
+a:hover {
+    text-decoration: none;
+}
+
+
 .starter-template {
     padding: 40px 15px;
 }
@@ -77,6 +82,17 @@
   margin-bottom : 0px;
   font-size: 13px;
   color: #cccccc;
+}
+
+.secondary-text-button {
+  margin-bottom : 0px;
+  font-size: 13px;
+  color: #cccccc;
+  cursor: pointer;
+}
+
+.secondary-text-button:hover {
+  color: #aaaaaa;
 }
 
 meter {

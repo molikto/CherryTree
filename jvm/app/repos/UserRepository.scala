@@ -46,10 +46,6 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
     db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u)
   }
 
-  def indexDocumentId(userId: UUID): Future[Option[UUID]] = {
-    db.run(sql"select document_id from permissions where user_id = $userId and permission_level = ${PermissionLevel.Admin}".as[UUID].headOption)
-  }
-
   def hasPermission(userId: UUID, documentId: UUID, level: Int): _root_.scala.concurrent.Future[Boolean] = {
     db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= $level".as[UUID].headOption).map(_.isDefined)
   }

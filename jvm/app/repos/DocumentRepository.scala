@@ -16,12 +16,14 @@ import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json}
+import play.api.libs.json._
 import model._
 import api._
 import model.data.{Content, Node}
 import model.operation.Node
 import model.transaction.Node
+
+import scala.util.Success
 
 
 @Singleton
@@ -46,7 +48,9 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   }
 
 
-  def list(uid: UUID): Future[Seq[ListResult]] =
+
+
+  def list(uid: UUID): Future[Seq[ListResult]] = {
     db.run(
       sql"""select documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level
            from documents, nodes, permissions where
@@ -56,6 +60,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
               documents.root_node_id = nodes.node_id
            order by documents.last_updated_time desc
         """.as[ListResult])
+  }
 
   def init(a: UUID): Future[(model.data.Node, Int)] = {
     val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, UUID)].head.flatMap {

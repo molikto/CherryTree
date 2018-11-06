@@ -24,7 +24,12 @@ class ApplicationController @Inject() (
 )(implicit assets: AssetsFinder, ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
 
-  private val jsMessages = jsMessagesFactory.subset("last.updated", "created.at")
+  private val jsMessages = jsMessagesFactory.subset(
+    "last.updated",
+    "created.at",
+    "options",
+    "new.from.backup",
+    "backup")
 
   val messages = Action { implicit request =>
     Ok(jsMessages(Some("window.Messages")))
@@ -41,9 +46,9 @@ class ApplicationController @Inject() (
   def default = silhouette.UserAwareAction.async { implicit request =>
     request.identity match {
       case Some(user) =>
-        users.indexDocumentId(user.userId).map {
-          case Some(documentId) =>
-            Redirect(controllers.routes.DocumentController.index(documentId))
+        docs.list(user.userId).map(_.headOption).map {
+          case Some(res) =>
+            Redirect(controllers.routes.DocumentController.index(res.id))
           case None =>
             Redirect(controllers.routes.DocumentsController.home())
         }

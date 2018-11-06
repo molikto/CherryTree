@@ -63,6 +63,7 @@ object WebApi extends client.Api {
       if (holder.stopped) return
       holder.backoff = 600000 min (holder.backoff * 2)
       val ws = new WebSocket(url)
+      if (model.debug_webSocket) println(s"trying to create WebSocket with backoff ${holder.backoff}")
       ws.onopen = { event: Event =>
         holder.backoff = 1000
       }
@@ -72,10 +73,12 @@ object WebApi extends client.Api {
         } else {
           window.setTimeout(() => create(), holder.backoff)
         }
+        if (model.debug_webSocket) println(s"WebSocket closed")
       }
       ws.onerror = { event: Event =>
         holder.observable.onNext(Right(new Exception("websocket error")))
-        window.setTimeout(() => create(), holder.backoff)
+        if (model.debug_webSocket) println(s"WebSocket error")
+        //window.setTimeout(() => create(), holder.backoff)
       }
       ws.onmessage = { event: MessageEvent =>
         holder.observable.onNext(Left(event.data.toString))

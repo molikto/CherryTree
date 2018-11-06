@@ -5,7 +5,8 @@
 GET     /messages                            controllers.ApplicationController.messages
 
 
-# Home page
+# Home
+
 GET         /                                controllers.ApplicationController.default
 GET         /index                           controllers.ApplicationController.index
 GET         /sign_out                        controllers.ApplicationController.signOut
@@ -19,8 +20,10 @@ POST        /sign_in                          controllers.SignInController.submi
 
 GET         /password/forgot                 controllers.ForgotPasswordController.view
 POST        /password/forgot                 controllers.ForgotPasswordController.submit
+
 GET         /password/reset/:token           controllers.ResetPasswordController.view(token: java.util.UUID)
 POST        /password/reset/:token           controllers.ResetPasswordController.submit(token: java.util.UUID)
+
 GET         /password/change                 controllers.ChangePasswordController.view
 POST        /password/change                 controllers.ChangePasswordController.submit
 
@@ -31,18 +34,19 @@ GET         /home                            controllers.DocumentsController.hom
 + nocsrf
 POST        /documents                       controllers.DocumentsController.documents
 + nocsrf
-POST        /documents/upload/boopickle      controllers.DocumentsController.uploadBoopickle
+POST        /documents/upload/json           controllers.DocumentsController.json
 
 GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)
 GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)
 + nocsrf
+GET         /document/:id/ws                 controllers.DocumentController.ws(id: java.util.UUID)
++ nocsrf
 POST        /document/:id/init               controllers.DocumentController.init(id: java.util.UUID)
+GET         /document/json/:id               controllers.DocumentController.json(id: java.util.UUID)
 + nocsrf
 POST        /document/:id/changes            controllers.DocumentController.changes(id: java.util.UUID)
 + nocsrf
 POST        /document/:id/node/:nid/info     controllers.DocumentController.nodeInfo(id: java.util.UUID, nid: java.util.UUID)
-+ nocsrf
-GET         /document/:id/ws                 controllers.DocumentController.ws(id: java.util.UUID)
 
 # Prefix must match `play.assets.urlPrefix`
 GET  /assets/*file  controllers.Assets.versioned(path="/public", file: Asset)

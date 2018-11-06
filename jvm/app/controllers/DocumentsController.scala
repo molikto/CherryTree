@@ -28,9 +28,10 @@ class DocumentsController @Inject() (
     Ok(views.html.home(request.identity))
   }
 
-  def uploadBoopickle = silhouette.SecuredAction.async(parse.multipartFormData) { implicit request =>
-    val bytes = ByteBuffer.wrap(Files.readAllBytes(request.body.file("file").get.ref.path))
-    val node = Unpickle[model.data.Node](implicitly).fromBytes(bytes)
+  def json = silhouette.SecuredAction.async(parse.multipartFormData) { implicit request =>
+//    val bytes = ByteBuffer.wrap(Files.readAllBytes(request.body.file("file").get.ref.path))
+//    val node = Unpickle[model.data.Node](implicitly).fromBytes(bytes)
+    val node = model.data.Node.create()
     docs.create(request.identity.userId, node).map(_ =>
       Redirect(routes.DocumentsController.home()).flashing("success" -> "Success!"))
   }

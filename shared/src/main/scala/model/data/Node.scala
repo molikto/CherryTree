@@ -321,6 +321,7 @@ case class Node(
 }
 
 object Node extends DataObject[Node] {
+
   def toHtml(a: Seq[Node]): String =
     if (a.isEmpty) ""
     else if (a.size == 1) a.head.toScalaTags.render
@@ -340,6 +341,7 @@ object Node extends DataObject[Node] {
 
   val NodeRefScheme = "cherrytree://"
 
+
   sealed trait ChildrenType {
 
   }
@@ -357,25 +359,25 @@ object Node extends DataObject[Node] {
       override def toString: String = "dash list"
     }
 
-    override private[model] val name = "ChildrenType"
+    override private[model] val name = "children_type"
 
     override private[model] def parse(aa: JsValue) = aa match {
       case JsString(a) =>
         a match {
-          case "0" => Paragraphs
-          case "1" => OrderedList
-          case "2" => UnorderedList
-          case "3" => DashList
+          case "p" => Paragraphs
+          case "ol" => OrderedList
+          case "ul" => UnorderedList
+          case "dl" => DashList
           case _ => Paragraphs
         }
       case _ => Paragraphs
     }
 
     override private[model] def serialize(t: ChildrenType) = JsString(t match {
-      case Paragraphs => "0"
-      case OrderedList => "1"
-      case UnorderedList => "2"
-      case DashList => "3"
+      case Paragraphs => "p"
+      case OrderedList => "ol"
+      case UnorderedList => "ul"
+      case DashList => "dl"
     })
   }
 
@@ -440,6 +442,7 @@ object Node extends DataObject[Node] {
       writeInt(obj.childs.size)
       for (c <- obj.childs) Node.pickler.pickle(c)
     }
+
 
     override def unpickle(implicit state: UnpickleState): Node = {
       import state.dec._

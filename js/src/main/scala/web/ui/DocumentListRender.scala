@@ -13,7 +13,7 @@ import web.WebApi
 import model._
 import api._
 import org.scalajs.dom.html.{Form, Input}
-import org.scalajs.dom.{Blob, FileReader, UIEvent, raw}
+import org.scalajs.dom._
 import org.w3c.dom.DOMError
 import web.ui.content.ContentView
 import web.view.View
@@ -28,9 +28,9 @@ import scala.util.{Failure, Success}
 @JSExportTopLevel("DocumentListRender")
 class DocumentListRender(rootView: HTMLElement) extends View {
 
-  val list = div(
+  private val list = div(
   ).render
-  val ff: Form =
+  private val ff: Form =
     form(
       marginTop := "120px",
       action := "/documents/upload/boopickle", method := "post", enctype := "multipart/form-data",
@@ -38,7 +38,7 @@ class DocumentListRender(rootView: HTMLElement) extends View {
         input(`type` := "file", `class` := "custom-file-input", id := "boopickle", name := "file", onchange := ((ev: UIEvent) => {
           ff.submit()
         })),
-        tag("label")(`class` := "custom-file-label", `for` := "boopickle", "Import Boopickle")
+        tag("label")(`class` := "custom-file-label", `for` := "boopickle", Messages("new.from.backup"))
       )
     ).render
   dom = div(
@@ -61,9 +61,23 @@ class DocumentListRender(rootView: HTMLElement) extends View {
             `class` := "secondary-text",
             Messages("last.updated", formatDate(item.updatedTime))
           ),
-          p(
-            `class` := "secondary-text",
-            Messages("created.at", formatDate(item.createdTime)))
+          div(
+            display := "flex",
+            p(
+              `class` := "secondary-text",
+              flex := "1 1",
+              Messages("created.at", formatDate(item.createdTime))),
+            div(`class` := "dropdown",
+              a(`class` := "secondary-text-button dropdown-toggle",
+                href := "",
+                attr("data-toggle") := "dropdown",
+                Messages("options")
+              ),
+              ul(`class` := "dropdown-menu", role := "menu",
+                a(`class` := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
+              )
+            )
+          )
         ).render)
         list.appendChild(hr(`class` := "small-hr").render)
       })
