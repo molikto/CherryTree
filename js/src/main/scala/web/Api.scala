@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class WebSocketHolder extends Closeable {
   var webSocket: WebSocket = null
   var stopped: Boolean = false
-  var observable: PublishSubject[String] = null
+  var observable: PublishSubject[Either[String, Throwable]] = null
   var backoff = 1000
 
   override def close(): Unit = {
@@ -54,11 +54,11 @@ object WebApi extends client.Api {
     ).map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
   }
 
-  override def setupWebSocket(path: String): (Closeable, Observable[String]) = {
+  override def setupWebSocket(path: String): (Closeable, Observable[Either[String, Throwable]]) = {
     val wsProtocol = if (dom.document.location.protocol == "https:") "wss" else "ws"
     val url = s"$wsProtocol://${dom.document.location.host}$path"
     val holder = new WebSocketHolder()
-    holder.observable = PublishSubject[String]()
+    holder.observable = PublishSubject[Either[String, Throwable]]()
     def create(): Unit = {
       if (holder.stopped) return
       holder.backoff = 600000 min (holder.backoff * 2)
@@ -74,10 +74,11 @@ object WebApi extends client.Api {
         }
       }
       ws.onerror = { event: Event =>
+        holder.observable.onNext(Right(new Exception("websocket error")))
         window.setTimeout(() => create(), holder.backoff)
       }
       ws.onmessage = { event: MessageEvent =>
-        holder.observable.onNext(event.data.toString)
+        holder.observable.onNext(Left(event.data.toString))
       }
       holder.webSocket = ws
     }

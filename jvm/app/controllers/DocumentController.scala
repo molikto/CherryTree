@@ -34,52 +34,93 @@ import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 
 
+object WebSocketActor {
+  def props(userId: UUID, out: ActorRef) = Props(new WebSocketActor(userId, out))
+}
+
+class WebSocketActor(userId: UUID, out: ActorRef) extends Actor {
+
+  override def preStart(): Unit = {
+    Logger.debug("starting a WebSocket actor")
+  }
+
+  override def postStop(): Unit = {
+    Logger.debug("stopping a WebSocket actor")
+  }
+
+  def receive = {
+    case Status.Success(_) | Status.Failure(_) =>
+      context.parent ! DocumentActor.Message.WsEnd(userId, context.self)
+      context.stop(self)
+    case other =>
+      Logger.debug(s"sending WebSocket message $other")
+      out ! other
+  }
+}
+
 object DocumentActor {
   def props(id: UUID, docs: DocumentRepository) = Props(new DocumentActor(id, docs))
+
+  sealed trait Message {
+  }
+  object Message {
+    case class Init(user: User, i: InitRequest) extends Message
+    case class Change(user: User, req: ChangeRequest) extends Message
+    case class Ws(user: User, actor: ActorRef) extends Message
+    case class WsEnd(user: UUID, actor: ActorRef) extends Message
+  }
 }
 class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
 
+  import DocumentActor.Message
+
   private var server: Server = null
 
+  private val online = new mutable.HashMap[UUID, mutable.Set[ActorRef]] with mutable.MultiMap[UUID, ActorRef]
+  private var collaborators = Seq.empty[User]
+
   override def preStart(): Unit = {
-    Logger.debug(s"starting actor for document $id")
+    Logger.debug(s"starting document actor for document $id")
+  }
+
+
+  override def postStop(): Unit = {
+    Logger.debug(s"stopping document actor for document $id")
+  }
+
+  private def ensureInit(): Unit = {
+    if (server == null) {
+      val root = Await.result(docs.init(id), 10.seconds)
+      server = new Server(id, root._1, root._2) {
+        override def persist(userId: UUID, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
+          Await.result(docs.changes(userId, id, version, changes), 10.seconds)
+        }
+
+        override def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
+
+        override def serverStatus(userId: UUID): ServerStatus = ServerStatus(collaborators.filter(_.userId != userId).map(u => Collaborator(u.email, u.name)))
+      }
+    }
   }
 
   override def receive: Receive = {
-    case i: InitRequest =>
-      if (server == null) {
-        val root = Await.result(docs.init(id), 10.seconds)
-        server = new Server(id, root._1, root._2) {
-          override def persist(userId: UUID, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
-            Await.result(docs.changes(userId, id, version, changes), 10.seconds)
-          }
-
-          override def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
-        }
+    case Message.Init(user, req) =>
+      ensureInit()
+      sender ! server.init(user.userId)
+    case Message.Change(user, req) =>
+      ensureInit()
+      sender ! server.change(user.userId, req)
+      if (req.ts.nonEmpty) context.children.foreach(_ ! "update")
+    case Message.WsEnd(user, actor) =>
+      online.removeBinding(user, actor)
+      if (!online.exists(_._1 == user)) {
+        collaborators = collaborators.filter(_.userId != user)
       }
-      sender ! server.init()
-    case c: (User, ChangeRequest) =>
-      sender ! server.change(c._1.userId, c._2)
-      if (c._2.ts.nonEmpty) context.children.foreach(_ ! "update")
-    case out: ActorRef =>
-      sender ! context.actorOf(Props(new Actor {
-
-
-        override def preStart(): Unit = {
-          Logger.debug("starting a WebSocket actor")
-        }
-
-        override def postStop(): Unit = {
-          Logger.debug("stopping a WebSocket actor")
-        }
-
-        def receive = {
-          case Status.Success(_) | Status.Failure(_) => context.stop(self)
-          case other =>
-            Logger.debug(s"sending websocket message $other")
-            out ! other
-        }
-      }))
+    case Message.Ws(user, out) =>
+      val ws = context.actorOf(WebSocketActor.props(user.userId, out))
+      if (!collaborators.exists(_.userId == user.userId)) collaborators = collaborators :+ user
+      online.addBinding(user.userId, ws)
+      sender ! ws
   }
 }
 
@@ -104,6 +145,10 @@ class DocumentController @Inject() (
 
   private val documents = system.actorOf(Props(new DocumentsActor(docs)))
 
+  /**
+    * html returning
+    */
+
   def index(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
     Ok(views.html.editor(documentId, None))
   }
@@ -118,7 +163,7 @@ class DocumentController @Inject() (
 
   def init(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? InitRequest()).mapTo[InitResponse].map { response =>
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
       Ok.sendEntity(toEntity(response))
     }
   }
@@ -126,7 +171,7 @@ class DocumentController @Inject() (
   def changes(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Edit)).async(parse.byteString) { implicit request =>
     val change = fromRequest[ChangeRequest](request)
     implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? (request.identity, change)).mapTo[Try[ChangeResponse]].map {
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Change(request.identity, change)).mapTo[Try[ChangeResponse]].map {
       case Success(suc) =>
         Ok.sendEntity(toEntity(suc))
       case Failure(exc) =>
@@ -142,10 +187,9 @@ class DocumentController @Inject() (
       case HandlerResult(r, Some(user)) =>
         implicit val timeout: Timeout = 1.minute
         (documents ? documentId).mapTo[ActorRef].flatMap { a =>
-          // TODO stop the actor created in Source.actorRef
             val (outActor, publisher) = Source.actorRef[String](16, OverflowStrategy.dropNew)
               .toMat(Sink.asPublisher(false))(Keep.both).run()
-          (a ? outActor).mapTo[ActorRef].map(ref => (ref, publisher))
+          (a ? DocumentActor.Message.Ws(user, outActor)).mapTo[ActorRef].map(ref => (ref, publisher))
         }.map { pair =>
           val flow = Flow.fromSinkAndSource(
             Sink.actorRef(pair._1, akka.actor.Status.Success(())),
@@ -155,6 +199,7 @@ class DocumentController @Inject() (
         }
       case HandlerResult(r, None) => Future.successful(Left(r))
     }
+    // TODO recover here
   }
 
 }

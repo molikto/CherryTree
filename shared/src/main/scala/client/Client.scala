@@ -53,7 +53,7 @@ trait Api {
 
   def requestBytes(path: String, content: ByteBuffer = ByteBuffer.wrap(Array.empty[Byte])): Future[ByteBuffer]
 
-  def setupWebSocket(path: String): (Closeable, Observable[String])
+  def setupWebSocket(path: String): (Closeable, Observable[Either[String, Throwable]])
 }
 
 object Client {
@@ -95,9 +95,9 @@ class Client(
   /**
     * connection state
     */
-  private val connection_ = ObservableProperty[ServerStatus](initial.serverStatus)
+  private val connection_ = ObservableProperty[ConnectionStatus](ConnectionStatus(initial.serverStatus))
 
-  def connection: Observable[ServerStatus] = connection_
+  def connection: Observable[ConnectionStatus] = connection_
 
   val errors_ : ObservableProperty[Option[Throwable]] = ObservableProperty(None)
 
@@ -116,7 +116,12 @@ class Client(
 
   def start(): Unit = this.synchronized {
     val (ws, obs) = api.setupWebSocket(s"/document/$docId/ws")
-    subscription = obs.doOnNext(_ => sync()).doAfterTerminate(_ => ws.close()).subscribe()
+    subscription = obs.doOnNext {
+      case Left(str) => sync()
+      case Right(ex) =>
+        // we mark it as offline, then try to sync again
+        connection_.modify(_.copy(offline = true))
+    }.doAfterTerminate(_ => ws.close()).subscribe()
   }
 
   private var stopped = false
@@ -175,9 +180,10 @@ class Client(
 
   private def updateConnectionStatusBasedOnDisableStatus(): Unit = {
     val before = connection_.get.tempOffline
-    val now = disableRemoteStateUpdate || disableUpdateBecauseLocalNodeDelete != null
+    val offlineOfDelete = disableUpdateBecauseLocalNodeDelete != null
+    val now = disableRemoteStateUpdate || offlineOfDelete
     if (before != now) {
-      connection_.modify(_.copy(tempOffline = now))
+      connection_.modify(_.copy(tempOffline = now, nodeDeletePending = offlineOfDelete))
     }
   }
 
@@ -442,7 +448,7 @@ class Client(
         val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
         uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
         uncommittedIds = Seq.empty // each time we got a new return, it is safe to discard the previous ids
-        connection_.update(success.serverStatus)
+        connection_.update(ConnectionStatus(success.serverStatus))
         if (wp0.nonEmpty) {
           val (last, from) = operation.Node.apply(wp0, state, enableModal)
           updateState(

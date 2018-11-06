@@ -1,6 +1,6 @@
 package web.ui
 
-import api.ServerStatus
+import api.{ConnectionStatus, ServerStatus}
 import client.Client
 import command.Key.KeySeq
 import command.Key
@@ -165,15 +165,19 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   })
 
   observe(client.connection.doOnNext {
-    case ServerStatus(count, offline, tempOffline) =>
+    case ConnectionStatus(ServerStatus(collaborators), offline, pendingDelete, tempOffline) =>
+      val count = collaborators.size
       if (offline) {
         connection.textContent = "offline"
         connection.className = "ct-error-color"
+      } else if (pendingDelete) {
+        connection.textContent = "deletion pending"
+        connection.className = "ct-hint-color"
       } else if (tempOffline) {
         connection.textContent = "offline"
         connection.className = "ct-hint-color"
       } else {
-        connection.textContent = s"$count user${if (count == 1) "" else "s"} online"
+        connection.textContent = s"$count collaborator${if (count == 1) "" else "s"} online"
         connection.className = "ct-hint-color"
       }
   })
