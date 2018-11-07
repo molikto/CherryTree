@@ -15,6 +15,8 @@ GET         /authenticate/:provider          controllers.SocialAuthController.au
 GET         /sign_up                          controllers.SignUpController.view
 POST        /sign_up                          controllers.SignUpController.submit
 
+GET         /profile                          controllers.ProfileController.index
+
 GET         /sign_in                          controllers.SignInController.view
 POST        /sign_in                          controllers.SignInController.submit
 

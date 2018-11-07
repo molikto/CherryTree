@@ -35,23 +35,28 @@ class DocumentListRender(rootView: HTMLElement) extends View {
   ).render
   private val ff: Form =
     form(
-      marginTop := "120px",
+      display := "inline",
       action := "/documents/upload/json", method := "post", enctype := "multipart/form-data",
-      div(cls := "custom-file",
-        input(`type` := "file", cls := "custom-file-input", id := "upload_json", name := "file", onchange := ((ev: UIEvent) => {
-          ff.submit()
-        })),
-        tag("label")(cls := "custom-file-label", `for` := "upload_json", Messages("new.from.backup"))
+      span(cls := "fileinput fileinput-new secondary-text", attr("data-provides") := "fileinput",
+        display := "inline",
+        marginBottom := "0px",
+        span(cls := "btn-file secondary-text-button",
+          verticalAlign := "baseline",
+          span(cls := "fileinput-new dropdown-toggle", "Create from backup"),
+          input(`type` := "file", id := "upload_json", attr("cursor") := "pointer", name := "file", onchange := ((ev: UIEvent) => {
+            ff.submit()
+          }))
+        )
       )
     ).render
 
   private val createDoc: Form =
     form(
-      marginTop := "24px",
+      marginRight := "12px",
+      display := "inline",
       action := "/documents/create", method := "post", enctype := "multipart/form-data",
-      button(
-        `type` := "button",
-        cls := "btn btn-primary",
+      span(
+        cls := "secondary-text-button dropdown-toggle",
         Messages("create.new.document"),
         onclick := ((ev: MouseEvent) => {
           createDoc.submit()
@@ -60,8 +65,11 @@ class DocumentListRender(rootView: HTMLElement) extends View {
 
   dom = div(
     list,
-    ff,
-    createDoc,
+    p(
+      marginTop := "24px",
+      createDoc,
+      ff,
+    ),
     modal.root
   ).render
 
@@ -80,32 +88,28 @@ class DocumentListRender(rootView: HTMLElement) extends View {
             cls := "secondary-text",
             Messages("last.updated", formatDate(item.updatedTime))
           ),
-          div(
-            display := "flex",
             p(
-              cls := "secondary-text",
-              flex := "1 1",
-              Messages("created.at", formatDate(item.createdTime))),
-            div(cls := "dropdown",
-              a(cls := "secondary-text-button dropdown-toggle",
-                href := "",
-                attr("data-toggle") := "dropdown",
-                Messages("options")
-              ),
-              ul(cls := "dropdown-menu", role := "menu",
-                a(cls := "dropdown-item", Messages("delete"), href := "", onclick := ((ev: MouseEvent) => {
-                  modal.body.textContent = Messages("delete.confirm.message")
-                  modal.positive.textContent = Messages("confirm")
-                  modal.negative.textContent = Messages("cancel")
-                  modal.positive.onclick = (ev: MouseEvent) => {
-                    modal.positiveForm.action = s"/document/${item.id}/delete"
-                    modal.positiveForm.submit()
-                  }
-                  jQ(modal.root).modal()
-                  ev.preventDefault()
-                })),
-                a(cls := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
-              )
+            cls := "secondary-text",
+            Messages("created.at", formatDate(item.createdTime))),
+          div(cls := "dropdown",
+            a(cls := "secondary-text-button dropdown-toggle",
+              href := "",
+              attr("data-toggle") := "dropdown",
+              Messages("options")
+            ),
+            ul(cls := "dropdown-menu", role := "menu",
+              a(cls := "dropdown-item", Messages("delete"), href := "", onclick := ((ev: MouseEvent) => {
+                modal.body.textContent = Messages("delete.confirm.message")
+                modal.positive.textContent = Messages("confirm")
+                modal.negative.textContent = Messages("cancel")
+                modal.positive.onclick = (ev: MouseEvent) => {
+                  modal.positiveForm.action = s"/document/${item.id}/delete"
+                  modal.positiveForm.submit()
+                }
+                jQ(modal.root).modal()
+                ev.preventDefault()
+              })),
+              a(cls := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
             )
           )
         ).render)

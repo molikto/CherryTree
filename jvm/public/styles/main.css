@@ -35,11 +35,20 @@ a:hover {
     margin-top: 20px;
 }
 
-.user {
+.profile {
     margin-top: 50px;
 }
-.user .data {
+.profile-data {
     margin-top: 10px;
+}
+.profile-image {
+    position: relative;
+    overflow: hidden;
+    bottom: 100%;
+    border: none;
+    border-radius: 0px !important;
+    font-size: 15px;
+    background: #212529b8;
 }
 
 .form-control {
@@ -48,6 +57,17 @@ a:hover {
 
 [class^='ion-'] {
     font-size: 1.2em;
+}
+
+.profile-img .file {
+    position: relative;
+    overflow: hidden;
+    margin-top: -20%;
+    width: 70%;
+    border: none;
+    border-radius: 0;
+    font-size: 15px;
+    background: #212529b8;
 }
 
 .has-feedback .form-control-feedback {

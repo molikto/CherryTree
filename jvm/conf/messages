@@ -75,17 +75,17 @@ yahoo = Yahoo
 default.document.title = {0}’s place
 
 
-last.updated = last updated at {0}
-created.at = created at {0}
-options = options
+last.updated = Last updated at {0}
+created.at = Created at {0}
+options = Options
 new.from.backup = import from backup…
-backup = backup
-delete = delete
+backup = Backup
+delete = Delete
 delete.confirm.title = Confirm delete
 delete.confirm.message = Are you sure to delete this document?
-confirm = confirm
-cancel = cancel
-create.new.document = create new document
+confirm = Confirm
+cancel = Cancel
+create.new.document = Create new document
 new.document = New document
 
 
