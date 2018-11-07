@@ -44,6 +44,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   private val profileImage = img(width := s"${size}px", height := s"${size}px", marginLeft := "8px").render
   private val menu =
     div(
+      cls := "dropdown",
       display := "flex",
       flexDirection := "row",
       height := "100%",
@@ -56,11 +57,12 @@ class BottomBarView(val client: Client) extends UnselectableView  {
         height := "100%",
         paddingLeft := "8px", span("menu", display := "inline-block", height := "100%", paddingTop := "1px"),
         profileImage,
-        div(cls := "dropdown-menu dropdown-menu-right",
-          button(cls := "dropdown-item", `type` := "button","Document list", href := "/home")
-        )
-      ).render
-    )
+      ),
+      ul(
+        cls := "dropdown-menu dropdown-menu-right", role := "menu",
+        a(cls := "dropdown-item", "Document list", href := "/documents")
+      )
+    ).render
 
   private def divider() = span(" | ", cls := "ct-hint-color")
 

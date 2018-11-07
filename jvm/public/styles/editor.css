@@ -23,7 +23,7 @@
 .ct-general-hold {
     width: 18px;
     height: 18px;
-    background-size: contain;
+    background-size: cover;
     background-repeat: no-repeat;
     background-origin: content-box;
     padding: 3px;
@@ -308,8 +308,8 @@
     width: 18px;
     height: 18px;
     margin-left: 4px;
-    margin-top: 7px;
-    background-size: contain;
+    margin-top: 4px;
+    background-size: cover;
     background-repeat: no-repeat;
     background-origin: content-box;
     padding: 3px;
