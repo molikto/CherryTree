@@ -75,7 +75,7 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
 
   import DocumentActor.Message
 
-  private var server: Server = null
+  private var server: Server[User] = null
 
   private val online = new mutable.HashMap[UUID, mutable.Set[ActorRef]] with mutable.MultiMap[UUID, ActorRef]
   private var collaborators = Seq.empty[User]
@@ -92,14 +92,17 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
   private def ensureInit(): Unit = {
     if (server == null) {
       val root = Await.result(docs.init(id), 10.seconds)
-      server = new Server(id, root._1, root._2) {
-        override def persist(userId: UUID, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
-          Await.result(docs.changes(userId, id, version, changes), 10.seconds)
+      server = new Server[User](id, root._1, root._2) {
+        override def persist(user: User, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
+          Await.result(docs.changes(user.userId, id, version, changes), 10.seconds)
         }
 
         override def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
 
-        override def serverStatus(userId: UUID): ServerStatus = ServerStatus(collaborators.filter(_.userId != userId).map(u => Collaborator(u.email, u.name)))
+        override def serverStatus(user: User): ServerStatus =
+          ServerStatus(
+            Collaborator(user.email, user.name, user.avatarUrl),
+            collaborators.filter(_.userId != user.userId).map(u => Collaborator(u.email, u.name, u.avatarUrl)))
       }
     }
   }
@@ -107,10 +110,10 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
   override def receive: Receive = {
     case Message.Init(user, req) =>
       ensureInit()
-      sender ! server.init(user.userId)
+      sender ! server.init(user)
     case Message.Change(user, req) =>
       ensureInit()
-      sender ! server.change(user.userId, req)
+      sender ! server.change(user, req)
       if (req.ts.nonEmpty) context.children.foreach(_ ! "update")
     case Message.WsEnd(user, actor) =>
       online.removeBinding(user, actor)

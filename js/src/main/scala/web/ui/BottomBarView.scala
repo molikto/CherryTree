@@ -37,7 +37,30 @@ class BottomBarView(val client: Client) extends UnselectableView  {
 
   private val debugErrorInfo = span(cls := "ct-error-color", marginLeft := "12px", "").render
 
-  private val connection = span(alignSelf.flexEnd).render
+  private val connection = span(
+    paddingLeft := "8px",
+    alignSelf.flexEnd).render
+
+  private val profileImage = img(width := s"${size}px", height := s"${size}px", marginLeft := "8px").render
+  private val menu =
+    div(
+      display := "flex",
+      flexDirection := "row",
+      height := "100%",
+      background := "#333842",
+      div(
+        attr("data-toggle") := "dropdown",
+        cls := "ct-menu-button",
+        display := "flex",
+        flexDirection := "row",
+        height := "100%",
+        paddingLeft := "8px", span("menu", display := "inline-block", height := "100%", paddingTop := "1px"),
+        profileImage,
+        div(cls := "dropdown-menu dropdown-menu-right",
+          button(cls := "dropdown-item", `type` := "button","Document list", href := "/home")
+        )
+      ).render
+    )
 
   private def divider() = span(" | ", cls := "ct-hint-color")
 
@@ -45,20 +68,25 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   dom = div(
     width := "100%",
     cls := "ct-panel",
-    paddingTop := "1px",
-    paddingLeft := "8px",
-    paddingRight := "8px",
     fontSize := "14px",
     alignSelf := "flex-end",
     height := size + "px",
     flexDirection := "row",
-    connection,
-    divider(),
-    mode,
-    divider(),
-    commandStatus,
-    divider(),
-    debugErrorInfo
+    div(width := "100%", height := "100%", display := "flex",
+      span(
+        height := "100%",
+        flexGrow := "1",
+        paddingTop := "1px",
+        connection,
+        divider(),
+        mode,
+        divider(),
+        commandStatus,
+        divider(),
+        debugErrorInfo
+      ),
+      menu,
+    )
   ).render
 
   observe(client.sourceEditorCommands.doOnNext(str => {
@@ -165,7 +193,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   })
 
   observe(client.connection.doOnNext {
-    case ConnectionStatus(ServerStatus(collaborators), offline, pendingDelete, tempOffline) =>
+    case ConnectionStatus(ServerStatus(me, collaborators), offline, pendingDelete, tempOffline) =>
+      profileImage.src = me.avatarUrl.getOrElse("")
       val count = collaborators.size
       if (offline) {
         connection.textContent = "offline"

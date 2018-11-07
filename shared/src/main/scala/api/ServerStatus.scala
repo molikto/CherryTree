@@ -5,5 +5,5 @@ case class ConnectionStatus(serverStatus: ServerStatus,
   nodeDeletePending: Boolean = false,
   tempOffline: Boolean = false)
 
-case class ServerStatus(online: Seq[Collaborator]) {
+case class ServerStatus(me: Collaborator, online: Seq[Collaborator]) {
 }

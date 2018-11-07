@@ -32,8 +32,8 @@ POST        /password/change                 controllers.ChangePasswordControlle
 GET         /account/email/:email            controllers.ActivateAccountController.send(email: String)
 GET         /account/activate/:token         controllers.ActivateAccountController.activate(token: java.util.UUID)
 
-GET         /home                            controllers.DocumentsController.home
-GET         /documents                       controllers.DocumentsController.documents
+GET         /documents                       controllers.DocumentsController.home
+GET         /documents/json                  controllers.DocumentsController.documents
 + nocsrf
 POST        /documents/create                controllers.DocumentsController.create
 + nocsrf
@@ -45,6 +45,7 @@ GET         /document/:id                    controllers.DocumentController.inde
 GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)
 GET         /document/:id/ws                 controllers.DocumentController.ws(id: java.util.UUID)
 GET         /document/json/:id               controllers.DocumentController.json(id: java.util.UUID)
+# ajax calls
 POST        /document/:id/init               controllers.DocumentController.init(id: java.util.UUID)
 POST        /document/:id/changes            controllers.DocumentController.changes(id: java.util.UUID)
 GET         /document/:id/node/:nid/info     controllers.DocumentController.nodeInfo(id: java.util.UUID, nid: java.util.UUID)

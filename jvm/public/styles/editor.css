@@ -243,6 +243,11 @@
     vertical-align: middle;
     margin-top: 0px;
 }
+
+.ct-tabs > span {
+    cursor: pointer;
+}
+
 .ct-tabs > span:hover {
     background: #90a2b911;
 }
@@ -713,6 +718,14 @@ block selection
     color: #abb2bf;
 }
 
+.ct-menu-button {
+    cursor: pointer;
+}
+
+
+.ct-menu-button:hover {
+    background: #90a2b911;
+}
 
 /*
     font-family: Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;

@@ -76,7 +76,7 @@ class DocumentListRender(rootView: HTMLElement) extends View {
   attachToNode(rootView)
 
 
-  WebApi.get[Seq[ListResult]]("/documents").onComplete {
+  WebApi.get[Seq[ListResult]]("/documents/json").onComplete {
     case Success(res) =>
       res.foreach(item => {
         val contentView = ContentView.create(item.title, None)

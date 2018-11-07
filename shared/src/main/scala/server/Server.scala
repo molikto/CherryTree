@@ -11,7 +11,7 @@ import model.ot.Rebased
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success, Try}
 
-class Server(documentId: UUID, private var document: Node, private var baseVersion: Int) {
+abstract class Server[CTX](documentId: UUID, private var document: Node, private var baseVersion: Int) {
 
   // states, now in single thread fashion
 
@@ -23,11 +23,11 @@ class Server(documentId: UUID, private var document: Node, private var baseVersi
   def debugChanges = changes
 
 
-  def init(userId: UUID): InitResponse = {
+  def init(ctx: CTX): InitResponse = {
     val state = InitResponse(
       document,
       version,
-      serverStatus(userId)
+      serverStatus(ctx)
     )
     if (debug_transmit) {
       println(state)
@@ -48,7 +48,7 @@ class Server(documentId: UUID, private var document: Node, private var baseVersi
 //  }
 
 
-  def change(userId: UUID, changeRequest: ChangeRequest): Try[ChangeResponse] = {
+  def change(ctx: CTX, changeRequest: ChangeRequest): Try[ChangeResponse] = {
     val ChangeRequest(clientVersion, ts, mode, debugClientDoc) = changeRequest
     def normalCase() = {
       val after = changes.drop(clientVersion - baseVersion)
@@ -69,11 +69,11 @@ class Server(documentId: UUID, private var document: Node, private var baseVersi
         assert(diffs.size == transformed.size)
         val toPersist = transformed.zip(diffs).map(a => (a._1._1, a._1._2, a._2))
         //
-        persist(userId, toPersist)
+        persist(ctx, toPersist)
         // commit to memory
         document = transformedDocument
         changes = changes ++ transformed
-        val cu = ChangeResponse(ws, ts.size, version, serverStatus(userId))
+        val cu = ChangeResponse(ws, ts.size, version, serverStatus(ctx))
         //          if (transformed.nonEmpty) {
         //            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
         //          }
@@ -96,7 +96,7 @@ class Server(documentId: UUID, private var document: Node, private var baseVersi
             val take = after.drop(index).zipWithIndex.takeWhile(a => a._1._2 == ts(a._2)._2).size
             val winners = after.take(index).map(_._1)
             if (model.debug_model) println(s"a request that ready been taken care of, with ${winners.size} and $take")
-            Success(ChangeResponse(winners, take, clientVersion + winners.size + take, serverStatus(userId)))
+            Success(ChangeResponse(winners, take, clientVersion + winners.size + take, serverStatus(ctx)))
           }
         case _ =>
           normalNormalCase()
@@ -119,10 +119,10 @@ class Server(documentId: UUID, private var document: Node, private var baseVersi
     }
   }
 
-  def persist(userId: UUID, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
+  def persist(ctx: CTX, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
   }
 
   def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
 
-  def serverStatus(userId: UUID): ServerStatus = ServerStatus(Seq.empty)
+  def serverStatus(ctx: CTX): ServerStatus
 }
