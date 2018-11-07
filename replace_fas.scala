@@ -12,7 +12,7 @@ def write(string: String, file: File) = {
   writer.close()
 }
 
-val css = new File("jvm/src/main/public/cherrytree.css")
+val css = new File("jvm/public/styles/editor.css")
 
 
 val n = scala.io.Source.fromFile(css).getLines().map(a => {

@@ -386,15 +386,12 @@ object Node extends DataObject[Node] {
   }
   object ContentType extends NodeTag[ContentType] {
     case object Cite extends ContentType {
-      override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
       override def toString: String = "cite"
     }
     case object Hr extends ContentType {
       override def toString: String = "hr"
     }
     case class Heading(i: Int) extends ContentType {
-      override def preferredChildrenType: Option[ChildrenType] = Some(ChildrenType.Paragraphs)
-
       override def toString: String = s"heading $i"
     }
 

@@ -45,38 +45,46 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
 
   private val undoHistory = span(
     cls := "ct-tab-item",
-    span(cls := "ct-tab-icon ct-tab-bug"), a("Undo History")).render
+    span(cls := "ct-tab-icon ct-tab-bug"), a("Undos")).render
 
   private val tags = span(
     cls := "ct-tab-item",
     span(cls := "ct-tab-icon ct-tab-tags"), a("Tags")).render
 
-  private var childs = Seq(commands, tags, quickAccess)
+  private val settings = span(
+    cls := "ct-tab-item",
+    span(cls := "ct-tab-icon ct-tab-settings"), a("Settings")).render
+
+  private var childs = Seq(settings, commands, tags, quickAccess)
 
   if (model.debug_view) {
     childs = undoHistory +: childs
   }
   for (a <- childs) {
-    event(a, "click", (c: MouseEvent) => {
-      if (a != active) {
-        if (active != null) {
+    if (a == settings) {
+
+    } else {
+      event(a, "click", (c: MouseEvent) => {
+        if (a != active) {
+          if (active != null) {
+            active.classList.remove("ct-tab-selected")
+            current.destroy()
+          } else {
+            enabledAll(true)
+          }
+          active = a
+          WebApi.localStorage.set(".left-panel", indexOf(active).toString)
+          create()
+        } else if (active != null) {
           active.classList.remove("ct-tab-selected")
           current.destroy()
-        } else {
-          enabledAll(true)
+          active = null
+          WebApi.localStorage.set(".left-panel", "")
+          enabledAll(false)
         }
-        active = a
-        WebApi.localStorage.set(".left-panel", indexOf(active).toString)
-        create()
-      } else if (active != null) {
-        active.classList.remove("ct-tab-selected")
-        current.destroy()
-        active = null
-        WebApi.localStorage.set(".left-panel", "")
-        enabledAll(false)
-      }
-      doc().focus()
-    })
+        doc().focus()
+      })
+    }
   }
 
 

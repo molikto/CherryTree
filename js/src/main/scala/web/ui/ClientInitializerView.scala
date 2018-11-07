@@ -37,13 +37,17 @@ object ClientInitializerView {
 class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Option[UUID], global: Boolean) {
   ClientInitializerView.initializeGlobal()
 
+  rootView.classList.add("ct-document-view-background")
 
   var client: Option[Client] = None
 
   private def goConnecting(): Unit = {
     onlyChild(rootView, {
       import scalatags.JsDom.all._
-      p("connecting")
+      div(
+        width := "100%", height := "100",
+        p("connecting")
+      )
     }.render)
     val ec = scala.concurrent.ExecutionContext.Implicits.global
     ClientInitializer.init(WebApi, documentId, nodeId).onComplete {

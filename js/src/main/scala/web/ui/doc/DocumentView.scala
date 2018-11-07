@@ -62,7 +62,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
 
   dom = div(
     position := "relative",
-    cls := "ct-scroll ct-document-view-root " + (if (!web.debug_fakeSelection) "ct-document-view-background" else ""),
+    cls := "ct-scroll ct-document-view-root",
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
