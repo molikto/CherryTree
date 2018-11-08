@@ -86,7 +86,7 @@ package object repos {
   implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, r.<<))
 
 
-  implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<)))
+  implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<, r.<<)))
 
   def createDocumentQuery(userId: UUID, node: model.data.Node, time: Long) = {
     val documentId = UUID.randomUUID()

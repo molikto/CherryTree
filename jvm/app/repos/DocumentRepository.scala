@@ -42,7 +42,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   def nodeInfo(did: UUID, nid: UUID): Future[Option[NodeInfo]] = {
     db.run(
       sql"""
-            select nodes.created_time, nodes.last_updated_time, users.email, users.name_
+            select nodes.created_time, nodes.last_updated_time, users.email, users.name_, users.avatar_url
              from nodes, users where nodes.document_id = $did and nodes.node_id = $nid and users.user_id = nodes.creator_id
          """.as[NodeInfo].headOption)
   }
