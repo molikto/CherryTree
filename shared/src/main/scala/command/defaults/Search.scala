@@ -16,7 +16,7 @@ class Search(settings: Settings) extends CommandCategory(settings,"search & patt
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
       val isModF = hardcodeKeys.headOption == key
-      commandState.startSearch(!isModF, if (isModF) 0 else 1)
+      commandState.search.startSearch(!isModF, if (isModF) 0 else 1)
       DocTransaction.empty
     }
   }
@@ -28,7 +28,7 @@ class Search(settings: Settings) extends CommandCategory(settings,"search & patt
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.startSearch(true, -1)
+      commandState.search.startSearch(true, -1)
       DocTransaction.empty
     }
   }
@@ -39,7 +39,7 @@ class Search(settings: Settings) extends CommandCategory(settings,"search & patt
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.repeatLastSearch(false)
+      commandState.search.repeatLastSearch(false)
       DocTransaction.empty
     }
   }
@@ -51,7 +51,7 @@ class Search(settings: Settings) extends CommandCategory(settings,"search & patt
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def clearOnConflict: Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.repeatLastSearch(true)
+      commandState.search.repeatLastSearch(true)
       DocTransaction.empty
     }
   }

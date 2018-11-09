@@ -28,6 +28,7 @@ import model.operation.Rich
 import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
 import register.{RegisterHandler, Registerable}
+import search.{SearchHandler, SearchState}
 import settings.{Settings, SettingsImpl}
 import undoer.Undoer
 import view.EditorInterface
@@ -86,18 +87,32 @@ class Client(
   initial: InitResponse,
   private val api: Api,
 ) extends SettingsImpl
-  with CommandHandler
   with RegisterHandler
   with Undoer
   with EditorInterface
-  with InputRuler
   with DocInterface { self =>
+
+  var _commandHandler: CommandHandler = new CommandHandler(this)
+  def commands = _commandHandler
+
+  private var inputRuler = new InputRuler()
+  val searchHandler = new SearchHandler(this)
+
+
+  def initInputRulerAndCommandHandler(): Unit = {
+    _commandHandler.commands.flatMap(_.inputRule).foreach(inputRuler.registerInputRule)
+  }
+
+  initInputRulerAndCommandHandler()
 
   def changeSettings(temp: Settings): Boolean = {
     var res = false
     if (enableModal != temp.enableModal) {
       enableModal = temp.enableModal
       state_ = state_.copy(mode0 = model.mode.Node.Content(state_.zoom, state_.node(state_.zoom).content.defaultMode(enableModal)))
+      _commandHandler = new CommandHandler(this)
+      inputRuler = new InputRuler()
+      writeEnableModal()
       res = true
     }
     res
@@ -120,7 +135,9 @@ class Client(
 
   def connection: Observable[ConnectionStatus] = connection_
 
-  val errors_ : ObservableProperty[Option[Throwable]] = ObservableProperty(None)
+  private val errors_ : ObservableProperty[Option[Throwable]] = ObservableProperty(None)
+
+  def showError(err: Option[Throwable]) = errors_.update(err)
 
   /**
     * last error
@@ -296,7 +313,7 @@ class Client(
     }
 
 
-    onBeforeUpdateUpdateCommandState(state_)
+    _commandHandler.onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert, mergeWithPreviousLocal)
     stateUpdates_.onNext(res)
     updatingState = false
@@ -608,7 +625,7 @@ class Client(
       case Some(model.mode.Node.Content(pos, rich: model.mode.Content.Rich)) =>
         rich match {
           case v: model.mode.Content.RichRange =>
-            val trans = command.defaults.deleteRichNormalRange(state, this, pos, v.merged, insert = true, noHistory = true)
+            val trans = command.defaults.deleteRichNormalRange(state, _commandHandler, pos, v.merged, insert = true, noHistory = true)
             val ret = trans.transaction.nonEmpty
             localChange(trans)
             ret
@@ -707,7 +724,7 @@ class Client(
 
   // html, plain, and ct
   def onExternalCopyCut(isCut: Boolean): (Option[String], Option[String], Option[String]) = {
-    val (trans, data) = defaults.yankSelection(state, this, enableModal, isCut, reg = '*')
+    val (trans, data) = defaults.yankSelection(state, _commandHandler, enableModal, isCut, reg = '*')
     localChange(trans)
     data.map {
       case Registerable.Unicode(a) =>
@@ -753,8 +770,8 @@ class Client(
       if (state.isContent) {
         val pset = curRegister
         curRegister = '*'
-        val command = if (getRegisterable().exists(_.isInstanceOf[Registerable.Node])) yankPaste.putAfter else yankPaste.putBefore
-        localChange(command.action(state, 1, this, None, None, None))
+        val command = if (getRegisterable().exists(_.isInstanceOf[Registerable.Node])) _commandHandler.yankPaste.putAfter else _commandHandler.yankPaste.putBefore
+        localChange(command.action(state, 1, _commandHandler, None, None, None))
         curRegister = pset
       }
     }
@@ -808,7 +825,7 @@ class Client(
 
     val extra = update.extra match {
       case e@Some(_) => e
-      case _ if !isSmartInsert => extraInputRuleOperation(state_, update.transaction)
+      case _ if !isSmartInsert => inputRuler.extraInputRuleOperation(state_, update.transaction)
       case _ => None
     }
 
@@ -896,8 +913,11 @@ class Client(
     }
   }
 
-  override def onKeyDown(k: Key): Boolean = keyDown(k)
+  override def onKeyDown(k: Key): Boolean = _commandHandler.keyDown(k)
 
+  override def onDoubleClick(): Unit = _commandHandler.onDoubleClick()
 
-  commands.flatMap(_.inputRule).foreach(registerInputRule)
+  override def flushBeforeMouseDown(): Unit = _commandHandler.flushBeforeMouseDown()
+
+  override def searchState: Observable[SearchState] = searchHandler.searchState
 }

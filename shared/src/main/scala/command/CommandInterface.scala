@@ -18,7 +18,10 @@ trait CommandInterfaceAvailable {
 
 }
 
-trait CommandInterface extends CommandInterfaceAvailable with RegisterInterface with UndoerInterface with StartSearchInterface {
+trait CommandInterface extends CommandInterfaceAvailable {
 
+  def registers: RegisterInterface
+  def under: UndoerInterface
+  def search: StartSearchInterface
 
 }

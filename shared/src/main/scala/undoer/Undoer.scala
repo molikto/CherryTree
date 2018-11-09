@@ -5,7 +5,6 @@ import model.{ot, _}
 import model.data.Node
 import model.mode.Content.RichInsert
 import model.range.IntRange
-import settings.Settings
 import undoer.Undoer.Remote
 
 import scala.collection.immutable.Queue

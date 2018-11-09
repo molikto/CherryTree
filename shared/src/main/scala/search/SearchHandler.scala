@@ -25,7 +25,7 @@ case class SearchState(
 ) {
 }
 
-trait SearchHandler extends SearchInterface with StartSearchInterface { self: Client =>
+class SearchHandler(client: Client) extends SearchInterface with StartSearchInterface {
 
 
   private val searchState_ = ObservableProperty[SearchState](SearchState(None))
@@ -43,14 +43,14 @@ trait SearchHandler extends SearchInterface with StartSearchInterface { self: Cl
   }
 
   def doSearch(search: Search): Unit = {
-    state.searchInShown(search, enableModal).headOption.foreach {
+    client.state.searchInShown(search, client.enableModal).headOption.foreach {
       case SearchOccurrence(node, ocr) =>
-        val nor = state.node(node).content match {
+        val nor = client.state.node(node).content match {
           case model.data.Content.Rich(content) => content.rangeAfter(ocr.start)
           case _ => IntRange(0, 0)
         }
-        if (enableModal) {
-          val mode = state.mode0 match {
+        if (client.enableModal) {
+          val mode = client.state.mode0 match {
             case model.mode.Node.Content(cn, a) =>
               a match {
                 case model.mode.Content.RichVisual(a, b) =>
@@ -65,10 +65,10 @@ trait SearchHandler extends SearchInterface with StartSearchInterface { self: Cl
             case model.mode.Node.Visual(fix, move) =>
               model.mode.Node.Visual(fix, node)
           }
-          localChange(DocTransaction(mode))
+          client.localChange(DocTransaction(mode))
         } else {
           // this will produce a range selection
-          onMouseFocusOn(node, Some(ocr), true, false, false)
+          client.onMouseFocusOn(node, Some(ocr), true, false, false)
         }
     }
   }

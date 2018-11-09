@@ -93,7 +93,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
   lazy val quickSearch: QuickSearchDialog = defer(new QuickSearchDialog(client, overlayLayer, dom))
 
 
-  private val searchBar = defer(new SearchBar(client, () => docView, bottomBar.size).attachToNode(rightPanel))
+  private val searchBar = defer(new SearchBar(client.searchHandler, () => docView, bottomBar.size).attachToNode(rightPanel))
 
   val commandMenu: CommandMenuDialog = defer(new CommandMenuDialog(client, overlayLayer))
   val registers: RegistersDialog = defer(new RegistersDialog(client, overlayLayer))

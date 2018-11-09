@@ -9,7 +9,11 @@ trait SettingsImpl extends Settings {
   def localStorage: LocalStorage
 
 
-  var enableModal: Boolean = localStorage.get("settings.enable_modal").getOrElse("false") == "true"
+  var enableModal: Boolean = localStorage.get("settings.enable_modal").getOrElse("true") == "true"
+
+  def writeEnableModal(): Unit = {
+    localStorage.set("settings.enable_modal", enableModal.toString)
+  }
   /**
     * these are settings??
     */

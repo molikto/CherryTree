@@ -97,7 +97,7 @@ class CommandCategory(val settings: Settings, val name: String) {
 
     override def strong: Boolean = true
 
-    private def graphemes =  Seq(deli.start, deli.end).flatMap(settings.delimitationGraphemes.get).filter(_.nonEmpty).distinct
+    private val graphemes =  Seq(deli.start, deli.end).flatMap(settings.delimitationGraphemes.get).filter(_.nonEmpty).distinct
     private val systemKeys: Seq[KeySeq] =
       if (deli == SpecialChar.Emphasis) Seq(ModKey + "i", ModKey + "y")
       else if (deli == SpecialChar.Strong) Seq(ModKey + "b")
@@ -105,8 +105,8 @@ class CommandCategory(val settings: Settings, val name: String) {
 
     override def maybeInsertModeGrapheme(u: Unicode): Boolean = graphemes.exists(a => a.startsWith(u))
 
-    override def defaultKeys: Seq[KeySeq] = Seq.empty
-    override def hardcodeKeys: Seq[KeySeq] =
+    override val defaultKeys: Seq[KeySeq] = Seq.empty
+    override val hardcodeKeys: Seq[KeySeq] =
       graphemes.map(a => a.str : KeySeq) ++ systemKeys
   }
 

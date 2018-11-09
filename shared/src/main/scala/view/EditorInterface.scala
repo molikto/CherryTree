@@ -10,7 +10,6 @@ import model.range.IntRange
 import monix.reactive.Observable
 import register.RegisterInterface
 import search.SearchHandler
-import settings.Settings
 
 trait SourceEditInterface extends RegisterInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit

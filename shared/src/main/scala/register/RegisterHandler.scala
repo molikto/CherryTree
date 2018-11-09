@@ -32,7 +32,7 @@ trait RegisterHandler extends RegisterInterface {
 
   private var system: Registerable = null
 
-  protected var registerJustSet = false
+  var registerJustSet = false
 
   override def setRegister(a: Int): Unit = {
     registerJustSet = true

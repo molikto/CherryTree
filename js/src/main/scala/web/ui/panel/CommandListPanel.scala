@@ -27,7 +27,7 @@ class CommandListPanel(val client: Client, doc: => View) extends UnselectableVie
 
   private val onClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
     val cmd = ev.currentTarget.asInstanceOf[js.Dynamic].command.asInstanceOf[command.Command]
-    client.runTextualIfAvailable(cmd)
+    client.commands.runTextualIfAvailable(cmd)
     doc.focus()
   }
 
@@ -37,7 +37,7 @@ class CommandListPanel(val client: Client, doc: => View) extends UnselectableVie
   }
 
   val res = div(
-    client.commandsByCategory.map {
+    client.commands.commandsByCategory.map {
       case (name, commands) =>
         if (commands.isEmpty) {
           div()
@@ -100,7 +100,7 @@ class CommandListPanel(val client: Client, doc: => View) extends UnselectableVie
 
   observe(client.stateUpdates.map(_ => 0).startWith(Seq(0)).doOnNext(pair => {
     for (p <- bf) {
-      val av = p._1.available(client.state, client)
+      val av = p._1.available(client.state, client.commands)
       if (av) {
         p._2.classList.remove("ct-flat-disabled")
       } else {

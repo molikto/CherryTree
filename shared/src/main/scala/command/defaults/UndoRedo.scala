@@ -16,7 +16,7 @@ class UndoRedo(settings: Settings) extends CommandCategory(settings,"undo & redo
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
 
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.undo(a)
+      commandState.under.undo(a)
     }
   }
 
@@ -26,7 +26,7 @@ class UndoRedo(settings: Settings) extends CommandCategory(settings,"undo & redo
     override def defaultKeys: Seq[KeySeq] = Seq(Ctrl + "r")
     override def available(a: DocState, commandState: CommandInterfaceAvailable): Boolean = true
     override def action(a: DocState, count: Int, commandState: CommandInterface, key: Option[KeySeq], grapheme: Option[Unicode], motion: Option[Motion]): DocTransaction = {
-      commandState.redo(a)
+      commandState.under.redo(a)
     }
   }
 

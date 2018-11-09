@@ -44,17 +44,17 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
     }
   }))
 
-  private val commands = client.commands.filter(_.showInCommandMenu(client.enableModal))
+  private val commands = client.commands.commands.filter(_.showInCommandMenu(client.enableModal))
 
   override def data(term: String): Seq[Command] = {
      commands.filter(a => {
        if (a.textCommand.exists(a => term.startsWith(a) && term.length == a.length + 1 && term.endsWith(" "))) {
          dismiss()
-         client.runTextualIfAvailable(a)
+         client.commands.runTextualIfAvailable(a)
          return Seq.empty
        }
       util.matchCommandSearch(a.description, term) &&
-        a.available(client.state, client)
+        a.available(client.state, client.commands)
     }).sortBy(a => (-a.priority(Seq.empty), a.description))
   }
 
@@ -71,6 +71,6 @@ class CommandMenuDialog(val client: Client, protected val layer: OverlayLayer) e
   }
 
   override def onSelected(t: Command): Unit = {
-    client.runTextualIfAvailable(t)
+    client.commands.runTextualIfAvailable(t)
   }
 }

@@ -57,7 +57,7 @@ package object defaults {
             Seq(a.node)
         }
         val data = Registerable.Node(ns)
-        commandState.yank(data, isDelete = false, register = reg)
+        commandState.registers.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           deleteNodeRange(a, commandState, v.minimalRange.get, enableModal, noHistory = true)
         } else {
@@ -66,7 +66,7 @@ package object defaults {
         (trans, Some(data))
       case Some(model.mode.Node.Content(pos, v: model.mode.Content.RichRange)) =>
         val data = Registerable.Text(a.rich(pos).copyTextualRange(v.merged))
-        commandState.yank(data, isDelete = isDelete, register = reg)
+        commandState.registers.yank(data, isDelete = isDelete, register = reg)
         val trans = if (isDelete) {
           deleteRichNormalRange(a, commandState, pos, v.merged, !enableModal, noHistory = true)
         } else {
@@ -80,7 +80,7 @@ package object defaults {
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal(_))) =>
         val old = a.node(pos)
         val data = Registerable.Node(Seq(old.copy(childs = Seq.empty)), None)
-        commandState.yank(data, isDelete = false, register = reg)
+        commandState.registers.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           DocTransaction(Seq(model.operation.Node.Replace(pos,
             model.data.Content.Code(model.data.Unicode.empty, old.content.asInstanceOf[model.data.Content.Code].lang))), a.mode)
@@ -103,7 +103,7 @@ package object defaults {
     assert(rr.childs.until <= parent.childs.size)
     val r = rr
     if (!noHistory) {
-      commandState.yank(Registerable.Node(a.node(rr), deletionFrom = Some(rr)), isDelete = true, register = register)
+      commandState.registers.yank(Registerable.Node(a.node(rr), deletionFrom = Some(rr)), isDelete = true, register = register)
     }
     DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) =
@@ -133,7 +133,7 @@ package object defaults {
   ): DocTransaction = {
     val rich = a.rich(pos)
     if (!noHistory) {
-      commandState.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = true, register = register)
+      commandState.registers.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = true, register = register)
     }
     operation.Rich.deleteTextualRange(rich, r) match {
       case Some((a, b, c)) =>

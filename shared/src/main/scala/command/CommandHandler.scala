@@ -10,21 +10,26 @@ import model.range.IntRange
 import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.reactive.subjects._
-import register.{RegisterHandler, Registerable}
+import register.{RegisterHandler, RegisterInterface, Registerable}
 import settings.Settings
 
 import concurrent.duration._
 import monix.execution.Scheduler.Implicits.global
-import search.SearchHandler
+import search.{SearchHandler, StartSearchInterface}
+import undoer.UndoerInterface
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
 
-trait CommandHandler extends CommandInterface with SearchHandler {
-  self: Client =>
+class CommandHandler(client: Client) extends CommandInterface {
 
 
-  def settings = this
+  override def registers: RegisterInterface = client
+  override def under: UndoerInterface = client
+  override def search: StartSearchInterface = client.searchHandler
+
+
+  def settings: Settings = client
 
   val miscCommands = new defaults.Misc(settings, this)
   val yankPaste = new defaults.YankPaste(settings)
@@ -117,7 +122,7 @@ trait CommandHandler extends CommandInterface with SearchHandler {
       cs0
     }
     val kk = ks :+ key
-    val ac = cs.filter(a => a.keys.exists(_.startsWith(kk)) && a.available(state, this))
+    val ac = cs.filter(a => a.keys.exists(_.startsWith(kk)) && a.available(client.state, this))
     if (ac.isEmpty) {
       if (removeForStrong != null) {
         buffer.append(removeForStrong)
@@ -133,7 +138,7 @@ trait CommandHandler extends CommandInterface with SearchHandler {
         // different settings of key might override depending on how the key is set
         val sorted = exacts.map(a => (a, a.priority(kk))).sortBy(-_._2)
         if (sorted(1)._2 == sorted.head._2) {
-          errors_.update(Some(new Exception(s"Multiple commands with same key ${sorted.map(_._1.description)}")))
+          client.showError(Some(new Exception(s"Multiple commands with same key ${sorted.map(_._1.description)}")))
         }
         exacts = Seq(sorted.head._1)
       }
@@ -155,7 +160,7 @@ trait CommandHandler extends CommandInterface with SearchHandler {
 
 
   def runTextualIfAvailable(command: Command): Unit = {
-    if (command.available(state, this)) {
+    if (command.available(client.state, this)) {
       clearPreviousCommand()
       buffer.append(IdentifiedCommand(None, command, Seq.empty))
       tryComplete(false)
@@ -292,15 +297,15 @@ trait CommandHandler extends CommandInterface with SearchHandler {
         case _ =>
       }
     }
-    val res = c.action(state, count, this, key, char, motion)
+    val res = c.action(client.state, count, this, key, char, motion)
     buffer.append(Part.CompleteMark)
-    localChange(res)
+    client.localChange(res)
     !c.emptyAsFalseInInsertMode || res != DocTransaction.empty
   }
 
 
   def onDoubleClick(): Unit = {
-    val avs = commands.filter(c => c.actDoubleClick && c.available(state, this)).sortBy(-_.priority(Seq.empty))
+    val avs = commands.filter(c => c.actDoubleClick && c.available(client.state, this)).sortBy(-_.priority(Seq.empty))
     avs.headOption.foreach(c => runTextualIfAvailable(c))
   }
 
@@ -313,13 +318,13 @@ trait CommandHandler extends CommandInterface with SearchHandler {
 
   private var isInsertOverride = false
 
-  protected def keyDown(key: Key): Boolean = {
+  def keyDown(key: Key): Boolean = {
     // always reset register on any key event
     isInsertOverride = false
     val bufferBefore = if (key.control || key.meta) buffer.clone() else null
-    if (!enableModal || state.isInsert) {
+    if (!client.enableModal || client.state.isInsert) {
       if (key.isSimpleGrapheme) {
-        if ((enableModal && !state.isInsert) || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
+        if ((client.enableModal && !client.state.isInsert) || !insertModeCommands.exists(_.maybeInsertModeGrapheme(key.a.asInstanceOf[Key.Grapheme].a))) {
           if (scheduledComplete != null) {
             tryComplete(false)
           }
@@ -351,7 +356,7 @@ trait CommandHandler extends CommandInterface with SearchHandler {
       case Some(Part.UnidentifiedCommand(_, _)) =>
         parseCommand(key)
       case _ =>
-        if (state.isRichInsert) {
+        if (client.state.isRichInsert) {
           parseCommand(key)
           buffer.headOption match {
             case Some(Part.IdentifiedCommand(_, _, _)) =>
@@ -372,12 +377,12 @@ trait CommandHandler extends CommandInterface with SearchHandler {
     }
     val res = tryComplete(true)
     if (hasExit) buffer.clear()
-    val ak = hasExit || res || (enableModal && !state.isRichInsert && !key.meta && !key.control)
-    if (registerJustSet) {
-      registerJustSet = false
+    val ak = hasExit || res || (client.enableModal && !client.state.isRichInsert && !key.meta && !key.control)
+    if (client.registerJustSet) {
+      client.registerJustSet = false
     } else {
       if (hasExit || res) {
-        setRegister(-1)
+        registers.setRegister(-1)
       }
     }
     if (!ak && bufferBefore != null) {

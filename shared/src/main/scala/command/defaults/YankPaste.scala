@@ -30,7 +30,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
       if (grapheme.nonEmpty) {
         val str = grapheme.get.str
         if (str.length == 1) {
-          commandState.setRegister(str.charAt(0))
+          commandState.registers.setRegister(str.charAt(0))
         }
       }
       DocTransaction.empty
@@ -57,7 +57,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asContent
       val node = a.node(c)
-      commandState.yank(Registerable.Node(Seq(node.copy(childs = Seq.empty))), isDelete = false)
+      commandState.registers.yank(Registerable.Node(Seq(node.copy(childs = Seq.empty))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -69,7 +69,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asContent
-      commandState.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
+      commandState.registers.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -81,7 +81,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (c, rich, normal) = a.asRich
-      commandState.yank(Registerable.Text(rich.copyTextualRange(IntRange(normal.merged.start, rich.size))), isDelete = false)
+      commandState.registers.yank(Registerable.Text(rich.copyTextualRange(IntRange(normal.merged.start, rich.size))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -109,7 +109,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
       if (rich.isEmpty) return DocTransaction.empty
       motion.foreach(m => {
         m.act(commandState, rich, count, normal.range, grapheme).foreach(r => {
-          commandState.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = false)
+          commandState.registers.yank(Registerable.Text(rich.copyTextualRange(r)), isDelete = false)
         })
       })
       DocTransaction.empty
@@ -168,7 +168,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
           DocTransaction.empty
         }
       }
-      commandState.retrieveSetRegisterAndSetToCloneNode(true) match {
+      commandState.registers.retrieveSetRegisterAndSetToCloneNode(true) match {
         case Some(Registerable.Node(n, range)) =>
           if (n.nonEmpty) {
             val (insertOp, mode) = putNode(a, cursor, if (range.isEmpty) data.Node.cloneNodes(n) else n)

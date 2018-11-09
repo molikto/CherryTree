@@ -96,11 +96,11 @@ class QuickSearchDialog(val client: Client,
 
   override def onKeyDown(ev: KeyboardEvent): Boolean = {
     val key = Seq(EditorView.extractKey(ev))
-    if (client.miscCommands.quickSearchDocument.keys.contains(key) && opt) {
+    if (client.commands.miscCommands.quickSearchDocument.keys.contains(key) && opt) {
       opt = false
       update()
       true
-    } else if (client.miscCommands.quickSearchViewport.keys.contains(key) && !opt) {
+    } else if (client.commands.miscCommands.quickSearchViewport.keys.contains(key) && !opt) {
       opt = true
       update()
       true

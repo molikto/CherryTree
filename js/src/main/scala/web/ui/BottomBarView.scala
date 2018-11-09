@@ -96,7 +96,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
     commandStatus.className = "ct-hint-color"
   }))
 
-  observe(client.commandBufferUpdates.doOnNext(c => {
+  observe(client.commands.commandBufferUpdates.doOnNext(c => {
     var isCompleted = false
     var isError = false
     val ts = c.map {
