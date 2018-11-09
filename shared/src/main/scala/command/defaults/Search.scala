@@ -4,8 +4,9 @@ import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Mo
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Unicode
+import settings.Settings
 
-class Search extends CommandCategory("search & pattern matches") {
+class Search(settings: Settings) extends CommandCategory(settings,"search & pattern matches") {
 
   new Command {
     override val description: String = "search forward"

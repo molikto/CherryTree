@@ -10,8 +10,9 @@ import model.data.{Node, Rich, Text, Unicode}
 import model.operation.Node
 import model.range.IntRange
 import register.Registerable
+import settings.Settings
 
-class YankPaste extends CommandCategory("registers, yank and paste") {
+class YankPaste(settings: Settings) extends CommandCategory(settings,"registers, yank and paste") {
 
   abstract class Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
@@ -91,7 +92,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
     override def available(a: DocState): Boolean = a.isVisual || a.isCodeNormal
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      yankSelection(a, commandState, enableModal, false, -1)._1
+      yankSelection(a, commandState, settings.enableModal, false, -1)._1
     }
   }
 
@@ -143,7 +144,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
             })))
           val op = Seq(operation.Rich.insert(insertionPoint, frag))
           val rg = Rich(frag).rangeEnd.moveBy(insertionPoint)
-          val mode = model.mode.Content.RichNormal(rg).collapse(enableModal)
+          val mode = model.mode.Content.RichNormal(rg).collapse(settings.enableModal)
           DocTransaction(operation.Node.rich(cursor, op), Some(a.copyContentMode(mode)))
         }
         if (n.nonEmpty) {
@@ -195,7 +196,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
       val (insertionPoint, _) = insertPointAfter(a, at)
-      (operation.Node.Insert(insertionPoint, node), mode.Node.Content(insertionPoint, node.head.content.defaultMode(enableModal)))
+      (operation.Node.Insert(insertionPoint, node), mode.Node.Content(insertionPoint, node.head.content.defaultMode(settings.enableModal)))
     }
 
   }
@@ -206,7 +207,7 @@ class YankPaste extends CommandCategory("registers, yank and paste") {
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
       val pt = if (at == a.zoom) a.zoom :+ 0 else at
-      (operation.Node.Insert(pt, node), mode.Node.Content(pt, node.head.content.defaultMode(enableModal)))
+      (operation.Node.Insert(pt, node), mode.Node.Content(pt, node.head.content.defaultMode(settings.enableModal)))
     }
 
     override def select(selection: IntRange): Int = selection.start

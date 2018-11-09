@@ -6,24 +6,13 @@ import model.data.{SpecialChar, Unicode}
 
 trait Settings {
 
-  val enableModal: Boolean = true
-  /**
-    * these are settings??
-    */
-  val delimitationSettings = Seq(
-    (SpecialChar.StrikeThrough, Unicode("~"), Unicode("~")),
-    (SpecialChar.Code, Unicode("`"), Unicode("`")),
-    (SpecialChar.Strong, Unicode("**"), Unicode("**")),
-    (SpecialChar.LaTeX, Unicode("$"), Unicode("$")),
-    (SpecialChar.Link, Unicode("["), Unicode("]")),
-    (SpecialChar.HashTag, Unicode("#"), Unicode("#")),
-    (SpecialChar.HashDef, Unicode("##"), Unicode("##")),
-    (SpecialChar.Emphasis, Unicode("*"), Unicode("*"))
-  )
+  def enableModal: Boolean
 
-  val delimitationGraphemes: SpecialKeySettings = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._3)).toMap
+  def delimitationSettings: Seq[(model.data.SpecialChar.Delimitation, Unicode, Unicode)]
 
-  def additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
+  def delimitationGraphemes: SpecialKeySettings
 
-  def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
+  def additionalKeyMaps: Map[String, Seq[Key.KeySeq]]
+
+  def removedDefaultKeyMaps: Map[String, Seq[Key.KeySeq]]
 }

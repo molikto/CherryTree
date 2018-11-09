@@ -28,6 +28,7 @@ import model.operation.Rich
 import model.range.IntRange
 import monix.reactive.subjects.PublishSubject
 import register.{RegisterHandler, Registerable}
+import settings.{Settings, SettingsImpl}
 import undoer.Undoer
 import view.EditorInterface
 
@@ -37,7 +38,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 
 trait Api {
-  def localStorage: LocalStorage
+  val localStorage: LocalStorage
 
   def get[S](path: String)
     (implicit s: Pickler[S], unpickleState: ByteBuffer => model.UnpickleState): Future[S] = {
@@ -84,12 +85,26 @@ class Client(
   private val docId: UUID,
   initial: InitResponse,
   private val api: Api,
-) extends CommandHandler
+) extends SettingsImpl
+  with CommandHandler
   with RegisterHandler
   with Undoer
   with EditorInterface
   with InputRuler
   with DocInterface { self =>
+
+  def changeSettings(temp: Settings): Boolean = {
+    var res = false
+    if (enableModal != temp.enableModal) {
+      enableModal = temp.enableModal
+      state_ = state_.copy(mode0 = model.mode.Node.Content(state_.zoom, state_.node(state_.zoom).content.defaultMode(enableModal)))
+      res = true
+    }
+    res
+  }
+
+
+  override def localStorage: LocalStorage = api.localStorage
 
   def debug_unmarkTempDisableMode() = {
     state_ = state_.copy(badMode = false)

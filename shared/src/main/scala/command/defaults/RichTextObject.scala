@@ -5,8 +5,9 @@ import command.Key.KeySeq
 import doc.{DocState, DocTransaction}
 import model.data.{Rich, Unicode}
 import model.range
+import settings.Settings
 
-class RichTextObject extends CommandCategory("rich text: text object motion") {
+class RichTextObject(settings: Settings) extends CommandCategory(settings,"rich text: text object motion") {
 
   // TODO sentence quote
   //v_as     N  as        Select "a sentence"

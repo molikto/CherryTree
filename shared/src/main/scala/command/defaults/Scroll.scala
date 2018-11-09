@@ -1,8 +1,9 @@
 package command.defaults
 
 import command.CommandCategory
+import settings.Settings
 
-class Scroll extends CommandCategory("scrolling the page") {
+class Scroll(settings: Settings) extends CommandCategory(settings,"scrolling the page") {
 
 
   // LATER only some of should be implemented

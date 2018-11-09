@@ -54,7 +54,9 @@ private[undoer] class HistoryItem(
 /**
   * our undoer is very very hacky!!!
   */
-trait Undoer extends UndoerInterface with Settings {
+trait Undoer extends UndoerInterface {
+
+  def enableModal: Boolean
 
   private var discarded = 0
   private val history_ : ArrayBuffer[HistoryItem] = new ArrayBuffer()

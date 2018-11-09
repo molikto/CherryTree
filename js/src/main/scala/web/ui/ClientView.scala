@@ -16,7 +16,7 @@ import web.ui.panel.LeftPanelSwitcher
 import scala.scalajs._
 
 // in this class we use nulls for a various things, but not for public API
-class ClientView(private val parent: HTMLElement, val client: Client, val global: Boolean) extends View {
+class ClientView(private val parent: HTMLElement, val client: Client, val onSettingChangeRefresh: () => Unit, val global: Boolean) extends View {
 
   /**
     *
@@ -40,7 +40,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", cls := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
-  leftPanel = new LeftPanelSwitcher(client, this, settingsDialog, enableResizePanel)
+  leftPanel = defer(new LeftPanelSwitcher(client, this, settingsDialog, enableResizePanel))
 
   {
     leftPanel.attachTo(this)
@@ -77,31 +77,31 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     overflow := "hidden").render
   dom.appendChild(rightPanel)
 
-  val bottomBar = new BottomBarView(client)
+  val bottomBar = defer(new BottomBarView(client))
   bottomBar.attachToNode(rightPanel)
 
-  private val docView = new SimpleLayoutDocumentView(client, client).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView]
+  private val docView = defer(new SimpleLayoutDocumentView(client, client, client).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView])
 
   private val overlayLayer = {
-    val o = new OverlayLayer(dom, docView)
+    val o = defer(new OverlayLayer(dom, docView))
     o.attachToNode(dom)
     o
   }
 
-  lazy val settingsDialog: SettingsDialog = new SettingsDialog(client, overlayLayer, dom)
+  lazy val settingsDialog: SettingsDialog = defer(new SettingsDialog(client, overlayLayer, onSettingChangeRefresh, dom))
 
-  lazy val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, dom)
+  lazy val quickSearch: QuickSearchDialog = defer(new QuickSearchDialog(client, overlayLayer, dom))
 
 
-  new SearchBar(client, () => docView, bottomBar.size).attachToNode(rightPanel)
+  private val searchBar = defer(new SearchBar(client, () => docView, bottomBar.size).attachToNode(rightPanel))
+
+  val commandMenu: CommandMenuDialog = defer(new CommandMenuDialog(client, overlayLayer))
+  val registers: RegistersDialog = defer(new RegistersDialog(client, overlayLayer))
+  val sourceEditor: CoveringSourceEditDialog = defer(new CoveringSourceEditDialog(client, client, overlayLayer, docView.dom))
+  val attributeEditor: UrlAttributeEditDialog = defer(new UrlAttributeEditDialog(overlayLayer))
+  val latexEditor: InlineCodeDialog = defer(new InlineCodeDialog(client, client, overlayLayer))
 
   {
-    val commandMenu: CommandMenuDialog = new CommandMenuDialog(client, overlayLayer)
-    val registers: RegistersDialog = new RegistersDialog(client, overlayLayer)
-    val sourceEditor: CoveringSourceEditDialog = new CoveringSourceEditDialog(client, overlayLayer, docView.dom)
-    val attributeEditor: UrlAttributeEditDialog = new UrlAttributeEditDialog(overlayLayer)
-    val latexEditor: InlineCodeDialog = new InlineCodeDialog(client, overlayLayer)
-
     docView.sourceEditor = sourceEditor
     docView.commandMenu = commandMenu
     docView.registersDialog = registers
@@ -175,4 +175,5 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
       fpsDisplay.textContent = str
     }
   }
+
 }

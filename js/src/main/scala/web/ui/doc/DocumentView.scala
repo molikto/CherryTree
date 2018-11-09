@@ -16,6 +16,7 @@ import util.Rect
 import view.EditorInterface
 import scalatags.JsDom.all.{s, _}
 import search.Search
+import settings.Settings
 import web.{Implicits, ui}
 import web.ui.content.{ContentView, ContentViewEditor, RichView}
 import web.view._
@@ -26,6 +27,7 @@ import scala.util.Success
 
 abstract class DocumentView extends View with EditorView with Implicits {
 
+  def settings: Settings
 
   private val latexMacroCache = LaTeXMacroCache.instance
 
@@ -378,7 +380,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
     if (searching == null) {
       fakeSelections.innerHTML = ""
     } else {
-      val ocs = currentDoc.searchInShown(searching, editor.enableModal)
+      val ocs = currentDoc.searchInShown(searching, settings.enableModal)
       // render search ocs
     }
   }
@@ -416,6 +418,11 @@ abstract class DocumentView extends View with EditorView with Implicits {
     activeContentEditor = null
   }
 
+
+  override def destroy(): Unit = {
+    if (activeContent != null) activeContent.destroy()
+    super.destroy()
+  }
 
   protected val handleHoverEvent: js.Function1[MouseEvent, Unit] = (e: MouseEvent) => {
     val hold = e.target.asInstanceOf[HTMLElement]
@@ -745,7 +752,7 @@ abstract class DocumentView extends View with EditorView with Implicits {
     val cur = currentDoc.mode.get.focus
     val content = contentAt(cur)
     content.constructVisualLineBuff()
-    val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, !editor.enableModal)
+    val range = content.rangeAroundLine(0, (visualMotionX + dom.offsetLeft).toInt, !settings.enableModal)
     content.clearVisualLineBuff()
     editor.onMouseFocusOn(currentDoc.mode.get.focus, range, true, false, maybeNormal = true)
   }
@@ -832,12 +839,12 @@ abstract class DocumentView extends View with EditorView with Implicits {
             Some(IntRange(size, size))
           }
         } else {
-          val insert = !editor.enableModal || currentDoc.isInsertal
+          val insert = !settings.enableModal || currentDoc.isInsertal
           val ret = content.rangeAroundLine(line, (visualMotionX + dom.offsetLeft).toInt, insert)
           content.clearVisualLineBuff()
           ret
         }
-        if (enterVisual || (editor.enableModal && a.isInstanceOf[model.mode.Content.RichVisual])) {
+        if (enterVisual || (settings.enableModal && a.isInstanceOf[model.mode.Content.RichVisual])) {
           if (node != cur || !a.isInstanceOf[model.mode.Content.Rich]) {
             editor.onVisualMode(node, cur)
           } else {

@@ -53,7 +53,13 @@ abstract class View {
 
   private var dom_ : HTMLElement = null
   private var attached = false
-  private var des = ArrayBuffer[Unit => Unit]()
+  private var des = new ArrayBuffer[Unit => Unit]()
+  private val views = ArrayBuffer[View]()
+
+  def removeDefer(a: Unit => Unit) = {
+    val index = des.indexOf(a)
+    if (index >= 0) des.remove(index)
+  }
 
   if (model.debug_view) {
     View.views.append(this)
@@ -93,9 +99,10 @@ abstract class View {
 
   }
 
+
   def destroyed: Boolean = des == null
 
-  def needsDestroy: Boolean = des != null && des.nonEmpty
+  def needsDestroy: Boolean = (des != null && des.nonEmpty) || views.nonEmpty
 
   /**
     * will also remove from parent
@@ -107,12 +114,18 @@ abstract class View {
       throw new IllegalStateException("destroying not attached node!")
     }
     des.reverse.foreach(_.apply())
+    views.reverse.foreach(a => if (a.attached) a.destroy())
     dom_.parentNode.removeChild(dom_)
     des = null
   }
 
   def defer(a: Unit => Unit): Unit = {
     des.append(a)
+  }
+
+  def defer[T <: View](a: T):  T = {
+    views.append(a)
+    a
   }
 
   /**

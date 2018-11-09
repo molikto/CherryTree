@@ -4,8 +4,9 @@ import command._
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.data.Unicode
+import settings.Settings
 
-class UndoRedo extends CommandCategory("undo & redo") {
+class UndoRedo(settings: Settings) extends CommandCategory(settings,"undo & redo") {
 
 
   new Command {

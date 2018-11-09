@@ -7,10 +7,11 @@ import doc.{DocState, DocTransaction}
 import model.cursor.Node
 import model.range.IntRange
 import model.{cursor, data, operation, range}
+import settings.Settings
 
 import scala.collection.mutable.ArrayBuffer
 
-class NodeMove extends CommandCategory("node: move") {
+class NodeMove(settings: Settings) extends CommandCategory(settings,"node: move") {
 
 
   abstract class MoveCommand extends  Command {

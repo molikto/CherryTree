@@ -20,34 +20,36 @@ import search.SearchHandler
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Success, Try}
 
-abstract class CommandHandler extends Settings with CommandInterface with SearchHandler {
+trait CommandHandler extends CommandInterface with SearchHandler {
   self: Client =>
 
 
-  val miscCommands = new defaults.Misc(this)
-  val yankPaste = new defaults.YankPaste()
+  def settings = this
+
+  val miscCommands = new defaults.Misc(settings, this)
+  val yankPaste = new defaults.YankPaste(settings)
 
 
   private val defaultCategories =  Seq(
     miscCommands,
-    new defaults.Search(),
-    new defaults.RichMotion(),
-    new defaults.RichTextObject(),
-    new defaults.RichInsertEnter(),
-    new defaults.RichInsert(),
-    new defaults.RichVisual(),
-    new defaults.RichChange(),
-    new defaults.RichSpecial(),
-    new defaults.RichDelete(),
-    new defaults.NodeMotion(),
-    new defaults.NodeVisual(),
-    new defaults.NodeMove(),
-    new defaults.NodeDelete(),
-    new defaults.NodeStyle(),
-    new defaults.NodeFold(),
+    new defaults.Search(settings),
+    new defaults.RichMotion(settings),
+    new defaults.RichTextObject(settings),
+    new defaults.RichInsertEnter(settings),
+    new defaults.RichInsert(settings),
+    new defaults.RichVisual(settings),
+    new defaults.RichChange(settings),
+    new defaults.RichSpecial(settings),
+    new defaults.RichDelete(settings),
+    new defaults.NodeMotion(settings),
+    new defaults.NodeVisual(settings),
+    new defaults.NodeMove(settings),
+    new defaults.NodeDelete(settings),
+    new defaults.NodeStyle(settings),
+    new defaults.NodeFold(settings),
     yankPaste,
-    new defaults.UndoRedo(),
-    new defaults.Scroll(),
+    new defaults.UndoRedo(settings),
+    new defaults.Scroll(settings),
   ).filter(_.commands.nonEmpty)
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)
 

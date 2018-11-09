@@ -8,8 +8,9 @@ import doc.{DocState, DocTransaction}
 import model.cursor
 import model.cursor.Node
 import model.data.Unicode
+import settings.Settings
 
-class NodeMotion extends CommandCategory("node: motion") {
+class NodeMotion(settings: Settings) extends CommandCategory(settings, "node: motion") {
 
   abstract class Command extends super.Command {
     override def modalOnly: Boolean = true

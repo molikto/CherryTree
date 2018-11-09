@@ -84,6 +84,7 @@ class LeftPanelSwitcher(private val cl: Client,
         } else if (active != null) {
           active.classList.remove("ct-tab-selected")
           current.destroy()
+          current = null
           active = null
           WebApi.localStorage.set(".left-panel", "")
           enabledAll(false)
@@ -139,5 +140,15 @@ class LeftPanelSwitcher(private val cl: Client,
 
   if (active == null) {
     enabledAll(false)
+  }
+
+  /**
+    * will also remove from parent
+    * ALSO make sure you destroy child dom attachments!!!
+    */
+  override def destroy(): Unit = {
+    if (current != null) current.destroy()
+    current = null
+    super.destroy()
   }
 }

@@ -12,7 +12,7 @@ import register.RegisterInterface
 import search.SearchHandler
 import settings.Settings
 
-trait SourceEditInterface extends RegisterInterface with Settings {
+trait SourceEditInterface extends RegisterInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
   def onCodeTypeChangeAndEditorUpdated(to: CodeType): Unit
   def onExitSubMode(): Unit
@@ -21,7 +21,7 @@ trait SourceEditInterface extends RegisterInterface with Settings {
   def onSourceEditorRedo(): Unit
 }
 
-trait RichEditInterface extends Settings {
+trait RichEditInterface {
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int, mergeWithPrevious: Boolean): mode.Content.Rich
   def onAttributeModified(url: Unicode, title: Unicode)
   // returns if there is any data change

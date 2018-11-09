@@ -7,8 +7,9 @@ import doc.{DocState, DocTransaction}
 import model.data.Rich
 import model.range.IntRange
 import model.{cursor, operation}
+import settings.Settings
 
-class RichInsertEnter extends CommandCategory("rich text: enter insert mode") {
+class RichInsertEnter(settings: Settings) extends CommandCategory(settings,"rich text: enter insert mode") {
 
 
   trait Command extends super.Command {

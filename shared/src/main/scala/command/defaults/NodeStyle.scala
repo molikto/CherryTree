@@ -8,10 +8,11 @@ import doc.{DocState, DocTransaction}
 import model._
 import model.data.{Content, Text}
 import model.range.IntRange
+import settings.Settings
 
 import scala.collection.mutable.ArrayBuffer
 
-class NodeStyle extends CommandCategory("node: format") {
+class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: format") {
 
 
 
@@ -34,7 +35,7 @@ class NodeStyle extends CommandCategory("node: format") {
       val rich = data.Rich(if (code.unicode.isEmpty) Seq.empty else Seq(Text.Code(code.unicode)))
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Rich(rich))),
-        Some(a.copyContentMode(Content.Rich(rich).defaultMode(enableModal))))
+        Some(a.copyContentMode(Content.Rich(rich).defaultMode(settings.enableModal))))
     }
   }
 

@@ -15,7 +15,7 @@ class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
   val coveringElement: HTMLElement
 ) extends StaticFilteringView[Boolean, (model.cursor.Node, UUID)]
-  with UnselectableView with Settings with DocFramer {
+  with UnselectableView with DocFramer {
 
 
   override def show(t: Boolean): Unit = {
@@ -30,7 +30,7 @@ class QuickSearchDialog(val client: Client,
 
 
   private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code", "!latexmacro")
-  private val marks = delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
+  private val marks = client.delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
   private val specialDesc = s"Special commands: ${(special ++ marks).mkString(" ")}"
 
 
@@ -89,7 +89,7 @@ class QuickSearchDialog(val client: Client,
           -1
         }
       val requireCode = tt.contains("!code")
-      client.state.quickSearch(raw, islm, isHeading, reqireHeadingLevel, requireCode, delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
+      client.state.quickSearch(raw, islm, isHeading, reqireHeadingLevel, requireCode, client.delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
     }
   }
 

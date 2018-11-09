@@ -1,12 +1,14 @@
 package web.ui.dialog
 
 import org.scalajs.dom.raw.HTMLElement
+import settings.Settings
 import view.SourceEditInterface
 import web.view.{CoveringOverlay, OverlayLayer}
 import web.view._
 
 
 class CoveringSourceEditDialog(
+  override val settings: Settings,
   override val editor: SourceEditInterface,
   protected val layer: OverlayLayer,
   val coveringElement: HTMLElement

@@ -107,9 +107,6 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
     }
   }
 
-  defer(_ => {
-    clearMode()
-  })
 
   private def updateInsertCursorAt(pos: Int): (Node, Int) = {
 
@@ -207,7 +204,7 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
       a.preventDefault()
     } else {
       pendingFlush = true
-      goBackToNormalAfterFlush = previousMode == 1 && controller.enableModal
+      goBackToNormalAfterFlush = previousMode == 1 && documentView.settings.enableModal
       domModifiedInBeforeEvent = previousMode == 1 && controller.onDeleteCurrentSelectionAndStartInsert()
     }
   }
@@ -343,10 +340,20 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
   }
 
 
-
-  override def clearMode(): Unit = {
+  def doClear() = {
     clearEditor()
     initMode(if (isEmpty) -2 else -1)
+  }
+
+  private val defered: Unit => Unit = _ => {
+    doClear()
+  }
+
+  defer(defered)
+
+  override def clearMode(): Unit = {
+    doClear()
+    contentView.removeDefer(defered)
   }
 
   private def isInserting = previousMode == 0

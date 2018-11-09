@@ -6,8 +6,9 @@ import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.mode
+import settings.Settings
 
-class NodeVisual extends CommandCategory("node: visual") {
+class NodeVisual(settings: Settings) extends CommandCategory(settings,"node: visual") {
 
   // DIFFERENCE going from node visual to content visual is NOT possible
   // CTRL-V   CTRL-V       start highlighting blockwise   }  highlighted text

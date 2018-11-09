@@ -7,8 +7,9 @@ import doc.{DocState, DocTransaction}
 import model.data.{apply => _, _}
 import model.range.IntRange
 import model.{cursor, mode, operation}
+import settings.Settings
 
-class RichChange extends CommandCategory("rich text: change") {
+class RichChange(settings: Settings) extends CommandCategory(settings,"rich text: change") {
 
   trait Command extends super.Command {
     override def modalOnly: Boolean = true

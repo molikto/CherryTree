@@ -39,8 +39,6 @@ class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Opt
 
   rootView.classList.add("ct-document-view-background")
 
-  var client: Option[Client] = None
-
   private def goConnecting(): Unit = {
     onlyChild(rootView, {
       import scalatags.JsDom.all._
@@ -72,10 +70,20 @@ class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Opt
     }.render)
   }
 
+  private var clientView: ClientView = null
 
   private def goClient(client: Client): Unit = {
-    this.client = Some(client)
     removeAllChild(rootView)
-    new ClientView(rootView, client, global)
+    clientView = new ClientView(rootView, client, () => {
+      try {
+        clientView.destroy()
+      } catch {
+        case e: Exception => {
+          e.printStackTrace() // TODO error reporting
+          throw e
+        }
+      }
+      goClient(client)
+    }, global)
   }
 }

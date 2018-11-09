@@ -24,15 +24,16 @@ object SourceEditOverlay {
   var globalDefined = false
 }
 
-trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings {
+trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
+  def settings: Settings
 
   private var updating = false
   private val dollarSign = Unicode("$")
 
   def showLineNumber: Boolean = true
   private def exitOnInputDollarSign: Boolean = codeType == Embedded.LaTeX &&
-    delimitationSettings.exists(a => a._1 == SpecialChar.LaTeX && a._3 == dollarSign && a._2 == dollarSign)
+    settings.delimitationSettings.exists(a => a._1 == SpecialChar.LaTeX && a._3 == dollarSign && a._2 == dollarSign)
 
   
   def editor: _root_.view.SourceEditInterface
@@ -144,7 +145,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       a.lineNumbers = showLineNumber
       a.styleActiveLine = true
       a.matchBrackets = true
-      if (enableModal) {
+      if (settings.enableModal) {
         a.keyMap = "vim"
       }
       a.lineWrapping = true
@@ -169,7 +170,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     if (model.debug_view) {
       window.asInstanceOf[js.Dynamic].cm = codeMirror
     }
-    if (enableModal) {
+    if (settings.enableModal) {
       if (!SourceEditOverlay.globalDefined) {
         SourceEditOverlay.globalDefined = true
 
@@ -260,7 +261,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
       vs.item(i).classList.add("ct-scroll")
     }
 
-    if (enableModal) {
+    if (settings.enableModal) {
       CodeMirror.on(codeMirror, "vim-keypress", (e: js.Dynamic) => {
         if (isInnerNormal && e.asInstanceOf[String] == "<Esc>") {
           dismiss()
@@ -332,7 +333,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
         val (from, to, text) = _root_.util.quickDiff(oldVal, newVal)
         val fromCp = str.fromStringPosition(from)
         val toCp = str.fromStringPosition(to)
-        if ((!enableModal || isInnerInsert) && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
+        if ((!settings.enableModal || isInnerInsert) && from == to && text == "$" && exitOnInputDollarSign && (from == 0 || newVal.substring(from - 1, from) != "\\")) {
           dismiss()
         } else {
           flush() // flush the cursor position
@@ -368,7 +369,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     super.onDismiss()
     editor.onExitSubMode()
     codeMirror.setValue("")
-    if (enableModal) {
+    if (settings.enableModal) {
       if (isInnerInsert) {
         CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
       }
@@ -452,7 +453,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] with Settings
     setCodeType(opt.codeType)
     isInnerNormal = true
     isInnerInsert = false
-    if (enableModal) {
+    if (settings.enableModal) {
       if (opt.mode.mode == "insert") {
         syncModeInner(opt.mode)
         window.setTimeout(() => {

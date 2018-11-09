@@ -4,8 +4,9 @@ import command.{CommandCategory, CommandInterface, Key}
 import command.Key._
 import doc.{DocState, DocTransaction}
 import model.{cursor, mode}
+import settings.Settings
 
-class NodeFold extends CommandCategory("node: fold & zoom") {
+class NodeFold(settings: Settings) extends CommandCategory(settings, "node: fold & zoom") {
 
   new Command {
     override val description: String = "zoom into node"
@@ -37,7 +38,7 @@ class NodeFold extends CommandCategory("node: fold & zoom") {
       } else {
         val curZoom = a.node(a.zoom)
         DocTransaction(Seq.empty,
-          if (a.folded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultMode(enableModal)))
+          if (a.folded(a.zoom)) Some(mode.Node.Content(a.zoom, curZoom.content.defaultMode(settings.enableModal)))
           else None,
           zoomAfter = Some(model.cursor.Node.parent(a.zoom)))
       }

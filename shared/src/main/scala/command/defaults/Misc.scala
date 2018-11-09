@@ -9,10 +9,11 @@ import model.data.{apply => _, _}
 import model.mode
 import model.mode.Content.RichNormal
 import model.range.IntRange
+import settings.Settings
 
 import scala.util.{Success, Try}
 
-class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
+class Misc(settings: Settings, val handler: CommandHandler) extends CommandCategory(settings, "misc") {
 
 
   // what/s these?
@@ -42,14 +43,14 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
                 case model.data.Content.Rich(rich) =>
                   c match {
                     case model.mode.Content.RichInsert(pos) =>
-                      if (enableModal) {
+                      if (settings.enableModal) {
                         val range = rich.rangeBefore(pos)
                         DocTransaction(a.copyContentMode(model.mode.Content.RichNormal(range)))
                       } else {
                         DocTransaction.empty
                       }
                     case v: model.mode.Content.RichVisual =>
-                      if (enableModal) {
+                      if (settings.enableModal) {
                         DocTransaction(a.copyContentMode(RichNormal(if (v.move.nonEmpty) v.move else a.node(n).rich.rangeBefore(v.move.start))))
                       } else {
                         DocTransaction.empty
@@ -116,7 +117,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       rich.insideUrlAttributed(t).nonEmpty
     })
-    override def actDoubleClick: Boolean = !enableModal
+    override def actDoubleClick: Boolean = !settings.enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, rich, t) = a.asRichAtom
       val text = rich.insideUrlAttributed(t).get
@@ -131,13 +132,13 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       t.text.isCodedAtomic
     }) || a.isCodeNormal
-    override def actDoubleClick: Boolean = !enableModal
+    override def actDoubleClick: Boolean = !settings.enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       if (a.isCodeNormal) {
-        DocTransaction(a.copyContentMode(mode.Content.CodeInside(if (enableModal) "normal" else "insert", 0)))
+        DocTransaction(a.copyContentMode(mode.Content.CodeInside(if (settings.enableModal) "normal" else "insert", 0)))
       } else {
         val (_, _, t) = a.asRichAtom
-        a.editCode(t, enableModal)
+        a.editCode(t, settings.enableModal)
       }
     }
   }
@@ -161,7 +162,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
         Node.matchNodeRef(url).foreach { uuid =>
           a.lookup(uuid) match {
             case Some(cur) =>
-              return a.goTo(cur, Misc.this)
+              return a.goTo(cur, settings)
             case None =>
               // TODO report error
               return DocTransaction.empty
@@ -179,7 +180,7 @@ class Misc(val handler: CommandHandler) extends CommandCategory("misc") {
       } else {
         val hash = rich.insideHashTag(t0).get
         a.find(a => a.content.defines(hash)) match {
-          case Some((cur, range)) => a.goTo(cur, Misc.this)
+          case Some((cur, range)) => a.goTo(cur, settings)
           case _ => DocTransaction.empty
         }
       }

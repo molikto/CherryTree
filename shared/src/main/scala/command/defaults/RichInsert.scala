@@ -9,8 +9,9 @@ import model.cursor.Node
 import model.{cursor, mode, operation, range}
 import model.data.{Rich, SpecialChar, Text, Unicode}
 import model.range.IntRange
+import settings.Settings
 
-class RichInsert extends CommandCategory("rich text: insert mode") {
+class RichInsert(settings: Settings) extends CommandCategory(settings,"rich text: insert mode") {
 
 
   trait RichInsertCommand extends Command {
@@ -29,7 +30,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   private def deleteOnPosStart(a: DocState, commandState: CommandInterface, rich: Rich, cur: Node): DocTransaction = {
     if (rich.isEmpty && cur != a.zoom) {
-      deleteNodeRange(a, commandState, model.range.Node(cur), enableModal, goUp = true)
+      deleteNodeRange(a, commandState, model.range.Node(cur), settings.enableModal, goUp = true)
     } else {
       DocTransaction.empty
     }
@@ -37,7 +38,7 @@ class RichInsert extends CommandCategory("rich text: insert mode") {
 
   new RichInsertCommand with OverrideCommand {
 
-    override def available(a: DocState): Boolean = if (!enableModal) a.isRichNonSub else super.available(a)
+    override def available(a: DocState): Boolean = if (!settings.enableModal) a.isRichNonSub else super.available(a)
 
     override val description: String = "delete text before cursor / delete node if empty"
     override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace) +: (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])

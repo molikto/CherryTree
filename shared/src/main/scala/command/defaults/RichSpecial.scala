@@ -9,8 +9,9 @@ import model.data.{apply => _, _}
 import model.mode.Content.RichRange
 import model.range.IntRange
 import model.{cursor, data, mode, operation}
+import settings.Settings
 
-class RichSpecial extends CommandCategory("rich text: format") {
+class RichSpecial(settings: Settings) extends CommandCategory(settings,"rich text: format") {
 
 
   SpecialChar.all.map(deli => deli -> new DeliCommand(deli) {
@@ -44,9 +45,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
       val (n, content, insert, until) = a.asRichNormalOrInsert
       val keyU = Unicode(key.map(a => if (a.forall(_.isSimpleGrapheme)) Key.toString(a) else "").getOrElse(""))
       def moveSomeInsertMode(some: Int) = mode.Content.RichInsert(insert + some)
-      if (insert < content.size && content.after(insert).special(deli.end) && keyU.nonEmpty && delimitationGraphemes.get(deli.end).contains(keyU)) {
+      if (insert < content.size && content.after(insert).special(deli.end) && keyU.nonEmpty && settings.delimitationGraphemes.get(deli.end).contains(keyU)) {
         DocTransaction(a.copyContentMode(moveSomeInsertMode(content.after(insert).size)))
-      } else if (!content.insideCoded(insert) && (keyU.isEmpty || delimitationGraphemes.get(deli.start).contains(keyU))) {
+      } else if (!content.insideCoded(insert) && (keyU.isEmpty || settings.delimitationGraphemes.get(deli.start).contains(keyU))) {
         val extraInsert =
         if (keyU.isEmpty) {
           None
@@ -59,9 +60,9 @@ class RichSpecial extends CommandCategory("rich text: format") {
         val vms = if (deli == SpecialChar.Image) {
           a.editAttribute(IntRange.len(insert + 1, 0), modeBefore)
         } else if (deli == SpecialChar.LaTeX) {
-          a.editCode(IntRange.len(insert + 1, 0), enableModal, modeBefore)
+          a.editCode(IntRange.len(insert + 1, 0), settings.enableModal, modeBefore)
         } else if (deli == SpecialChar.HTML) {
-          a.editCode(IntRange.len(insert + 1, 0), enableModal, modeBefore)
+          a.editCode(IntRange.len(insert + 1, 0), settings.enableModal, modeBefore)
         } else {
           DocTransaction(a.copyContentMode(modeBefore))
         }
@@ -184,7 +185,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
                 (rich.after(after.range.until).range.moveBy(-1),
                   rich.before(before.range.start).range.moveBy(-1))
               }
-              val ret = RichRange.create(ret0._1, ret0._2, enableModal)
+              val ret = RichRange.create(ret0._1, ret0._2, settings.enableModal)
               DocTransaction(Seq(operation.Node.rich(cursor,
                 operation.Rich.unwrap(r.start, after.text.asDelimited))),
                 Some(a.copyContentMode(ret)))
@@ -200,7 +201,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
                 } else {
                   (IntRange.endLen(range._2 + 1, deli.newDeliEndSize), IntRange.len(range._1, 1))
                 }
-                val fakePoints = RichRange.create(fakePoints0._1, fakePoints0._2, enableModal)
+                val fakePoints = RichRange.create(fakePoints0._1, fakePoints0._2, settings.enableModal)
                 DocTransaction(Seq(operation.Node.rich(cursor,
                   operation.Rich.wrapNonOverlappingOrderedRanges(remaining, deli))),
                   Some(a.copyContentMode(fakePoints)))
@@ -247,7 +248,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
           } else {
             (IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
           }
-        val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, enableModal)
+        val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, settings.enableModal)
         val ifs = rich.between(r)
         if (ifs.forall(_.isInstanceOf[Atom.PlainGrapheme])) {
           DocTransaction(Seq(
@@ -278,7 +279,7 @@ class RichSpecial extends CommandCategory("rich text: format") {
                 } else {
                   (IntRange.endLen(p.until, deli.newDeliEndSize), IntRange.len(r.start, 1))
                 }
-              val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, enableModal)
+              val fakeMode = RichRange.create(fakeMode0._1, fakeMode0._2, settings.enableModal)
               DocTransaction(Seq(
                 operation.Node.rich(cursor, operation.Rich.wrap(r, deli))),
                 Some(a.copyContentMode(fakeMode)))

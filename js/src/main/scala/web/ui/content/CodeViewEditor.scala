@@ -3,6 +3,7 @@ package web.ui.content
 import model._
 import model.data._
 import model.mode.Content.CodeInside
+import settings.Settings
 import util.Rect
 import view.{EditorInterface, SourceEditInterface}
 import web.ui.doc.DocumentView
@@ -68,7 +69,7 @@ class CodeViewEditor(
       case inside: model.mode.Content.CodeInside =>
         if (editing == null) {
           editing = documentView.sourceEditor
-          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(controller.enableModal), contentData.ty))
+          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(documentView.settings.enableModal), contentData.ty))
         } else if (!editorUpdated) {
           editing.sync(inside)
         }

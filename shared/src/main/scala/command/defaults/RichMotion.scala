@@ -10,7 +10,7 @@ import model.data.{Atom, Rich, Unicode}
 import model.mode.Content.RichNormalOrVisual
 import settings.Settings
 
-class RichMotion extends CommandCategory("rich text: cursor motion") {
+class RichMotion(settings: Settings) extends CommandCategory(settings,"rich text: cursor motion") {
 
 
 
@@ -57,7 +57,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
           case model.mode.Content.RichInsert(pos) =>
             simpleMethod()
           case _ =>
-            if (!enableModal) {
+            if (!settings.enableModal) {
               simpleMethod()
             } else {
               def act(r: IntRange) = (0 until count).foldLeft(r) { (rr, _) =>
@@ -162,7 +162,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
 
   abstract class FindCommand extends RichMotionCommand with NeedsCharCommand with command.FindCommand {
 
-    override def settings: Settings = RichMotion.this
+    override def settings: Settings = RichMotion.this.settings
 
 
     protected def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange]
@@ -200,13 +200,13 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val description: String = "find char after cursor"
     override def reverse: FindCommand = findPreviousChar
     override val defaultKeys: Seq[KeySeq] = Seq("f")
-    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharAfter(range, char, delimitationGraphemes).map(_.range)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharAfter(range, char, settings.delimitationGraphemes).map(_.range)
   }
   val findPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char before cursor"
     override def reverse: FindCommand = findNextChar
     override val defaultKeys: Seq[KeySeq] = Seq("F")
-    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharBefore(range, char, delimitationGraphemes).map(_.range)
+    def move(a: Rich, range: IntRange, char: Unicode): Option[IntRange] = a.findCharBefore(range, char, settings.delimitationGraphemes).map(_.range)
   }
   val toNextChar: FindCommand = new FindCommand {
     override val description: String = "find char after cursor, move cursor before it"
@@ -214,7 +214,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val defaultKeys: Seq[KeySeq] = Seq("t")
     override def skip(content: Rich, range: IntRange): IntRange = content.rangeAfter(range)
     override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
-      content.findCharAfter(range, char, delimitationGraphemes).map(r => content.rangeBefore(r.range))
+      content.findCharAfter(range, char, settings.delimitationGraphemes).map(r => content.rangeBefore(r.range))
   }
   val toPreviousChar: FindCommand = new FindCommand {
     override val description: String = "find char before cursor, move cursor after it"
@@ -222,7 +222,7 @@ class RichMotion extends CommandCategory("rich text: cursor motion") {
     override val defaultKeys: Seq[KeySeq] = Seq("T")
     override def skip(content: Rich, range: IntRange): IntRange = content.rangeBefore(range)
     override def move(content: Rich, range: IntRange, char: Unicode): Option[IntRange] =
-      content.findCharBefore(range, char, delimitationGraphemes).map(r => content.rangeAfter(r.range))
+      content.findCharBefore(range, char, settings.delimitationGraphemes).map(r => content.rangeAfter(r.range))
   }
 
 

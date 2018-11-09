@@ -13,7 +13,7 @@ import model.cursor.Node
 import scala.collection.mutable.ArrayBuffer
 
 
-class CommandCategory(val name: String) extends Settings {
+class CommandCategory(val settings: Settings, val name: String) {
 
 
 
@@ -21,7 +21,7 @@ class CommandCategory(val name: String) extends Settings {
   val commands = new ArrayBuffer[command.Command]()
 
   trait Command extends command.Command {
-    if (enableModal || !modalOnly) {
+    if (settings.enableModal || !modalOnly) {
       commands.append(this)
     }
     override def category: String = name
@@ -49,10 +49,10 @@ class CommandCategory(val name: String) extends Settings {
       val modeTo = a.mode match {
         case Some(m) => m match {
           case v@model.mode.Node.Visual(_, mm) =>
-            if (!enableModal && !stayInVisual) exitModal = true
+            if (!settings.enableModal && !stayInVisual) exitModal = true
             v.copy(move = act(mm))
           case kkk@model.mode.Node.Content(n, cc) =>
-            model.data.Node.defaultMode(a.node, act(n), enableModal)
+            model.data.Node.defaultMode(a.node, act(n), settings.enableModal)
         }
         case None => throw new IllegalArgumentException("Not allowed")
       }
@@ -97,7 +97,7 @@ class CommandCategory(val name: String) extends Settings {
 
     override def strong: Boolean = true
 
-    private val graphemes =  Seq(deli.start, deli.end).flatMap(delimitationGraphemes.get).filter(_.nonEmpty).distinct
+    private def graphemes =  Seq(deli.start, deli.end).flatMap(settings.delimitationGraphemes.get).filter(_.nonEmpty).distinct
     private val systemKeys: Seq[KeySeq] =
       if (deli == SpecialChar.Emphasis) Seq(ModKey + "i", ModKey + "y")
       else if (deli == SpecialChar.Strong) Seq(ModKey + "b")

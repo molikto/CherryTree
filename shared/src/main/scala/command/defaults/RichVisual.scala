@@ -8,8 +8,9 @@ import model.data.{Atom, SpecialChar}
 import model.mode.Content.{RichInsert, RichSelection, RichVisual}
 import model.{data, mode, operation}
 import model.range.IntRange
+import settings.Settings
 
-class RichVisual extends CommandCategory("rich text: visual mode") {
+class RichVisual(settings: Settings) extends CommandCategory(settings,"rich text: visual mode") {
 
 
 //  new OverrideCommand {
@@ -35,7 +36,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
         case Some(model.mode.Node.Content(cur, rich: model.mode.Content.Rich)) =>
           val r = a.node(cur).rich
           if (!r.isEmpty) {
-            return if (enableModal) {
+            return if (settings.enableModal) {
               DocTransaction(a.copyContentMode(model.mode.Content.RichVisual(r.rangeBeginning, r.rangeEnd)))
             } else {
               DocTransaction(a.copyContentMode(model.mode.Content.RichSelection(0, r.size)))
@@ -70,7 +71,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Left)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, mode) = a.asRich
-      if (enableModal) {
+      if (settings.enableModal) {
         mode match {
           case model.mode.Content.RichInsert(pos) =>
             if (pos == 0) {
@@ -124,7 +125,7 @@ class RichVisual extends CommandCategory("rich text: visual mode") {
     override def hardcodeKeys: Seq[KeySeq] = Seq(Shift + Right)
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (_, rich, mode) = a.asRich
-      if (enableModal) {
+      if (settings.enableModal) {
         mode match {
           case model.mode.Content.RichInsert(pos) =>
             if (pos == rich.size) {

@@ -12,6 +12,7 @@ import org.scalajs.dom.raw._
 import org.scalajs.dom.{html, window}
 import org.scalajs.dom.{document, html, window}
 import scalatags.JsDom.all._
+import settings.Settings
 import util.Rect
 import view.EditorInterface
 import web.ui
@@ -22,6 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 class SimpleLayoutDocumentView(
+  override val settings: Settings,
   override protected val client: DocInterface,
   override protected val editor: EditorInterface
 ) extends DocumentView with EditorView with DocFramer {
