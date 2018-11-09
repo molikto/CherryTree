@@ -9,7 +9,7 @@ import web.view.{UnselectableView, View}
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class CommandListPanel(val client: Client, doc: () => View) extends UnselectableView  {
+class CommandListPanel(val client: Client, doc: => View) extends UnselectableView  {
 
 
   dom = div(
@@ -28,12 +28,12 @@ class CommandListPanel(val client: Client, doc: () => View) extends Unselectable
   private val onClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
     val cmd = ev.currentTarget.asInstanceOf[js.Dynamic].command.asInstanceOf[command.Command]
     client.runTextualIfAvailable(cmd)
-    doc().focus()
+    doc.focus()
   }
 
   private val onPanelClick: js.Function1[MouseEvent, _] = (ev: MouseEvent) => {
     ev.currentTarget.asInstanceOf[HTMLElement].parentElement.classList.toggle("hide-children")
-    doc().focus()
+    doc.focus()
   }
 
   val res = div(

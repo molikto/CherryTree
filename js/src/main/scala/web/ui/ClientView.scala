@@ -35,12 +35,16 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     overflow := "hidden").render
   attachToNode(parent)
 
-  private var leftPanel: View = null
+  private var leftPanel: LeftPanelSwitcher = null
 
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", cls := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
-  leftPanel = new LeftPanelSwitcher(client, () => this, enableResizePanel).attachTo(this)
+  leftPanel = new LeftPanelSwitcher(client, this, settingsDialog, enableResizePanel)
+
+  {
+    leftPanel.attachTo(this)
+  }
 
 
   dom.appendChild(panelSplitter)
@@ -84,7 +88,9 @@ class ClientView(private val parent: HTMLElement, val client: Client, val global
     o
   }
 
-  val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, dom)
+  lazy val settingsDialog: SettingsDialog = new SettingsDialog(client, overlayLayer, dom)
+
+  lazy val quickSearch: QuickSearchDialog = new QuickSearchDialog(client, overlayLayer, dom)
 
 
   new SearchBar(client, () => docView, bottomBar.size).attachToNode(rightPanel)

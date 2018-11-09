@@ -4,9 +4,13 @@ import client.Client
 import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all.{a, _}
 import web.WebApi
+import web.ui.dialog.SettingsDialog
 import web.view.{UnselectableView, View, indexOf}
 
-class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean => Unit) extends UnselectableView {
+class LeftPanelSwitcher(private val cl: Client, 
+  doc: => View,
+  settingsDialog : => SettingsDialog,
+  enable: Boolean => Unit) extends UnselectableView {
 
 
   private val container = div(
@@ -62,7 +66,9 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
   }
   for (a <- childs) {
     if (a == settings) {
-
+      event(settings, "click", (c: MouseEvent) => {
+        settingsDialog.show(Unit)
+      })
     } else {
       event(a, "click", (c: MouseEvent) => {
         if (a != active) {
@@ -82,7 +88,7 @@ class LeftPanelSwitcher(private val cl: Client, doc: () => View, enable: Boolean
           WebApi.localStorage.set(".left-panel", "")
           enabledAll(false)
         }
-        doc().focus()
+        doc.focus()
       })
     }
   }

@@ -14,7 +14,7 @@ import web.view.{DelayUpdate, UnselectableView, View}
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class TagsPanel(val client: Client, doc: () => View) extends UnselectableView with DelayUpdate {
+class TagsPanel(val client: Client, doc: => View) extends UnselectableView with DelayUpdate {
 
   val tagsView = new ContentListView[model.data.Text.HashTag](tag => {
   }) {

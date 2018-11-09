@@ -11,7 +11,7 @@ import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.util.Try
 
-class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView with DelayUpdate {
+class QuickAccessPanel(client: Client, doc: => View) extends UnselectableView with DelayUpdate {
 
   private var previousZoom: model.cursor.Node = null
   private var previousFocus: Option[UUID] = None
@@ -21,7 +21,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     client.state.lookup(uuid) match {
       case Some(cur) =>
         client.localChange(client.state.goTo(cur, client))
-        doc().focus()
+        doc.focus()
       case _ =>
     }
   }
@@ -32,7 +32,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     cur match {
       case Some(cur) =>
         client.localChange(client.state.goTo(cur, client, true))
-        doc().focus()
+        doc.focus()
       case _ =>
     }
   }
@@ -52,7 +52,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
     alignSelf := "right",
     (3 to 6).map(a => option(s"hide heading $a", value := a.toString)),
     onfocus := { e: Event =>
-      doc().focus()
+      doc.focus()
     },
     onchange := { e: Event => {
       val level = e.target.asInstanceOf[HTMLOptionElement].value.toInt
@@ -61,7 +61,7 @@ class QuickAccessPanel(client: Client, doc: () => View) extends UnselectableView
         WebApi.localStorage.set("hide_level", hideLevel.toString)
         tocView.updateFocus(previousFocus, hideLevel, dom)
       }
-      doc().focus()
+      doc.focus()
     }},
   ).render
 
