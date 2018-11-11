@@ -42,7 +42,7 @@ object RichView {
 
   private var visualLines: (RichView, Seq[Rect], Boolean) = null
 }
-class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends ContentView.Rich {
+class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMacroCache: LaTeXMacroCache) extends ContentView.Rich {
 
 
   private def emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
@@ -126,7 +126,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
       val el = ct.item(i).asInstanceOf[HTMLElement]
       val str = el.getAttribute("data")
       el.removeChild(el.childNodes(1))
-      LaTeXMacroCache.renderLaTeX(el, str, 1)
+      laTeXMacroCache.renderLaTeX(el, str, 1)
       i += 1
     }
   }
@@ -228,7 +228,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean) extends Con
           data := c.str,
           span(EvilChar)
         ).render
-        LaTeXMacroCache.renderLaTeX(a, c.str, 1)
+        laTeXMacroCache.renderLaTeX(a, c.str, 1)
         a.appendChild(span(EvilChar).render)
         a: Frag
       case Text.Code(c) =>

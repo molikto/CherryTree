@@ -8,10 +8,11 @@ import org.scalajs.dom.raw._
 import register.Registerable
 import scalatags.JsDom.all._
 import web.ui.content.{ContentView, SourceView}
-import web.ui.doc.DocFramer
+import web.ui.doc.{DocFramer, DocumentView, LaTeXMacroCache}
 import web.view._
 
-class RegistersDialog(val client: Client, protected val layer: OverlayLayer) extends
+class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
+  override val latexMacroCache: LaTeXMacroCache) extends
   StaticFilteringView[OverlayAnchor, (Int, Option[Registerable])]  with MountedOverlay[OverlayAnchor] with DocFramer
 {
 
@@ -64,17 +65,17 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer) ext
         marginLeft := "10px",
         t._2.map {
           case Registerable.Unicode(u) => code(cls := "ct-c-code", u.str)
-          case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, false) : Frag
+          case Registerable.Text(u) => ContentView.create(model.data.Content.Rich(Rich(u)), None, latexMacroCache, false) : Frag
           case Registerable.Node(a, _) =>
             if (a.isEmpty) "": Frag
             else {
               val count = a.map(_.count).sum
               if (count == 1) {
-                ContentView.create(a.head.content, a.head.contentType): Frag
+                ContentView.create(a.head.content, a.head.contentType, latexMacroCache): Frag
               } else {
                 div(
                   s"$count nodes",
-                  ContentView.create(a.head.content, a.head.contentType)
+                  ContentView.create(a.head.content, a.head.contentType, latexMacroCache)
                 )
               }
             }

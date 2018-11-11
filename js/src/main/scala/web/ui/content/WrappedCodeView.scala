@@ -12,21 +12,22 @@ import scalatags.JsDom.all._
 import util.Rect
 import view.EditorInterface
 import web.ui
-import web.ui.doc.DocumentView
+import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.ui._
 import web.view._
 
 
 
 class WrappedCodeView(
-  initData: model.data.Content.Code
+  initData: model.data.Content.Code,
+  laTeXMacroCache: LaTeXMacroCache
 ) extends ContentView.Code {
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
   setInitialContent(initData)
 
-  private var codeView: ContentView.Code = ContentView.createFromCode(initData)
+  private var codeView: ContentView.Code = ContentView.createFromCode(initData, laTeXMacroCache)
 
 
   override def tempEditableTempDuringSelectionChange(editable: Boolean): Unit = {
@@ -38,7 +39,7 @@ class WrappedCodeView(
       codeView.updateContent(contentData)
     } else {
       codeView.destroy()
-      codeView = ContentView.createFromCode(contentData)
+      codeView = ContentView.createFromCode(contentData, laTeXMacroCache)
       codeView.attachToNode(dom)
     }
   }
@@ -54,7 +55,7 @@ class WrappedCodeView(
       codeView.updateContent(c, trans, viewUpdated)
     } else {
       codeView.destroy()
-      codeView = ContentView.createFromCode(c)
+      codeView = ContentView.createFromCode(c, laTeXMacroCache)
       codeView.attachToNode(dom)
     }
   }

@@ -10,7 +10,7 @@ import org.scalajs.dom.window
 import scalatags.JsDom.all._
 import web.ui.dialog._
 import web.view.{OverlayLayer, View}
-import web.ui.doc.SimpleLayoutDocumentView
+import web.ui.doc.{LaTeXMacroCache, SimpleLayoutDocumentView}
 import web.ui.panel.LeftPanelSwitcher
 
 import scala.scalajs._
@@ -24,6 +24,8 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
     * create view
     *
     */
+
+  val latexMacroCache = new LaTeXMacroCache()
 
   dom = div(
     width := "100%",
@@ -40,7 +42,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", cls := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
-  leftPanel = defer(new LeftPanelSwitcher(client, this, settingsDialog, enableResizePanel))
+  leftPanel = defer(new LeftPanelSwitcher(client, this, settingsDialog, latexMacroCache, enableResizePanel))
 
   {
     leftPanel.attachTo(this)
@@ -53,6 +55,20 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
     a.handleSelector = "#ctTopPanelSplitter"
     a.resizeHeight = false
   }))
+
+
+  override def onAttach(): Unit = {
+    super.onAttach()
+    client.preStateUpdate = Some(update => {
+      latexMacroCache.update(update.to)
+      if (latexMacroCache.dirty) {
+        latexMacroCache.rebuildAndMarkNoDirty()
+        docView.postRefreshAllLaTeX()
+      }
+    })
+    latexMacroCache.update(client.state)
+    latexMacroCache.rebuildAndMarkNoDirty()
+  }
 
   override def focus(): Unit = {
     overlayLayer.focus()
@@ -80,7 +96,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
   val bottomBar = defer(new BottomBarView(client))
   bottomBar.attachToNode(rightPanel)
 
-  private val docView = defer(new SimpleLayoutDocumentView(client, client, client).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView])
+  private val docView = defer(new SimpleLayoutDocumentView(client, client, client, latexMacroCache).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView])
 
   private val overlayLayer = {
     val o = defer(new OverlayLayer(dom, docView))
@@ -90,13 +106,13 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
 
   lazy val settingsDialog: SettingsDialog = defer(new SettingsDialog(client, overlayLayer, onSettingChangeRefresh, dom))
 
-  lazy val quickSearch: QuickSearchDialog = defer(new QuickSearchDialog(client, overlayLayer, dom))
+  lazy val quickSearch: QuickSearchDialog = defer(new QuickSearchDialog(client, overlayLayer, dom, latexMacroCache))
 
 
   private val searchBar = defer(new SearchBar(client.searchHandler, () => docView, bottomBar.size).attachToNode(rightPanel))
 
   val commandMenu: CommandMenuDialog = defer(new CommandMenuDialog(client, overlayLayer))
-  val registers: RegistersDialog = defer(new RegistersDialog(client, overlayLayer))
+  val registers: RegistersDialog = defer(new RegistersDialog(client, overlayLayer, latexMacroCache))
   val sourceEditor: CoveringSourceEditDialog = defer(new CoveringSourceEditDialog(client, client, overlayLayer, docView.dom))
   val attributeEditor: UrlAttributeEditDialog = defer(new UrlAttributeEditDialog(overlayLayer))
   val latexEditor: InlineCodeDialog = defer(new InlineCodeDialog(client, client, overlayLayer))

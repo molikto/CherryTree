@@ -9,7 +9,7 @@ import org.scalajs.dom.raw
 import org.scalajs.dom.raw.HTMLElement
 import view.EditorInterface
 import web.view.View
-import web.ui.doc.DocumentView
+import web.ui.doc.{DocumentView, LaTeXMacroCache}
 
 
 object ContentView {
@@ -17,12 +17,12 @@ object ContentView {
   trait Code extends ContentView[data.Content.Code, model.operation.Content.Code]
   trait Rich extends ContentView[data.Content.Rich, model.operation.Content.Rich]
 
-  def createFromCode(a: data.Content.Code): Code = {
+  def createFromCode(a: data.Content.Code, laTeXMacroCache: LaTeXMacroCache): Code = {
     a.ty match {
       case Embedded.HTML =>
         new EmbeddedHtmlView(a)
       case Embedded.LaTeX =>
-        new EmbeddedLaTeXView(a)
+        new EmbeddedLaTeXView(a, laTeXMacroCache)
       case _ =>
         new SourceView(a)
     }
@@ -69,13 +69,13 @@ object ContentView {
   }
 
 
-  def create(a: data.Content, contentType: Option[ContentType], editable: Boolean = false): General = {
+  def create(a: data.Content, contentType: Option[ContentType], latexMacroCache: LaTeXMacroCache, editable: Boolean = false): General = {
     (a match {
       case r: data.Content.Rich =>
-        val v = new RichView(r, contentType.contains(ContentType.Hr))
+        val v = new RichView(r, contentType.contains(ContentType.Hr), latexMacroCache)
         if (editable) v.dom.style.cursor = "text"
         v
-      case s: data.Content.Code => if (editable) new WrappedCodeView(s) else  createFromCode(s)
+      case s: data.Content.Code => if (editable) new WrappedCodeView(s, latexMacroCache) else  createFromCode(s, latexMacroCache)
     }).asInstanceOf[General]
   }
 }

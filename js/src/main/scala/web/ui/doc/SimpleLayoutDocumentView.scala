@@ -25,8 +25,9 @@ import scala.scalajs.js
 class SimpleLayoutDocumentView(
   override val settings: Settings,
   override protected val client: DocInterface,
-  override protected val editor: EditorInterface
-) extends DocumentView with EditorView with DocFramer {
+  override protected val editor: EditorInterface,
+  override val latexMacroCache: LaTeXMacroCache
+) extends DocumentView with EditorView {
 
 
   private val rootFrame = div(

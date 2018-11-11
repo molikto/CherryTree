@@ -258,6 +258,8 @@ class Client(
 
   private val stateUpdates_ : PublishSubject[DocUpdate] = PublishSubject[DocUpdate]()
 
+  var preStateUpdate: Option[DocUpdate => Unit] = None
+
   def stateUpdates: Observable[DocUpdate] = stateUpdates_
 
   //private var insertingFlusher: Cancelable = null
@@ -316,6 +318,7 @@ class Client(
 
     _commandHandler.onBeforeUpdateUpdateCommandState(state_)
     trackUndoerChange(docBefore, state_, from.map(_._2), ty, isSmartInsert, mergeWithPreviousLocal)
+    preStateUpdate.foreach(_(res))
     stateUpdates_.onNext(res)
     updatingState = false
 //    if (state_.isRichInsert) {

@@ -16,12 +16,19 @@ import scala.scalajs.js.|
 
 class LaTeXMacroException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
-// LATER this should be a field in DocState... shit happens all the time
+
 object LaTeXMacroCache {
-  val instance: LaTeXMacroCache = new LaTeXMacroCache()
+  val empty: LaTeXMacroCache = {
+    val a = new LaTeXMacroCache()
+    a.dirt = false
+    a
+  }
+}
+
+class LaTeXMacroCache() {
 
   def renderLaTeX(a: HTMLElement, unicode: String, index: Int, display: Boolean = false): Unit = {
-    if (instance.dirty) {
+    if (dirty) {
       return
     }
     if (unicode.isEmpty) {
@@ -31,8 +38,8 @@ object LaTeXMacroCache {
         cls := "ct-latex"
       ).render
       try {
-        instance.opts.asInstanceOf[js.Dynamic].displayMode = display
-        KaTeX.render(unicode, b, instance.opts)
+        opts.asInstanceOf[js.Dynamic].displayMode = display
+        KaTeX.render(unicode, b, opts)
         a.insertBefore(b, a.childNodes(index))
       } catch {
         case err: Throwable =>
@@ -41,17 +48,6 @@ object LaTeXMacroCache {
           a.insertBefore(error, a.childNodes(index))
       }
     }
-  }
-}
-
-class LaTeXMacroCache() {
-
-  def active(): Unit = {
-   // LaTeXMacroCache.instance = this
-  }
-  // LATER now we are single instance! who cares!
-  def inactive(): Unit = {
-    //LaTeXMacroCache.instance = null
   }
 
   private var previous: Seq[String] = null

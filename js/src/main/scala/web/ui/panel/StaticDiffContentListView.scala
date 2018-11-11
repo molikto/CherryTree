@@ -6,13 +6,14 @@ import model.NodeQuickDiff
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
-import web.ui.doc.DocFramer
+import web.ui.doc.{DocFramer, LaTeXMacroCache}
 import web.view.View
 
 
 class StaticDiffContentListView(
   override val onClick: UUID => Unit,
   override val onDoubleClick: UUID => Unit,
+  override val latexMacroCache: LaTeXMacroCache
 ) extends View with NodeQuickDiff with DocFramer {
 
   dom = div().render

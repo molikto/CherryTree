@@ -4,7 +4,8 @@ import scalatags.JsDom.all._
 import web.ui.doc.LaTeXMacroCache
 import web.view._
 
-class EmbeddedLaTeXView(initData: model.data.Content.Code
+class EmbeddedLaTeXView(initData: model.data.Content.Code,
+  laTeXMacroCache: LaTeXMacroCache
 ) extends StaticCodeView  {
 
   dom = div(contenteditable := "false").render
@@ -16,7 +17,7 @@ class EmbeddedLaTeXView(initData: model.data.Content.Code
 
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
     removeAllChild(dom)
-    LaTeXMacroCache.renderLaTeX(dom, contentData.unicode.str, 0, true)
+    laTeXMacroCache.renderLaTeX(dom, contentData.unicode.str, 0, true)
   }
 
   updateContent(initData)

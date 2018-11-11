@@ -5,11 +5,13 @@ import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all.{a, _}
 import web.WebApi
 import web.ui.dialog.SettingsDialog
+import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.view.{UnselectableView, View, indexOf}
 
 class LeftPanelSwitcher(private val cl: Client, 
   doc: => View,
   settingsDialog : => SettingsDialog,
+  laTeXMacroCache: LaTeXMacroCache,
   enable: Boolean => Unit) extends UnselectableView {
 
 
@@ -99,11 +101,11 @@ class LeftPanelSwitcher(private val cl: Client,
 
   private def create(): Unit = {
     current = if (active == quickAccess) {
-      new QuickAccessPanel(cl, doc).attachToNode(container)
+      new QuickAccessPanel(cl, doc, laTeXMacroCache).attachToNode(container)
     } else if (active == commands) {
       new CommandListPanel(cl, doc).attachToNode(container)
     } else if (active == tags) {
-      new TagsPanel(cl, doc).attachToNode(container)
+      new TagsPanel(cl, doc, laTeXMacroCache).attachToNode(container)
     } else if (active == undoHistory) {
       new UndoHistoryPanel(cl).attachToNode(container)
     } else {

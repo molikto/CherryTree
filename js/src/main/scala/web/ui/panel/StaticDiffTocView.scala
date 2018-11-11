@@ -5,11 +5,13 @@ import java.util.UUID
 import model.data.Node
 import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
+import web.ui.doc.LaTeXMacroCache
 
 class StaticDiffTocView(
   onClick: UUID => Unit,
   onDoubleClick: UUID => Unit,
-  override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick, onDoubleClick) {
+  override val latexMacroCache: LaTeXMacroCache,
+  override val parentHeadingLevel: Int) extends StaticDiffContentListView(onClick, onDoubleClick, latexMacroCache) {
 
   protected override def eq(a: Node, b: Node): Boolean = a == b
 
@@ -25,7 +27,7 @@ class StaticDiffTocView(
 //  addHeader(header)
 
   override protected def onAddViewAndHold(view: HTMLElement, data: Node): Unit = {
-    val od = new StaticDiffTocView(onClick, onDoubleClick, parentHeadingLevel + 1)
+    val od = new StaticDiffTocView(onClick, onDoubleClick, latexMacroCache, parentHeadingLevel + 1)
     od.update(data.childs)
     insertExtraToContentView(view, od.dom)
   }

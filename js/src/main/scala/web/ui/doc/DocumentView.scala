@@ -25,11 +25,10 @@ import web.ui.dialog._
 import scala.scalajs.js
 import scala.util.Success
 
-abstract class DocumentView extends View with EditorView with Implicits {
+abstract class DocumentView extends View with EditorView with Implicits with DocFramer
+{
 
   def settings: Settings
-
-  private val latexMacroCache = LaTeXMacroCache.instance
 
   def clearNodeVisual(): Unit
   def updateNodeVisual(v: Node.Visual, fromUser: Boolean): Unit
@@ -165,13 +164,6 @@ abstract class DocumentView extends View with EditorView with Implicits {
   private var focusedOut_ : Boolean = true
   private def focusedOut_=(b: Boolean) : Unit = {
     focusedOut_ = b
-    if (!b) {
-      latexMacroCache.update(currentDoc)
-      if (latexMacroCache.dirty) {
-        latexMacroCache.rebuildAndMarkNoDirty()
-        refreshAllLaTeX()
-      }
-    }
   }
   private def focusedOut: Boolean = focusedOut_
 
@@ -319,18 +311,10 @@ abstract class DocumentView extends View with EditorView with Implicits {
     nonEditableSelection.setEnd(noEditable.childNodes(0), 0)
 
     currentDoc = client.state
-    latexMacroCache.update(currentDoc)
-    latexMacroCache.rebuildAndMarkNoDirty()
-    latexMacroCache.active()
     renderAll()
     updateMode(client.state.mode)
-    latexMacroCache.inactive()
 
     observe(client.stateUpdates.doOnNext(update => {
-      latexMacroCache.active()
-      if (!focusedOut) {
-        latexMacroCache.update(update.to)
-      }
       update.foldsBefore.foreach(f => {
         if (currentDoc.visible(f._1)) {
           if (model.debug_view) {
@@ -361,15 +345,14 @@ abstract class DocumentView extends View with EditorView with Implicits {
           renderTransaction(s, t, to, update.viewUpdated, update.editorUpdated)
         }
       }
-      if (latexMacroCache.dirty) {
-        latexMacroCache.rebuildAndMarkNoDirty()
+      if (_postRefreshAllLaTeX) {
+        _postRefreshAllLaTeX = false
         refreshAllLaTeX()
       }
       currentDoc = update.to
       duringStateUpdate = false
       updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
-      latexMacroCache.inactive()
       updateSearchingHighlight()
     }))
   }
@@ -451,9 +434,14 @@ abstract class DocumentView extends View with EditorView with Implicits {
 
 
   protected def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
-    ContentView.create(c, contentType, true)
+    ContentView.create(c, contentType, latexMacroCache, true)
   }
 
+
+  var _postRefreshAllLaTeX = false
+  def postRefreshAllLaTeX(): Unit = {
+    _postRefreshAllLaTeX = true
+  }
 
 
   var sourceEditor: CoveringSourceEditDialog = null

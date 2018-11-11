@@ -24,6 +24,7 @@ import scala.scalajs.js
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer, Uint8Array}
 import scala.util.{Failure, Success}
 import web.ui
+import web.ui.doc.LaTeXMacroCache
 
 
 @JSExportTopLevel("DocumentListRender")
@@ -79,7 +80,7 @@ class DocumentListRender(rootView: HTMLElement) extends View {
   WebApi.get[Seq[ListResult]]("/documents/json").onComplete {
     case Success(res) =>
       res.foreach(item => {
-        val contentView = ContentView.create(item.title, None)
+        val contentView = ContentView.create(item.title, None, LaTeXMacroCache.empty)
         list.appendChild(div(
           a(
             cls := "ct-document-style document-list-title",

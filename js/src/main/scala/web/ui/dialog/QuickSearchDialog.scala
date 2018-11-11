@@ -7,13 +7,14 @@ import org.scalajs.dom.raw._
 import scalatags.JsDom.all._
 import settings.Settings
 import web.view.{CoveringOverlay, OverlayLayer, UnselectableView}
-import web.ui.doc.{DocFramer, EditorView}
+import web.ui.doc.{DocFramer, EditorView, LaTeXMacroCache}
 import web.view._
 
 
 class QuickSearchDialog(val client: Client,
   override val layer: OverlayLayer,
-  val coveringElement: HTMLElement
+  val coveringElement: HTMLElement,
+  override val latexMacroCache: LaTeXMacroCache
 ) extends StaticFilteringView[Boolean, (model.cursor.Node, UUID)]
   with UnselectableView with DocFramer {
 

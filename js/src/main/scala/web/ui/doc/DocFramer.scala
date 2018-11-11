@@ -26,6 +26,8 @@ trait DocFramer {
 
   protected val parentHeadingLevel: Int = -1
 
+  val latexMacroCache: LaTeXMacroCache
+
   val onClick: UUID => Unit = null
   val onDoubleClick: UUID => Unit = null
 
@@ -61,7 +63,7 @@ trait DocFramer {
   }
 
   private def create(a: model.data.Node): General = {
-    val cv = ContentView.create(a.content, a.contentType)
+    val cv = ContentView.create(a.content, a.contentType, latexMacroCache)
     if (docFramerExtraClass != "") {
       cv.dom.classList.add(docFramerExtraClass)
     }
