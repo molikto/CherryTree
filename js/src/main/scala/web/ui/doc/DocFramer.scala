@@ -136,6 +136,16 @@ trait DocFramer {
       case model.data.Node.ChildrenType.Paragraphs => "ct-d-ps"
       case model.data.Node.ChildrenType.DashList => "ct-d-dl"
       case _ => ""
-    }.getOrElse(""))
+    }.getOrElse("") + " " + (node.priority.getOrElse(0) match {
+      case a if a <= -3 => "ct-p-n3plus"
+      case -2 => "ct-p-n2"
+      case -1 => "ct-p-n1"
+      case 0 => ""
+      case 1 => "ct-p-1"
+      case 2 => "ct-p-2"
+      case 3 => "ct-p-3"
+      case 4 => "ct-p-4"
+      case _ => "ct-p-5plus"
+    }))
   }
 }

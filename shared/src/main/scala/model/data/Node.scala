@@ -4,7 +4,7 @@ import java.util.UUID
 
 import doc.DocTransaction
 import model._
-import Node.{ChildrenType, ContentType}
+import Node.{ChildrenType, ContentType, Priority}
 import boopickle.BasicPicklers
 import model.range.IntRange
 import play.api.libs.json._
@@ -245,6 +245,8 @@ case class Node(
 
   def contentType: Option[ContentType] = attribute(ContentType)
 
+  def priority: Option[Int] = attribute(Priority)
+
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
 
@@ -342,9 +344,22 @@ object Node extends DataObject[Node] {
   val NodeRefScheme = "cherrytree://"
 
 
+  object Priority extends NodeTag[Int] {
+    override private[model] val name = "priority"
+
+    override private[model] def parse(a: JsValue) = a match {
+      case number: JsNumber => number.value.intValue()
+      case _ => 0
+    }
+
+    override private[model] def serialize(t: Int) = JsNumber(t)
+  }
+
   sealed trait ChildrenType {
 
   }
+
+
   object ChildrenType extends NodeTag[ChildrenType] {
     case object Paragraphs extends ChildrenType {
       override def toString: String = "paragraphs"

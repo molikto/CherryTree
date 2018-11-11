@@ -522,6 +522,37 @@
   min-height: 12px;
 }
 
+.ct-p-n3plus > .ct-rich {
+    opacity: 0.4;
+}
+
+.ct-p-n2 > .ct-rich {
+    opacity: 0.6;
+}
+
+.ct-p-n1 > .ct-rich {
+    opacity: 0.8;
+}
+
+.ct-p-1 > .ct-rich {
+    background: #FF7B7B11;
+}
+
+.ct-p-2 > .ct-rich {
+    background: #FF7B7B22;
+}
+
+.ct-p-3 > .ct-rich {
+    background: #FF7B7B33;
+}
+
+.ct-p-4 > .ct-rich {
+    background: #FF7B7B44;
+}
+
+.ct-p-5plus > .ct-rich {
+    background: #FF7B7B55;
+}
 
 /**
 

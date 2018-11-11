@@ -22,6 +22,7 @@ import boopickle.{PickleState, Pickler}
 import model.data.{CodeType, SpecialChar, Text, Unicode}
 import command._
 import doc.{DocInterface, DocState, DocTransaction, DocUpdate}
+import io.lemonlabs.uri.Url
 import model.cursor.Node
 import model.mode.Content.CodeInside
 import model.operation.Rich
@@ -762,7 +763,14 @@ class Client(
       plain match {
         case Some(h) =>
           done = true
-          yank(Registerable.Unicode(Unicode(h)), false, '*')
+          try {
+            val validUrl = Url.parse(h)
+            val title = "?"
+            yank(Registerable.Text(Seq(Text.Link(Seq(Text.Plain(Unicode(title))), Unicode(h)))), false, '*')
+          } catch {
+            case _: Throwable =>
+              yank(Registerable.Unicode(Unicode(h)), false, '*')
+          }
         case _ =>
       }
     }

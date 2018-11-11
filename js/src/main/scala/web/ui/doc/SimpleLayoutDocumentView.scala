@@ -312,6 +312,7 @@ class SimpleLayoutDocumentView(
           boxAt(at).className = classesFromNodeAttribute(to.node(at))
           val fr = frameAt(at)
           toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
+          clearNodeVisual() // previous is not valid maybe
         }
       case model.operation.Node.Replace(at, c) =>
         if (s.visible(at)) {

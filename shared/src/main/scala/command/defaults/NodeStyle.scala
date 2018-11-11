@@ -3,12 +3,13 @@ package command.defaults
 import client.Client.ViewMessage
 import client.{ContentTypeRule, InputRule, ParentChildrenTypeRule}
 import command.{CommandCategory, CommandInterface}
-import command.Key.KeySeq
+import command.Key.{KeySeq, Shift}
 import doc.{DocState, DocTransaction}
 import model._
 import model.data.{Content, Text}
 import model.range.IntRange
 import settings.Settings
+import command.Key._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -115,4 +116,29 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
       DocTransaction(Seq(operation.Node.Insert(cursor.Node.moveBy(cur, 1), Seq(node))), None)
     }
   }
+
+  class PriorityCommand(override val description: String, key: String, map: Int => Int) extends Command {
+    override def defaultKeys: Seq[KeySeq] = Seq(shiftMod(key))
+
+    override protected def available(a: DocState): Boolean = a.mode.nonEmpty
+
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      a.mode.get match {
+        case model.mode.Node.Content(node, _) =>
+          val p = map(a.node(node).priority.getOrElse(0))
+          DocTransaction(Seq(operation.Node.AttributeChange(node, data.Node.Priority, Some(p))), None)
+        case v@model.mode.Node.Visual(_, _) =>
+          val range = v.minimalRange.getOrElse(Seq.empty)
+          DocTransaction(range.toSeq.map(node => {
+            val p = map(a.node(node).priority.getOrElse(0))
+            operation.Node.AttributeChange(node, data.Node.Priority, Some(p))
+          }), None)
+      }
+    }
+
+  }
+
+  new PriorityCommand("increase priority by 1", "=", _ + 1)
+  new PriorityCommand("decrease priority by 1", "-", _ - 1)
+
 }
