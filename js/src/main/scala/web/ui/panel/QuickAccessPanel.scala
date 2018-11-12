@@ -47,7 +47,6 @@ class QuickAccessPanel(client: Client, doc: => View, laTeXMacroCache: LaTeXMacro
   private var hideLevel: Int = Try {WebApi.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 
   private val selectView: HTMLSelectElement = select(
-    height := "24px",
     cls := "ct-select",
     flex := "0 1 auto",
     alignSelf := "right",

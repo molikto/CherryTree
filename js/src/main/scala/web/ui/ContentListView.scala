@@ -16,7 +16,7 @@ abstract class ContentListView[T](
 
 
 
-  dom = div().render
+  dom = div(cls := "list-inline").render
   private val list = dom
 
   private var listData: Array[T] = Array.empty.asInstanceOf[Array[T]]
@@ -28,13 +28,17 @@ abstract class ContentListView[T](
   protected def domAt(i: Int) = list.childNodes(i).asInstanceOf[HTMLElement]
 
   override protected def performChange(index: Int, oldData: T, newData: T): Unit = {
+    performDelete(index)
+    performAdd(index, newData)
   }
 
   def contentOf(t: T): HTMLElement
 
 
   protected override def performAdd(i: Int, data: T): Unit = {
-    list.insertBefore(contentOf(data), domAt(i))
+    val c = contentOf(data)
+    c.classList.add("list-inline-item")
+    list.insertBefore(c, domAt(i))
   }
 
   protected override def performDelete(i: Int): Unit = {

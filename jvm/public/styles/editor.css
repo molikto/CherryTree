@@ -83,7 +83,7 @@
 
 .ct-panel {
   background: #1f2328;
-  color: #b7bac0;
+  color: #a8adb7;
 }
 /*
   color: #969ca5;
@@ -107,6 +107,12 @@
 
 .ct-select {
   font-size: 13px;
+    background-color: rgb(60, 67, 78);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(60, 67, 78);
+    color: #a8adb7;
+    height: 20px;
 }
 
 .ct-input {
@@ -258,8 +264,8 @@
 
 .ct-flat-selectable:hover {
     background: #90a2b911;
+    cursor: pointer;
 }
-
 
 .ct-highlight {
   background: #90a2b922;
@@ -323,6 +329,7 @@
     opacity: 0.5;
     user-select: none;
     caret-color: transparent;
+    cursor: pointer;
 }
 
 .ct-d-hold-folded {

@@ -20,9 +20,10 @@ class TagsPanel(val client: Client, doc: => View, laTeXMacroCache: LaTeXMacroCac
   val tagsView = new ContentListView[model.data.Text.HashTag](tag => {
   }) {
     override def contentOf(t: Text.HashTag): HTMLElement = {
-      val data = model.data.Content.Rich(model.data.Rich(Seq(t)))
+      val data = model.data.Content.Rich(model.data.Rich(t.content))
       val view = ContentView.create(data, None, laTeXMacroCache).dom
       view.style.display = "inline-block"
+      view.classList.add("ct-flat-selectable")
       view
     }
   }
@@ -32,7 +33,7 @@ class TagsPanel(val client: Client, doc: => View, laTeXMacroCache: LaTeXMacroCac
     height := "100%",
     whiteSpace := "pre-wrap",
     overflowY := "scroll",
-    cls := "ct-scroll ct-panel",
+    cls := "ct-scroll ct-panel ct-document-style",
     padding := "24px",
     tagsView
   ).render
