@@ -152,7 +152,9 @@ case class DocState private (
               !code && j.quickSearch(tt, deli)
           }
         )
-    }).sortBy(cur => {
+    },
+      // not current search root, and not ignored in search
+      a => a.uuid != n.uuid && a.ignoreInSearch).sortBy(cur => {
       val n = node(cur)
       (!n.isH1, !n.isHeading)
     })
@@ -376,13 +378,27 @@ case class DocState private (
     case _ => throw new IllegalStateException("not supported")
   }
 
+  def asSingle: cursor.Node = mode match {
+    case Some(model.mode.Node.Content(cur, _))  => cur
+    case Some(model.mode.Node.Visual(fix, move)) if fix == move => fix
+    case _ => throw new IllegalStateException("not supported")
+  }
+
+  def isSingle: Boolean = mode match {
+    case Some(model.mode.Node.Content(_, _))  => true
+    case Some(model.mode.Node.Visual(fix, move)) if fix == move => true
+    case _ => false
+  }
+
   def asContent: cursor.Node = mode match {
     case Some(model.mode.Node.Content(cur, _))  => cur
+    case Some(model.mode.Node.Visual(fix, move)) if fix == move => fix
     case _ => throw new IllegalStateException("not supported")
   }
 
   def isContent: Boolean = mode match {
     case Some(model.mode.Node.Content(_, _))  => true
+    case Some(model.mode.Node.Visual(fix, move)) if fix == move => true
     case _ => false
   }
 

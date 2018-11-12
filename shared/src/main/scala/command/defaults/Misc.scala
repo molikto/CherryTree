@@ -190,9 +190,19 @@ class Misc(settings: Settings, val handler: CommandHandler) extends CommandCateg
 
   new TextualCommand {
     override val description: String = "copy node link"
-    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def available(a: DocState): Boolean = a.isSingle
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asContent).refOfThis()))
+      DocTransaction.message(ViewMessage.CopyToClipboard(a.node(a.asSingle).refOfThis()))
+    }
+  }
+
+  new TextualCommand {
+    override val description: String = "toggle ignore node in quick search"
+    override protected def available(a: DocState): Boolean = a.isSingle
+    override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      val cur = a.asSingle
+      val ignore = !a.node(cur).ignoreInSearch
+      DocTransaction(Seq(model.operation.Node.AttributeChange(cur, model.data.Node.IgnoreInSearch, (if (ignore) Some(Unit) else None): Option[Unit])), None)
     }
   }
 

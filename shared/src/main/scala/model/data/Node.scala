@@ -4,7 +4,7 @@ import java.util.UUID
 
 import doc.DocTransaction
 import model._
-import Node.{ChildrenType, ContentType, Priority}
+import Node.{ChildrenType, ContentType, IgnoreInSearch, Priority}
 import boopickle.BasicPicklers
 import model.range.IntRange
 import play.api.libs.json._
@@ -173,16 +173,18 @@ case class Node(
   }
 
 
-  private def filter0(cur: model.cursor.Node, a: Node => Boolean, bf: ArrayBuffer[model.cursor.Node]): Unit = {
-    if (a(this)) bf.append(cur)
-    childs.zipWithIndex.foreach(pair => {
-      pair._1.filter0(cur :+ pair._2, a, bf)
-    })
+  private def filter0(cur: model.cursor.Node, cutAll: Node => Boolean, a: Node => Boolean, bf: ArrayBuffer[model.cursor.Node]): Unit = {
+    if (!cutAll(this)) {
+      if (a(this)) bf.append(cur)
+      childs.zipWithIndex.foreach(pair => {
+        pair._1.filter0(cur :+ pair._2, cutAll, a, bf)
+      })
+    }
   }
 
-  def filter(cur: model.cursor.Node, a: Node => Boolean): Seq[model.cursor.Node] = {
+  def filter(cur: model.cursor.Node, cutAlls: Node => Boolean, a: Node => Boolean): Seq[model.cursor.Node] = {
     val bf = new ArrayBuffer[model.cursor.Node]()
-    filter0(cur, a, bf)
+    filter0(cur, a, cutAlls, bf)
     bf
   }
 
@@ -246,6 +248,8 @@ case class Node(
   def contentType: Option[ContentType] = attribute(ContentType)
 
   def priority: Option[Int] = attribute(Priority)
+
+  def ignoreInSearch: Boolean = attribute(IgnoreInSearch).isDefined
 
 
   def rich : Rich = content.asInstanceOf[Content.Rich].content
@@ -357,6 +361,14 @@ object Node extends DataObject[Node] {
 
   sealed trait ChildrenType {
 
+  }
+
+  object IgnoreInSearch extends NodeTag[Unit] {
+    override private[model] val name = "ignore_in_search"
+
+    override private[model] def parse(a: JsValue): Unit = Unit
+
+    override private[model] def serialize(t: Unit): JsValue = JsString("1")
   }
 
 

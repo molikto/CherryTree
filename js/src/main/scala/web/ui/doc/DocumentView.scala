@@ -428,7 +428,9 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
           s"items: ${node.count}",
           s"text size: ${node.content.size}",
           s"total text size: ${node.size}"
-        )).filter(_.nonEmpty).mkString("\n")
+       ) ++
+        (if (node.ignoreInSearch) Seq("ignored in search") else Seq.empty)
+      ).filter(_.nonEmpty).mkString("\n")
     })
   }
 

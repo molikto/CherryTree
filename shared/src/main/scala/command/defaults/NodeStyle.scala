@@ -19,9 +19,9 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   new TextualCommand {
     override val description: String = "reset content to: code" // we don't want to reset root node to code, this will make document title display ugly...
-    override protected def available(a: DocState): Boolean = a.isRichNonSub && a.asContent != model.cursor.Node.root
+    override protected def available(a: DocState): Boolean = a.isRichNonSub && a.asSingle != model.cursor.Node.root
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asContent
+      val cur = a.asSingle
       DocTransaction(
         Seq(operation.Node.Replace(cur, data.Content.Code(data.Unicode(a.node(cur).rich.toPlain), ""))),
         Some(a.copyContentMode(mode.Content.CodeNormal(false))))
@@ -44,9 +44,9 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   class ContentStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ContentType]) extends TextualCommand {
     override val description: String = s"content style: $desc"
-    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def available(a: DocState): Boolean = a.isSingle
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.changeContentType(a.asContent, to)
+      a.changeContentType(a.asSingle, to)
     }
 
     override val inputRule: Seq[InputRule] = to.toSeq.flatMap(t => ir.map(i => new ContentTypeRule(i, t)))
@@ -56,11 +56,11 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
   // the reason is commands is textual declare ordered, so it's the input rule append order
   for (i <- (2 to 6).reverse) {
     new ContentStyleCommand(s"heading $i, h$i", Seq((0 until i).map(_ => "#").mkString("") + " "), Some(data.Node.ContentType.Heading(i))) {
-      override protected def available(a: DocState): Boolean = if (a.isContent) {
+      override protected def available(a: DocState): Boolean = if (a.isSingle) {
         if (i == 1) {
           true
         } else {
-          val cur = a.asContent
+          val cur = a.asSingle
           if (cur == cursor.Node.root) {
             false
           } else {
@@ -87,9 +87,9 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   class ChildrenStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ChildrenType]) extends TextualCommand {
     override val description: String = s"list style: $desc"
-    override protected def available(a: DocState): Boolean = a.isContent
+    override protected def available(a: DocState): Boolean = a.isSingle
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val cur = a.asContent
+      val cur = a.asSingle
       DocTransaction(
         Seq(operation.Node.AttributeChange(cur, data.Node.ChildrenType, to)),
         a.mode)

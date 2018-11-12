@@ -15,10 +15,10 @@ class NodeMove(settings: Settings) extends CommandCategory(settings,"node: move"
 
 
   abstract class MoveCommand extends  Command {
-    override def available(a: DocState): Boolean = a.isContent
+    override def available(a: DocState): Boolean = a.isSingle
     def targetTo(mover: cursor.Node.Mover, node: cursor.Node): Option[cursor.Node]
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val mm = a.asContent
+      val mm = a.asSingle
       DocTransaction(targetTo(a.mover(), mm).map(n =>
         operation.Node.Move(range.Node(mm), n)
       ).toSeq, None)
@@ -84,9 +84,9 @@ class NodeMove(settings: Settings) extends CommandCategory(settings,"node: move"
 
   new TextualCommand {
     override val description: String = "unwrap"
-    override def available(a: DocState): Boolean = a.isContent && a.asContent != cursor.Node.root
+    override def available(a: DocState): Boolean = a.isSingle && a.asSingle != cursor.Node.root
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      val mm = a.asContent
+      val mm = a.asSingle
       val n = a.node(mm)
       if (n.childs.isEmpty) {
         DocTransaction.empty
