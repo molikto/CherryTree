@@ -204,8 +204,8 @@ class BottomBarView(val client: Client) extends UnselectableView  {
       } else if (pendingDelete) {
         connection.textContent = "deletion pending"
         connection.className = "ct-hint-color"
-      } else if (tempOffline) {
-        connection.textContent = "offline"
+      } else if (tempOffline.nonEmpty) {
+        connection.textContent = s"offline: ${tempOffline.head}"
         connection.className = "ct-hint-color"
       } else {
         connection.textContent = s"$count collaborator${if (count == 1) "" else "s"} online"

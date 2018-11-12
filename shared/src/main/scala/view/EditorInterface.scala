@@ -37,7 +37,7 @@ trait EditorInterface extends SourceEditInterface with RichEditInterface {
 
   def onRefreshMode(): Unit
   def onMouseFocusOn(cur: Node, range: Option[IntRange], leftIsAnchor: Boolean, viewUpdated: Boolean, maybeNormal: Boolean = false): Boolean
-  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit
+  def disableRemoteStateUpdate(disable: Boolean, reason: String): Unit
   def flushes: Observable[Unit]
   def onKeyDown(k: Key): Boolean
 

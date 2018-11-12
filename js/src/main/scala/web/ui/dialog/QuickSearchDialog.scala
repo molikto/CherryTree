@@ -21,7 +21,15 @@ class QuickSearchDialog(val client: Client,
 
   override def show(t: Boolean): Unit = {
     CoveringOverlay.show(layer, dom, coveringElement)
+    client.disableRemoteStateUpdate(true, "quick search")
     super.show(t)
+  }
+
+
+
+  override protected def onDismiss(): Unit = {
+    super.onDismiss()
+    client.disableRemoteStateUpdate(false, "quick search")
   }
 
   override protected val search = input(

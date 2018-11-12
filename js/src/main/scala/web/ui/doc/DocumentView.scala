@@ -25,8 +25,14 @@ import web.ui.dialog._
 import scala.scalajs.js
 import scala.util.Success
 
+object DocumentView {
+  val DisableReasonMouse = "mouse"
+  val DisableReasonComposition = "composition"
+}
+
 abstract class DocumentView extends View with EditorView with Implicits with DocFramer
 {
+  import DocumentView._
 
   def settings: Settings
 
@@ -107,7 +113,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     } else {
       if (allowCompositionInput) {
         editor.onDeleteCurrentSelectionAndStartInsert()
-        editor.disableRemoteStateUpdate(true, false)
+        editor.disableRemoteStateUpdate(true, DisableReasonComposition)
         duringValidComposition = true
       } else {
         a.preventDefault()
@@ -118,12 +124,12 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
   event("compositionupdate", (a: CompositionEvent) => {
     flushBeforeKeyDown()
-    if (duringValidComposition) editor.disableRemoteStateUpdate(true, false)
+    if (duringValidComposition) editor.disableRemoteStateUpdate(true, DisableReasonComposition)
   })
 
   event("compositionend", (a: CompositionEvent) => {
     flushBeforeKeyDown()
-    if (duringValidComposition) editor.disableRemoteStateUpdate(false, false)
+    if (duringValidComposition) editor.disableRemoteStateUpdate(false, DisableReasonComposition)
     duringValidComposition = false
     if (activeContent != null) {
       activeContentEditor.compositionEndEvent()
@@ -544,7 +550,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
   protected override def postFlushSelectionOnSpellCheckerKey(): Unit = {
     forceFlushSelection = true
-    editor.disableRemoteStateUpdate(true, true)
+    editor.disableRemoteStateUpdate(true, DisableReasonMouse)
     clearAllPreviousReading()
     readSelectionAfterMouseUpWithDelay(10, null, null, true)
   }
@@ -598,7 +604,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
             if (sel.rangeCount > 0) sel.removeAllRanges()
           }
         }, 8)
-        editor.disableRemoteStateUpdate(true, true)
+        editor.disableRemoteStateUpdate(true, DisableReasonMouse)
         mouseDown = true
         oneButLastMouseDown = lastMouseDown
         lastMouseDown = down
@@ -619,7 +625,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     if (mouseDown) {
       window.clearInterval(mouseDisableWrongSelectionHandler)
       if (!readSelection) {
-        editor.disableRemoteStateUpdate(false, true)
+        editor.disableRemoteStateUpdate(false, DisableReasonMouse)
       } else if (mouseSecondContent == null) {
         isRightMouseButton = isRight || a.button != 0
         var waitTime = 0
@@ -637,7 +643,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
           editor.onDoubleClick()
         }
       } else {
-        editor.disableRemoteStateUpdate(false, true)
+        editor.disableRemoteStateUpdate(false, DisableReasonMouse)
         flushSelection()
       }
 
@@ -853,7 +859,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
   private def readSelectionAfterMouseUpWithDelay(delay: Int, richView: RichView, mouseEvent: MouseEvent, isDouble: Boolean): Unit = {
     def work() = {
-      editor.disableRemoteStateUpdate(false, true)
+      editor.disableRemoteStateUpdate(false, DisableReasonMouse)
       focus()
       val sel = window.getSelection()
       if (sel != null && sel.rangeCount > 0) {

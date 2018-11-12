@@ -209,29 +209,26 @@ class Client(
 
   private val flushes_ : PublishSubject[Unit] = PublishSubject[Unit]()
 
-  private var disableForMouse: Boolean = false
-  private var disableForComposition: Boolean = false
 
-
+  private var tempDisables: Set[String] = Set.empty[String]
   private var flushing = false
   private var updatingState = false
-  private def disableRemoteStateUpdate: Boolean = disableForComposition || disableForMouse
+  private def tempDisableRemoteStateUpdate: Boolean = tempDisables.nonEmpty
 
   private def updateConnectionStatusBasedOnDisableStatus(): Unit = {
-    val before = connection_.get.tempOffline
+    val before = connection_.get
     val offlineOfDelete = disableUpdateBecauseLocalNodeDelete != null
-    val now = disableRemoteStateUpdate || offlineOfDelete
-    if (before != now) {
-      connection_.modify(_.copy(tempOffline = now, nodeDeletePending = offlineOfDelete))
+    if (before.offline != offlineOfDelete || before.tempOffline != tempDisables) {
+      connection_.modify(_.copy(tempOffline = tempDisables, nodeDeletePending = offlineOfDelete))
     }
   }
 
-  def disableRemoteStateUpdate(disable: Boolean, forMouse: Boolean): Unit = this.synchronized {
+  def disableRemoteStateUpdate(disable: Boolean, reason: String): Unit = this.synchronized {
     if (flushing) throw new IllegalStateException("You should not change state will fetching state!!")
-    if (forMouse) {
-      disableForMouse = disable
+    if (disable) {
+      tempDisables = tempDisables + reason
     } else {
-      disableForComposition = disable
+      tempDisables = tempDisables - reason
     }
     flushInner()
     updateConnectionStatusBasedOnDisableStatus()
@@ -240,7 +237,7 @@ class Client(
   def flushes: Observable[Unit] = flushes_
 
   private def flushInner(): Unit = {
-    if (!disableRemoteStateUpdate) {
+    if (!tempDisableRemoteStateUpdate) {
       flushing = true
       // send flush event first to have consistent local state
       flushes_.onNext(Unit)
@@ -418,10 +415,10 @@ class Client(
     disableUpdateBecauseLocalNodeDelete != null
   }
 
-  def debug_blockReason = s"${disableUpdateBecauseLocalNodeDelete != null} $requesting $disableRemoteStateUpdate"
+  def debug_blockReason = s"${disableUpdateBecauseLocalNodeDelete != null} $requesting $tempDisableRemoteStateUpdate"
 
   private def tryTopRequest(): Boolean = {
-    if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !disableRemoteStateUpdate) {
+    if (!updateDisableUpdateBecauseLocalNodeDelete() && !requesting && !tempDisableRemoteStateUpdate) {
       val submit = uncommitted
       while (uncommittedIds.size < uncommitted.size) {
         uncommittedIds = uncommittedIds :+ UUID.randomUUID()
@@ -474,7 +471,7 @@ class Client(
         println("ignore returned server stuff because we just performed a delete...")
       }
       // ignore it
-    } else if (disableRemoteStateUpdate) {
+    } else if (tempDisableRemoteStateUpdate) {
       disabledStateUpdates.append(success)
     } else {
       try {
