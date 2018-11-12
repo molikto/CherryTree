@@ -734,6 +734,8 @@ block selection
     box-sizing: border-box;
     border: 1px solid #00000088;
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    font-style: normal;
+    font-weight: normal;
 }
 
 .ct-error-inline {
@@ -746,6 +748,8 @@ block selection
     box-sizing: border-box;
     border: 1px solid #00000088;
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    font-style: normal;
+    font-weight: normal;
 }
 
 /** source view **/
