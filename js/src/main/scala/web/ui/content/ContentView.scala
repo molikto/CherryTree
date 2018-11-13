@@ -73,7 +73,7 @@ object ContentView {
     (a match {
       case r: data.Content.Rich =>
         val v = new RichView(r, contentType.contains(ContentType.Hr), latexMacroCache)
-        if (editable) v.dom.style.cursor = "text"
+        if (editable) v.dom.classList.add("text-cursor")
         v
       case s: data.Content.Code => if (editable) new WrappedCodeView(s, latexMacroCache) else  createFromCode(s, latexMacroCache)
     }).asInstanceOf[General]

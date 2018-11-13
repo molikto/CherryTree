@@ -506,6 +506,10 @@
     margin-top: 6px;
 }
 
+.text-cursor {
+    cursor: text;
+}
+
 
 
 /**  rich view **/
