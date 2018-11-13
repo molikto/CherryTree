@@ -428,7 +428,7 @@
 }
 
 .ct-d-h2 + .ct-d-hold {
-    margin-top: 20px;
+    margin-top: 19px;
 }
 
 .ct-d-h3 > .ct-rich {
@@ -446,7 +446,7 @@
 }
 
 .ct-d-h4 + .ct-d-hold {
-    margin-top: 13px;
+    margin-top: 12px;
 }
 
 .ct-d-h5 > .ct-rich {
@@ -455,7 +455,7 @@
 }
 
 .ct-d-h5 + .ct-d-hold {
-    margin-top: 9px;
+    margin-top: 7px;
 }
 
 .ct-d-h6 > .ct-rich {
@@ -464,7 +464,7 @@
 }
 
 .ct-d-h6 + .ct-d-hold {
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 
@@ -705,12 +705,6 @@ block selection
 }
 
 /* control glyph */
-.ct-cg {
-    font-style: normal;
-    color: #636e83;
-    font-weight:normal;
-    font-family: 'Gentium Book Basic', serif, sans-serif;
-}
 
 
 .ct-cg-shadow {
