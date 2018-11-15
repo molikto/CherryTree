@@ -133,7 +133,8 @@ case class DocState private (
     lastSearch.res
   }
 
-  def quickSearch(tt: Seq[data.Unicode],
+  def quickSearch(tt: Set[data.Unicode],
+    hashes: Set[data.Unicode],
     isLaTeXMacro: Boolean,
     heading: Boolean,
     headingLevel: Int,
@@ -149,7 +150,7 @@ case class DocState private (
           a.content match {
             case data.Content.Code(_, _) => code
             case data.Content.Rich(j) =>
-              !code && j.quickSearch(tt, deli)
+              !code && j.quickSearch(tt, hashes, deli)
           }
         )
     },

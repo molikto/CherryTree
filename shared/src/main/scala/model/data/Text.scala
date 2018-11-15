@@ -16,6 +16,7 @@ abstract sealed class Text {
 
   def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new IllegalArgumentException("not possible")
   def quickSearch(p: Unicode, deli: SpecialKeySettings): Boolean = false
+  def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean = false
 
   def isAtomic: Boolean = this.isInstanceOf[Text.Atomic]
   def isCoded: Boolean = this.isInstanceOf[Text.Coded]
@@ -57,6 +58,10 @@ object Text {
 
   def quickSearch(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
     text.exists(_.quickSearch(p, deli))
+  }
+
+  def quickSearchHash(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
+    text.exists(_.quickSearchHash(p, deli))
   }
 
 
@@ -261,6 +266,12 @@ object Text {
       super.quickSearch(p, deli) ||
       Text.quickSearch(content, p, deli)
 
+
+
+    override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
+        Text.quickSearchHash(content, p, deli)
+
+
     override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {
       content.foreach(_.serialize(buffer))
     }
@@ -343,6 +354,9 @@ object Text {
     // LATER what should this be?
     override def toScalaTags: Frag = a(Text.toScalaTags(content))
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+
+    override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
+      content == Seq(Plain(p))
   }
 
   case class HashDef(content: Seq[Text]) extends Formatted {
@@ -351,6 +365,9 @@ object Text {
     // LATER what should this be?
     override def toScalaTags: Frag = a(Text.toScalaTags(content))
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+
+    override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
+      content == Seq(Plain(p))
   }
 
   sealed trait Coded extends DelimitedT[Unicode] {

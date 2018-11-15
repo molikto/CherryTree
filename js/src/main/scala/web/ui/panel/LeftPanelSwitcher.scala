@@ -1,16 +1,18 @@
 package web.ui.panel
 
 import client.Client
+import client.Client.ViewMessage.QuickSearch
 import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all.{a, _}
 import web.WebApi
-import web.ui.dialog.SettingsDialog
+import web.ui.dialog.{QuickSearchDialog, SettingsDialog}
 import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.view.{UnselectableView, View, indexOf}
 
 class LeftPanelSwitcher(private val cl: Client, 
   doc: => View,
   settingsDialog : => SettingsDialog,
+  quickSearch: => QuickSearchDialog,
   laTeXMacroCache: LaTeXMacroCache,
   enable: Boolean => Unit) extends UnselectableView {
 
@@ -105,7 +107,7 @@ class LeftPanelSwitcher(private val cl: Client,
     } else if (active == commands) {
       new CommandListPanel(cl, doc).attachToNode(container)
     } else if (active == tags) {
-      new TagsPanel(cl, doc, laTeXMacroCache).attachToNode(container)
+      new TagsPanel(cl, doc, quickSearch, laTeXMacroCache).attachToNode(container)
     } else if (active == undoHistory) {
       new UndoHistoryPanel(cl).attachToNode(container)
     } else {

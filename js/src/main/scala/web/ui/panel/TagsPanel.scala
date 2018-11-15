@@ -9,21 +9,25 @@ import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 import scalatags.JsDom.all._
 import web.ui.ContentListView
 import web.ui.content.ContentView
+import web.ui.dialog.QuickSearchDialog
 import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class TagsPanel(val client: Client, doc: => View, laTeXMacroCache: LaTeXMacroCache) extends UnselectableView with DelayUpdate {
+class TagsPanel(val client: Client, doc: => View, quickSearch: => QuickSearchDialog, laTeXMacroCache: LaTeXMacroCache) extends UnselectableView with DelayUpdate {
 
   val tagsView = new ContentListView[model.data.Text.HashTag](tag => {
   }) {
     override def contentOf(t: Text.HashTag): HTMLElement = {
       val data = model.data.Content.Rich(model.data.Rich(t.content))
       val view = ContentView.create(data, None, laTeXMacroCache).dom
-      view.style.display = "inline-block"
       view.classList.add("ct-flat-selectable")
+      val li: js.Function1[MouseEvent, _] =  (mouse: MouseEvent) => {
+        quickSearch.showWithTag(t)
+      }
+      view.onclick = li
       view
     }
   }

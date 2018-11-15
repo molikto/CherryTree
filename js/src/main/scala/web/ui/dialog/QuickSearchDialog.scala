@@ -19,6 +19,13 @@ class QuickSearchDialog(val client: Client,
   with UnselectableView with DocFramer {
 
 
+  def showWithTag(t: model.data.Text.HashTag): Unit = {
+    val terms = model.data.Text.toPlain(t.content)
+    show(true)
+    search.value = terms
+  }
+
+
   override def show(t: Boolean): Unit = {
     CoveringOverlay.show(layer, dom, coveringElement)
     client.disableRemoteStateUpdate(true, "quick search")
@@ -40,7 +47,7 @@ class QuickSearchDialog(val client: Client,
 
   private val special = Seq("!h1", "!h2", "!h3", "!h4", "!h5", "!h6", "!heading", "!code", "!latexmacro")
   private val marks = client.delimitationGraphemes.values.toSet[model.data.Unicode].toSeq.map(_.str)
-  private val specialDesc = s"Special commands: ${(special ++ marks).mkString(" ")}"
+  private val specialDesc = s"Special commands: #hashtag ${(special ++ marks).mkString(" ")}"
 
 
   override protected def headerSize: Int = 1
@@ -78,7 +85,10 @@ class QuickSearchDialog(val client: Client,
     if (tt.isEmpty) {
       Seq.empty
     } else {
-      val raw = (tt.toSet -- special).map(a => model.data.Unicode(a.toLowerCase())).toSeq
+      val raw = (tt.toSet -- special).map(a => model.data.Unicode(a.toLowerCase())).toSet
+      val hashes0 = raw.filter(_.startsWith("#"))
+      val hashes = hashes0.map(_.drop(1)).filter(_.nonEmpty)
+      val terms = raw -- hashes0
       val isHeading = tt.contains("!heading")
       val islm = tt.contains("!latexmacro")
       val reqireHeadingLevel =
@@ -98,7 +108,7 @@ class QuickSearchDialog(val client: Client,
           -1
         }
       val requireCode = tt.contains("!code")
-      client.state.quickSearch(raw, islm, isHeading, reqireHeadingLevel, requireCode, client.delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
+      client.state.quickSearch(terms, hashes, islm, isHeading, reqireHeadingLevel, requireCode, client.delimitationGraphemes, opt).map(a => (a, client.state.node(a).uuid))
     }
   }
 

@@ -102,8 +102,8 @@ case class Rich(text: Seq[Text]) {
     Text.search(text, a, startPos)
   }
 
-  def quickSearch(tt: Seq[Unicode], deli: settings.SpecialKeySettings): Boolean = {
-    tt.forall(p => Text.quickSearch(text, p, deli))
+  def quickSearch(tt: Set[Unicode], hashes: Set[Unicode], deli: settings.SpecialKeySettings): Boolean = {
+    tt.forall(p => Text.quickSearch(text, p, deli)) && hashes.forall(p => Text.quickSearchHash(text, p, deli))
   }
 
 

@@ -42,7 +42,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
 
   private val panelSplitter = div(id := "ctTopPanelSplitter", cls := "ct-splitter ct-panel", flex := "0 0 auto", width := "4px").render
 
-  leftPanel = defer(new LeftPanelSwitcher(client, this, settingsDialog, latexMacroCache, enableResizePanel))
+  leftPanel = defer(new LeftPanelSwitcher(client, this, settingsDialog, quickSearch, latexMacroCache, enableResizePanel))
 
   {
     leftPanel.attachTo(this)

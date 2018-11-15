@@ -377,7 +377,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
         case Some(a) =>
           contentAt(a.node).asInstanceOf[Any] match {
             case richView: RichView =>
-              scrollInToViewIfNotVisible(richView.dom, dom, 10, 10, 30, 30)
+              scrollInToViewIfNotVisible(richView.dom, dom, 5, 5, 30, 30)
               RichView.renderRangeInto(richView.nonEmptySelectionToDomRange(a.range)._1, fakeSelections, "ct-search-highlight")
             case _ =>
           }
@@ -393,7 +393,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     searching = search.searching.orNull
     updateSearchingHighlight()
     if (haveBefore && searching == null && activeContent != null) {
-      scrollInToViewIfNotVisible(activeContent.dom, dom, 10, 10, 30, 30)
+      scrollInToViewIfNotVisible(activeContent.dom, dom, 5, 5, 30, 30)
     }
   }))
 
