@@ -598,9 +598,9 @@ block selection
 
 .ct-search-highlight {
     position: absolute;
-    background: #FD963F;
+    background: #6d3608;
     z-index: -1;
-    border-bottom: 2px solid #FD963F;
+    border-bottom: 2px solid #6d3608;
 }
 
 .ct-rich-selection {

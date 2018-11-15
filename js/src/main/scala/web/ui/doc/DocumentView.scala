@@ -295,6 +295,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     }
     duringStateUpdate = false
     flushSelection(userModeUpdate = fromUser)
+    updateSearchingHighlight()
   }
 
 
@@ -359,7 +360,6 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       duringStateUpdate = false
       updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
-      updateSearchingHighlight()
     }))
   }
 
