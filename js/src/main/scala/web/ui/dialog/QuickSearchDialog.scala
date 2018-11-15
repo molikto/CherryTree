@@ -21,7 +21,7 @@ class QuickSearchDialog(val client: Client,
 
   def showWithTag(t: model.data.Text.HashTag): Unit = {
     val terms = "#" + model.data.Text.toPlain(t.content)
-    show(true)
+    show(false)
     search.value = terms
   }
 
