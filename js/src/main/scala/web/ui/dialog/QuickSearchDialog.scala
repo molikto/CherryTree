@@ -22,14 +22,16 @@ class QuickSearchDialog(val client: Client,
   def showWithTag(t: model.data.Text.HashTag): Unit = {
     val terms = "#" + model.data.Text.toPlain(t.content)
     show(false)
+    term = terms
     search.value = terms
+    update()
   }
 
 
-  override def show(t: Boolean): Unit = {
+  override def show(viewport: Boolean): Unit = {
     CoveringOverlay.show(layer, dom, coveringElement)
     client.disableRemoteStateUpdate(true, "quick search")
-    super.show(t)
+    super.show(viewport)
   }
 
 

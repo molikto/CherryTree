@@ -15,7 +15,7 @@ trait StaticFilteringView[P <: Any, T] extends OverlayT[P] {
   protected def headerSize: Int = 0
   protected def list: HTMLElement
 
-  private var term: String = ""
+  protected var term: String = ""
 
   private var marked: Int = -1
 
