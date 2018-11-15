@@ -365,11 +365,23 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
   private var searching: Search = null
 
+  private def clearSearchHighlight(): Unit = {
+    fakeSelections.innerHTML = ""
+  }
+
   private def updateSearchingHighlight(): Unit = {
+    clearSearchHighlight()
     if (searching == null) {
-      fakeSelections.innerHTML = ""
     } else {
-      val ocs = currentDoc.searchInShown(searching, settings.enableModal)
+      currentDoc.searchInShown(searching, settings.enableModal).headOption match {
+        case Some(a) =>
+          contentAt(a.node).asInstanceOf[Any] match {
+            case richView: RichView =>
+              RichView.renderRangeInto(richView.nonEmptySelectionToDomRange(a.range)._1, fakeSelections, "ct-search-highlight")
+            case _ =>
+          }
+        case None =>
+      }
       // render search ocs
     }
   }
@@ -471,6 +483,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
   event(window, "resize", (a: MouseEvent) => {
     refreshMounted()
     if (activeContent != null) activeContentEditor.refreshRangeSelection()
+    updateSearchingHighlight()
   })
 
 

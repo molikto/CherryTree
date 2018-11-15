@@ -1,11 +1,13 @@
 package web.ui
 
+import command.Key
 import command.Key._
 import scalatags.JsDom.all._
 import search.{Search, SearchHandler}
 import web.view._
 import web.ui._
 import org.scalajs.dom._
+import web.ui.doc.EditorView
 
 class SearchBar(
   searchHandler: SearchHandler, doc: () => View, paddingBottom: Int) extends View {
@@ -32,14 +34,15 @@ class SearchBar(
   })
 
   event(search, "keydown", (k: KeyboardEvent) => {
-    KeyMap.get(k.key) match {
-      case Some(Enter) =>
-        searchHandler.commitSearching()
-        k.preventDefault()
-      case Some(Escape) =>
-        searchHandler.cancelSearching()
-        k.preventDefault()
-      case _ =>
+    val key = EditorView.extractKey(k)
+    if (key == Key(Enter)) {
+      searchHandler.commitSearching()
+      k.preventDefault()
+    } else if (key == Key(Escape)) {
+      searchHandler.cancelSearching()
+      k.preventDefault()
+    } else if (key == Key("f").copyWithMod) {
+      k.preventDefault()
     }
   })
 

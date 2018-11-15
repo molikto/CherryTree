@@ -40,7 +40,54 @@ object RichView {
     el.style.height= "12px"
   }
 
-  private var visualLines: (RichView, Seq[Rect], Boolean) = null
+  private var visualLinesCache: (RichView, Seq[Rect], Boolean) = null
+
+
+  def linesFromClientRects(rects0: ClientRectList): Seq[Rect] =  {
+    val ar0 = new Array[Rect](rects0.length)
+    for (i <- 0 until rects0.length) {
+      val rect = rects0(i)
+      val b = toRect(rect).withBorder(4, -2)
+      ar0(i) = b
+    }
+    val rects = ar0.sorted
+    val ar = new ArrayBuffer[Rect]()
+    for (i <- rects.indices) {
+      var rect = rects(i)
+      var j = 0
+      while (rect != null && j < ar.size) {
+        val a = ar(j)
+        if (a.meet(rect)) {
+          ar(j) = a.merge(rect)
+          rect = null
+        }
+        j += 1
+      }
+      if (rect != null) {
+        ar.append(rect)
+      }
+      j += 1
+    }
+    ar
+  }
+
+  def renderRangeInto(range: Range, dom: HTMLElement, clazz: String): Unit = {
+    val p = dom.getBoundingClientRect()
+
+    val ar = RichView.linesFromClientRects(range.getClientRects())
+    for (rect <- ar.reverse) {
+      dom.appendChild(
+        div(
+          cls := clazz,
+          contenteditable := "false",
+          left := rect.left - p.left,
+          top := rect.top - p.top,
+          width := rect.width,
+          height := rect.height
+        ).render)
+    }
+  }
+
 }
 class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMacroCache: LaTeXMacroCache) extends ContentView.Rich {
 
@@ -244,55 +291,28 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
   }
 
 
-  def linesFromClientRects(rects0: ClientRectList): Seq[Rect] =  {
-    val ar0 = new Array[Rect](rects0.length)
-    for (i <- 0 until rects0.length) {
-      val rect = rects0(i)
-      val b = toRect(rect).withBorder(4, -2)
-      ar0(i) = b
-    }
-    val rects = ar0.sorted
-    val ar = new ArrayBuffer[Rect]()
-    for (i <- rects.indices) {
-      var rect = rects(i)
-      var j = 0
-      while (rect != null && j < ar.size) {
-        val a = ar(j)
-        if (a.meet(rect)) {
-          ar(j) = a.merge(rect)
-          rect = null
-        }
-        j += 1
-      }
-      if (rect != null) {
-        ar.append(rect)
-      }
-      j += 1
-    }
-    ar
-  }
 
   override def constructVisualLineBuff(): Unit = {
     // LATER this merging might be WRONG.... nevermind
     val rects0 = nonEmptySelectionToDomRange(IntRange(0, contentData.content.size))._1.getClientRects()
-    val ar = linesFromClientRects(rects0)
-    RichView.visualLines = (this, ar, false)
+    val ar = RichView.linesFromClientRects(rects0)
+    RichView.visualLinesCache = (this, ar, false)
   }
 
   override def clearVisualLineBuff(): Unit = {
-    RichView.visualLines = null
+    RichView.visualLinesCache = null
   }
 
   override def visualLineCount(): Int = {
-    assert(RichView.visualLines._1 == this)
-    Math.max(1, RichView.visualLines._2.size)
+    assert(RichView.visualLinesCache._1 == this)
+    Math.max(1, RichView.visualLinesCache._2.size)
   }
 
 
   private def sortVisualLine(): Unit = {
-    assert(RichView.visualLines._1 == this)
-    if (!RichView.visualLines._3) {
-      RichView.visualLines = (this, RichView.visualLines._2.sortBy(_.top), true)
+    assert(RichView.visualLinesCache._1 == this)
+    if (!RichView.visualLinesCache._3) {
+      RichView.visualLinesCache = (this, RichView.visualLinesCache._2.sortBy(_.top), true)
     }
   }
 
@@ -301,7 +321,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
       0
     } else {
       sortVisualLine()
-      val lines = RichView.visualLines._2
+      val lines = RichView.visualLinesCache._2
       val offset = readOffset(range.startContainer, range.startOffset, false)
       val atom = if (offset != rich.size) rich.after(offset) else null
       val rect = toRect(range.getBoundingClientRect()).withBorder(4, -2)
@@ -317,7 +337,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
       return Some(IntRange(0, 0))
     }
     sortVisualLine()
-    val line = RichView.visualLines._2(li)
+    val line = RichView.visualLinesCache._2(li)
     var min: IntRange = null
     var minDiff: Double = 0
     var minX = 0.0
@@ -715,7 +735,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
     ret
   }
 
-  private[content] def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
+  def nonEmptySelectionToDomRange(range: IntRange): (Range, HTMLSpanElement) = {
     val (ss, so, _) = posInDom(range.start)
     val (es, eo, _) = posInDom(range.until)
     def createRange(a: Node, b: Int, c: Node, d: Int): Range = {

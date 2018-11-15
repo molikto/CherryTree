@@ -296,6 +296,7 @@
 
 .ct-document-view-background {
   background: #282c34;
+  z-index: -2;
 }
 .ct-document-view-root {
   color: #abb2bf;
@@ -593,6 +594,13 @@ block selection
     background: #58617466;
     border-bottom: 2px solid #bb71c388;
     margin-bottom: -2px;
+}
+
+.ct-search-highlight {
+    position: absolute;
+    background: #FD963F;
+    z-index: -1;
+    border-bottom: 2px solid #FD963F;
 }
 
 .ct-rich-selection {

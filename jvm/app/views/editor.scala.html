@@ -30,7 +30,8 @@
   <link rel="stylesheet" href="@assets.path("styles/editor.css")"/>
 </head>
 <body style="overscroll-behavior-y: none; overflow: hidden;">
-<div class="ct-document-view-background" style="height:100vh; width: 100%; overflow: hidden;" id="editor" data-document-id="@documentId" data-node-id="@nodeId.map(_.toString()).getOrElse("")">
+<div style="height:100vh; width: 100%; overflow: hidden;" id="editor" data-document-id="@documentId" data-node-id="@nodeId.map(_.toString()).getOrElse("")">
+
 </div>
 @jsBundle()
 <script src="@assets.path("javascripts/editor.js")"></script>

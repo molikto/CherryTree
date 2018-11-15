@@ -21,8 +21,8 @@ object ClientInitializerView {
   private var globalInitialized = false
   def initializeGlobal(): Unit = {
     if (!globalInitialized) {
-      model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
       globalInitialized = true
+      model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
 
       model.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
       model.parseFromHtml = web.util.parseFromHtml
@@ -36,17 +36,36 @@ object ClientInitializerView {
 @JSExportTopLevel("ClientInitializerView")
 class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Option[UUID], global: Boolean) {
   ClientInitializerView.initializeGlobal()
+  import scalatags.JsDom.all._
 
-  rootView.classList.add("ct-document-view-background")
+
+  val bg = div(
+    position := "absolute",
+    width := "100%",
+    height := "100%",
+    cls := "ct-document-view-background",
+    zIndex := "-2"
+  ).render
+  rootView.appendChild(bg)
+
+
+  private def removeExceptBg(): Unit = {
+    var i = rootView.childNodes.length - 1
+    while (i >= 0) {
+      val v = rootView.childNodes(i)
+      if (v != bg) {
+        rootView.removeChild(v)
+      }
+      i -= 1
+    }
+  }
 
   private def goConnecting(): Unit = {
-    onlyChild(rootView, {
-      import scalatags.JsDom.all._
-      div(
+    removeExceptBg()
+    rootView.appendChild(div(
         width := "100%", height := "100",
         p("connecting")
-      )
-    }.render)
+      ).render)
     val ec = scala.concurrent.ExecutionContext.Implicits.global
     ClientInitializer.init(WebApi, documentId, nodeId).onComplete {
       case Success(c) =>
@@ -60,7 +79,8 @@ class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Opt
 
 
   private def goFailure(exception: Throwable): Unit = {
-    onlyChild(rootView, {
+    removeExceptBg()
+    rootView.appendChild({
       import scalatags.JsDom.all._
       exception.printStackTrace()
       div(
@@ -73,7 +93,7 @@ class ClientInitializerView(rootView: HTMLElement, documentId: UUID, nodeId: Opt
   private var clientView: ClientView = null
 
   private def goClient(client: Client): Unit = {
-    removeAllChild(rootView)
+    removeExceptBg()
     clientView = new ClientView(rootView, client, () => {
       try {
         clientView.destroy()

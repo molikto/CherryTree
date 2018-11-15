@@ -52,38 +52,18 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
 
 
   private def clearRangeSelection(): Unit = {
-    if (web.debug_fakeSelection) {
-      if (fakeRangeSelection != null) {
-        removeAllChild(documentView.fakeSelections)
-      }
-      fakeRangeSelection = null
-    } else {
-      documentView.endSelection()
-    }
+    documentView.endSelection()
   }
 
   private def setRangeSelection(range: Range, fromUser: Boolean): Unit = {
-    if (web.debug_fakeSelection) {
-      clearRangeSelection()
-      val dom = documentView.fakeSelections
-      val p = dom.getBoundingClientRect()
-      fakeRangeSelection = range
-
-      val ar = contentView.linesFromClientRects(range.getClientRects())
-      for (rect <- ar.reverse) {
-        dom.appendChild(
-          div(
-            cls := "ct-rich-selection",
-            contenteditable := "false",
-            left := rect.left - p.left,
-            top := rect.top - p.top,
-            width := rect.width,
-            height := rect.height
-          ).render)
-      }
-    } else {
-      documentView.startSelection(range)
-    }
+//    if (web.debug_fakeSelection) {
+//      clearRangeSelection()
+//      fakeRangeSelection = range
+//      val dom = documentView.fakeSelections
+//      RichView.renderRangeInto(range, dom, "ct-rich-selection")
+//    } else {
+//    }
+    documentView.startSelection(range)
   }
 
 

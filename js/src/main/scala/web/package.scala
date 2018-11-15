@@ -6,8 +6,6 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 package object web {
 
 
-  val debug_fakeSelection = false
-
   def jsObject(a: js.Dynamic => Unit): js.Object = {
     val k =
       js.Object().asInstanceOf[js.Dynamic]
