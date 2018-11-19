@@ -65,11 +65,7 @@ account.activated = Your account is now activated! Please sign in to use your ne
 password.changed = Your password has been changed.
 
 google = Google
-facebook = Facebook
 twitter = Twitter
-vk = VK
-xing = Xing
-yahoo = Yahoo
 
 
 default.document.title = {0}’s place

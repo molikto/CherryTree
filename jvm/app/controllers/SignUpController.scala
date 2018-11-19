@@ -58,31 +58,36 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val user = User(
-              userId = UUID.randomUUID(),
-              createdTime = 0,
-              name = data.name,
-              email = data.email,
-              avatarUrl = None,
-              activated = false,
-              loginInfo = loginInfo
-            )
-            for {
-              avatar <- avatarService.retrieveURL(data.email)
-              user <- userService.create(user.copy(avatarUrl = avatar), authInfo, request.messages.apply("default.document.title", user.name))
-              authToken <- authTokenService.create(user.userId)
-            } yield {
-              val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
-              mailerClient.send(Email(
-                subject = Messages("email.sign.up.subject"),
-                from = Messages("email.from"),
-                to = Seq(data.email),
-                bodyText = Some(views.txt.emails.signUp(user, url).body),
-                bodyHtml = Some(views.html.emails.signUp(user, url).body)
-              ))
+            val Allowed = Seq("molikto@gmail.com")
+            if (Allowed.contains(data.email)) {
+              val user = User(
+                userId = UUID.randomUUID(),
+                createdTime = 0,
+                name = data.name,
+                email = data.email,
+                avatarUrl = None,
+                activated = false,
+                loginInfo = loginInfo
+              )
+              for {
+                avatar <- avatarService.retrieveURL(data.email)
+                user <- userService.create(user.copy(avatarUrl = avatar), authInfo, request.messages.apply("default.document.title", user.name))
+                authToken <- authTokenService.create(user.userId)
+              } yield {
+                val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
+                mailerClient.send(Email(
+                  subject = Messages("email.sign.up.subject"),
+                  from = Messages("email.from"),
+                  to = Seq(data.email),
+                  bodyText = Some(views.txt.emails.signUp(user, url).body),
+                  bodyHtml = Some(views.html.emails.signUp(user, url).body)
+                ))
 
-              silhouette.env.eventBus.publish(SignUpEvent(user, request))
-              result
+                silhouette.env.eventBus.publish(SignUpEvent(user, request))
+                result
+              }
+            } else {
+              Future.successful(Redirect(routes.SignUpController.view()).flashing("error" -> "We are currently in closed-alpha and only whitelisted user can signup."))
             }
         }
       }
