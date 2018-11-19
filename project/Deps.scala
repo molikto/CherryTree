@@ -52,6 +52,8 @@ object Deps {
     "com.typesafe.play" %% "play-mailer" % Version.playMailer,
     "com.typesafe.play" %% "play-mailer-guice" % Version.playMailer,
     "com.enragedginger" %% "akka-quartz-scheduler" % "1.6.1-akka-2.5.x",
+    "com.nimbusds" % "nimbus-jose-jwt" % "4.34.1",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
     "org.julienrf" %% "play-jsmessages" % "3.0.0"
   ))
 

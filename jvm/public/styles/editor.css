@@ -8,6 +8,17 @@
 
  **/
 
+.ct-global-body {
+    overscroll-behavior-y: none;
+    overflow: hidden;
+}
+
+.ct-global-div {
+    height:100vh;
+    width: 100%;
+    overflow: hidden;
+}
+
 .unselectable {
     user-select: none;
 }

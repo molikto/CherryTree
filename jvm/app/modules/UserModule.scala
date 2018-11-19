@@ -86,20 +86,12 @@ class UserModule extends AbstractModule with ScalaModule {
 
   @Provides
   def provideSocialProviderRegistry(
-    facebookProvider: FacebookProvider,
-    googleProvider: GoogleProvider,
-    vkProvider: VKProvider,
-    twitterProvider: TwitterProvider,
-    xingProvider: XingProvider,
-    yahooProvider: YahooProvider): SocialProviderRegistry = {
+    //twitterProvider: TwitterProvider,
+    googleProvider: GoogleProvider
+  ): SocialProviderRegistry = {
 
     SocialProviderRegistry(Seq(
-      googleProvider,
-      facebookProvider,
-      twitterProvider,
-      vkProvider,
-      xingProvider,
-      yahooProvider
+      //googleProvider
     ))
   }
 
@@ -147,9 +139,10 @@ class UserModule extends AbstractModule with ScalaModule {
 
   @Provides
   def provideAuthInfoRepository(
+    env: play.api.Environment,
     dbConfigProvider: DatabaseConfigProvider
     ): AuthInfoRepository = {
-    new UserRepository(dbConfigProvider)
+    new UserRepository(env, dbConfigProvider)
   }
 
   @Provides
@@ -212,30 +205,12 @@ class UserModule extends AbstractModule with ScalaModule {
   }
 
   @Provides
-  def provideFacebookProvider(
-    httpLayer: HTTPLayer,
-    socialStateHandler: SocialStateHandler,
-    configuration: Configuration): FacebookProvider = {
-
-    new FacebookProvider(httpLayer, socialStateHandler, configuration.underlying.as[OAuth2Settings]("silhouette.facebook"))
-  }
-
-  @Provides
   def provideGoogleProvider(
     httpLayer: HTTPLayer,
     socialStateHandler: SocialStateHandler,
     configuration: Configuration): GoogleProvider = {
 
     new GoogleProvider(httpLayer, socialStateHandler, configuration.underlying.as[OAuth2Settings]("silhouette.google"))
-  }
-
-  @Provides
-  def provideVKProvider(
-    httpLayer: HTTPLayer,
-    socialStateHandler: SocialStateHandler,
-    configuration: Configuration): VKProvider = {
-
-    new VKProvider(httpLayer, socialStateHandler, configuration.underlying.as[OAuth2Settings]("silhouette.vk"))
   }
 
   @Provides
@@ -248,23 +223,4 @@ class UserModule extends AbstractModule with ScalaModule {
     new TwitterProvider(httpLayer, new PlayOAuth1Service(settings), tokenSecretProvider, settings)
   }
 
-  @Provides
-  def provideXingProvider(
-    httpLayer: HTTPLayer,
-    tokenSecretProvider: OAuth1TokenSecretProvider,
-    configuration: Configuration): XingProvider = {
-
-    val settings = configuration.underlying.as[OAuth1Settings]("silhouette.xing")
-    new XingProvider(httpLayer, new PlayOAuth1Service(settings), tokenSecretProvider, settings)
-  }
-
-  @Provides
-  def provideYahooProvider(
-    httpLayer: HTTPLayer,
-    client: OpenIdClient,
-    configuration: Configuration): YahooProvider = {
-
-    val settings = configuration.underlying.as[OpenIDSettings]("silhouette.yahoo")
-    new YahooProvider(httpLayer, new PlayOpenIDService(client, settings), settings)
-  }
 }

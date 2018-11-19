@@ -28,6 +28,21 @@ case class Node(
   attributes: JsObject,
   childs: Seq[Node]) {
 
+  private def collectIds(map: mutable.Map[UUID, UUID]): Unit = {
+    map.put(uuid, UUID.randomUUID())
+    childs.foreach(a => a.collectIds(map))
+  }
+
+  def mapBy(map: Map[UUID, UUID]): Node = {
+    Node(uuid = map(uuid), content = content.mapBy(map), attributes = attributes, childs = childs.map(a => a.mapBy(map)))
+  }
+
+  def regenerateIds(): Node = {
+    val map = mutable.Map[UUID, UUID]()
+    collectIds(map)
+    mapBy(map.toMap)
+  }
+
 
   def assertNewNodes(strings: Seq[UUID]): Unit = {
     if (strings.contains(uuid)) {
@@ -334,6 +349,7 @@ object Node extends DataObject[Node] {
     else ul(a.map(a => li(a.toScalaTags))).render
 
 
+  // TODO support multi document ref
   def matchNodeRef(url: String): Option[UUID] = if (url.startsWith(NodeRefScheme)) Some(UUID.fromString(url.substring(NodeRefScheme.length + "node?node=".length))) else None
 
   def nodeRefRelative(nodeId: UUID): String = {

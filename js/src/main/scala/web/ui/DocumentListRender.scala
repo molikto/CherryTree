@@ -14,6 +14,7 @@ import model._
 import api._
 import org.scalajs.dom.html.{Form, Input}
 import org.scalajs.dom._
+import org.scalajs.dom
 import org.w3c.dom.DOMError
 import web.ui.content.ContentView
 import web.view.View
@@ -99,18 +100,30 @@ class DocumentListRender(rootView: HTMLElement) extends View {
               Messages("options")
             ),
             ul(cls := "dropdown-menu", role := "menu",
-              a(cls := "dropdown-item", Messages("delete"), href := "", onclick := ((ev: MouseEvent) => {
-                modal.body.textContent = Messages("delete.confirm.message")
-                modal.positive.textContent = Messages("confirm")
-                modal.negative.textContent = Messages("cancel")
-                modal.positive.onclick = (ev: MouseEvent) => {
-                  modal.positiveForm.action = s"/document/${item.id}/delete"
-                  modal.positiveForm.submit()
+              if (item.permissionLevel >= PermissionLevel.Admin) {
+                a(cls := "dropdown-item", Messages("delete"), href := "", onclick := ((ev: MouseEvent) => {
+                  modal.body.textContent = Messages("delete.confirm.message")
+                  modal.positive.textContent = Messages("confirm")
+                  modal.negative.textContent = Messages("cancel")
+                  modal.positive.onclick = (ev: MouseEvent) => {
+                    modal.positiveForm.action = s"/document/${item.id}/delete"
+                    modal.positiveForm.submit()
+                  }
+                  jQ(modal.root).modal()
+                  ev.preventDefault()
+                })) : Frag
+              } else {
+                SeqFrag(Seq.empty[Frag])
+              },
+              a(cls := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}"),
+              a(cls := "dropdown-item", "Share", href := "", onclick := ((ev: MouseEvent) => {
+                val person = org.scalajs.dom.window.prompt("Enter collabrator email")
+                if (person == null || person == "") {
+                  //WebApi.request(s"/document/${item.id}/share")
+                } else {
+
                 }
-                jQ(modal.root).modal()
-                ev.preventDefault()
-              })),
-              a(cls := "dropdown-item", Messages("backup"), attr("download") := "", href := s"/document/json/${item.id}")
+              }))
             )
           )
         ).render)

@@ -815,7 +815,7 @@ class Client(
     updateDisableUpdateBecauseLocalNodeDelete()
     if (disableUpdateBecauseLocalNodeDelete != null) {
       val insertOp = disableUpdateBecauseLocalNodeDelete._1.reverse(disableUpdateBecauseLocalNodeDelete._4.node)
-      DocTransaction(Seq(insertOp), None, tryMergeInsertOfDeleteRange = Some(disableUpdateBecauseLocalNodeDelete._1.r))
+      DocTransaction(Seq(insertOp), disableUpdateBecauseLocalNodeDelete._4.mode, tryMergeInsertOfDeleteRange = Some(disableUpdateBecauseLocalNodeDelete._1.r))
     } else {
       super.undo(currentDoc)
     }

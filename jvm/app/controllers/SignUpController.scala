@@ -12,6 +12,7 @@ import forms.SignUpForm
 import javax.inject.Inject
 import models.User
 import play.api.i18n.{I18nSupport, Messages}
+import play.api.libs.json.{JsSuccess, Json}
 import play.api.libs.mailer.{Email, MailerClient}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import repos.{AuthTokenRepository, UserRepository}
@@ -42,7 +43,7 @@ class SignUpController @Inject() (
     SignUpForm.form.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.signUp(form))),
       data => {
-        val result = Redirect(routes.SignUpController.view()).flashing("info" -> Messages("sign.up.email.sent", data.email))
+        val result = Redirect(routes.SignInController.view()).flashing("info" -> Messages("sign.up.email.sent", data.email))
         val loginInfo = LoginInfo(CredentialsProvider.ID, data.email)
         userService.retrieve(loginInfo).flatMap {
           case Some(user) =>
@@ -58,31 +59,36 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val user = User(
-              userId = UUID.randomUUID(),
-              createdTime = 0,
-              name = data.name,
-              email = data.email,
-              avatarUrl = None,
-              activated = false,
-              loginInfo = loginInfo
-            )
-            for {
-              avatar <- avatarService.retrieveURL(data.email)
-              user <- userService.create(user.copy(avatarUrl = avatar), authInfo, request.messages.apply("default.document.title", user.name))
-              authToken <- authTokenService.create(user.userId)
-            } yield {
-              val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
-              mailerClient.send(Email(
-                subject = Messages("email.sign.up.subject"),
-                from = Messages("email.from"),
-                to = Seq(data.email),
-                bodyText = Some(views.txt.emails.signUp(user, url).body),
-                bodyHtml = Some(views.html.emails.signUp(user, url).body)
-              ))
+            val Allowed = Seq("molikto@gmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com")
+            if (Allowed.contains(data.email)) {
+              val user0 = User(
+                userId = UUID.randomUUID(),
+                createdTime = 0,
+                name = data.name,
+                email = data.email,
+                avatarUrl = None,
+                activated = true, // TODO remove the allowed stuff and actually send email
+                loginInfo = loginInfo
+              )
+              for {
+                avatar <- avatarService.retrieveURL(data.email)
+                user <- userService.create(user0.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
+                authToken <- authTokenService.create(user.userId)
+              } yield {
+                val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
+                mailerClient.send(Email(
+                  subject = Messages("email.sign.up.subject"),
+                  from = Messages("email.from"),
+                  to = Seq(data.email),
+                  bodyText = Some(views.txt.emails.signUp(user, url).body),
+                  bodyHtml = Some(views.html.emails.signUp(user, url).body)
+                ))
 
-              silhouette.env.eventBus.publish(SignUpEvent(user, request))
-              result
+                silhouette.env.eventBus.publish(SignUpEvent(user, request))
+                result
+              }
+            } else {
+              Future.successful(Redirect(routes.SignUpController.view()).flashing("error" -> "We are currently in closed-alpha and only whitelisted user can signup."))
             }
         }
       }

@@ -15,6 +15,7 @@ import utils.auth.{DefaultEnv, HasPermission}
 import model._
 import api._
 import boopickle.BasicPicklers
+import play.{Environment, Play}
 import play.api.libs.json.{JsSuccess, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,7 +45,7 @@ class DocumentsController @Inject() (
     import model._
     Json.fromJson[model.data.Node](Json.parse(new FileInputStream(request.body.file("file").get.ref.file))) match {
       case JsSuccess(node, path) =>
-        docs.create(request.identity.userId, node).map(_ =>
+        docs.create(request.identity.userId, node.regenerateIds()).map(_ =>
           Redirect(routes.DocumentsController.home()).flashing("success" -> "Success!"))
       case _ =>
         ???

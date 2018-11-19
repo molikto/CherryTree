@@ -1,5 +1,7 @@
 package model.data
 
+import java.util.UUID
+
 import model.range.IntRange
 import model.{data, mode}
 import play.api.libs.json.{Format, Json}
@@ -73,6 +75,8 @@ object CodeType {
 }
 
 abstract sealed class Content {
+  def mapBy(map: Map[UUID, UUID]): Content
+
   def defines(hash: Text.HashTag): Option[IntRange] = None
 
 
@@ -117,6 +121,8 @@ object Content extends DataObject[Content] {
     override def size: Int = unicode.size
 
     override def search(a: Search, startPos: Int): Option[IntRange] = None
+
+    override def mapBy(map: Map[UUID, UUID]): Content = this
   }
 
   object Code {
@@ -136,6 +142,8 @@ object Content extends DataObject[Content] {
     override def search(a: Search, startPos: Int): Option[IntRange] = content.search(a, startPos)
 
     override def defines(hash: Text.HashTag): Option[IntRange] = content.defines(hash)
+
+    override def mapBy(map: Map[UUID, UUID]): Content = Rich(content.mapBy(map))
   }
 
   object Rich {
