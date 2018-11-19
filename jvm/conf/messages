@@ -4,14 +4,14 @@ invalid.credentials = Invalid credentials!
 access.denied = Access denied!
 could.not.authenticate = Could not authenticate with social provider! Please try again!
 
-app.name = cherrytree.app
-home.title = Home - cherrytree.app
-sign.up.title = Sign Up - cherrytree.app
-sign.in.title = Sign In - cherrytree.app
-forgot.password.title = Forgot Password - cherrytree.app
-reset.password.title = Reset Password - cherrytree.app
-change.password.title = Change Password - cherrytree.app
-activate.account.title = Activate Account - cherrytree.app
+app.name = CherryTree
+home.title = Home - CherryTree
+sign.up.title = Sign Up - CherryTree
+sign.in.title = Sign In - CherryTree
+forgot.password.title = Forgot Password - CherryTree
+reset.password.title = Reset Password - CherryTree
+change.password.title = Change Password - CherryTree
+activate.account.title = Activate Account - CherryTree
 
 toggle.navigation = Toggle navigation
 welcome.signed.in = Welcome, you are now signed in!
@@ -94,7 +94,7 @@ new.document = New document
 # Emails
 ##########
 
-email.from = cherrytree.app <no-reply@cherrytree.app>
+email.from = CherryTree <no-reply@cherrytree.app>
 
 # Sign Up
 email.sign.up.subject = Welcome
