@@ -17,3 +17,4 @@ dist
 /RUNNING_PID
 /.settings
 /bin
+dump_local.sh
