@@ -1,5 +1,7 @@
 package model.data
 
+import java.util.UUID
+
 import model.cursor
 import model.data.SpecialChar.{Delimitation, DelimitationType}
 import model.range.IntRange
@@ -11,6 +13,8 @@ import search.{Search, SearchOccurrence}
 
 
 abstract sealed class Text {
+  def mapBy(map: Map[UUID, UUID]): Text
+
   def toScalaTags: Frag
   def toPlainScalaTags: Frag
 
@@ -160,6 +164,8 @@ object Text {
         Iterator.single(Atom.Marked(myCursor, myIndex, this))
       else Iterator.empty
     }
+
+    override def mapBy(map: Map[UUID, UUID]): Text = this
   }
 
   def size(content: Seq[Text]): Int = content.map(_.size).sum
@@ -255,6 +261,12 @@ object Text {
   }
 
   sealed trait Formatted extends DelimitedT[Seq[Text]] {
+
+    override def mapBy(map: Map[UUID, UUID]): Text = copy(content.map(_.mapBy(map)))
+
+    def copy(cs: Seq[Text]): Formatted
+
+
     def content: Seq[Text]
     def delimitation: SpecialChar.Delimitation
     lazy val contentSize: Int = Text.size(content)
@@ -326,15 +338,21 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Emphasis
 
     override def toScalaTags: Frag = em(Text.toScalaTags(content))
+
+    override def copy(cs: Seq[Text]): Formatted = Emphasis(content)
   }
   case class Strong(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Strong
     override def toScalaTags: Frag = strong(Text.toScalaTags(content))
+
+    override def copy(cs: Seq[Text]): Formatted = Strong(content)
   }
 
   case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.StrikeThrough
     override def toScalaTags: Frag = del(Text.toScalaTags(content))
+
+    override def copy(cs: Seq[Text]): Formatted = StrikeThrough(content)
   }
   case class Link(content: Seq[Text], url: Unicode, tit: Unicode = Unicode.empty) extends Formatted {
     def isNodeRef: Boolean = url.str.startsWith(Node.NodeRefScheme)
@@ -346,6 +364,13 @@ object Text {
       if (i == UrlAttribute) url
       else if (i == TitleAttribute) tit
       else throw new IllegalArgumentException("Not here")
+
+    override def copy(cs: Seq[Text]): Formatted = StrikeThrough(content)
+
+    override def mapBy(map: Map[UUID, UUID]): Text = Link(content.map(_.mapBy(map)), Node.matchNodeRef(url.str) match {
+      case Some(uuid) => Unicode(Node.nodRef(map.getOrElse(uuid, uuid)))
+      case None => url
+    }, tit)
   }
 
   case class HashTag(content: Seq[Text]) extends Formatted {
@@ -357,6 +382,8 @@ object Text {
 
     override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
       content == Seq(Plain(p))
+
+    override def copy(cs: Seq[Text]): Formatted = HashTag(content)
   }
 
   case class HashDef(content: Seq[Text]) extends Formatted {
@@ -368,6 +395,8 @@ object Text {
 
     override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
       content == Seq(Plain(p))
+
+    override def copy(cs: Seq[Text]): Formatted = HashDef(content)
   }
 
   sealed trait Coded extends DelimitedT[Unicode] {
@@ -375,7 +404,11 @@ object Text {
     def delimitation: SpecialChar.Delimitation
     override def contentSize: Int = content.size
 
+
+
     //override def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else if (cur == Se
+
+    override def mapBy(map: Map[UUID, UUID]): Text = this
 
     override private[model] def serializeContent(buffer: EncodedSeqWriter): Unit = {
       buffer.put(content)
@@ -468,6 +501,7 @@ object Text {
     override def toScalaTags: Frag = img(src := url.str, title := tit.str)
 
     override def toPlainScalaTags: Frag = raw(url.str)
+
   }
 
 
@@ -491,6 +525,8 @@ object Text {
 
     override def after(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.after(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
     override def before(myCursor: model.cursor.Node, myIndex: Int, i: Int): Iterator[Atom] = unicode.before(i).map(u => Atom.PlainGrapheme(myCursor, myIndex + u._1, u._1, u._2, this))
+
+    override def mapBy(map: Map[UUID, UUID]): Text = this
 
   }
 

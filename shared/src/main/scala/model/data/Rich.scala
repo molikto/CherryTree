@@ -1,5 +1,7 @@
 package model.data
 
+import java.util.UUID
+
 import boopickle._
 import model.range.IntRange
 import model.cursor
@@ -15,6 +17,10 @@ import scala.util.Random
   * we currently expect all our rich object is normalized??
   */
 case class Rich(text: Seq[Text]) {
+  def mapBy(map: Map[UUID, UUID]): Rich = {
+    Rich(text.map(_.mapBy(map)))
+  }
+
 
   def allTexts: Iterator[(Text, Int)] = new Iterator[(Text, Int)] {
     var start = 0

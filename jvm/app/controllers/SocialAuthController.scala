@@ -46,7 +46,7 @@ class SocialAuthController @Inject() (
             profile <- p.retrieveProfile(authInfo)
             user <- {
               val obj = createUser(profile)
-              userService.create(obj, authInfo, request.messages.apply("default.document.title", obj.name))
+              userService.create(obj, authInfo, userService.newUserDocument())
             }
             authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
             value <- silhouette.env.authenticatorService.init(authenticator)

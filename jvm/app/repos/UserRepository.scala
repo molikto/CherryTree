@@ -16,15 +16,28 @@ import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json}
 import model._
 import api._
+import play.api.libs.json.{Json, JsSuccess}
 
 
 @Singleton
 class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
   (implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository with DatabaseAccessing {
 
+
+  def newUserDocument(): model.data.Node = initDocument.regenerateIds()
+
+  private val initDocument = {
+    val temp = getClass.getResourceAsStream("docinit.json")
+    import model._
+    Json.fromJson[model.data.Node](Json.parse(temp)) match {
+      case JsSuccess(node, path) =>
+        node
+      case _ =>
+        model.data.Node.create("New document")
+    }
+  }
 
   import utils.MyPostgresProfile.plainApi._
 
@@ -37,12 +50,11 @@ class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigPr
   def retrieve(loginInfo: LoginInfo): Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where provider_id = ${loginInfo.providerID} and provider_key = ${loginInfo.providerKey}".as[User].headOption)
 
-  def create(u: User, authInfo: AuthInfo, documentTitle: String): Future[User] = {
+  def create(u: User, authInfo: AuthInfo, initDocument: model.data.Node): Future[User] = {
     val time = System.currentTimeMillis()
     val createUser =
       sqlu"insert into users values (${u.userId}, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
-    val node = model.data.Node.create(documentTitle)
-    val documentQuery = createDocumentQuery(u.userId, node, time)
+    val documentQuery = createDocumentQuery(u.userId, initDocument, time)
     db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u)
   }
 

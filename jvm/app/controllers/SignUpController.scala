@@ -12,6 +12,7 @@ import forms.SignUpForm
 import javax.inject.Inject
 import models.User
 import play.api.i18n.{I18nSupport, Messages}
+import play.api.libs.json.{JsSuccess, Json}
 import play.api.libs.mailer.{Email, MailerClient}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request}
 import repos.{AuthTokenRepository, UserRepository}
@@ -58,7 +59,7 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val Allowed = Seq("molikto@gmail.com")
+            val Allowed = Seq("molikto@gmail.com", "hotterd@gmail.com")
             if (Allowed.contains(data.email)) {
               val user = User(
                 userId = UUID.randomUUID(),
@@ -71,7 +72,7 @@ class SignUpController @Inject() (
               )
               for {
                 avatar <- avatarService.retrieveURL(data.email)
-                user <- userService.create(user.copy(avatarUrl = avatar), authInfo, request.messages.apply("default.document.title", user.name))
+                user <- userService.create(user.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
                 authToken <- authTokenService.create(user.userId)
               } yield {
                 val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
