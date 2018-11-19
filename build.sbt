@@ -15,6 +15,8 @@ lazy val server = (project in file("jvm")).settings(
   routesImport += "utils.route.Binders._",
   // https://github.com/playframework/twirl/issues/105
   TwirlKeys.templateImports := Seq(),
+  sources in (Compile, doc) := Seq.empty,
+  publishArtifact in (Compile, packageDoc) := false
 ).enablePlugins(PlayScala, WebScalaJSBundlerPlugin).dependsOn(sharedJvm)
 
 lazy val client = (project in file("js")).settings(

@@ -9,16 +9,16 @@ GET     /messages                            controllers.ApplicationController.m
 
 GET         /                                controllers.ApplicationController.default
 GET         /index                           controllers.ApplicationController.index
-GET         /sign_out                        controllers.ApplicationController.signOut
+GET         /signout                        controllers.ApplicationController.signOut
 GET         /authenticate/:provider          controllers.SocialAuthController.authenticate(provider)
 
-GET         /sign_up                          controllers.SignUpController.view
-POST        /sign_up                          controllers.SignUpController.submit
+GET         /signup                          controllers.SignUpController.view
+POST        /signup                          controllers.SignUpController.submit
 
 GET         /profile                          controllers.ProfileController.index
 
-GET         /sign_in                          controllers.SignInController.view
-POST        /sign_in                          controllers.SignInController.submit
+GET         /signin                          controllers.SignInController.view
+POST        /signin                          controllers.SignInController.submit
 
 GET         /password/forgot                 controllers.ForgotPasswordController.view
 POST        /password/forgot                 controllers.ForgotPasswordController.submit
@@ -40,6 +40,8 @@ POST        /documents/create                controllers.DocumentsController.cre
 POST        /documents/upload/json           controllers.DocumentsController.json
 + nocsrf
 POST        /document/:id/delete             controllers.DocumentsController.delete(id: java.util.UUID)
+# + nocsrf
+# POST        /document/:id/share              controllers.DocumentsController.share(id: java.util.UUID)
 
 GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)
 GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)
@@ -52,4 +54,8 @@ GET         /document/:id/node/:nid/info     controllers.DocumentController.node
 
 # Prefix must match `play.assets.urlPrefix`
 GET  /assets/*file  controllers.Assets.versioned(path="/public", file: Asset)
+
+GET     /cert                                 io.github.valters.acme.AcmeController.cert
+GET     /.well-known/acme-challenge/:token    io.github.valters.acme.AcmeController.challenge(token: String)
+
 

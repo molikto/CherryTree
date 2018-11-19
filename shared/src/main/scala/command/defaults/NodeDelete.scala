@@ -30,7 +30,7 @@ class NodeDelete(settings: Settings) extends CommandCategory(settings, "node: de
 
   new Command {
     override val description: String = "delete selected nodes" + message
-    override val defaultKeys: Seq[KeySeq] = Seq("d", "D", "x", "X", Delete)
+    override val defaultKeys: Seq[KeySeq] = if (settings.enableModal) Seq("d", "D", "x", "X") else Seq(Backspace)
     override def available(a: DocState): Boolean = a.isNodeVisual
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {

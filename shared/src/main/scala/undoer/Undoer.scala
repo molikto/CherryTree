@@ -43,8 +43,9 @@ trait UndoerInterface {
 private[undoer] class HistoryItem(
   var trans: transaction.Node,
   var docBefore: DocState,
+  var localModeAfter: model.mode.Node,
   val ty: Type,
-  var undoer: (Seq[transaction.Node], Int) = null
+  var undoer: (Seq[transaction.Node], Int) = null,
 ) {
 
   def reverse: transaction.Node = ot.Node.reverse(docBefore.node, trans)
@@ -87,7 +88,7 @@ trait Undoer extends UndoerInterface {
     history_.remove(from, history_.size - from)
     // it is ok to discard all history with remote
     if (items.nonEmpty) {
-      append(new HistoryItem(items.flatten, null, Remote, null))
+      append(new HistoryItem(items.flatten, null, null, Remote, null))
     }
   }
 
@@ -211,7 +212,7 @@ trait Undoer extends UndoerInterface {
   // local change consists of local, undo, redo
   def trackUndoerChange(docBefore: DocState, docAfter: DocState, trans: transaction.Node, ty: Type, isExtra: Boolean, mergeWithPreviousLocal: Boolean): Unit = {
     def putIn(): Unit = {
-      val newItem = new HistoryItem(trans, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), ty)
+      val newItem = new HistoryItem(trans, docBefore.copy(mode0 = convertMode(docBefore.node, docBefore.mode0)), convertMode(docAfter.node, docAfter.mode0), ty)
       append(newItem)
     }
     ty match {
@@ -243,6 +244,11 @@ trait Undoer extends UndoerInterface {
             compatHistory(true)
           } else {
             previousIsExtra = true
+          }
+        } else {
+          lastOption match {
+            case Some(a) if a.ty == Local => a.trans = a.trans ++ trans
+            case _ =>
           }
         }
     }

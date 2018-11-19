@@ -24,9 +24,12 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
+
     <logger name="play" level="INFO" />
     <logger name="application" level="DEBUG" />
     <logger name="akka.actor" level="INFO" />
+    <logger name="io.github.valters.acme.AcmeController" level="DEBUG" />
+    <logger name="io.github.valters.acme.AcmeJson" level="DEBUG" />
     <!--<logger name="slick.jdbc" level="DEBUG"/>-->
 
     <!-- Off these ones as they are annoying, and anyway we manage configuration ourselves -->
