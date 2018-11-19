@@ -17,4 +17,11 @@ dist
 /RUNNING_PID
 /.settings
 /bin
+
+# local helpers
 dump_local.sh
+
+# production files
+jvm/conf/application.prod.conf
+production.sh
+deploy.sh
