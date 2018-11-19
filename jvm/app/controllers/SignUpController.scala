@@ -59,33 +59,38 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val Allowed = Seq("molikto@gmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com")
+            val Allowed = Seq("molikto@gmail.com","nirrrh@gmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com", "dage1357@gmail.com")
             if (Allowed.contains(data.email)) {
-              val user0 = User(
-                userId = UUID.randomUUID(),
-                createdTime = 0,
-                name = data.name,
-                email = data.email,
-                avatarUrl = None,
-                activated = true, // TODO remove the allowed stuff and actually send email
-                loginInfo = loginInfo
-              )
-              for {
-                avatar <- avatarService.retrieveURL(data.email)
-                user <- userService.create(user0.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
-                authToken <- authTokenService.create(user.userId)
-              } yield {
-                val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
-                mailerClient.send(Email(
-                  subject = Messages("email.sign.up.subject"),
-                  from = Messages("email.from"),
-                  to = Seq(data.email),
-                  bodyText = Some(views.txt.emails.signUp(user, url).body),
-                  bodyHtml = Some(views.html.emails.signUp(user, url).body)
-                ))
+              userService.retrieve(data.email).flatMap {
+                case Some(u) =>
+                  Future.successful(Redirect(routes.SignInController.view()).flashing("error" -> Messages("email.taken")))
+                case None =>
+                  val user0 = User(
+                    userId = UUID.randomUUID(),
+                    createdTime = 0,
+                    name = data.name,
+                    email = data.email,
+                    avatarUrl = None,
+                    activated = true, // TODO remove the allowed stuff and actually send email
+                    loginInfo = loginInfo
+                  )
+                  for {
+                    avatar <- avatarService.retrieveURL(data.email)
+                    user <- userService.create(user0.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
+                    authToken <- authTokenService.create(user.userId)
+                  } yield {
+                    val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()
+                    mailerClient.send(Email(
+                      subject = Messages("email.sign.up.subject"),
+                      from = Messages("email.from"),
+                      to = Seq(data.email),
+                      bodyText = Some(views.txt.emails.signUp(user, url).body),
+                      bodyHtml = Some(views.html.emails.signUp(user, url).body)
+                    ))
 
-                silhouette.env.eventBus.publish(SignUpEvent(user, request))
-                result
+                    silhouette.env.eventBus.publish(SignUpEvent(user, request))
+                    result
+                  }
               }
             } else {
               Future.successful(Redirect(routes.SignUpController.view()).flashing("error" -> "We are currently in closed-alpha and only whitelisted user can signup."))

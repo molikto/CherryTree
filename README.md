@@ -1,4 +1,4 @@
-# Cherry Tree
+# CherryTree
 
 
 compile/run/deploy as a standard Play app

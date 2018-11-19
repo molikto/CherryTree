@@ -46,6 +46,9 @@ class UserRepository @Inject() (
   private implicit val userDbPickler: GetResult[User] = GetResult(r => User(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, LoginInfo(r.<<, r.<<)))
   private val AllUserColumns = "user_id, created_time, name_, email, avatar_url, activated, provider_id, provider_key"
 
+  def retrieve(email: String): Future[Option[User]] =
+    db.run(sql"select #$AllUserColumns from users where email = $email".as[User].headOption)
+
   def retrieve(id: UUID) : Future[Option[User]] =
     db.run(sql"select #$AllUserColumns from users where user_id = $id".as[User].headOption)
 

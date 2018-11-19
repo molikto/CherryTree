@@ -42,19 +42,26 @@ class SocialAuthController @Inject() (
       case Some(p: SocialProvider with CommonSocialProfileBuilder) =>
         p.authenticate().flatMap {
           case Left(result) => Future.successful(result)
-          case Right(authInfo) => for {
-            profile <- p.retrieveProfile(authInfo)
-            user <- {
-              val obj = createUser(profile)
-              userService.create(obj, authInfo, userService.newUserDocument())
-            }
-            authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
-            value <- silhouette.env.authenticatorService.init(authenticator)
-            result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.default()))
-          } yield {
-            silhouette.env.eventBus.publish(LoginEvent(user, request))
-            result
-          }
+          case Right(authInfo) =>
+            p.retrieveProfile(authInfo).flatMap(profile => {
+              userService.retrieve(profile.email.get).flatMap {
+                case Some(exsitingUser) if exsitingUser.loginInfo != profile.loginInfo =>
+                  Future.successful(Redirect(routes.SignInController.view()).flashing("error" -> Messages("email.taken")))
+                case _ =>
+                  for {
+                    user <- {
+                      val obj = createUser(profile)
+                      userService.create(obj, authInfo, userService.newUserDocument())
+                    }
+                    authenticator <- silhouette.env.authenticatorService.create(profile.loginInfo)
+                    value <- silhouette.env.authenticatorService.init(authenticator)
+                    result <- silhouette.env.authenticatorService.embed(value, Redirect(routes.ApplicationController.default()))
+                  } yield {
+                    silhouette.env.eventBus.publish(LoginEvent(user, request))
+                    result
+                  }
+              }
+            })
         }
       case _ => Future.failed(new ProviderException(s"Cannot authenticate with unexpected social provider $provider"))
     }).recover {
