@@ -4,14 +4,14 @@ invalid.credentials = Invalid credentials!
 access.denied = Access denied!
 could.not.authenticate = Could not authenticate with social provider! Please try again!
 
-app.name = Codename: Cherry Tree
-home.title = Home - Codename: Cherry Tree
-sign.up.title = Sign Up - Codename: Cherry Tree
-sign.in.title = Sign In - Codename: Cherry Tree
-forgot.password.title = Forgot Password - Codename: Cherry Tree
-reset.password.title = Reset Password - Codename: Cherry Tree
-change.password.title = Change Password - Codename: Cherry Tree
-activate.account.title = Activate Account - Codename: Cherry Tree
+app.name = cherrytree.app
+home.title = Home - cherrytree.app
+sign.up.title = Sign Up - cherrytree.app
+sign.in.title = Sign In - cherrytree.app
+forgot.password.title = Forgot Password - cherrytree.app
+reset.password.title = Reset Password - cherrytree.app
+change.password.title = Change Password - cherrytree.app
+activate.account.title = Activate Account - cherrytree.app
 
 toggle.navigation = Toggle navigation
 welcome.signed.in = Welcome, you are now signed in!
@@ -94,7 +94,7 @@ new.document = New document
 # Emails
 ##########
 
-email.from = Silhouette <noreply@mohiva.com>
+email.from = cherrytree.app <no-reply@cherrytree.app>
 
 # Sign Up
 email.sign.up.subject = Welcome
