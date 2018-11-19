@@ -139,9 +139,10 @@ class UserModule extends AbstractModule with ScalaModule {
 
   @Provides
   def provideAuthInfoRepository(
+    env: play.api.Environment,
     dbConfigProvider: DatabaseConfigProvider
     ): AuthInfoRepository = {
-    new UserRepository(dbConfigProvider)
+    new UserRepository(env, dbConfigProvider)
   }
 
   @Provides

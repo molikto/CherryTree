@@ -59,20 +59,20 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val Allowed = Seq("molikto@gmail.com", "hotterd@gmail.com")
+            val Allowed = Seq("molikto@gmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com")
             if (Allowed.contains(data.email)) {
-              val user = User(
+              val user0 = User(
                 userId = UUID.randomUUID(),
                 createdTime = 0,
                 name = data.name,
                 email = data.email,
                 avatarUrl = None,
-                activated = false,
+                activated = true, // TODO remove the allowed stuff and actually send email
                 loginInfo = loginInfo
               )
               for {
                 avatar <- avatarService.retrieveURL(data.email)
-                user <- userService.create(user.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
+                user <- userService.create(user0.copy(avatarUrl = avatar), authInfo, userService.newUserDocument())
                 authToken <- authTokenService.create(user.userId)
               } yield {
                 val url = routes.ActivateAccountController.activate(authToken.id).absoluteURL()

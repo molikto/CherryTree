@@ -18,18 +18,20 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 import model._
 import api._
-import play.api.libs.json.{Json, JsSuccess}
+import play.api.Environment
+import play.api.libs.json.{JsSuccess, Json}
 
 
 @Singleton
-class UserRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
+class UserRepository @Inject() (
+  env: Environment, protected val dbConfigProvider: DatabaseConfigProvider)
   (implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository with DatabaseAccessing {
 
 
   def newUserDocument(): model.data.Node = initDocument.regenerateIds()
 
-  private val initDocument = {
-    val temp = getClass.getResourceAsStream("docinit.json")
+  private lazy val initDocument = {
+    val temp = env.classLoader.getResourceAsStream("docinit.json")
     import model._
     Json.fromJson[model.data.Node](Json.parse(temp)) match {
       case JsSuccess(node, path) =>
