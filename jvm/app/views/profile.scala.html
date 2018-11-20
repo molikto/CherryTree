@@ -5,29 +5,29 @@
 @(user: models.User)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
 @main(messages("home.title"), Some(user)) {
-    <div class="profile col-md-6 mx-auto">
-        <div class="row">
-            <hr class="col-md-12" />
-            <h4 class="col-md-6">Profile</h4>
-            <div class="col-md-6 text-right">
-                <div>
-                    <img src="@user.avatarUrl.getOrElse(assets.path("images/silhouette.png"))" height="120px" width="120px" />
-                    <!--<div class="fileinput fileinput-new" data-provides="fileinput">-->
-                        <!--<span class="btn btn-default btn-file"><span class="fileinput-new">Change profile</span><input type="file" name="..."></span>-->
-                    <!--</div>-->
-                </div>
-            </div>
-            <hr class="col-md-12" />
+  <div class="profile col-md-6 mx-auto">
+    <div class="row">
+      <hr class="col-md-12" />
+      <h4 class="col-md-6">Profile</h4>
+      <div class="col-md-6 text-right">
+        <div>
+          <img src="@user.avatarUrl.getOrElse(assets.path("images/silhouette.png"))" height="120px" width="120px" />
+            <!--<div class="fileinput fileinput-new" data-provides="fileinput">-->
+            <!--<span class="btn btn-default btn-file"><span class="fileinput-new">Change profile</span><input type="file" name="..."></span>-->
+            <!--</div>-->
         </div>
-        <div class="row profile-data">
-            <div class="col-md-12">
-                <div class="row">
-                    <p class="col-md-6"><strong>@messages("name"):</strong></p><p class="col-md-6">@user.name</p>
-                </div>
-                <div class="row">
-                    <p class="col-md-6"><strong>@messages("email"):</strong></p><p class="col-md-6">@user.email</p>
-                </div>
-            </div>
-        </div>
+      </div>
+      <hr class="col-md-12" />
     </div>
+    <div class="row profile-data">
+      <div class="col-md-12">
+        <div class="row">
+          <p class="col-md-6"><strong>@messages("name"):</strong></p><p class="col-md-6">@user.name</p>
+        </div>
+        <div class="row">
+          <p class="col-md-6"><strong>@messages("email"):</strong></p><p class="col-md-6">@user.email</p>
+        </div>
+      </div>
+    </div>
+  </div>
 }

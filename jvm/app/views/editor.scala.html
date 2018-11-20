@@ -8,32 +8,32 @@
 
 <!DOCTYPE html>
 <html>
-<head>
-  <title>@messages("app.name")</title>
+  <head>
+    <title>@messages("app.name")</title>
 
-  @headersShared()
+    @headersShared()
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/codemirror.min.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/theme/oceanic-next.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/runmode/runmode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/selection/active-line.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/edit/matchbrackets.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/search/searchcursor.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/javascript/javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/htmlembedded/htmlembedded.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/stex/stex.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/theme/oceanic-next.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/runmode/runmode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/htmlembedded/htmlembedded.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/stex/stex.min.js"></script>
 
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/keymap/vim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/keymap/vim.min.js"></script>
 
-  <link rel="stylesheet" href="@assets.path("styles/editor.css")"/>
-</head>
-<body class="ct-global-body">
-<div class="ct-global-div" id="editor" data-document-id="@documentId" data-node-id="@nodeId.map(_.toString()).getOrElse("")">
+    <link rel="stylesheet" href="@assets.path("styles/editor.css")"/>
+  </head>
+  <body class="ct-global-body">
+    <div class="ct-global-div" id="editor" data-document-id="@documentId" data-node-id="@nodeId.map(_.toString()).getOrElse("")">
 
-</div>
-@jsBundle()
-<script src="@assets.path("javascripts/editor.js")"></script>
-</body>
+    </div>
+    @jsBundle()
+    <script src="@assets.path("javascripts/editor.js")"></script>
+  </body>
 </html>

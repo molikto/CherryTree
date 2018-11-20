@@ -4,8 +4,8 @@
 @(user: models.User, url: String)(implicit messages: Messages)
 
 <html>
-    <body>
-        <p>@messages("email.activate.account.hello", user.name)</p>
-        <p>@Html(messages("email.activate.account.html.text", url))</p>
-    </body>
+  <body>
+    <p>@messages("email.activate.account.hello", user.name)</p>
+    <p>@Html(messages("email.activate.account.html.text", url))</p>
+  </body>
 </html>

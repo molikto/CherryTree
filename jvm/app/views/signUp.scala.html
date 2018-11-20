@@ -6,24 +6,26 @@
 
 @(signUpForm: Form[Data])(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
-@implicitFieldConstructor = @{ b4.vertical.fieldConstructor() }
+@implicitFieldConstructor = @{
+  b4.vertical.fieldConstructor()
+}
 
 @main(messages("sign.up.title")) {
-    <fieldset class="col-md-6 mx-auto">
-        <legend>@messages("sign.up.account")</legend>
-        @helper.form(action = controllers.routes.SignUpController.submit()) {
-            @helper.CSRF.formField
-            @b4.text(signUpForm("name"), '_hiddenLabel -> messages("name"), 'placeholder -> messages("name"), 'class -> "form-control input-lg")
-            @b4.email(signUpForm("email"), '_hiddenLabel -> messages("email"), 'placeholder -> messages("email"), 'class -> "form-control input-lg")
-            @passwordStrength(signUpForm("password"), '_hiddenLabel -> messages("password"), 'placeholder -> messages("password"), 'class -> "form-control input-lg")
-            <div class="form-group">
-                <div>
-                    <button id="submit" type="submit" value="submit" class="btn btn-lg btn-primary btn-block">@messages("sign.up")</button>
-                </div>
-            </div>
-            <div class="sign-in-now">
-                <p>@messages("already.a.member") <a href="@controllers.routes.SignInController.view">@messages("sign.in.now")</a></p>
-            </div>
-        }
-    </fieldset>
+  <fieldset class="col-md-6 mx-auto">
+    <legend>@messages("sign.up.account")</legend>
+    @helper.form(action = controllers.routes.SignUpController.submit()) {
+      @helper.CSRF.formField
+      @b4.text(signUpForm("name"), '_hiddenLabel -> messages("name"), 'placeholder -> messages("name"), 'class -> "form-control input-lg")
+      @b4.email(signUpForm("email"), '_hiddenLabel -> messages("email"), 'placeholder -> messages("email"), 'class -> "form-control input-lg")
+      @passwordStrength(signUpForm("password"), '_hiddenLabel -> messages("password"), 'placeholder -> messages("password"), 'class -> "form-control input-lg")
+      <div class="form-group">
+        <div>
+          <button id="submit" type="submit" value="submit" class="btn btn-lg btn-primary btn-block">@messages("sign.up")</button>
+        </div>
+      </div>
+      <div class="sign-in-now">
+        <p>@messages("already.a.member") <a href="@controllers.routes.SignInController.view">@messages("sign.in.now")</a></p>
+      </div>
+    }
+  </fieldset>
 }
