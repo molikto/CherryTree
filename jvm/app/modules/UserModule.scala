@@ -34,7 +34,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.openid.OpenIdClient
 import play.api.libs.ws.WSClient
 import play.api.mvc.{Cookie, CookieHeaderEncoding}
-import utils.InitPlatform
+import utils.{InitPlatform, ProfileImageService}
 import utils.auth.{CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -163,7 +163,7 @@ class UserModule extends AbstractModule with ScalaModule {
   }
 
   @Provides
-  def provideAvatarService(httpLayer: HTTPLayer): AvatarService = new GravatarService(httpLayer)
+  def provideAvatarService(httpLayer: HTTPLayer): AvatarService = new ProfileImageService(httpLayer)
 
   @Provides
   def provideOAuth1TokenSecretProvider(

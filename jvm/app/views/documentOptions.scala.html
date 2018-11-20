@@ -29,14 +29,17 @@
             <p>@c._1.name</p>
             <p>@c._1.email</p>
             <p>permission level: @c._2</p>
-            @helper.form(action = controllers.routes.DocumentsController.deleteCollabrator(res.id), 'autocomplete -> "off") {
-                @helper.CSRF.formField
-                <div class="form-group">
-                    <div>
-                        <input type="email" name="email" value="@c._1.email" hidden>
-                        <button id="submit" type="submit" value="submit" class="btn btn-primary btn-block">Delete</button>
+
+            @if(res.permissionLevel >= PermissionLevel.Admin) {
+                @helper.form(action = controllers.routes.DocumentsController.deleteCollabrator(res.id), 'autocomplete -> "off") {
+                    @helper.CSRF.formField
+                    <div class="form-group">
+                        <div>
+                            <input type="email" name="email" value="@c._1.email" hidden>
+                            <button id="submit" type="submit" value="submit" class="btn btn-primary btn-block">Delete</button>
+                        </div>
                     </div>
-                </div>
+                }
             }
         </div>
     }
