@@ -531,7 +531,8 @@
     padding-right: 4px;
     padding-top: 2px;
     padding-bottom: 2px;
-    font-size: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
 }
 
 
@@ -679,7 +680,6 @@ block selection
     font-style: normal;
     font-weight:normal;
     font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-    font-size: 85%;
     color: #f0c5ce;
 }
 
@@ -743,7 +743,7 @@ block selection
 
 .ct-warning-inline {
     padding: .2rem .4rem;
-    font-size: 85%;
+    font-size: 95%;
     color: #856404;
     background-color: #FFF2CF;
     border-radius: .2rem;
@@ -757,7 +757,7 @@ block selection
 
 .ct-error-inline {
     padding: .2rem .4rem;
-    font-size: 85%;
+    font-size: 95%;
     color: #721c24;
     background-color: #EDCED1;
     vertical-align: baseline;

@@ -147,17 +147,17 @@ part that is in editor before, but extracted
 .ct-document-style {
   word-wrap: break-word;
   white-space: pre-wrap;
-        font-family: 'Gentium Book Basic', serif, sans-serif;
+        font-family: 'Merriweather', serif, sans-serif;
 }
 
 .ct-cg {
     font-style: normal;
     color: #636e83;
     font-weight:normal;
-        font-family: 'Gentium Book Basic', serif, sans-serif;
+        font-family: 'Merriweather', serif, sans-serif;
 }
 
 .ct-rich {
     margin-bottom: 0rem;
-    font-size: 22px;
+    font-size: 20px;
 }
