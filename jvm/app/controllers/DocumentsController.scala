@@ -82,7 +82,7 @@ class DocumentsController @Inject() (
 
   def createEmpty() = silhouette.SecuredAction.async { implicit request =>
     val node = model.data.Node.create(request.messages.apply("new.document"))
-    docs.create(request.identity.userId, node).map(_ => Redirect(routes.DocumentController.index(node.uuid)))
+    docs.create(request.identity.userId, node).map(_ => Redirect(routes.DocumentsController.documents()))
   }
 
   def importJson() = silhouette.SecuredAction.async(parse.multipartFormData) { implicit request =>

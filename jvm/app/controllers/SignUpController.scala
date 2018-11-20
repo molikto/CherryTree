@@ -59,7 +59,7 @@ class SignUpController @Inject() (
             Future.successful(result)
           case None =>
             val authInfo = passwordHasherRegistry.current.hash(data.password)
-            val Allowed = Seq("molikto@gmail.com","nirrrh@gmail.com", "wuthefwasthat@gmail.com", "revolution06@foxmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com", "dage1357@gmail.com")
+            val Allowed = Seq("molikto@gmail.com","nirrrh@gmail.com", "ooashi@gmail.com", "wuthefwasthat@gmail.com", "revolution06@foxmail.com", "wtf@gmail.com", "hotterd@gmail.com", "zhengt.cn@gmail.com", "ikenchina@gmail.com", "zhengxiao.cn@gmail.com", "hectorinsane@gmail.com", "dage1357@gmail.com")
             if (Allowed.contains(data.email)) {
               userService.retrieve(data.email).flatMap {
                 case Some(u) =>
