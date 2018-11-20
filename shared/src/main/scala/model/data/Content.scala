@@ -23,8 +23,8 @@ object SourceEditType {
     SourceEditType("Source: JavaScript", SourceCode("javascript")),
     SourceEditType("Source: Markdown", SourceCode("markdown")),
     SourceEditType("Source: Kotlin", SourceCode("kotlin")),
-    SourceEditType("LaTeX Macro", LaTeXMacro),
-    SourceEditType("Plain Text", PlainCodeType)) ++ SourceEditType.inlineOnly).sortBy(_.name) ++
+    SourceEditType("LaTeX macro", LaTeXMacro),
+    SourceEditType("Plain text", PlainCodeType)) ++ SourceEditType.inlineOnly).sortBy(_.name) ++
     Seq(SourceEditType("Undefined", EmptyCodeType))
 }
 
