@@ -32,16 +32,14 @@ POST        /password/change                 controllers.ChangePasswordControlle
 GET         /account/email/:email            controllers.ActivateAccountController.send(email: String)
 GET         /account/activate/:token         controllers.ActivateAccountController.activate(token: java.util.UUID)
 
-GET         /documents                       controllers.DocumentsController.home
-GET         /documents/json                  controllers.DocumentsController.documents
-+ nocsrf
-POST        /documents/create                controllers.DocumentsController.create
-+ nocsrf
-POST        /documents/upload/json           controllers.DocumentsController.json
-+ nocsrf
+GET         /documents                       controllers.DocumentsController.documents
+GET         /documents/create                controllers.DocumentsController.create
+POST        /documents/create/empty          controllers.DocumentsController.createEmpty
+POST        /documents/import/json           controllers.DocumentsController.importJson
 POST        /document/:id/delete             controllers.DocumentsController.delete(id: java.util.UUID)
-# + nocsrf
-# POST        /document/:id/share              controllers.DocumentsController.share(id: java.util.UUID)
+GET         /document/:id/options            controllers.DocumentsController.options(id: java.util.UUID)
+POST /document/:id/collabrators/add          controllers.DocumentsController.addCollabrator(id: java.util.UUID)
+POST /document/:id/collabrators/delete       controllers.DocumentsController.deleteCollabrator(id: java.util.UUID)
 
 GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)
 GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)

@@ -1,0 +1,93 @@
+@import play.api.i18n.Messages
+@import play.api.mvc.RequestHeader
+@import controllers.AssetsFinder
+@import api.ListResult
+@import play.twirl.api.Html
+@import api.PermissionLevel
+@import api.Collaborator
+
+@(user: models.User, res: ListResult, cs: Seq[(Collaborator, Int)])(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+
+@main("Options", Some(user)) {
+<div class="col-md-6 mx-auto " id="root">
+
+
+    <h2 class="ct-document-style document-list-title">@Html(res.title.toScalaTags(true).render)</h2>
+
+    <h3>Options</h3>
+    <hr/>
+
+    <h4>Bakcup</h4>
+    <a download role="button" class="btn btn-primary" href="@controllers.routes.DocumentController.json(res.id)">Bakcup as JSON</a>
+
+    <hr/>
+    <h4>Collabrators</h4>
+
+    <div class="list-group">
+    @for(c <- cs) {
+        <div class="list-group-item">
+            <p>@c._1.name</p>
+            <p>@c._1.email</p>
+            <p>permission level: @c._2</p>
+            @helper.form(action = controllers.routes.DocumentsController.deleteCollabrator(res.id), 'autocomplete -> "off") {
+                @helper.CSRF.formField
+                <div class="form-group">
+                    <div>
+                        <input type="email" name="email" value="@c._1.email" hidden>
+                        <button id="submit" type="submit" value="submit" class="btn btn-primary btn-block">Delete</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    </div>
+
+    @if(res.permissionLevel >= PermissionLevel.Admin) {
+
+
+        @helper.form(action = controllers.routes.DocumentsController.addCollabrator(res.id), 'autocomplete -> "off") {
+            @helper.CSRF.formField
+            <div class="form-group">
+                <div>
+                    <input type="email" id="email" name="email" value="" aria-labelledby="submit" class="form-control form-control input-lg" placeholder="Email">
+                    <button id="submit" type="submit" value="submit" class="btn btn-primary btn-block">Add</button>
+                </div>
+            </div>
+        }
+
+        <hr/>
+        <h4>Danger zone</h4>
+            <!-- Button trigger modal -->
+        <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#deleteDocumentModal">Delete document</button>
+
+
+            <!-- Modal -->
+        <div class="modal fade" id="deleteDocumentModal" tabindex="-1" role="dialog" aria-labelledby="deleteDocumentModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteDocumentModalLabel">Danger!</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this document? This operation cannot be undone!
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+
+                        @helper.form(action = controllers.routes.DocumentsController.delete(res.id)) {
+                            @helper.CSRF.formField
+                            <button type="submit" class="btn btn-outline-danger">Delete</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    }
+
+
+</div>
+}

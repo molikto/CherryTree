@@ -15,7 +15,7 @@ import search.{Search, SearchOccurrence}
 abstract sealed class Text {
   def mapBy(map: Map[UUID, UUID]): Text
 
-  def toScalaTags: Frag
+  def toScalaTags(safe: Boolean): Frag
   def toPlainScalaTags: Frag
 
   def apply(cur: model.cursor.Node): Text = if (cur.isEmpty) this else throw new IllegalArgumentException("not possible")
@@ -55,9 +55,9 @@ object Text {
   }
 
 
-  private[data] def toScalaTags(a: Seq[Text]): Frag = a.map(_.toScalaTags): Frag
+  private[data] def toScalaTags(a: Seq[Text], safe: Boolean): Frag = a.map(_.toScalaTags(safe)): Frag
   private[data] def toPlainScalaTags(a: Seq[Text]): Frag = a.map(_.toPlainScalaTags): Frag
-  def toHtml(a: Seq[Text]): String = toScalaTags(a).render
+  def toHtml(a: Seq[Text]): String = toScalaTags(a, false).render
   def toPlain(a: Seq[Text]): String = toPlainScalaTags(a).render
 
   def quickSearch(text: Seq[Text], p: Unicode, deli: SpecialKeySettings): Boolean = {
@@ -337,26 +337,26 @@ object Text {
   case class Emphasis(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Emphasis
 
-    override def toScalaTags: Frag = em(Text.toScalaTags(content))
+    override def toScalaTags(safe: Boolean): Frag = em(Text.toScalaTags(content, safe))
 
     override def copy(cs: Seq[Text]): Formatted = Emphasis(content)
   }
   case class Strong(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Strong
-    override def toScalaTags: Frag = strong(Text.toScalaTags(content))
+    override def toScalaTags(safe: Boolean): Frag = strong(Text.toScalaTags(content, safe))
 
     override def copy(cs: Seq[Text]): Formatted = Strong(content)
   }
 
   case class StrikeThrough(override val content: Seq[Text]) extends Formatted {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.StrikeThrough
-    override def toScalaTags: Frag = del(Text.toScalaTags(content))
+    override def toScalaTags(safe: Boolean): Frag = del(Text.toScalaTags(content, safe))
 
     override def copy(cs: Seq[Text]): Formatted = StrikeThrough(content)
   }
   case class Link(content: Seq[Text], url: Unicode, tit: Unicode = Unicode.empty) extends Formatted {
     def isNodeRef: Boolean = url.str.startsWith(Node.NodeRefScheme)
-    override def toScalaTags: Frag = a(Text.toScalaTags(content), href := url.str, title := tit.str)
+    override def toScalaTags(safe: Boolean): Frag = Text.toScalaTags(content, safe) : Frag
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content), s" (${url.str})": Frag)
 
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link
@@ -377,7 +377,7 @@ object Text {
     override def delimitation: Delimitation = SpecialChar.HashTag
 
     // LATER what should this be?
-    override def toScalaTags: Frag = a(Text.toScalaTags(content))
+    override def toScalaTags(safe: Boolean): Frag = if (safe) Text.toScalaTags(content, safe) else a(Text.toScalaTags(content, safe))
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
 
     override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
@@ -390,7 +390,7 @@ object Text {
     override def delimitation: Delimitation = SpecialChar.HashDef
 
     // LATER what should this be?
-    override def toScalaTags: Frag = a(Text.toScalaTags(content))
+    override def toScalaTags(safe: Boolean): Frag = if (safe) Text.toScalaTags(content, safe) else a(Text.toScalaTags(content, safe))
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
 
     override def quickSearchHash(p: Unicode, deli: SpecialKeySettings): Boolean =
@@ -468,22 +468,22 @@ object Text {
   case class Code(content: Unicode) extends Coded {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Code
 
-    override def toScalaTags: Frag = code(content.str)
+    override def toScalaTags(safe: Boolean): Frag = code(content.str)
     override def toPlainScalaTags: Frag = raw(content.str)
   }
   case class LaTeX(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.LaTeX
 
-    override def toScalaTags: Frag = code(cls := "latex", content.str)
+    override def toScalaTags(safe: Boolean): Frag = span(attr("data-latex") := content.str)
 
     override def toPlainScalaTags: Frag = raw(content.str)
   }
 
   case class HTML(content: Unicode) extends Coded with Atomic {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.HTML
-    override def toScalaTags: Frag = raw(content.str)
+    override def toScalaTags(safe: Boolean): Frag = if (safe) "" else raw(content.str)
 
-    override def toPlainScalaTags: Frag = toScalaTags
+    override def toPlainScalaTags: Frag = toScalaTags(false)
   }
 
 
@@ -498,7 +498,7 @@ object Text {
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Image
     override def attribute(i: SpecialChar): Unicode = if (i == UrlAttribute) url else if (i == TitleAttribute) tit else throw new IllegalArgumentException("Not here")
 
-    override def toScalaTags: Frag = img(src := url.str, title := tit.str)
+    override def toScalaTags(safe: Boolean): Frag = img(src := url.str, title := tit.str)
 
     override def toPlainScalaTags: Frag = raw(url.str)
 
@@ -512,7 +512,7 @@ object Text {
     assert(!unicode.isEmpty)
     override def size: Int = unicode.size
 
-    override def toScalaTags: Frag = unicode.str
+    override def toScalaTags(safe: Boolean): Frag = unicode.str
     override def toPlainScalaTags: Frag = raw(unicode.str)
 
     private[model] override def serialize(buffer: EncodedSeqWriter): Unit = {

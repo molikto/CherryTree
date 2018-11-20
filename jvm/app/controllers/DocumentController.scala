@@ -161,6 +161,13 @@ class DocumentController @Inject() (
     Ok(views.html.editor(documentId, Some(nid)))
   }
 
+  def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
+    implicit val timeout: Timeout = 1.minute
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
+      Ok(Json.toJson(response.node))
+    }
+  }
+
   def nodeInfo(documentId: UUID, nid: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     docs.nodeInfo(documentId, nid).map(a => Ok.sendEntity(toEntity(a)))
   }
@@ -169,13 +176,6 @@ class DocumentController @Inject() (
     implicit val timeout: Timeout = 1.minute
     (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
       Ok.sendEntity(toEntity(response))
-    }
-  }
-
-  def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
-    implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
-      Ok(Json.toJson(response.node))
     }
   }
 

@@ -25,28 +25,31 @@ create table if not exists documents (
 create table if not exists permissions (
     user_id uuid not null references users(user_id),
     document_id uuid not null references documents(document_id),
-    permission_level integer not null
+    permission_level integer not null,
+    primary key(user_id, document_id)
 );
 
 
 create table if not exists nodes (
     document_id uuid not null references documents(document_id),
-    node_id uuid primary key,
+    node_id uuid not null,
     created_time bigint not null,
     last_updated_time bigint not null,
     childs uuid[],
     attrs jsonb not null,
     cont jsonb not null,
-    creator_id uuid not null references users(user_id)
+    creator_id uuid not null references users(user_id),
+    primary key(document_id, node_id)
 );
 
 
 create table if not exists changes (
     document_id uuid not null references documents(document_id),
-    change_id uuid primary key,
+    change_id uuid not null,
     from_version bigint not null,
     updated_time bigint not null,
-    cont bytea not null
+    cont bytea not null,
+    primary key(document_id, change_id)
 );
 
 # --- !Downs

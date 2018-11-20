@@ -60,7 +60,9 @@ class BottomBarView(val client: Client) extends UnselectableView  {
       ),
       ul(
         cls := "dropdown-menu dropdown-menu-right", role := "menu",
-        a(cls := "dropdown-item", "Document list", href := "/documents")
+        a(cls := "dropdown-item", "Options", href := s"/document/${client.docId}/options"),
+        a(cls := "dropdown-item", "Document list", href := "/documents"),
+        a(cls := "dropdown-item", "Sign out", href := "/signout")
       )
     ).render
 

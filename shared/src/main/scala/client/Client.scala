@@ -84,7 +84,7 @@ object Client {
 }
 
 class Client(
-  private val docId: UUID,
+  val docId: UUID,
   initial: InitResponse,
   private val api: Api,
 ) extends SettingsImpl
@@ -753,9 +753,9 @@ class Client(
     }
     if (!done) {
       html match {
-        case Some(h) if h.nonEmpty && model.parseFromHtml != null =>
+        case Some(h) if h.nonEmpty && platform.parseFromHtml != null =>
           done = true
-          yank(model.parseFromHtml(h), false, '*')
+          yank(platform.parseFromHtml(h), false, '*')
         case _ =>
       }
     }

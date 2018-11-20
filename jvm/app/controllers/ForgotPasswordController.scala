@@ -2,7 +2,7 @@ package controllers
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import forms.ForgotPasswordForm
+import forms.EmailForm
 import javax.inject.Inject
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.libs.mailer.{Email, MailerClient}
@@ -41,7 +41,7 @@ class ForgotPasswordController @Inject() (
    * @return The result to display.
    */
   def view = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
-    Future.successful(Ok(views.html.forgotPassword(ForgotPasswordForm.form)))
+    Future.successful(Ok(views.html.forgotPassword(EmailForm.form)))
   }
 
   /**
@@ -53,7 +53,7 @@ class ForgotPasswordController @Inject() (
    * @return The result to display.
    */
   def submit = silhouette.UnsecuredAction.async { implicit request: Request[AnyContent] =>
-    ForgotPasswordForm.form.bindFromRequest.fold(
+    EmailForm.form.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.forgotPassword(form))),
       email => {
         val loginInfo = LoginInfo(CredentialsProvider.ID, email)

@@ -153,7 +153,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       // LATER wait for CodeMirorr to udpate... hope VIM support is fixed
       //a.inputStyle = "contenteditable"
       a.theme = "oceanic-next"
-      val mod = if (model.isMac) "Cmd" else "Ctrl"
+      val mod = if (platform.isMac) "Cmd" else "Ctrl"
       a.extraKeys = CodeMirror.normalizeKeyMap(
         jsObject(a => {
           a.updateDynamic(s"$mod-Z")((a: js.Dynamic) => doUndo())

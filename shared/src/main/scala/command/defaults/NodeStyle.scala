@@ -107,12 +107,12 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
   new TextualCommand {
     override val description: String = "insert rendered Markdown bellow (commonmark)"
 
-    override protected def available(a: DocState): Boolean = a.isCode && model.parseFromCommonMarkMarkdown != null
+    override protected def available(a: DocState): Boolean = a.isCode && platform.parseFromCommonMarkMarkdown != null
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asContent
       val str = a.node(cur).content.asInstanceOf[Content.Code].unicode.str
-      val node = model.parseFromCommonMarkMarkdown(str)
+      val node = platform.parseFromCommonMarkMarkdown(str)
       DocTransaction(Seq(operation.Node.Insert(cursor.Node.moveBy(cur, 1), Seq(node))), None)
     }
   }

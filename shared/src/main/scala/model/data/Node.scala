@@ -2,14 +2,12 @@ package model.data
 
 import java.util.UUID
 
-import doc.DocTransaction
 import model._
 import Node.{ChildrenType, ContentType, IgnoreInSearch, Priority}
 import boopickle.BasicPicklers
 import model.range.IntRange
 import play.api.libs.json._
 import scalatags.Text.all._
-import search.{Search, SearchOccurrence}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -254,8 +252,8 @@ case class Node(
     case None => clear(t)
   }
 
-  def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes + (t.name, t.serialize(a)))
-  def attribute(t: String, a: JsValue): Node = if (a == JsNull) copy (attributes = attributes - t) else copy(attributes = attributes + (t, a))
+  def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.+((t.name, t.serialize(a))))
+  def attribute(t: String, a: JsValue): Node = if (a == JsNull) copy (attributes = attributes - t) else copy(attributes = attributes.+((t, a)))
 
   def attribute[T](a: NodeTag[T]): Option[T] = attributes.value.get(a.name).filter(_ != JsNull).map(a.parse)
   def attribute(a: String): JsValue = attributes.value.getOrElse(a, JsNull)
@@ -299,12 +297,7 @@ case class Node(
 
 
   def toScalaTags(hasWrapper: Boolean): Frag = {
-    def contentWithoutP = content match {
-      case Content.Rich(t) => Text.toScalaTags(t.text)
-      case c@Content.Code(u, lang) =>
-        if (c.ty == Embedded.HTML) raw(u.str)
-        else pre(u.str)
-    }
+    def contentWithoutP = content.toScalaTags(false)
     def children: Frag = attribute(ChildrenType) match {
       case Some(ChildrenType.Paragraphs) =>
         childs.map(_.toScalaTags)

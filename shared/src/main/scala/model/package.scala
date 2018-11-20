@@ -13,8 +13,6 @@ package object model extends Picklers with Formats {
 
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
-  var parseFromCommonMarkMarkdown: String => data.Node = null
-  var parseFromHtml: String => Registerable = null
 
   val debug_katex = false
   var debug_view = true
@@ -27,6 +25,5 @@ package object model extends Picklers with Formats {
 
   var debug_RenderEmptyInsertionPointAsBox = false
 
-  var isMac: Boolean = false
 
 }

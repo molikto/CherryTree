@@ -41,7 +41,7 @@ class RichInsert(settings: Settings) extends CommandCategory(settings,"rich text
     override def available(a: DocState): Boolean = if (!settings.enableModal) a.isRichNonSub else super.available(a)
 
     override val description: String = "delete text before cursor / delete node if empty"
-    override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace) +: (Backspace: KeySeq) +: (if (model.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
+    override val hardcodeKeys: Seq[KeySeq] = (Shift + Backspace) +: (Backspace: KeySeq) +: (if (platform.isMac) Seq(Ctrl + "h") else Seq.empty[KeySeq])
 
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
@@ -83,7 +83,7 @@ class RichInsert(settings: Settings) extends CommandCategory(settings,"rich text
 
   new EditCommand with OverrideCommand {
     override val description: String = "delete text after cursor"
-    override val hardcodeKeys: Seq[KeySeq] = (Delete: KeySeq) +: (if (model.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
+    override val hardcodeKeys: Seq[KeySeq] = (Delete: KeySeq) +: (if (platform.isMac) Seq(Ctrl + "d") else Seq.empty[KeySeq])
     override def edit(content: Rich, a: Int): Seq[operation.Rich] = {
       if (a < content.size) {
         Seq(operation.Rich.deleteOrUnwrapAt(content, a))

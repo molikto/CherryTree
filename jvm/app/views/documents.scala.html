@@ -1,0 +1,30 @@
+@import play.api.i18n.Messages
+@import play.api.mvc.RequestHeader
+@import controllers.AssetsFinder
+@import api.ListResult
+@import play.twirl.api.Html
+
+@(user: models.User, res: Seq[ListResult])(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+
+@main(messages("home.title"), Some(user)) {
+    <div class="col-md-6 mx-auto">
+        <h2>Documents</h2>
+
+    @for(r <- res) {
+        <div>
+            <a class="ct-document-style document-list-title" href="@controllers.routes.DocumentController.index(r.id)">@Html(r.title.toScalaTags(true).render)</a>
+            <p class="secondary-text">
+            @messages("last.updated", platform.formatDate(r.updatedTime))
+            </p>
+            <p class="secondary-text">
+            @messages("created.at", platform.formatDate(r.createdTime))
+            </p>
+            <a class="secondary-text-button" href="@controllers.routes.DocumentsController.options(r.id)">Options</a>
+        </div>
+        <hr class="small-hr"/>
+    }
+        <a role="button" class="btn btn-primary mt-3" href="@controllers.routes.DocumentsController.create()">Create</a>
+    </div>
+
+}
+<script src="@assets.path("javascripts/list.js")"></script>

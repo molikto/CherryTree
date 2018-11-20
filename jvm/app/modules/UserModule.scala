@@ -34,6 +34,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.openid.OpenIdClient
 import play.api.libs.ws.WSClient
 import play.api.mvc.{Cookie, CookieHeaderEncoding}
+import utils.InitPlatform
 import utils.auth.{CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,6 +44,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class UserModule extends AbstractModule with ScalaModule {
 
+  val ignore =  InitPlatform
   implicit val sameSiteReader: ValueReader[Option[Option[Cookie.SameSite]]] =
     (config: Config, path: String) => {
       if (config.hasPathOrNull(path)) {

@@ -25,7 +25,7 @@ case class Key(
     case _ => false
   }
 
-  def copyWithMod: Key = if (model.isMac) this.copy(meta = true) else this.copy(control = true)
+  def copyWithMod: Key = if (platform.isMac) this.copy(meta = true) else this.copy(control = true)
 
   override def toString: String = {
     val sb = new ArrayBuffer[String]()
@@ -63,7 +63,7 @@ object Key {
     def +(key: Key): Key = key.copy(shift = true)
   }
   case object Meta extends Modifier {
-    override def toString: String = if (model.isMac) "⌘" else "Meta"
+    override def toString: String = if (platform.isMac) "⌘" else "Meta"
     def +(key: Key): Key = key.copy(meta = true)
   }
   case object Ctrl extends Modifier {
@@ -73,7 +73,7 @@ object Key {
     def +(key: Key): Key = key.copy(alt = true)
   }
 
-  val ModKey: Modifier = if (model.isMac) Meta else Ctrl
+  val ModKey: Modifier = if (platform.isMac) Meta else Ctrl
 
   sealed trait V {
   }

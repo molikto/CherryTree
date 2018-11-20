@@ -438,8 +438,8 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     client.getNodeInfo(node.uuid).onComplete(res => {
       val info = res match {
         case Success(Some(i)) =>
-          Seq(s"created time: ${ui.formatDate(i.createdTime)}",
-            s"updated time: ${ui.formatDate(i.updatedTime)}",
+          Seq(s"created time: ${platform.formatDate(i.createdTime)}",
+            s"updated time: ${platform.formatDate(i.updatedTime)}",
             s"created by: ${i.createdBy.name} (${i.createdBy.email})")
         case _ =>
           Seq.empty
@@ -577,7 +577,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     editor.flushBeforeMouseDown()
     clearAllPreviousReading()
     val now = System.currentTimeMillis()
-    if (!hasShift && ((a.metaKey && model.isMac) || (a.ctrlKey && !model.isMac))) {
+    if (!hasShift && ((a.metaKey && platform.isMac) || (a.ctrlKey && !platform.isMac))) {
       lastMouseDown = noMouseDown
       oneButLastMouseDown = noMouseDown
       val pc = findParentContent(a.target.asInstanceOf[raw.Node])

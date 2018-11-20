@@ -91,7 +91,7 @@ package object repos {
   def createDocumentQuery(userId: UUID, node: model.data.Node, time: Long) = {
     val documentId = UUID.randomUUID()
     val createDocument =
-      sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, 0)"
+      sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, ${0})"
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
     Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, UUID.randomUUID(), d))

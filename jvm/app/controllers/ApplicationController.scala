@@ -57,7 +57,7 @@ class ApplicationController @Inject() (
           case Some(res) =>
             Redirect(controllers.routes.DocumentController.index(res.id))
           case None =>
-            Redirect(controllers.routes.DocumentsController.home())
+            Redirect(controllers.routes.DocumentsController.documents())
         }
       case None =>
         Future.successful(Ok(views.html.index()))

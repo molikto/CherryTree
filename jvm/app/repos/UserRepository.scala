@@ -63,8 +63,25 @@ class UserRepository @Inject() (
     db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u)
   }
 
+  def permission(userId: UUID, documentId: UUID): _root_.scala.concurrent.Future[Int] = {
+    db.run(sql"select permission_level from permissions where document_id = $documentId and user_id = $userId".as[Int].headOption).map(_.getOrElse(PermissionLevel.NoPermission))
+  }
+
+  def deletePermission(documentId: UUID, userId: UUID): Future[Unit] = {
+    db.run(sql"delete from permissions where user_id = $userId and document_id = $documentId".as[Int]).map(_ => Unit)
+  }
+
+  def addPermission(documentId: UUID, userId: UUID, level: Int): Future[Unit] = {
+    db.run(sql"insert into permissions values ($userId, $documentId, $level) on conflict on constraint permissions_pkey do update set permission_level = EXCLUDED.permission_level".as[Int]).map(_ => Unit)
+  }
+
   def hasPermission(userId: UUID, documentId: UUID, level: Int): _root_.scala.concurrent.Future[Boolean] = {
     db.run(sql"select document_id from permissions where document_id = $documentId and user_id = $userId and permission_level >= $level".as[UUID].headOption).map(_.isDefined)
+  }
+
+  def collabrators(uid: UUID, did: UUID): Future[Seq[(Collaborator, Int)]] = {
+    db.run(sql""" select users.email, users.name_, users.avatar_url, permissions.permission_level from users, permissions
+       where permissions.user_id != ${uid} and users.user_id = permissions.user_id and permissions.document_id = ${did}""".as[(String, String, Option[String], Int)]).map(_.map(d => (Collaborator(d._1, d._2, d._3), d._4)))
   }
 
   def activate(userId: UUID, activate: Boolean = true): Future[Option[Unit]] =

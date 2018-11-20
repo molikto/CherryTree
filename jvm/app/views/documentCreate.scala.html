@@ -1,0 +1,35 @@
+@import play.api.i18n.Messages
+@import play.api.mvc.RequestHeader
+@import controllers.AssetsFinder
+@import api.ListResult
+@import play.twirl.api.Html
+
+@(user: models.User)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
+
+@main("Create document", Some(user)) {
+    <div class="col-md-6 mx-auto " id="root">
+
+
+        <h3>Create document</h3>
+        <hr/>
+
+        <h4>New document</h4>
+        @helper.form(action = controllers.routes.DocumentsController.createEmpty()) {
+            @helper.CSRF.formField
+            <button type="submit" class="btn btn-primary">Empty document</button>
+        }
+        <hr/>
+        <h4>Import</h4>
+
+        @helper.form(action = controllers.routes.DocumentsController.importJson(), 'enctype -> "multipart/form-data") {
+            @helper.CSRF.formField
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="customFile" name="file" placeholder="From JSON backup">
+                <label class="custom-file-label" for="customFile">Browse</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Create</button>
+        }
+        <hr/>
+
+    </div>
+}

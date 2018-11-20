@@ -7,6 +7,7 @@ import model.{data, mode}
 import play.api.libs.json.{Format, Json}
 import search.{Search, SearchOccurrence}
 import model._
+import scalatags.Text.all.Frag
 
 import scala.util.Random
 
@@ -85,6 +86,8 @@ abstract sealed class Content {
   def size: Int
   def nonEmpty: Boolean = !isEmpty
 
+  def toScalaTags(safe: Boolean): Frag
+
   def defaultMode(enableModal: Boolean): mode.Content = if (enableModal) defaultNormalMode() else defaultInsertMode()
   protected def defaultInsertMode(): mode.Content
   protected def defaultNormalMode(): mode.Content.Normal
@@ -123,6 +126,17 @@ object Content extends DataObject[Content] {
     override def search(a: Search, startPos: Int): Option[IntRange] = None
 
     override def mapBy(map: Map[UUID, UUID]): Content = this
+
+
+
+    override def toScalaTags(safe: Boolean): Frag = {
+      import scalatags.Text.all._
+      if (ty == Embedded.HTML) {
+        if (safe) raw(unicode.str)
+        else pre("Embeded HTML")
+      }
+      else pre(unicode.str)
+    }
   }
 
   object Code {
@@ -130,7 +144,7 @@ object Content extends DataObject[Content] {
     val jsonFormat: Format[Code] = Json.format[Code]
   }
 
-  case class Rich(content: data.Rich) extends Content {
+  case class Rich(val content: data.Rich) extends Content {
     override def size: Int = content.size
 
     protected override def defaultNormalMode(): mode.Content.Normal = mode.Content.RichNormal(content.rangeBeginning)
@@ -144,6 +158,10 @@ object Content extends DataObject[Content] {
     override def defines(hash: Text.HashTag): Option[IntRange] = content.defines(hash)
 
     override def mapBy(map: Map[UUID, UUID]): Content = Rich(content.mapBy(map))
+
+    override def toScalaTags(safe: Boolean): Frag = {
+      Text.toScalaTags(content.text, safe)
+    }
   }
 
   object Rich {

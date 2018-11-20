@@ -57,10 +57,26 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
     ).transactionally)
   }
 
+  private val ListColumns = "documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level"
+
+  def head(uid: UUID, did: UUID): Future[Option[ListResult]] = {
+    db.run(
+      sql"""select #$ListColumns
+           from documents, nodes, permissions where
+              permissions.user_id = $uid and
+              permissions.document_id = documents.document_id and
+              permissions.permission_level > ${0} and
+              documents.root_node_id = nodes.node_id
+           order by documents.last_updated_time desc
+        """.as[ListResult].headOption)
+
+  }
+
+
 
   def list(uid: UUID): Future[Seq[ListResult]] = {
     db.run(
-      sql"""select documents.document_id, nodes.cont, documents.created_time, documents.last_updated_time, permissions.permission_level
+      sql"""select #$ListColumns
            from documents, nodes, permissions where
               permissions.user_id = $uid and
               permissions.document_id = documents.document_id and

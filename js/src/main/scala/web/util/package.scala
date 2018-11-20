@@ -47,6 +47,16 @@ package object util {
     elt
   }
 
+ def formatDate(a: Long) : String = {
+   new js.Date(a.toDouble).asInstanceOf[js.Dynamic].toLocaleString("en-US", jsObject(a => {
+     a.hour12 = false
+     a.year = "numeric"
+     a.month = "short"
+     a.day = "numeric"
+     a.hour = "2-digit"
+     a.minute = "2-digit"
+   })).asInstanceOf[String]
+ }
 
   def parseFromHtml(a: String): Registerable = {
     val root = readHTML(a)

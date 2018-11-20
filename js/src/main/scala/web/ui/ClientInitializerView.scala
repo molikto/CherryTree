@@ -22,11 +22,10 @@ object ClientInitializerView {
   def initializeGlobal(): Unit = {
     if (!globalInitialized) {
       globalInitialized = true
-      model.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
-
-      model.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
-      model.parseFromHtml = web.util.parseFromHtml
-
+      platform.isMac = dom.window.navigator.userAgent.toLowerCase().contains("mac")
+      platform.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
+      platform.parseFromHtml = web.util.parseFromHtml
+      platform.formatDate = web.util.formatDate
     }
   }
 }
