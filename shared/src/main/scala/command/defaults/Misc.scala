@@ -113,7 +113,7 @@ class Misc(settings: Settings, val handler: CommandHandler) extends CommandCateg
   new Command {
     override val description: String = "edit attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
-    override def priority(key: KeySeq): Int = 2
+    override def priority(key: KeySeq): Int = 3
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
       rich.insideAnyAttributed(t).nonEmpty
     })
