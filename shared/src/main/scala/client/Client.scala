@@ -767,6 +767,8 @@ class Client(
             if (Url.parse(h).isInstanceOf[AbsoluteUrl]) {
               val title = "?"
               yank(Registerable.Text(Seq(Text.Link(Seq(Text.Plain(Unicode(title))), Unicode(h)))), false, '*')
+            } else {
+              yank(Registerable.Unicode(Unicode(h)), false, '*')
             }
           } catch {
             case _: Throwable =>
