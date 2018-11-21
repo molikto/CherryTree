@@ -361,7 +361,6 @@
 
 
 .ct-d-ps > .ct-d-childlist > .ct-d-frame > .ct-d-hold {
-    margin-left: -12px;
     width: 18px;
     height: 18px;
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj4iPHBhdGggZmlsbD0iIzU1NWM3NSIgZD0iTTQwOCAzMkgxNzcuNTMxQzg4Ljk0OCAzMiAxNi4wNDUgMTAzLjMzNSAxNiAxOTEuOTE4IDE1Ljk1NiAyODAuMzIxIDg3LjYwNyAzNTIgMTc2IDM1MnYxMDRjMCAxMy4yNTUgMTAuNzQ1IDI0IDI0IDI0aDMyYzEzLjI1NSAwIDI0LTEwLjc0NSAyNC0yNFYxMTJoMzJ2MzQ0YzAgMTMuMjU1IDEwLjc0NSAyNCAyNCAyNGgzMmMxMy4yNTUgMCAyNC0xMC43NDUgMjQtMjRWMTEyaDQwYzEzLjI1NSAwIDI0LTEwLjc0NSAyNC0yNFY1NmMwLTEzLjI1NS0xMC43NDUtMjQtMjQtMjR6Ii8+PC9zdmc+ ) /* fas(solid/paragraph) */;

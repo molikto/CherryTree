@@ -173,6 +173,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     if (settings.enableModal) {
       if (!SourceEditOverlay.globalDefined) {
         SourceEditOverlay.globalDefined = true
+        CodeMirror.modeURL = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/%N/%N.min.js"
 
         CodeMirror.Vim.defineAction("outterRedo", (cm: js.Dynamic, opt: js.Dynamic) => {
           doRedo()
@@ -384,7 +385,16 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   private def setCodeType(a: CodeType) = {
     codeType_ = a
-    codeMirror.setOption("mode", a.codeMirror)
+    val cmMode = a.codeMirror
+    if (!CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+      CodeMirror.requireMode(cmMode, () => {
+        if (a == codeType_) {
+          codeMirror.setOption("mode", cmMode)
+        }
+      });
+    } else {
+      codeMirror.setOption("mode", cmMode)
+    }
     val index = predefined.indexWhere(_.ct == a)
     val ii = if (index >= 0) index else predefined.size - 1
     selectView.selectedIndex = ii

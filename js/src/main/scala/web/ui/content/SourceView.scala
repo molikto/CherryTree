@@ -36,7 +36,16 @@ class SourceView(
     val look = lines.take(5).toVector
     val remaining = lines.size
     val totalSize = remaining + look.size
-    CodeMirror.runMode(look.mkString("\n"), contentData.ty.codeMirror, preCode)
+    val cmMode = contentData.ty.codeMirror
+    if (!CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+      CodeMirror.requireMode(cmMode, () => {
+        if (this.contentData == contentData) {
+          CodeMirror.runMode(look.mkString("\n"), cmMode, preCode)
+        }
+      });
+    } else {
+      CodeMirror.runMode(look.mkString("\n"), cmMode, preCode)
+    }
     val sourceType = SourceEditType.all.find(contentData.ty != EmptyCodeType && _.ct == contentData.ty)
     if (remaining > 0) {
       val sourceString = sourceType.map(_.name + ", ").getOrElse("")

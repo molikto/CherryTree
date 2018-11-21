@@ -29,7 +29,8 @@ object SourceEditType {
 }
 
 sealed abstract class CodeType(val str: String) {
-  def codeMirror: String = str
+  def codeType = str
+  def codeMirror: String = if (codeType == "stex") "latex" else if (codeType == "html") "htmlmixed" else codeType
   def delimitation: SpecialChar.Delimitation = if (this == Embedded.LaTeX) {
     SpecialChar.LaTeX
   } else if (this == Embedded.HTML) {
@@ -40,14 +41,14 @@ sealed abstract class CodeType(val str: String) {
 }
 
 case class SourceCode(name: String) extends CodeType(s"source/$name") {
-  override def codeMirror: String = name
+  override def codeType: String = name
 }
 
 case object LaTeXMacro extends CodeType("latex-macro") {
-  override def codeMirror: String = "stex"
+  override def codeType: String = "latex"
 }
 case class Embedded(name: String) extends CodeType(s"embedded/$name") {
-  override def codeMirror: String = name
+  override def codeType: String = name
 }
 object Embedded {
   val LaTeX = Embedded("latex")
