@@ -472,7 +472,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
   var sourceEditor: CoveringSourceEditDialog = null
   var commandMenu: CommandMenuDialog = null
   var registersDialog: RegistersDialog = null
-  var attributeEditor: UrlAttributeEditDialog = null
+  var attributeEditor: AttributeEditDialog = null
   var inlineEditor : InlineCodeDialog = null
 
   def selectionRect: Rect

@@ -16,7 +16,7 @@ import view.{EditorInterface, RichEditInterface}
 import web.ui
 import web.ui.doc.DocumentView
 import web.view.{Overlay, _}
-import web.ui.dialog.{InlineCodeDialog, UrlAttributeEditDialog}
+import web.ui.dialog.{InlineCodeDialog, AttributeEditDialog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
@@ -412,10 +412,10 @@ class RichViewEditor(val documentView: DocumentView, val controller: RichEditInt
             if (editor == null) {
               val text = sub.getText(rich)
               editor = documentView.attributeEditor
-              val anchor = new UrlAttributeEditDialog.Anchor(controller) {
+              val anchor = new AttributeEditDialog.Anchor(controller) {
                 override def rect: Rect = selectionRect
               }
-              documentView.attributeEditor.show(anchor, text.urlAttr, text.titleAttr)
+              documentView.attributeEditor.show(anchor, text)
            }
           case mode.Content.RichCodeSubMode(range, code, mode) =>
             if (editor == null) {

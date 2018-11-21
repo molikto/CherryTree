@@ -11,7 +11,7 @@ import settings.Settings
 
 class NodeDelete(settings: Settings) extends CommandCategory(settings, "node: delete") {
 
-  private val message = ". if the deleted node is immediately inserted back to the document within 5 seconds," +
+  private val message = "; if the deleted node is immediately inserted back to the document within 5 seconds," +
     " this is considered a node movement," +
     " and causes less conflicts when editing collaboratively"
 

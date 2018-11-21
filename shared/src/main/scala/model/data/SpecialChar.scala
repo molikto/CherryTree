@@ -43,7 +43,7 @@ object SpecialChar {
 
   def apply(id: Int): SpecialChar = createSpecialChar(id)
 
-  val attributes = Seq(UrlAttribute, TitleAttribute)
+  private val urlAndTitleAttributes = Seq(UrlAttribute, TitleAttribute)
 
   val Emphasis =
     Delimitation("emphasis", EmphasisStart, EmphasisEnd, DelimitationType.FormattedSplittable)
@@ -52,7 +52,7 @@ object SpecialChar {
   val StrikeThrough =
     Delimitation("strike through", StrikeThroughStart, StrikeThroughEnd, DelimitationType.FormattedSplittable)
   val Link =
-    Delimitation("link", LinkStart, LinkEnd, DelimitationType.FormattedNonSplittable, attributes)
+    Delimitation("link", LinkStart, LinkEnd, DelimitationType.FormattedNonSplittable, urlAndTitleAttributes)
   val HashTag =
     Delimitation("hashtag", HashTagStart, HashTagEnd, DelimitationType.FormattedNonSplittable)
   val SpanClass =
@@ -66,7 +66,7 @@ object SpecialChar {
   val HashDef =
     Delimitation("hashdef", HashDefStart, HashDefEnd, DelimitationType.FormattedNonSplittable)
   val Image =
-    Delimitation("image", ImageStart, ImageEnd, DelimitationType.Empty, attributes)
+    Delimitation("image", ImageStart, ImageEnd, DelimitationType.Empty, urlAndTitleAttributes)
   val Code =
     Delimitation("code", CodeStart, CodeEnd, DelimitationType.CodedNonAtomic)
   val LaTeX =

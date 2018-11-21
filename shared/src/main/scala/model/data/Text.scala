@@ -246,6 +246,7 @@ object Text {
 
     def delimitation: SpecialChar.Delimitation
 
+    def attributeValues: Seq[Unicode] = attributes.map(attribute)
     def attributes: Seq[SpecialChar] = delimitation.attributes
     def attribute(i: SpecialChar): Unicode = throw new IllegalArgumentException("not possible")
     def urlAttr: Unicode = attribute(UrlAttribute)

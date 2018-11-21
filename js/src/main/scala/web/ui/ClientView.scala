@@ -114,7 +114,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
   val commandMenu: CommandMenuDialog = defer(new CommandMenuDialog(client, overlayLayer))
   val registers: RegistersDialog = defer(new RegistersDialog(client, overlayLayer, latexMacroCache))
   val sourceEditor: CoveringSourceEditDialog = defer(new CoveringSourceEditDialog(client, client, overlayLayer, docView.dom))
-  val attributeEditor: UrlAttributeEditDialog = defer(new UrlAttributeEditDialog(overlayLayer))
+  val attributeEditor: AttributeEditDialog = defer(new AttributeEditDialog(overlayLayer))
   val latexEditor: InlineCodeDialog = defer(new InlineCodeDialog(client, client, overlayLayer))
 
   {

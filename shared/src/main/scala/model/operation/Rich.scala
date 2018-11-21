@@ -2,10 +2,11 @@ package model.operation
 
 import model.data.Atom.CodedSpecial
 import model.data.SpecialChar.Delimitation
-import model.data._
+import model.data.{Unicode, _}
 import model.{data, _}
 import model.operation.Type.Type
 import model.range.IntRange
+import model.data.SpecialChar
 
 import scala.util.Random
 
@@ -214,14 +215,13 @@ object Rich extends OperationObject[data.Rich, Rich] {
     Rich(op1.flatMap(_.u), ty)
   }
 
-  def changeAttributeAt(rich: data.Rich, textStart: Int, url: data.Unicode, title: data.Unicode): Rich = {
+  def changeAttributeAt(rich: data.Rich, textStart: Int, attrs: Seq[SpecialChar], seq: Seq[Option[model.data.Unicode]]): Rich = {
     val atom = rich.after(textStart)
     val text = atom.text.asDelimited
     Rich(
-      Seq(
-        EncodedSeq.ReplaceAtomic(text.rangeAttribute(TitleAttribute).moveBy(textStart), data.EncodedSeq(title)),
-        EncodedSeq.ReplaceAtomic(text.rangeAttribute(UrlAttribute).moveBy(textStart), data.EncodedSeq(url))
-      ),
+      attrs.reverse.zip(seq.reverse).filter(_._2.isDefined).map(a => {
+        EncodedSeq.ReplaceAtomic(text.rangeAttribute(a._1).moveBy(textStart), data.EncodedSeq.apply(a._2.get : model.data.Unicode))
+      }),
       Type.AddDelete)
   }
 

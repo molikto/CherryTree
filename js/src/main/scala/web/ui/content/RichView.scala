@@ -34,7 +34,7 @@ import scala.scalajs.js
 object RichView {
 
 
-  val PredefinedClasses = Seq("fature-tag")
+  val PredefinedClasses = Seq("feature-tag")
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
     val el = e.target.asInstanceOf[HTMLElement]
     window.console.log("image loading error")

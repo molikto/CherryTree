@@ -10,6 +10,7 @@ import model.range.IntRange
 import monix.reactive.Observable
 import register.RegisterInterface
 import search.SearchHandler
+import model.data.SpecialChar
 
 trait SourceEditInterface extends RegisterInterface {
   def onChangeAndEditorUpdated(op: Seq[operation.Unicode], inside: CodeInside): Unit
@@ -22,7 +23,7 @@ trait SourceEditInterface extends RegisterInterface {
 
 trait RichEditInterface {
   def onInsertRichTextAndViewUpdated(start: Int, end: Int, unicode: Unicode, toNormal: Boolean, posInDom: Int, mergeWithPrevious: Boolean): mode.Content.Rich
-  def onAttributeModified(url: Unicode, title: Unicode)
+  def onAttributeModified(attrs: Seq[SpecialChar], seq: Seq[Option[Unicode]])
   // returns if there is any data change
   def onDeleteCurrentSelectionAndStartInsert(): Boolean
   def onExitSubMode(): Unit
