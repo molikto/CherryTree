@@ -385,7 +385,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   private def setCodeType(a: CodeType) = {
     codeType_ = a
     val cmMode = a.codeMirror
-    if (!CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+    if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
       CodeMirror.requireMode(cmMode, () => {
         if (a == codeType_) {
           codeMirror.setOption("mode", cmMode)

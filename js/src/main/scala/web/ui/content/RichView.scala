@@ -33,6 +33,8 @@ import scala.scalajs.js
   */
 object RichView {
 
+
+  val PredefinedClasses = Seq("fature-tag")
   val onImageError: js.Function1[ErrorEvent, _] = (e: ErrorEvent) => {
     val el = e.target.asInstanceOf[HTMLElement]
     window.console.log("image loading error")
@@ -214,6 +216,30 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
         cg("#"),
         span(cls := "ct-c-hashtag", rec(c)),
         cg("#")
+      )
+      case Text.Sup(c) => span(
+        cls := "ct-cg-node ct-cg-node-sup",
+        cg("^"),
+        span(cls := "ct-c-sup", rec(c)),
+        cg("^")
+      )
+      case Text.Sub(c) => span(
+        cls := "ct-cg-node ct-cg-node-sub",
+        cg("_"),
+        span(cls := "ct-c-sub", rec(c)),
+        cg("_")
+      )
+      case Text.Underline(c) => span(
+        cls := "ct-cg-node ct-cg-node-underline",
+        cg("_"),
+        span(cls := "ct-c-underline", rec(c)),
+        cg("_")
+      )
+      case sp@Text.SpanClass(c, clz) => span(
+        cls := "ct-cg-node " + sp.displayClass(RichView.PredefinedClasses, "ct-cg-node-span"),
+        cg("<"),
+        span(cls := "ct-c-span", rec(c)),
+        cg(">")
       )
       case Text.HashDef(c) => span(
         cls := "ct-cg-node ct-cg-node-hashdef",

@@ -24,11 +24,17 @@ trait SettingsImpl extends Settings {
     (SpecialChar.LaTeX, Unicode("$"), Unicode("$")),
     (SpecialChar.Link, Unicode("["), Unicode("]")),
     (SpecialChar.HashTag, Unicode("#"), Unicode("#")),
+    (SpecialChar.Sub, Unicode("_"), Unicode("_")),
+    (SpecialChar.Underline, Unicode("_"), Unicode("_")),
+    (SpecialChar.Sup, Unicode("^"), Unicode("^")),
     (SpecialChar.HashDef, Unicode("##"), Unicode("##")),
-    (SpecialChar.Emphasis, Unicode("*"), Unicode("*"))
+    (SpecialChar.Emphasis, Unicode("*"), Unicode("*")),
+    (SpecialChar.SpanClass, Unicode("<"), Unicode(">"))
   )
 
   var delimitationGraphemes: SpecialKeySettings = delimitationSettings.flatMap(a => Seq(a._1.start -> a._2, a._1.end -> a._3)).toMap
+
+  var disableDelmitationKeys = Set(SpecialChar.Sub, SpecialChar.Underline, SpecialChar.SpanClass)
 
   var additionalKeyMaps: Map[String, Seq[Key.KeySeq]] = Map.empty
 

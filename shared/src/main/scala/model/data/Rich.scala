@@ -319,6 +319,14 @@ case class Rich(text: Seq[Text]) {
     return None
   }
 
+  def insideAnyAttributed(pos: Atom): Option[Atom] = {
+    if (pos.isWithAnyAttribute) {
+      Some(pos)
+    } else {
+      befores(pos.range.start).find(a => a.isStartWithAnyAttribute && a.textRange.contains(pos.range))
+    }
+  }
+
   def insideUrlAttributed(pos: Atom): Option[Atom] = {
     if (pos.isWithAttribute(UrlAttribute)) {
       Some(pos)

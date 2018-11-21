@@ -55,7 +55,9 @@ object Embedded {
   val HTML = Embedded("html")
 }
 case class OtherCodeType(name: String) extends CodeType(name)
-case object PlainCodeType extends CodeType("plain")
+case object PlainCodeType extends CodeType("plain") {
+  override def codeMirror: String = ""
+}
 case object EmptyCodeType extends CodeType("")
 
 object CodeType {

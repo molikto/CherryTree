@@ -111,16 +111,16 @@ class Misc(settings: Settings, val handler: CommandHandler) extends CommandCateg
 
   // LATER we only support url and title attribute now, no need to worry about future
   new Command {
-    override val description: String = "edit link/image attributes"
+    override val description: String = "edit attributes"
     override def defaultKeys: Seq[KeySeq] = Seq(Enter)
     override def priority(key: KeySeq): Int = 2
     override def available(a: DocState): Boolean = a.isRich((cur, rich, t) => {
-      rich.insideUrlAttributed(t).nonEmpty
+      rich.insideAnyAttributed(t).nonEmpty
     })
     override def actDoubleClick: Boolean = !settings.enableModal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (cur, rich, t) = a.asRichAtom
-      val text = rich.insideUrlAttributed(t).get
+      val text = rich.insideAnyAttributed(t).get
       a.editAttribute(text)
     }
   }

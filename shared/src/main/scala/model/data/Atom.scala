@@ -34,6 +34,11 @@ sealed trait Atom {
     case _ => false
   }
 
+  def isWithAnyAttribute: Boolean = this match {
+    case a: Atom if a.text.isDelimited => a.text.asDelimited.delimitation.attributes.nonEmpty
+    case _ => false
+  }
+
 
   def isWithAttribute(c: SpecialChar): Boolean = this match {
     case a: Atom if a.text.isDelimited => a.text.asDelimited.delimitation.attributes.contains(c)
@@ -43,6 +48,11 @@ sealed trait Atom {
 
   def isStartWithAttribute(c: SpecialChar): Boolean = this match {
     case a: Atom.Special => a.a == a.text.delimitation.start && a.text.delimitation.attributes.contains(c)
+    case _ => false
+  }
+
+  def isStartWithAnyAttribute: Boolean = this match {
+    case a: Atom.Special => a.a == a.text.delimitation.start && a.text.delimitation.attributes.nonEmpty
     case _ => false
   }
 

@@ -55,7 +55,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
         display := "flex",
         flexDirection := "row",
         height := "100%",
-        paddingLeft := "8px", span("menu", display := "inline-block", height := "100%", paddingTop := "1px"),
+        paddingLeft := "8px", span("MENU", display := "inline-block", height := "100%", paddingTop := "1px"),
         profileImage,
       ),
       ul(

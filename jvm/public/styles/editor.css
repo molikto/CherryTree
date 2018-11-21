@@ -713,7 +713,40 @@ block selection
 }
 
 .ct-cg-node-hashtag {
-  background: #FFFFFF11;
+  background: #FFFFFF19;
+}
+
+.ct-cg-node-sup {
+    vertical-align: super;
+    font-size: smaller;
+}
+
+.ct-cg-node-sub {
+    vertical-align: sub;
+    font-size: smaller;
+}
+
+.ct-cg-node-underline {
+    text-decoration: underline;
+}
+
+.ct-cg-node-span {
+    background: #Fb447333;
+}
+
+.feature-tag {
+    background: #e6b83c;
+    border: 1px solid #e6b83c;
+    border-radius: .2rem;
+    vertical-align: super;
+    padding-left: 2px;
+    padding-right: 2px;
+    font-size: x-small;
+    text-shadow: 2px 2px 8px #000000;
+    color: white;
+    transform: rotate(-10deg);
+    display: inline-block;
+    margin: -1px;
 }
 
 .ct-cg-node-hashdef {

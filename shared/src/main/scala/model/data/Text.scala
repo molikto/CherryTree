@@ -183,6 +183,14 @@ object Text {
           Link(parseAll(reader, UrlAttribute), reader.eatUntilAndDrop(TitleAttribute), reader.eatUntilAndDrop(LinkEnd))
         case HashTagStart =>
           HashTag(parseAll(reader, HashTagEnd))
+        case SupStart =>
+          Sup(parseAll(reader, SupEnd))
+        case SubStart =>
+          Sub(parseAll(reader, SubEnd))
+        case SpanClassStart =>
+          SpanClass(parseAll(reader, ClassAttribute), reader.eatUntilAndDrop(SpanClassEnd))
+        case UnderlineStart =>
+          Underline(parseAll(reader, UnderlineEnd))
         case HashDefStart =>
           HashDef(parseAll(reader, HashDefEnd))
         case ImageStart =>
@@ -384,6 +392,44 @@ object Text {
       content == Seq(Plain(p))
 
     override def copy(cs: Seq[Text]): Formatted = HashTag(content)
+  }
+
+  case class SpanClass(content: Seq[Text], clz: Unicode) extends Formatted {
+    val clzs = clz.str.split(" ")
+    def displayClass(predefined: Seq[String], str: String): String = if (clzs.exists(a => predefined.contains(a))) clz.str else str
+
+
+    override def attributes: Seq[_root_.model.data.SpecialChar] = Seq(ClassAttribute)
+
+    override def delimitation: Delimitation = SpecialChar.SpanClass
+    override def toScalaTags(safe: Boolean): Frag = span(cls := clz.str, Text.toScalaTags(content, safe))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+    override def copy(cs: Seq[Text]): Formatted = SpanClass(content, clz)
+
+    override def attribute(i: SpecialChar): Unicode =
+      if (i == ClassAttribute) clz
+      else throw new IllegalArgumentException("Not here")
+  }
+
+  case class Sub(content: Seq[Text]) extends Formatted {
+    override def delimitation: Delimitation = SpecialChar.Sub
+    override def toScalaTags(safe: Boolean): Frag = sub(Text.toScalaTags(content, safe))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+    override def copy(cs: Seq[Text]): Formatted = Sub(content)
+  }
+
+  case class Underline(content: Seq[Text]) extends Formatted {
+    override def delimitation: Delimitation = SpecialChar.Underline
+    override def toScalaTags(safe: Boolean): Frag = u(Text.toScalaTags(content, safe))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+    override def copy(cs: Seq[Text]): Formatted = Underline(content)
+  }
+
+  case class Sup(content: Seq[Text]) extends Formatted {
+    override def delimitation: Delimitation = SpecialChar.Sup
+    override def toScalaTags(safe: Boolean): Frag = sup(Text.toScalaTags(content, safe))
+    override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content))
+    override def copy(cs: Seq[Text]): Formatted = Sup(content)
   }
 
   case class HashDef(content: Seq[Text]) extends Formatted {

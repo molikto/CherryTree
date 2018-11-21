@@ -17,7 +17,12 @@ trait SpecialCharTrait extends Enumeration {
     UrlAttribute, TitleAttribute,
     HTMLStart, HTMLEnd,
     HashTagStart, HashTagEnd,
-    HashDefStart, HashDefEnd
+    HashDefStart, HashDefEnd,
+    SupStart, SupEnd,
+    SubStart, SubEnd,
+    UnderlineStart, UnderlineEnd,
+    SpanClassStart, SpanClassEnd,
+    ClassAttribute
   :
     SpecialChar = Value
 }
@@ -50,6 +55,14 @@ object SpecialChar {
     Delimitation("link", LinkStart, LinkEnd, DelimitationType.FormattedNonSplittable, attributes)
   val HashTag =
     Delimitation("hashtag", HashTagStart, HashTagEnd, DelimitationType.FormattedNonSplittable)
+  val SpanClass =
+    Delimitation("span with class", SpanClassStart, SpanClassEnd, DelimitationType.FormattedNonSplittable, attributes = Seq(ClassAttribute))
+  val Sup =
+    Delimitation("sup", SupStart, SupEnd, DelimitationType.FormattedNonSplittable)
+  val Sub =
+    Delimitation("sub", SubStart, SubEnd, DelimitationType.FormattedNonSplittable)
+  val Underline =
+    Delimitation("underline", UnderlineStart, UnderlineEnd, DelimitationType.FormattedSplittable)
   val HashDef =
     Delimitation("hashdef", HashDefStart, HashDefEnd, DelimitationType.FormattedNonSplittable)
   val Image =
@@ -62,7 +75,7 @@ object SpecialChar {
   val HTML =
     Delimitation("html", HTMLStart, HTMLEnd, DelimitationType.CodedAtomic, codeType = Embedded.HTML)
 
-  val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, HashTag, HashDef, LaTeX, Image, HTML)
+  val all: Seq[Delimitation] = Seq(Emphasis, Strong, StrikeThrough, Code, Link, HashTag, HashDef, LaTeX, Image, HTML, Sub, Sup, Underline, SpanClass)
 
   val formattedSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedSplittable)
   val formattedNonSplittable: Seq[Delimitation] = all.filter(_.ty == DelimitationType.FormattedNonSplittable)

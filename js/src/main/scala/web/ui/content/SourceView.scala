@@ -37,7 +37,7 @@ class SourceView(
     val remaining = lines.size
     val totalSize = remaining + look.size
     val cmMode = contentData.ty.codeMirror
-    if (!CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+    if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
       CodeMirror.requireMode(cmMode, () => {
         if (this.contentData == contentData) {
           CodeMirror.runMode(look.mkString("\n"), cmMode, preCode)

@@ -22,6 +22,8 @@ class SettingsTemp(from: Settings) extends Settings {
   var delimitationGraphemes: SpecialKeySettings = from.delimitationGraphemes
   var additionalKeyMaps: Map[String, Seq[KeySeq]] = from.additionalKeyMaps
   var removedDefaultKeyMaps: Map[String, Seq[KeySeq]] = from.removedDefaultKeyMaps
+
+  override def disableDelmitationKeys: Set[SpecialChar.Delimitation] = from.disableDelmitationKeys
 }
 class SettingsDialog(val client: Client,
   override val layer: OverlayLayer,

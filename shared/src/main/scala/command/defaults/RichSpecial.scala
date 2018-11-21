@@ -47,7 +47,7 @@ class RichSpecial(settings: Settings) extends CommandCategory(settings,"rich tex
       def moveSomeInsertMode(some: Int) = mode.Content.RichInsert(insert + some)
       if (insert < content.size && content.after(insert).special(deli.end) && keyU.nonEmpty && settings.delimitationGraphemes.get(deli.end).contains(keyU)) {
         DocTransaction(a.copyContentMode(moveSomeInsertMode(content.after(insert).size)))
-      } else if (!content.insideCoded(insert) && (keyU.isEmpty || settings.delimitationGraphemes.get(deli.start).contains(keyU))) {
+      } else if (!content.insideCoded(insert) && (keyU.isEmpty || (!settings.disableDelmitationKeys.contains(deli) && settings.delimitationGraphemes.get(deli.start).contains(keyU)))) {
         val extraInsert =
         if (keyU.isEmpty) {
           None

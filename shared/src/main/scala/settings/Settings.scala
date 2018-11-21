@@ -8,6 +8,8 @@ trait Settings {
 
   def enableModal: Boolean
 
+  def disableDelmitationKeys: Set[model.data.SpecialChar.Delimitation]
+
   def delimitationSettings: Seq[(model.data.SpecialChar.Delimitation, Unicode, Unicode)]
 
   def delimitationGraphemes: SpecialKeySettings
