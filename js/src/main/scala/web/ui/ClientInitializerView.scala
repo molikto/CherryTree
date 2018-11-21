@@ -26,6 +26,7 @@ object ClientInitializerView {
       platform.parseFromCommonMarkMarkdown = web.util.parseFromCommonMarkMarkdown
       platform.parseFromHtml = web.util.parseFromHtml
       platform.formatDate = web.util.formatDate
+      CodeMirror.modeURL = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.39.2/mode/%N/%N.min.js"
     }
   }
 }
