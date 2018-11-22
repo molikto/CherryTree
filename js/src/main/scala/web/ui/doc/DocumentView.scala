@@ -32,7 +32,6 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 {
   import DocumentView._
 
-
   override val contentViewCreatedInDocument: Boolean = true
 
   def settings: Settings
@@ -468,12 +467,6 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     })
   }
 
-
-  protected def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
-    contentViewCreate(c, contentType, true)
-  }
-
-
   var _postRefreshAllLaTeX = false
   def postRefreshAllLaTeX(): Unit = {
     _postRefreshAllLaTeX = true
@@ -733,7 +726,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
 
   private def findParentContent(t0: raw.Node): model.cursor.Node = {
-    val ct = findParentContentView(t0, dom, true)
+    val ct = findParentContentView(t0, dom)
     if (ct != null) {
       cursorOf(ct)
     } else {
@@ -884,8 +877,8 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       val sel = window.getSelection()
       if (sel != null && sel.rangeCount > 0) {
 
-        val mt = if (mouseEvent != null) findParentContentView(mouseEvent.target.asInstanceOf[raw.Node], dom, true) else null
-        var ct = findParentContentView(sel.focusNode, dom, true)
+        val mt = if (mouseEvent != null) findParentContentView(mouseEvent.target.asInstanceOf[raw.Node], dom) else null
+        var ct = findParentContentView(sel.focusNode, dom)
         var noUseSelection = false
         if (mt != null && mt != ct) {
           noUseSelection = true

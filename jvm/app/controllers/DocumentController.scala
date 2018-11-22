@@ -159,7 +159,7 @@ class DocumentController @Inject() (
 
   def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest(), PermissionLevel.ReadOnly)).mapTo[InitResponse].map { response =>
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest(), PermissionLevel.Read)).mapTo[InitResponse].map { response =>
       Ok(Json.toJson(response.node))
     }
   }
@@ -170,7 +170,7 @@ class DocumentController @Inject() (
 
   def init(documentId: UUID) = silhouette.SecuredAction.async { implicit request =>
       users.permission(request.identity.userId, documentId).flatMap(permissionLevel => {
-        if (permissionLevel >= PermissionLevel.ReadOnly) {
+        if (permissionLevel >= PermissionLevel.Read) {
           implicit val timeout: Timeout = 1.minute
           (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest(), permissionLevel)).mapTo[InitResponse].map { response =>
             Ok.sendEntity(toEntity(response))
@@ -183,7 +183,7 @@ class DocumentController @Inject() (
 
   def changes(documentId: UUID) = silhouette.SecuredAction.async(parse.byteString) { implicit request =>
     users.permission(request.identity.userId, documentId).flatMap(permissionLevel => {
-      if (permissionLevel >= PermissionLevel.ReadOnly) {
+      if (permissionLevel >= PermissionLevel.Read) {
         val change = fromRequest[ChangeRequest](request)
         implicit val timeout: Timeout = 1.minute
         (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Change(request.identity, change, permissionLevel)).mapTo[Try[ChangeResponse]].map {

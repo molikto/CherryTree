@@ -65,7 +65,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
         marginLeft := "10px",
         t._2.map {
           case Registerable.Unicode(u) => code(cls := "ct-c-code", u.str)
-          case Registerable.Text(u) => contentViewCreate(model.data.Content.Rich(Rich(u)), None, false) : Frag
+          case Registerable.Text(u) => contentViewCreate(model.data.Content.Rich(Rich(u)), None) : Frag
           case Registerable.Node(a, _) =>
             if (a.isEmpty) "": Frag
             else {

@@ -14,7 +14,7 @@
 }
 
 .ct-global-div {
-    height:100vh;
+    height: 100vh;
     width: 100%;
     overflow: hidden;
 }
@@ -39,7 +39,7 @@
     background-origin: content-box;
     padding: 3px;
     color: #44485b;
-    background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj4iPHBhdGggZmlsbD0iIzQ0NDg1YiIgZD0iTTQxMy4xIDIyMi41bDIyLjIgMjIuMmM5LjQgOS40IDkuNCAyNC42IDAgMzMuOUwyNDEgNDczYy05LjQgOS40LTI0LjYgOS40LTMzLjkgMEwxMi43IDI3OC42Yy05LjQtOS40LTkuNC0yNC42IDAtMzMuOWwyMi4yLTIyLjJjOS41LTkuNSAyNS05LjMgMzQuMy40TDE4NCAzNDMuNFY1NmMwLTEzLjMgMTAuNy0yNCAyNC0yNGgzMmMxMy4zIDAgMjQgMTAuNyAyNCAyNHYyODcuNGwxMTQuOC0xMjAuNWM5LjMtOS44IDI0LjgtMTAgMzQuMy0uNHoiLz48L3N2Zz4= ) /* fas(solid/arrow-down #44485b) */;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj4iPHBhdGggZmlsbD0iIzQ0NDg1YiIgZD0iTTQxMy4xIDIyMi41bDIyLjIgMjIuMmM5LjQgOS40IDkuNCAyNC42IDAgMzMuOUwyNDEgNDczYy05LjQgOS40LTI0LjYgOS40LTMzLjkgMEwxMi43IDI3OC42Yy05LjQtOS40LTkuNC0yNC42IDAtMzMuOWwyMi4yLTIyLjJjOS41LTkuNSAyNS05LjMgMzQuMy40TDE4NCAzNDMuNFY1NmMwLTEzLjMgMTAuNy0yNCAyNC0yNGgzMmMxMy4zIDAgMjQgMTAuNyAyNCAyNHYyODcuNGwxMTQuOC0xMjAuNWM5LjMtOS44IDI0LjgtMTAgMzQuMy0uNHoiLz48L3N2Zz4= ) /* fas(solid/arrow-down #44485b) */;
 }
 
 .hide-children .ct-general-hold {
@@ -376,6 +376,30 @@
 }
 
 
+.ct-d-hr > .ct-rich  {
+    text-align: center;
+    font-style: italic;
+    color: #636e83;
+}
+
+.ct-d-hr > .ct-rich > .ct-hint-color {
+    color: transparent;
+}
+
+.ct-d-hr > .ct-rich::before {
+    content: '⁂  ⁂';
+    padding: 0 4px;
+    position: relative;
+    font-style: normal;
+}
+
+.ct-d-hr > .ct-rich::after {
+    content: '⁂  ⁂';
+    padding: 0 4px;
+    position: relative;
+    font-style: normal;
+}
+
 /**
   border-left: 3px solid #555c7566;
   margin-left: -14px;
@@ -407,10 +431,6 @@
 
 .ct-d-heading-error + .ct-d-hold {
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4iPHBhdGggZmlsbD0iIzdkNGM1YyIgZD0iTTQ5NiA4MFY0OGMwLTguODM3LTcuMTYzLTE2LTE2LTE2SDMyMGMtOC44MzcgMC0xNiA3LjE2My0xNiAxNnYzMmMwIDguODM3IDcuMTYzIDE2IDE2IDE2aDM3LjYyMXYxMjhIMTU0LjM3OVY5NkgxOTJjOC44MzcgMCAxNi03LjE2MyAxNi0xNlY0OGMwLTguODM3LTcuMTYzLTE2LTE2LTE2SDMyYy04LjgzNyAwLTE2IDcuMTYzLTE2IDE2djMyYzAgOC44MzcgNy4xNjMgMTYgMTYgMTZoMzcuMjc1djMyMEgzMmMtOC44MzcgMC0xNiA3LjE2My0xNiAxNnYzMmMwIDguODM3IDcuMTYzIDE2IDE2IDE2aDE2MGM4LjgzNyAwIDE2LTcuMTYzIDE2LTE2di0zMmMwLTguODM3LTcuMTYzLTE2LTE2LTE2aC0zNy42MjFWMjg4SDM1Ny42MnYxMjhIMzIwYy04LjgzNyAwLTE2IDcuMTYzLTE2IDE2djMyYzAgOC44MzcgNy4xNjMgMTYgMTYgMTZoMTYwYzguODM3IDAgMTYtNy4xNjMgMTYtMTZ2LTMyYzAtOC44MzctNy4xNjMtMTYtMTYtMTZoLTM3LjI3NVY5Nkg0ODBjOC44MzcgMCAxNi03LjE2MyAxNi0xNnoiLz48L3N2Zz4= ) /* fas(solid/heading #7d4c5c) */ !important;
-}
-
-.ct-rich-hr {
-  text-align: center;
 }
 
 
@@ -676,7 +696,7 @@ block selection
 
 .ct-c-code {
     font-style: normal;
-    font-weight:normal;
+    font-weight: normal;
     font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
     font-size: 85%;
     color: #f0c5ce;
@@ -756,7 +776,7 @@ block selection
 .ct-c-em {
 }
 .ct-c-del {
-    text-decoration-color: #FFFFFF33;
+    text-decoration-color: #abb2becc;
 }
 
 /* control glyph */

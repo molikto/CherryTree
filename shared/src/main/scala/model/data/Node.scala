@@ -437,7 +437,7 @@ object Node extends DataObject[Node] {
       case JsString(a) =>
         if (a.startsWith("h")) Heading(a.substring(1).toInt)
         else if (a == "cite") Cite
-        else if (a == "br") Hr // history reason
+        else if (a == "hr" || a == "br") Hr
         else throw new IllegalStateException("Not possible")
       case _ => throw new IllegalStateException("Not possible")
     }
@@ -445,7 +445,7 @@ object Node extends DataObject[Node] {
     override private[model] def serialize(t: ContentType) = JsString(t match {
       case Heading(a) => "h" + a
       case Cite => "cite"
-      case Hr => "br"  // history reason
+      case Hr => "hr"
     })
   }
   def cloneNodes(n: Seq[Node]): Seq[Node] = {

@@ -48,7 +48,7 @@ trait ContentViewCreator {
   }
 
 
-  def findParentContentView(t0: raw.Node, dom: HTMLElement, editable: Boolean): ContentView.General = {
+  def findParentContentView(t0: raw.Node, dom: HTMLElement): ContentView.General = {
     var t = t0
     while (t != null && t != dom) {
       View.maybeDom[View](t) match {
@@ -73,20 +73,17 @@ trait ContentViewCreator {
 
   def contentViewMatches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
     (a, v.asInstanceOf[Any]) match {
-      case (data.Content.Rich(r), v: RichView)  => contentType.contains(ContentType.Hr) == v.isHr
+      case (data.Content.Rich(r), v: RichView)  => true
       case (c: data.Content.Code, v: Code) => contentViewMatches(c.ty, v)
       case _ => false
     }
   }
 
 
-  def contentViewCreate(a: data.Content, contentType: Option[ContentType], editable: Boolean = false): General = {
+  def contentViewCreate(a: data.Content, contentType: Option[ContentType]): General = {
     (a match {
-      case r: data.Content.Rich =>
-        val v = new RichView(r, contentType.contains(ContentType.Hr), latexMacroCache)
-        if (editable) v.dom.classList.add("text-cursor")
-        v
-      case s: data.Content.Code => if (editable) new WrappedEditableCodeView(s, latexMacroCache) else  conentViewFromCode(s)
+      case r: data.Content.Rich => new RichView(r, contentViewCreatedInDocument, latexMacroCache)
+      case s: data.Content.Code => if (contentViewCreatedInDocument) new WrappedEditableCodeView(s, latexMacroCache) else  conentViewFromCode(s)
     }).asInstanceOf[General]
   }
 }

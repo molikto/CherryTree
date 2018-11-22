@@ -236,7 +236,7 @@ class SimpleLayoutDocumentView(
     parent.insertBefore(box, firstChild)
     val hold = tag("div")(contenteditable := "false", cls := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
-    createContent(root.content, root.contentType).attachToNode(box)
+    contentViewCreate(root.content, root.contentType).attachToNode(box)
     val list = div(cls := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
@@ -287,7 +287,7 @@ class SimpleLayoutDocumentView(
       val p = previousContent.dom.parentNode
       val before = previousContent.dom.nextSibling
       previousContent.destroy()
-      createContent(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
+      contentViewCreate(c, contentType).attachToNode(p, before.asInstanceOf[HTMLElement])
     }
 
     t match {

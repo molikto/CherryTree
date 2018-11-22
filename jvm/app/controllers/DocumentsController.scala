@@ -39,7 +39,7 @@ class DocumentsController @Inject() (
     Ok(views.html.documentCreate(request.identity))
   }
 
-  def options(documentId: UUID) =  silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.ReadOnly)).async { implicit request =>
+  def options(documentId: UUID) =  silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Read)).async { implicit request =>
     docs.head(request.identity.userId, documentId).flatMap {
       case Some(result) =>
         users.collabrators(request.identity.userId, documentId).flatMap { cs =>

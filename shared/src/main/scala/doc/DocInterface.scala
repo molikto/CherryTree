@@ -16,4 +16,6 @@ trait DocInterface extends SearchInterface {
   def stateUpdates: Observable[DocUpdate]
 
   def getNodeInfo(uuid: UUID): Future[Option[NodeInfo]]
+
+  def permissionLevel: Int
 }

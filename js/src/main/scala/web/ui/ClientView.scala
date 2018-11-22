@@ -2,6 +2,7 @@ package web.ui
 
 import java.util.UUID
 
+import api.PermissionLevel
 import client.Client
 import org.scalajs.dom._
 import org.scalajs.dom.raw._
@@ -83,6 +84,16 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
   }
 
 
+  val permissionHeader = (if (client.permissionLevel >= PermissionLevel.Edit) {
+        // nothing
+      div()
+    } else if (client.permissionLevel >= PermissionLevel.Comment) {
+      div("Commenting")
+    } else {
+      div("Read-only")
+    }).render
+
+
   private val rightPanel = div(
     width := "100%",
     height := "100%",
@@ -95,6 +106,7 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
 
   val bottomBar = defer(new BottomBarView(client))
   bottomBar.attachToNode(rightPanel)
+
 
   private val docView = defer(new SimpleLayoutDocumentView(client, client, client, latexMacroCache).attachToNode(rightPanel).asInstanceOf[SimpleLayoutDocumentView])
 

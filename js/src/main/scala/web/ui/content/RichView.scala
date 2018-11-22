@@ -89,17 +89,18 @@ object RichView {
         ).render)
     }
   }
-
 }
-class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMacroCache: LaTeXMacroCache) extends ContentView.Rich {
+
+class RichView(initData: model.data.Content.Rich, val editable: Boolean, val latexMacroCache: LaTeXMacroCache) extends ContentView.Rich {
 
 
-  private def emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
+  private def emptyStr = if (editable) ui.EmptyStr else ""
 
   def rich: Rich = contentData.content
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
-    new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
+    if (editable) new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
+    else throw new IllegalStateException("Not possible!")
 
   /**
     *
@@ -118,7 +119,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMa
     *
     */
 
-  dom = p(cls := (if (isHr) "ct-rich-hr ct-rich" else "ct-rich")).render
+  dom = p(cls := (if (editable) "ct-rich text-cursor" else "ct-rich")).render
 
   updateContent(initData)
 
@@ -160,8 +161,13 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMa
     }
   }
 
-  private def cg(a: String, extraClass: String = "") = span(cls := "ct-cg " + extraClass,
-    contenteditable := "false", a)
+  private def cg2(a: String, extraClass: String = ""): Frag =
+    span(cls := "ct-cg " + extraClass,
+      contenteditable := "false", a)
+
+  private def cg(a: String, extraClass: String = ""): Frag =
+    span(cls := "ct-cg " + extraClass,
+      contenteditable := "false", if (editable) a else "")
 
   override def tempEditableTempDuringSelectionChange(b: Boolean): Unit = {
     jQ(dom).find(".ct-cg, .ct-cg-atom").attr("contenteditable", b.toString)
@@ -213,7 +219,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMa
       )
       case Text.HashTag(c) => span(
         cls := "ct-cg-node ct-cg-node-hashtag",
-        cg("#"),
+        cg2("#"),
         span(cls := "ct-c-hashtag", rec(c)),
         cg("#")
       )
@@ -243,7 +249,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMa
       )
       case Text.HashDef(c) => span(
         cls := "ct-cg-node ct-cg-node-hashdef",
-        cg("#", "ct-cg-shadow"),
+        cg2("#", "ct-cg-shadow"),
         span(cls := "ct-c-hashdef", rec(c)),
         cg("#", "ct-cg-shadow")
       )

@@ -71,7 +71,7 @@ abstract class Server[CTX <: Server.User](documentId: UUID, serverInit: Server.I
 //      ts.exists(t => {
 //        t._1.exists(_.)
 //      })
-    } else if (permissionLevel >= PermissionLevel.ReadOnly) {
+    } else if (permissionLevel >= PermissionLevel.Read) {
       if (ts.nonEmpty) {
         return Failure(ApiError.PermissionViolation)
       }
