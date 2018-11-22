@@ -119,6 +119,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
 
 
 
+  // CHECK PERMISSIONS
   abstract class PutCommand extends Command {
     override protected def available(a: DocState): Boolean = a.isContent
 

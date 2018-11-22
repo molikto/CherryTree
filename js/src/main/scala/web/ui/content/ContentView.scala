@@ -1,5 +1,6 @@
 package web.ui.content
 
+import api.PermissionLevel
 import model.data
 import model.data.Node.ContentType
 import model.data.{Embedded, SourceCode}
@@ -56,7 +57,7 @@ trait ContentViewCreator {
           val contentView: ContentView.General = a match {
             case view: RichView =>
               view.asInstanceOf[ContentView.General]
-            case view: WrappedEditableCodeView =>
+            case view: WrappedCodeView =>
               view.asInstanceOf[ContentView.General]
             case _ =>
               null
@@ -80,10 +81,19 @@ trait ContentViewCreator {
   }
 
 
-  def contentViewCreate(a: data.Content, contentType: Option[ContentType]): General = {
+  /**
+    *
+    * @param editableInDoc should NOT change for a NODE for a user
+    */
+  def contentViewCreate(a: data.Content, contentType: Option[ContentType], editableInDoc: Boolean = false): General = {
     (a match {
-      case r: data.Content.Rich => new RichView(r, contentViewCreatedInDocument, latexMacroCache)
-      case s: data.Content.Code => if (contentViewCreatedInDocument) new WrappedEditableCodeView(s, latexMacroCache) else  conentViewFromCode(s)
+      case r: data.Content.Rich => new RichView(r, contentViewCreatedInDocument && editableInDoc, latexMacroCache)
+      case s: data.Content.Code =>
+        if (contentViewCreatedInDocument) {
+          new WrappedCodeView(s, latexMacroCache)
+        } else {
+          conentViewFromCode(s)
+        }
     }).asInstanceOf[General]
   }
 }

@@ -6,7 +6,7 @@ import settings.Settings
 import web.view._
 
 object InlineCodeDialog {
-  abstract class Anchor(str: Unicode, mode: CodeInside, ty: CodeType) extends SourceEditOption(str, mode, ty) with OverlayAnchor {
+  abstract class Anchor(str: Unicode, mode: CodeInside, ty: CodeType, editable: Boolean) extends SourceEditOption(str, mode, ty, editable) with OverlayAnchor {
   }
 }
 

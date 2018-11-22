@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-class SourceEditOption(val str: Unicode, val mode: CodeInside, val codeType: CodeType) {
+class SourceEditOption(val str: Unicode, val mode: CodeInside, val codeType: CodeType, editable: Boolean) {
 }
 
 object SourceEditOverlay {

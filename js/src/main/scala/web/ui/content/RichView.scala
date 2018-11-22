@@ -99,8 +99,7 @@ class RichView(initData: model.data.Content.Rich, val editable: Boolean, val lat
   def rich: Rich = contentData.content
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
-    if (editable) new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
-    else throw new IllegalStateException("Not possible!")
+    new RichViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
 
   /**
     *
@@ -265,7 +264,7 @@ class RichView(initData: model.data.Content.Rich, val editable: Boolean, val lat
       case Text.Image(b, c) =>
         val sp = span(
           cls := "ct-cg-node ct-cg-atom",
-          contenteditable := false,
+          contenteditable := "false",
           span(EvilChar) // don't fuck with my cursor!!!
         ).render
         if (b.isEmpty) {

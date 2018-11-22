@@ -35,25 +35,27 @@ class CommandHandler(client: Client) extends CommandInterface {
   val yankPaste = new defaults.YankPaste(settings)
 
 
+  val emptyCategory = new CommandCategory(client, "[]")
+
   private val defaultCategories =  Seq(
     miscCommands,
     new defaults.Search(settings),
     new defaults.RichMotion(settings),
     new defaults.RichTextObject(settings),
-    new defaults.RichInsertEnter(settings),
-    new defaults.RichInsert(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.RichInsertEnter(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.RichInsert(settings),
     new defaults.RichVisual(settings),
-    new defaults.RichChange(settings),
-    new defaults.RichSpecial(settings),
-    new defaults.RichDelete(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.RichChange(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.RichSpecial(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.RichDelete(settings),
     new defaults.NodeMotion(settings),
     new defaults.NodeVisual(settings),
-    new defaults.NodeMove(settings),
-    new defaults.NodeDelete(settings),
-    new defaults.NodeStyle(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.NodeMove(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.NodeDelete(settings),
+    if (client.isReadOnly) emptyCategory else new defaults.NodeStyle(settings),
     new defaults.NodeFold(settings),
-    yankPaste,
-    new defaults.UndoRedo(settings),
+    yankPaste, // PERMISSIONS
+    if (client.isReadOnly) emptyCategory else new defaults.UndoRedo(settings),
     new defaults.Scroll(settings),
   ).filter(_.commands.nonEmpty)
   val commands: Seq[Command] = defaultCategories.flatMap(_.commands)

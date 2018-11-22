@@ -183,9 +183,13 @@ private [content] class RichViewEditor(val documentView: DocumentView, val contr
       // don't allow input in normal mode
       a.preventDefault()
     } else {
-      pendingFlush = true
-      goBackToNormalAfterFlush = previousMode == 1 && documentView.settings.enableModal
-      domModifiedInBeforeEvent = previousMode == 1 && controller.onDeleteCurrentSelectionAndStartInsert()
+      if (documentView.canEditActiveEditor()) {
+        pendingFlush = true
+        goBackToNormalAfterFlush = previousMode == 1 && documentView.settings.enableModal
+        domModifiedInBeforeEvent = previousMode == 1 && controller.onDeleteCurrentSelectionAndStartInsert()
+      } else {
+        a.preventDefault()
+      }
     }
   }
 
@@ -415,13 +419,13 @@ private [content] class RichViewEditor(val documentView: DocumentView, val contr
               val anchor = new AttributeEditDialog.Anchor(controller) {
                 override def rect: Rect = selectionRect
               }
-              documentView.attributeEditor.show(anchor, text)
+              documentView.attributeEditor.show(anchor, text, documentView.canEditActiveEditor())
            }
           case mode.Content.RichCodeSubMode(range, code, mode) =>
             if (editor == null) {
               editor = documentView.inlineEditor
               val text = sub.getText(rich)
-              val anchor = new InlineCodeDialog.Anchor(text.asCoded.content, code, text.asDelimited.delimitation.codeType) {
+              val anchor = new InlineCodeDialog.Anchor(text.asCoded.content, code, text.asDelimited.delimitation.codeType, documentView.canEditActiveEditor()) {
                 override def rect: Rect = selectionRect
               }
               documentView.inlineEditor.show(anchor)

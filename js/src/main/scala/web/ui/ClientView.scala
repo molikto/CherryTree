@@ -84,14 +84,6 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
   }
 
 
-  val permissionHeader = (if (client.permissionLevel >= PermissionLevel.Edit) {
-        // nothing
-      div()
-    } else if (client.permissionLevel >= PermissionLevel.Comment) {
-      div("Commenting")
-    } else {
-      div("Read-only")
-    }).render
 
 
   private val rightPanel = div(
@@ -186,6 +178,35 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
     case Client.ViewMessage.ScrollToNodeTop(cur) =>
       docView.scrollToTop(cur)
   })
+
+
+  val alerts = div(
+    position := "absolute",
+    cls := "unselectable",
+    width := "100%",
+    overflow := "none",
+    bottom := "48px",
+    left := "12px",
+    right := "12px"
+  ).render
+
+  def alert(msg: String, typ: String) = alerts.appendChild(div(cls := s"alert alert-${typ} alert-dismissible fade show", role := "alert",
+    msg,
+    button(`type` := "button", cls := "close", attr("data-dismiss") := "alert", attr("aria-label") := "Close",
+      span(attr("aria-hidden") := "true","×")
+    )
+  ).render)
+
+  rightPanel.appendChild(alerts)
+
+
+
+  if (client.permissionLevel >= PermissionLevel.Edit) {
+  } else if (client.permissionLevel >= PermissionLevel.Comment) {
+    alert("You only have comment permission.", "warning")
+  } else {
+    alert("You only have read permission", "warning")
+  }
 
 
   private val fpsDisplay = div(

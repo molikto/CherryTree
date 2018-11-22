@@ -8,6 +8,7 @@ import settings.Settings
 
 class Search(settings: Settings) extends CommandCategory(settings,"search & pattern matches") {
 
+
   new Command {
     override val description: String = "search forward"
     override val defaultKeys: Seq[KeySeq] = Seq("/")

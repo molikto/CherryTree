@@ -17,5 +17,5 @@ trait DocInterface extends SearchInterface {
 
   def getNodeInfo(uuid: UUID): Future[Option[NodeInfo]]
 
-  def permissionLevel: Int
+  def canEdit(node: UUID): Boolean
 }

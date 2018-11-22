@@ -93,6 +93,8 @@ class Client(
   with EditorInterface
   with DocInterface { self =>
 
+  val permissionLevel: Int =  initial.permissionLevel
+
   var _commandHandler: CommandHandler = new CommandHandler(this)
   def commands = _commandHandler
 
@@ -174,7 +176,9 @@ class Client(
   }
 
 
-  val permissionLevel: Int =  PermissionLevel.Read // initial.permissionLevel
+  def canEdit(uuid: UUID) = permissionLevel > PermissionLevel.Read
+  def isReadOnly = permissionLevel <= PermissionLevel.Read
+
   private var committedVersion: Int = initial.version
   def debug_committedVersion = committedVersion
   private var committed: data.Node = initial.node

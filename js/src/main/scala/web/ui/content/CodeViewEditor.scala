@@ -17,7 +17,7 @@ import scala.scalajs.js
 private [content] class CodeViewEditor(
   val documentView: DocumentView,
   val controller: SourceEditInterface,
-  override val contentView: WrappedEditableCodeView)
+  override val contentView: WrappedCodeView)
   extends ContentViewEditor[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code](contentView) {
 
 
@@ -69,7 +69,7 @@ private [content] class CodeViewEditor(
       case inside: model.mode.Content.CodeInside =>
         if (editing == null) {
           editing = documentView.sourceEditor
-          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(documentView.settings.enableModal), contentData.ty))
+          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(documentView.settings.enableModal), contentData.ty, documentView.canEditActiveEditor()))
         } else if (!editorUpdated) {
           editing.sync(inside)
         }

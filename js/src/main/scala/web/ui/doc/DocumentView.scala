@@ -2,6 +2,7 @@ package web.ui.doc
 
 import java.util.UUID
 
+import api.PermissionLevel
 import doc.{DocInterface, DocState}
 import model.data.Content
 import model.data.Node.ContentType
@@ -28,6 +29,9 @@ object DocumentView {
   val DisableReasonComposition = "composition"
 }
 
+/**
+  * NOTE: this class only use the doc framer for class attributes, nothing more!
+  */
 abstract class DocumentView extends View with EditorView with Implicits with DocFramer
 {
   import DocumentView._
@@ -107,14 +111,18 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
   private var duringValidComposition = false
 
+  def canEditActiveEditor() = activeContentEditor != null && client.canEdit(currentDoc.node(cursorOf(activeContent)).uuid)
+
   event("compositionstart", (a: CompositionEvent) => {
     flushBeforeKeyDown()
     if (a.target == noEditable) {
     } else {
       if (allowCompositionInput) {
-        editor.onDeleteCurrentSelectionAndStartInsert()
-        editor.disableRemoteStateUpdate(true, DisableReasonComposition)
-        duringValidComposition = true
+        if (canEditActiveEditor()) {
+          editor.onDeleteCurrentSelectionAndStartInsert()
+          editor.disableRemoteStateUpdate(true, DisableReasonComposition)
+          duringValidComposition = true
+        }
       } else {
         a.preventDefault()
         duringValidComposition = false
@@ -263,6 +271,10 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       }
     }
   }
+
+
+  def canEditNode(root: model.cursor.Node): Boolean = canEditNode(currentDoc.node(root))
+  def canEditNode(root: model.data.Node): Boolean = client.canEdit(root.uuid)
 
   private def updateMode(m: Option[model.mode.Node], viewUpdated: Boolean = false, editorUpdated: Boolean = false, fromUser: Boolean = false): Unit = {
     duringStateUpdate = true

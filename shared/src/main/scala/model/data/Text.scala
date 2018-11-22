@@ -365,7 +365,7 @@ object Text {
   }
   case class Link(content: Seq[Text], url: Unicode, tit: Unicode = Unicode.empty) extends Formatted {
     def isNodeRef: Boolean = url.str.startsWith(Node.NodeRefScheme)
-    override def toScalaTags(safe: Boolean): Frag = Text.toScalaTags(content, safe) : Frag
+    override def toScalaTags(safe: Boolean): Frag = a(Text.toScalaTags(content, safe) : Frag, href := url.str)
     override def toPlainScalaTags: Frag = Seq(Text.toPlainScalaTags(content), s" (${url.str})": Frag)
 
     override def delimitation: SpecialChar.Delimitation = SpecialChar.Link

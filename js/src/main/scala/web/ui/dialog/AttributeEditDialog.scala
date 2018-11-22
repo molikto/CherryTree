@@ -37,7 +37,7 @@ class AttributeEditDialog(protected val layer: OverlayLayer) extends MountedOver
     else if (c == model.data.UrlAttribute) "URL"
     else "[WHAT??]"
 
-  def show(anchor: AttributeEditDialog.Anchor, text: Text.Delimited): Unit = {
+  def show(anchor: AttributeEditDialog.Anchor, text: Text.Delimited, canEdit: Boolean): Unit = {
     start = text.attributeValues
     attributes = text.attributes
     text.attributes.zipWithIndex.foreach(c => {
@@ -46,8 +46,11 @@ class AttributeEditDialog(protected val layer: OverlayLayer) extends MountedOver
         width := "100%",
         cls := "ct-input text-selectable",
 
-      ).render
-      ip.asInstanceOf[Input].value = start(c._2).str
+      ).render.asInstanceOf[Input]
+      ip.value = start(c._2).str
+      if (!canEdit) {
+        ip.disabled = true
+      }
       ip.addEventListener("keydown", (ev: KeyboardEvent) => {
         KeyMap.get(ev.key) match {
           case Some(Key.Escape) =>
@@ -64,6 +67,9 @@ class AttributeEditDialog(protected val layer: OverlayLayer) extends MountedOver
       })
       dom.appendChild(ip)
     })
+    if (!canEdit) {
+      start = null
+    }
     super.show(anchor)
   }
 
@@ -73,16 +79,18 @@ class AttributeEditDialog(protected val layer: OverlayLayer) extends MountedOver
   }
 
   override protected def onDismiss(): Unit = {
-    val vals = start.zipWithIndex.map { pair =>
-      val nv = Unicode(dom.childNodes(pair._2 * 2 + 1).asInstanceOf[Input].value)
-      if (nv != pair._1) {
-        Some(nv)
-      } else {
-        None
+    if (start != null) {
+      val vals = start.zipWithIndex.map { pair =>
+        val nv = Unicode(dom.childNodes(pair._2 * 2 + 1).asInstanceOf[Input].value)
+        if (nv != pair._1) {
+          Some(nv)
+        } else {
+          None
+        }
       }
-    }
-    if (!vals.forall(_.isEmpty)) {
-      anchor.editor.onAttributeModified(attributes, vals)
+      if (!vals.forall(_.isEmpty)) {
+        anchor.editor.onAttributeModified(attributes, vals)
+      }
     }
     removeAllChild(dom)
     anchor.editor.onExitSubMode()

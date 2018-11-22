@@ -14,18 +14,13 @@ import view.EditorInterface
 import web.ui
 import web.ui.doc.{DocumentView, LaTeXMacroCache}
 import web.ui._
+import web.ui.content.ContentViewEditor.General
 import web.view._
 
+private [content] class WrappedCodeView(initData: model.data.Content.Code,
+                                        override val latexMacroCache: LaTeXMacroCache
+                                               ) extends ContentView.Code with ContentViewCreator  {
 
-
-private [content] class WrappedEditableCodeView(
-  initData: model.data.Content.Code,
-  override val latexMacroCache: LaTeXMacroCache
-) extends ContentView.Code with ContentViewCreator {
-
-  override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
-    new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
-  setInitialContent(initData)
 
   private var codeView: ContentView.Code = conentViewFromCode(initData)
 
@@ -72,4 +67,9 @@ private [content] class WrappedEditableCodeView(
     super.onAttach()
     codeView.attachToNode(dom)
   }
+
+  override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
+    new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
+  setInitialContent(initData)
+
 }
