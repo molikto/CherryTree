@@ -18,7 +18,7 @@ import play.api.libs.streams.ActorFlow
 import play.api.mvc._
 import play.filters.csrf.CSRF
 import server.Server
-import utils.auth.{DefaultEnv, HasPermission}
+import utils.auth.{CustomSecuredErrorHandler, DefaultEnv, HasPermission}
 import model._
 import api._
 import model.operation.Node
@@ -65,8 +65,8 @@ object DocumentActor {
   sealed trait Message {
   }
   object Message {
-    case class Init(user: User, i: InitRequest) extends Message
-    case class Change(user: User, req: ChangeRequest) extends Message
+    case class Init(user: User, i: InitRequest, permissionLevel: Int) extends Message
+    case class Change(user: User, req: ChangeRequest, permissionLevel: Int) extends Message
     case class Ws(user: User, actor: ActorRef) extends Message
     case class WsEnd(user: UUID, actor: ActorRef) extends Message
   }
@@ -78,7 +78,6 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
   private var server: Server[User] = null
 
   private val online = new mutable.HashMap[UUID, mutable.Set[ActorRef]] with mutable.MultiMap[UUID, ActorRef]
-  private var collaborators = Seq.empty[User]
 
   override def preStart(): Unit = {
     Logger.debug(s"starting document actor for document $id")
@@ -92,37 +91,33 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
   private def ensureInit(): Unit = {
     if (server == null) {
       val root = Await.result(docs.init(id), 10.seconds)
-      server = new Server[User](id, root._1, root._2) {
+      server = new Server[User](id, root) {
         override def persist(user: User, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
-          Await.result(docs.changes(user.userId, id, version, changes), 10.seconds)
+          if (changes.nonEmpty) Await.result(docs.changes(user.userId, id, version, changes), 10.seconds)
         }
 
         override def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
-
-        override def serverStatus(user: User): ServerStatus =
-          ServerStatus(
-            Collaborator(user.email, user.name, user.avatarUrl),
-            collaborators.filter(_.userId != user.userId).map(u => Collaborator(u.email, u.name, u.avatarUrl)))
       }
     }
   }
 
   override def receive: Receive = {
-    case Message.Init(user, req) =>
+    case Message.Init(user, req, permissionLevel) =>
       ensureInit()
-      sender ! server.init(user)
-    case Message.Change(user, req) =>
+      sender ! server.init(user, permissionLevel)
+    case Message.Change(user, req, permissionLevel) =>
       ensureInit()
-      sender ! server.change(user, req)
+      sender ! server.change(user, req, permissionLevel)
       if (req.ts.nonEmpty) context.children.foreach(_ ! "update")
     case Message.WsEnd(user, actor) =>
       online.removeBinding(user, actor)
-      if (!online.exists(_._1 == user)) {
-        collaborators = collaborators.filter(_.userId != user)
+      if (server != null && !online.exists(_._1 == user)) {
+        server.removeCollabrator(user)
       }
     case Message.Ws(user, out) =>
+      ensureInit()
       val ws = context.actorOf(WebSocketActor.props(user.userId, out))
-      if (!collaborators.exists(_.userId == user.userId)) collaborators = collaborators :+ user
+      server.addCollabrator(user)
       online.addBinding(user.userId, ws)
       sender ! ws
   }
@@ -140,7 +135,8 @@ class DocumentController @Inject() (
   components: ControllerComponents,
   silhouette: Silhouette[DefaultEnv],
   users: UserRepository,
-  docs: DocumentRepository
+  docs: DocumentRepository,
+  authenticationHandler: CustomSecuredErrorHandler
 )(implicit assets: AssetsFinder,
   system: ActorSystem,
   materializer: Materializer,
@@ -163,7 +159,7 @@ class DocumentController @Inject() (
 
   def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
     implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
+    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest(), PermissionLevel.ReadOnly)).mapTo[InitResponse].map { response =>
       Ok(Json.toJson(response.node))
     }
   }
@@ -172,22 +168,42 @@ class DocumentController @Inject() (
     docs.nodeInfo(documentId, nid).map(a => Ok.sendEntity(toEntity(a)))
   }
 
-  def init(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>
-    implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest())).mapTo[InitResponse].map { response =>
-      Ok.sendEntity(toEntity(response))
-    }
+  def init(documentId: UUID) = silhouette.SecuredAction.async { implicit request =>
+      users.permission(request.identity.userId, documentId).flatMap(permissionLevel => {
+        if (permissionLevel >= PermissionLevel.ReadOnly) {
+          implicit val timeout: Timeout = 1.minute
+          (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Init(request.identity, InitRequest(), permissionLevel)).mapTo[InitResponse].map { response =>
+            Ok.sendEntity(toEntity(response))
+          }
+        } else {
+          authenticationHandler.onNotAuthorized(request)
+        }
+      })
   }
 
-  def changes(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Edit)).async(parse.byteString) { implicit request =>
-    val change = fromRequest[ChangeRequest](request)
-    implicit val timeout: Timeout = 1.minute
-    (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Change(request.identity, change)).mapTo[Try[ChangeResponse]].map {
-      case Success(suc) =>
-        Ok.sendEntity(toEntity(suc))
-      case Failure(exc) =>
-        ???
-    }
+  def changes(documentId: UUID) = silhouette.SecuredAction.async(parse.byteString) { implicit request =>
+    users.permission(request.identity.userId, documentId).flatMap(permissionLevel => {
+      if (permissionLevel >= PermissionLevel.ReadOnly) {
+        val change = fromRequest[ChangeRequest](request)
+        implicit val timeout: Timeout = 1.minute
+        (documents ? documentId).mapTo[ActorRef].flatMap(_ ? DocumentActor.Message.Change(request.identity, change, permissionLevel)).mapTo[Try[ChangeResponse]].map {
+          case Success(suc) =>
+            Ok.sendEntity(toEntity(suc))
+          case Failure(exc) =>
+            exc match {
+              case ApiError.PermissionViolation =>
+                authenticationHandler.onNotAuthorizedNow(request)
+              case _: ApiError =>
+                /// BadRequest("")
+                ???
+              case _: Throwable =>
+                ???
+            }
+        }
+      } else {
+        authenticationHandler.onNotAuthorized(request)
+      }
+    })
   }
 
   def ws(documentId: UUID) = WebSocket.acceptOrResult[String, String] { request =>

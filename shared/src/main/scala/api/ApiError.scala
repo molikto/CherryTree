@@ -7,4 +7,6 @@ object ApiError {
   case object ClientVersionIsHigherThanServerCache extends ApiError
 
   case object ClientVersionTooOld extends ApiError
+
+  case object PermissionViolation extends ApiError
 }

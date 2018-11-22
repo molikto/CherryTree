@@ -22,9 +22,13 @@ import api._
 import model.data.{Content, Node}
 import model.operation.Node
 import model.transaction.Node
+import server.Server
 
 import scala.util.Success
 
+object DocumentRepository {
+  case class NodeResult(nodeId: UUID, childs: Seq[UUID], attributes: JsValue, content: model.data.Content, creatorId: UUID)
+}
 
 @Singleton
 class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
@@ -86,20 +90,20 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
         """.as[ListResult])
   }
 
-  def init(a: UUID): Future[(model.data.Node, Int)] = {
+  def init(a: UUID): Future[Server.InitResult] = {
     val query = sql"select current_version, root_node_id from documents where document_id = $a".as[(Int, UUID)].head.flatMap {
       case (version, root) =>
-        sql"select node_id, childs, attrs, cont from nodes where document_id = $a".as[NodeResult]
+        sql"select node_id, childs, attrs, cont, creator_id from nodes where document_id = $a".as[DocumentRepository.NodeResult]
           .map(a => (root, a, version))
     }
     db.run(query.transactionally).map(kk => {
       val rootId = kk._1
-      val nodes = kk._2.map(a => (a._1, a)).toMap
+      val nodes = kk._2.map(a => (a.nodeId, a)).toMap
       def materializeNode(id: UUID): model.data.Node = {
         val res = nodes(id)
-        model.data.Node(id, res._4, res._3.asInstanceOf[JsObject], res._2.map(materializeNode))
+        model.data.Node(id, res.content, res.attributes.asInstanceOf[JsObject], res.childs.map(materializeNode))
       }
-      (materializeNode(rootId), kk._3)
+      Server.InitResult(materializeNode(rootId), kk._3, nodes.mapValues(a => a.creatorId))
     })
   }
 

@@ -14,7 +14,6 @@ package object repos {
 
   import utils.MyPostgresProfile.plainApi._
 
-  type NodeResult = (UUID, Seq[UUID], JsValue, model.data.Content)
 
   implicit val passwordInfoFormat = Json.format[PasswordInfo]
   implicit val oauth1InfoFormat = Json.format[OAuth1Info]
@@ -81,7 +80,7 @@ package object repos {
 
 
 
-  implicit val nodeGetResult: GetResult[NodeResult] = GetResult[NodeResult](r => (r.<<, r.<<, r.<<(getJson), r.<<))
+  implicit val nodeGetResult: GetResult[DocumentRepository.NodeResult] = GetResult[DocumentRepository.NodeResult](r => DocumentRepository.NodeResult(r.<<, r.<<, r.<<(getJson), r.<<, r.<<))
 
   implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, r.<<))
 
@@ -93,7 +92,7 @@ package object repos {
     val createDocument =
       sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, ${0})"
     val createPermission =
-      sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Admin})"
+      sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Owner})"
     Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, UUID.randomUUID(), d))
   }
 

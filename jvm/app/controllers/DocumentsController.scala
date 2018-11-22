@@ -52,20 +52,26 @@ class DocumentsController @Inject() (
 
 
 
-  def delete(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request =>
+  def delete(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Owner)).async { implicit request =>
     docs.delete(documentId).map(_ => Redirect(routes.DocumentsController.documents()).flashing("success" -> "Success!"))
   }
 
-  def addCollabrator(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request =>
+  def addCollabrator(documentId: UUID, permissionLevel: Int) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request => {
+    def fail(s: String) = Redirect(routes.DocumentsController.options(documentId)).flashing("error" -> s)
     EmailForm.form.bindFromRequest.fold(
       form => ???,
       data => {
-        users.retrieve(data).flatMap {
-          case Some(user) =>
-            users.addPermission(documentId, user.userId, PermissionLevel.Edit).flatMap(_ => Future.successful(Redirect(routes.DocumentsController.options(documentId))))
-          case None => Future.successful(Redirect(routes.DocumentsController.options(documentId)).flashing("error" -> "User not found."))
+        if (permissionLevel <= PermissionLevel.Admin && permissionLevel > 0) {
+          users.retrieve(data).flatMap {
+            case Some(user) =>
+              users.addPermission(documentId, user.userId, PermissionLevel.Edit).flatMap(_ => Future.successful(Redirect(routes.DocumentsController.options(documentId))))
+            case None => Future.successful(fail("User not found"))
+          }
+        } else {
+          Future.successful(fail("Invalid permission level"))
         }
       })
+  }
   }
 
   def deleteCollabrator(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request =>

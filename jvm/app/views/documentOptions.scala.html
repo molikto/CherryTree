@@ -50,7 +50,7 @@
     @if(res.permissionLevel >= PermissionLevel.Admin) {
 
 
-      @helper.form(action = controllers.routes.DocumentsController.addCollabrator(res.id), 'autocomplete -> "off") {
+      @helper.form(action = controllers.routes.DocumentsController.addCollabrator(res.id, PermissionLevel.Edit), 'autocomplete -> "off") {
         @helper.CSRF.formField
         <div class="form-group">
           <div>
@@ -59,6 +59,9 @@
           </div>
         </div>
       }
+    }
+
+    @if(res.permissionLevel >= PermissionLevel.Owner) {
 
       <hr/>
       <h4>Danger zone</h4>

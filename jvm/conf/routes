@@ -38,7 +38,7 @@ POST        /documents/create/empty          controllers.DocumentsController.cre
 POST        /documents/import/json           controllers.DocumentsController.importJson
 POST        /document/:id/delete             controllers.DocumentsController.delete(id: java.util.UUID)
 GET         /document/:id/options            controllers.DocumentsController.options(id: java.util.UUID)
-POST /document/:id/collabrators/add          controllers.DocumentsController.addCollabrator(id: java.util.UUID)
+POST /document/:id/collabrators/add          controllers.DocumentsController.addCollabrator(id: java.util.UUID, permissionLevel: Int)
 POST /document/:id/collabrators/delete       controllers.DocumentsController.deleteCollabrator(id: java.util.UUID)
 
 GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)

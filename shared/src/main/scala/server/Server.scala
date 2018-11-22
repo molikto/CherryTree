@@ -11,11 +11,25 @@ import model.ot.Rebased
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success, Try}
 
-abstract class Server[CTX](documentId: UUID, private var document: Node, private var baseVersion: Int) {
+object Server {
+  trait User {
+    def userId: UUID
+    def toCollabrator: Collaborator
+  }
+  case class InitResult(root: model.data.Node, version: Int, creators: Map[UUID, UUID])
+}
+
+abstract class Server[CTX <: Server.User](documentId: UUID, serverInit: Server.InitResult) {
+
 
   // states, now in single thread fashion
+  private var document: Node = serverInit.root
+  private var baseVersion: Int = serverInit.version
+  private val creators: mutable.Map[UUID, UUID] = mutable.Map.empty ++ serverInit.creators
 
   private var changes = Seq.empty[(transaction.Node, UUID)]
+
+  private var collaborators = Seq.empty[CTX]
 
   def version: Int = baseVersion + changes.size
 
@@ -23,11 +37,12 @@ abstract class Server[CTX](documentId: UUID, private var document: Node, private
   def debugChanges = changes
 
 
-  def init(ctx: CTX): InitResponse = {
+  def init(ctx: CTX, permissionLevel: Int): InitResponse = {
     val state = InitResponse(
       document,
       version,
-      serverStatus(ctx)
+      permissionLevel,
+      serverStatus(ctx),
     )
     if (debug_transmit) {
       println(state)
@@ -48,8 +63,21 @@ abstract class Server[CTX](documentId: UUID, private var document: Node, private
 //  }
 
 
-  def change(ctx: CTX, changeRequest: ChangeRequest): Try[ChangeResponse] = {
+  def change(ctx: CTX, changeRequest: ChangeRequest, permissionLevel: Int): Try[ChangeResponse] = {
     val ChangeRequest(clientVersion, ts, mode, debugClientDoc) = changeRequest
+    if (permissionLevel >= PermissionLevel.Edit) {
+
+    } else if (permissionLevel >= PermissionLevel.Comment) {
+//      ts.exists(t => {
+//        t._1.exists(_.)
+//      })
+    } else if (permissionLevel >= PermissionLevel.ReadOnly) {
+      if (ts.nonEmpty) {
+        return Failure(ApiError.PermissionViolation)
+      }
+    } else {
+      return Failure(ApiError.PermissionViolation)
+    }
     def normalCase() = {
       val after = changes.drop(clientVersion - baseVersion)
       //          if (debug_transmit && debugClientDoc != 0) {
@@ -73,6 +101,17 @@ abstract class Server[CTX](documentId: UUID, private var document: Node, private
         // commit to memory
         document = transformedDocument
         changes = changes ++ transformed
+        for (tt <- transformed) {
+          for (t <- tt._1) {
+            t match {
+              case model.operation.Node.Insert(_, cs) =>
+                cs.foreach(c => {
+                  creators += (c.uuid -> ctx.userId)
+                })
+              case _ =>
+            }
+          }
+        }
         val cu = ChangeResponse(ws, ts.size, version, serverStatus(ctx))
         //          if (transformed.nonEmpty) {
         //            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
@@ -124,5 +163,17 @@ abstract class Server[CTX](documentId: UUID, private var document: Node, private
 
   def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
 
-  def serverStatus(ctx: CTX): ServerStatus
+  def serverStatus(ctx: CTX): ServerStatus = {
+    ServerStatus(
+      ctx.toCollabrator,
+      collaborators.filter(_.userId != ctx.userId).map(u => u.toCollabrator))
+  }
+
+  def addCollabrator(user: CTX) = {
+    if (!collaborators.exists(_.userId == user.userId)) collaborators = collaborators :+ user
+  }
+
+  def removeCollabrator(user: UUID) = {
+    collaborators = collaborators.filter(_.userId != user)
+  }
 }

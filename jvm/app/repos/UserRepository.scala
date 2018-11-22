@@ -64,7 +64,7 @@ class UserRepository @Inject() (
   }
 
   def permission(userId: UUID, documentId: UUID): _root_.scala.concurrent.Future[Int] = {
-    db.run(sql"select permission_level from permissions where document_id = $documentId and user_id = $userId".as[Int].headOption).map(_.getOrElse(PermissionLevel.NoPermission))
+    db.run(sql"select permission_level from permissions where document_id = $documentId and user_id = $userId".as[Int].headOption).map(_.getOrElse(0))
   }
 
   def deletePermission(documentId: UUID, userId: UUID): Future[Unit] = {
