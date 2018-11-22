@@ -14,10 +14,10 @@ import web.ui.dialog._
 import scala.scalajs.js
 
 
-class CodeViewEditor(
+private [content] class CodeViewEditor(
   val documentView: DocumentView,
   val controller: SourceEditInterface,
-  override val contentView: WrappedCodeView)
+  override val contentView: WrappedEditableCodeView)
   extends ContentViewEditor[model.data.Content.Code, model.operation.Content.Code, model.mode.Content.Code](contentView) {
 
 

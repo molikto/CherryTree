@@ -18,16 +18,16 @@ import web.view._
 
 
 
-class WrappedCodeView(
+private [content] class WrappedEditableCodeView(
   initData: model.data.Content.Code,
-  laTeXMacroCache: LaTeXMacroCache
-) extends ContentView.Code {
+  override val latexMacroCache: LaTeXMacroCache
+) extends ContentView.Code with ContentViewCreator {
 
   override def createEditor(documentView: DocumentView, controller: EditorInterface): ContentViewEditor.General =
     new CodeViewEditor(documentView, controller, this).asInstanceOf[ContentViewEditor.General]
   setInitialContent(initData)
 
-  private var codeView: ContentView.Code = ContentView.createFromCode(initData, laTeXMacroCache)
+  private var codeView: ContentView.Code = conentViewFromCode(initData)
 
 
   override def tempEditableTempDuringSelectionChange(editable: Boolean): Unit = {
@@ -35,11 +35,11 @@ class WrappedCodeView(
   }
 
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
-    if (ContentView.matches(contentData.ty, codeView)) {
+    if (contentViewMatches(contentData.ty, codeView)) {
       codeView.updateContent(contentData)
     } else {
       codeView.destroy()
-      codeView = ContentView.createFromCode(contentData, laTeXMacroCache)
+      codeView = conentViewFromCode(contentData)
       codeView.attachToNode(dom)
     }
   }
@@ -51,11 +51,11 @@ class WrappedCodeView(
   }
 
   protected override def onUpdateContent(c: model.data.Content.Code, trans: operation.Content.Code, viewUpdated: Boolean): Unit = {
-    if (ContentView.matches(c.ty, codeView)) {
+    if (contentViewMatches(c.ty, codeView)) {
       codeView.updateContent(c, trans, viewUpdated)
     } else {
       codeView.destroy()
-      codeView = ContentView.createFromCode(c, laTeXMacroCache)
+      codeView = conentViewFromCode(c)
       codeView.attachToNode(dom)
     }
   }

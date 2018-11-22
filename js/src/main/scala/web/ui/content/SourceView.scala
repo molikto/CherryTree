@@ -14,7 +14,7 @@ import web.ui._
 
 import scala.scalajs.js
 
-class SourceView(
+private [content] class SourceView(
   initData: model.data.Content.Code
 ) extends StaticCodeView {
 

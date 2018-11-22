@@ -91,7 +91,7 @@ object RichView {
   }
 
 }
-class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMacroCache: LaTeXMacroCache) extends ContentView.Rich {
+class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val latexMacroCache: LaTeXMacroCache) extends ContentView.Rich {
 
 
   private def emptyStr = if (isHr) "⁂  ⁂  ⁂" else ui.EmptyStr
@@ -175,7 +175,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
       val el = ct.item(i).asInstanceOf[HTMLElement]
       val str = el.getAttribute("data")
       el.removeChild(el.childNodes(1))
-      laTeXMacroCache.renderLaTeX(el, str, 1)
+      latexMacroCache.renderLaTeX(el, str, 1)
       i += 1
     }
   }
@@ -301,7 +301,7 @@ class RichView(initData: model.data.Content.Rich, val isHr: Boolean, val laTeXMa
           data := c.str,
           span(EvilChar)
         ).render
-        laTeXMacroCache.renderLaTeX(a, c.str, 1)
+        latexMacroCache.renderLaTeX(a, c.str, 1)
         a.appendChild(span(EvilChar).render)
         a: Frag
       case Text.Code(c) =>

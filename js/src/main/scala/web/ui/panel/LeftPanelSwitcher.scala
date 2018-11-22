@@ -13,7 +13,7 @@ class LeftPanelSwitcher(private val cl: Client,
   doc: => View,
   settingsDialog : => SettingsDialog,
   quickSearch: => QuickSearchDialog,
-  laTeXMacroCache: LaTeXMacroCache,
+  latexMacroCache: LaTeXMacroCache,
   enable: Boolean => Unit) extends UnselectableView {
 
 
@@ -103,11 +103,11 @@ class LeftPanelSwitcher(private val cl: Client,
 
   private def create(): Unit = {
     current = if (active == quickAccess) {
-      new QuickAccessPanel(cl, doc, laTeXMacroCache).attachToNode(container)
+      new QuickAccessPanel(cl, doc, latexMacroCache).attachToNode(container)
     } else if (active == commands) {
       new CommandListPanel(cl, doc).attachToNode(container)
     } else if (active == tags) {
-      new TagsPanel(cl, doc, quickSearch, laTeXMacroCache).attachToNode(container)
+      new TagsPanel(cl, doc, quickSearch, latexMacroCache).attachToNode(container)
     } else if (active == undoHistory) {
       new UndoHistoryPanel(cl).attachToNode(container)
     } else {

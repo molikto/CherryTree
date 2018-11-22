@@ -3,23 +3,16 @@ package web.ui.doc
 import java.util.UUID
 
 import org.scalajs.dom.raw.HTMLElement
-import client.Client
-import _root_.doc.DocTransaction
-import client.Client.ViewMessage
-import model.cursor
-import model.cursor.Node
-import model.data.Node.ContentType
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all.{tag, _}
-import settings.Settings
 import web.view.View
-import web.ui.content.ContentView
+import web.ui.content.{ContentView, ContentViewCreator}
 import web.ui.content.ContentView.General
 
 import scala.scalajs.js
 
-trait DocFramer {
+trait DocFramer extends ContentViewCreator {
 
   val docFramerIsSmall: Int = 0
   val docFramerExtraClass: String = ""
@@ -63,7 +56,7 @@ trait DocFramer {
   }
 
   private def create(a: model.data.Node): General = {
-    val cv = ContentView.create(a.content, a.contentType, latexMacroCache)
+    val cv = contentViewCreate(a.content, a.contentType)
     if (docFramerExtraClass != "") {
       cv.dom.classList.add(docFramerExtraClass)
     }
@@ -81,7 +74,7 @@ trait DocFramer {
 
   def updateContentViewInsideFrame(a: HTMLElement, data: model.data.Node): Unit = {
     val oldView = contentViewFromWithHold(a)
-    if (ContentView.matches(data.content, data.contentType, oldView)) {
+    if (contentViewMatches(data.content, data.contentType, oldView)) {
       oldView.updateContent(data.content)
       updateContentViewAndHoldAttribute(a, data)
     } else {

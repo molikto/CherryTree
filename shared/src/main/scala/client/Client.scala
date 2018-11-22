@@ -174,6 +174,7 @@ class Client(
   }
 
 
+  private val permissionLevel: Int = initial.permissionLevel
   private var committedVersion: Int = initial.version
   def debug_committedVersion = committedVersion
   private var committed: data.Node = initial.node

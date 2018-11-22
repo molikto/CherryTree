@@ -8,12 +8,10 @@ import model.data.Node.ContentType
 import model.mode.Node
 import model.operation
 import model.range.IntRange
-import org.scalajs.dom
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.{CompositionEvent, DragEvent, Event, FocusEvent, MouseEvent, document, raw, window}
 import org.scalajs.dom.raw.HTMLElement
 import util.Rect
-import view.EditorInterface
 import scalatags.JsDom.all.{s, _}
 import search.Search
 import settings.Settings
@@ -33,6 +31,9 @@ object DocumentView {
 abstract class DocumentView extends View with EditorView with Implicits with DocFramer
 {
   import DocumentView._
+
+
+  override val contentViewCreatedInDocument: Boolean = true
 
   def settings: Settings
 
@@ -361,6 +362,24 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       updateMode(update.to.mode, update.viewUpdated, update.editorUpdated, update.fromUser)
       refreshMounted()
     }))
+
+    observe(client.searchState.doOnNext(search => {
+      val haveBefore = searching != null
+      searching = search.searching.orNull
+      updateSearchingHighlight()
+      if (haveBefore && searching == null && activeContent != null) {
+        scrollInToViewIfNotVisible(activeContent.dom, dom, 5, 5, 30, 30)
+      }
+    }))
+
+    event(window, "resize", (a: MouseEvent) => {
+      refreshMounted()
+      if (activeContent != null) activeContentEditor.refreshRangeSelection()
+      updateSearchingHighlight()
+    })
+
+
+    observe(editor.flushes.doOnNext(_ => if (activeContent != null) activeContentEditor.flush()))
   }
 
   private var searching: Search = null
@@ -388,14 +407,6 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
   }
 
 
-  observe(client.searchState.doOnNext(search => {
-    val haveBefore = searching != null
-    searching = search.searching.orNull
-    updateSearchingHighlight()
-    if (haveBefore && searching == null && activeContent != null) {
-      scrollInToViewIfNotVisible(activeContent.dom, dom, 5, 5, 30, 30)
-    }
-  }))
 
 
   def startSelection(range: raw.Range): Unit = {
@@ -459,7 +470,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
 
   protected def createContent(c: Content, contentType: Option[ContentType]): ContentView.General = {
-    ContentView.create(c, contentType, latexMacroCache, true)
+    contentViewCreate(c, contentType, true)
   }
 
 
@@ -484,15 +495,6 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     registersDialog.refresh()
   }
 
-
-  event(window, "resize", (a: MouseEvent) => {
-    refreshMounted()
-    if (activeContent != null) activeContentEditor.refreshRangeSelection()
-    updateSearchingHighlight()
-  })
-
-
-  observe(editor.flushes.doOnNext(_ => if (activeContent != null) activeContentEditor.flush()))
 
 
   private val commandMenuAnchor = new OverlayAnchor {
@@ -731,7 +733,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
 
   private def findParentContent(t0: raw.Node): model.cursor.Node = {
-    val ct = ContentView.findParentContent(t0, dom, true)
+    val ct = findParentContentView(t0, dom, true)
     if (ct != null) {
       cursorOf(ct)
     } else {
@@ -882,8 +884,8 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       val sel = window.getSelection()
       if (sel != null && sel.rangeCount > 0) {
 
-        val mt = if (mouseEvent != null) ContentView.findParentContent(mouseEvent.target.asInstanceOf[raw.Node], dom, true) else null
-        var ct = ContentView.findParentContent(sel.focusNode, dom, true)
+        val mt = if (mouseEvent != null) findParentContentView(mouseEvent.target.asInstanceOf[raw.Node], dom, true) else null
+        var ct = findParentContentView(sel.focusNode, dom, true)
         var noUseSelection = false
         if (mt != null && mt != ct) {
           noUseSelection = true

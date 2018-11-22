@@ -21,7 +21,7 @@ import web.ui.dialog.{InlineCodeDialog, AttributeEditDialog}
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
-class RichViewEditor(val documentView: DocumentView, val controller: RichEditInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
+private [content] class RichViewEditor(val documentView: DocumentView, val controller: RichEditInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {
 
 
   /**

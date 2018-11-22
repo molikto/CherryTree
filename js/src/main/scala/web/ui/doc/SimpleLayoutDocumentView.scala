@@ -307,7 +307,7 @@ class SimpleLayoutDocumentView(
       case model.operation.Node.AttributeChange(at, _, _) =>
         if (s.visible(at)) {
           val old = to.node(at)
-          if (!ContentView.matches(old.content, old.contentType, contentAt(at))) {
+          if (!contentViewMatches(old.content, old.contentType, contentAt(at))) {
             replaceContent(at, old.content, to.node(at).contentType)
           }
           boxAt(at).className = classesFromNodeAttribute(to.node(at))

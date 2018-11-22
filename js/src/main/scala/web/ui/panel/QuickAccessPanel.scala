@@ -12,7 +12,7 @@ import web.view.{DelayUpdate, UnselectableView, View}
 
 import scala.util.Try
 
-class QuickAccessPanel(client: Client, doc: => View, laTeXMacroCache: LaTeXMacroCache) extends UnselectableView with DelayUpdate {
+class QuickAccessPanel(client: Client, doc: => View, latexMacroCache: LaTeXMacroCache) extends UnselectableView with DelayUpdate {
 
   private var previousZoom: model.cursor.Node = null
   private var previousFocus: Option[UUID] = None
@@ -40,9 +40,9 @@ class QuickAccessPanel(client: Client, doc: => View, laTeXMacroCache: LaTeXMacro
 
 
 
-  private val parentsView = new StaticDiffContentListView(onClick, onDoubleClick, laTeXMacroCache)
+  private val parentsView = new StaticDiffContentListView(onClick, onDoubleClick, latexMacroCache)
   parentsView.addHeader(div(cls := "ct-section-label", "go up").render)
-  private val tocView = new StaticDiffTocView(onClick, onDoubleClick, laTeXMacroCache, 1)
+  private val tocView = new StaticDiffTocView(onClick, onDoubleClick, latexMacroCache, 1)
 
   private var hideLevel: Int = Try {WebApi.localStorage.get("hide_level").get.toInt }.getOrElse(3)
 

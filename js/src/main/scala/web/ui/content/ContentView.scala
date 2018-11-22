@@ -14,21 +14,32 @@ import web.ui.doc.{DocumentView, LaTeXMacroCache}
 
 object ContentView {
   type General = ContentView[data.Content, model.operation.Content]
+
   trait Code extends ContentView[data.Content.Code, model.operation.Content.Code]
+
   trait Rich extends ContentView[data.Content.Rich, model.operation.Content.Rich]
 
-  def createFromCode(a: data.Content.Code, laTeXMacroCache: LaTeXMacroCache): Code = {
+}
+
+trait ContentViewCreator {
+  import ContentView._
+
+  def contentViewCreatedInDocument = false
+
+  def latexMacroCache: LaTeXMacroCache
+
+  def conentViewFromCode(a: data.Content.Code): Code = {
     a.ty match {
       case Embedded.HTML =>
         new EmbeddedHtmlView(a)
       case Embedded.LaTeX =>
-        new EmbeddedLaTeXView(a, laTeXMacroCache)
+        new EmbeddedLaTeXView(a, latexMacroCache)
       case _ =>
         new SourceView(a)
     }
   }
 
-  def matches(a: data.CodeType, v: Code): Boolean = {
+  def contentViewMatches(a: data.CodeType, v: Code): Boolean = {
     a match {
       case Embedded.HTML => v.isInstanceOf[EmbeddedHtmlView]
       case Embedded.LaTeX => v.isInstanceOf[EmbeddedLaTeXView]
@@ -37,7 +48,7 @@ object ContentView {
   }
 
 
-  def findParentContent(t0: raw.Node, dom: HTMLElement, editable: Boolean): ContentView.General = {
+  def findParentContentView(t0: raw.Node, dom: HTMLElement, editable: Boolean): ContentView.General = {
     var t = t0
     while (t != null && t != dom) {
       View.maybeDom[View](t) match {
@@ -45,7 +56,7 @@ object ContentView {
           val contentView: ContentView.General = a match {
             case view: RichView =>
               view.asInstanceOf[ContentView.General]
-            case view: WrappedCodeView =>
+            case view: WrappedEditableCodeView =>
               view.asInstanceOf[ContentView.General]
             case _ =>
               null
@@ -60,22 +71,22 @@ object ContentView {
     null
   }
 
-  def matches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
+  def contentViewMatches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
     (a, v.asInstanceOf[Any]) match {
       case (data.Content.Rich(r), v: RichView)  => contentType.contains(ContentType.Hr) == v.isHr
-      case (c: data.Content.Code, v: Code) => matches(c.ty, v)
+      case (c: data.Content.Code, v: Code) => contentViewMatches(c.ty, v)
       case _ => false
     }
   }
 
 
-  def create(a: data.Content, contentType: Option[ContentType], latexMacroCache: LaTeXMacroCache, editable: Boolean = false): General = {
+  def contentViewCreate(a: data.Content, contentType: Option[ContentType], editable: Boolean = false): General = {
     (a match {
       case r: data.Content.Rich =>
         val v = new RichView(r, contentType.contains(ContentType.Hr), latexMacroCache)
         if (editable) v.dom.classList.add("text-cursor")
         v
-      case s: data.Content.Code => if (editable) new WrappedCodeView(s, latexMacroCache) else  createFromCode(s, latexMacroCache)
+      case s: data.Content.Code => if (editable) new WrappedEditableCodeView(s, latexMacroCache) else  conentViewFromCode(s)
     }).asInstanceOf[General]
   }
 }

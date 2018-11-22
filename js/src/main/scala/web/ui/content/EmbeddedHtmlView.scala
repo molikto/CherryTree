@@ -6,7 +6,7 @@ import web.view._
 
 import scala.scalajs.js
 
-class EmbeddedHtmlView(initData: model.data.Content.Code
+private [content] class EmbeddedHtmlView(initData: model.data.Content.Code
 ) extends StaticCodeView  {
 
   dom = div(contenteditable := "false").render
