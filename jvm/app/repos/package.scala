@@ -82,7 +82,7 @@ package object repos {
 
   implicit val nodeGetResult: GetResult[DocumentRepository.NodeResult] = GetResult[DocumentRepository.NodeResult](r => DocumentRepository.NodeResult(r.<<, r.<<, r.<<(getJson), r.<<, r.<<))
 
-  implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val listResultResult: GetResult[ListResult] = GetResult[ListResult](r => ListResult(r.<<, r.<<, r.<<, r.<<, Collaborator(r.<<, r.<<, r.<<), r.<<))
 
 
   implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<, r.<<)))

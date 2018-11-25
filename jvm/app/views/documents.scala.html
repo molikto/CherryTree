@@ -3,6 +3,7 @@
 @import controllers.AssetsFinder
 @import api.ListResult
 @import play.twirl.api.Html
+@import api.PermissionLevel
 
 @(user: models.User, res: Seq[ListResult])(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder)
 
@@ -13,6 +14,7 @@
     @for(r <- res) {
       <div>
         <a class="ct-document-style document-list-title" href="@controllers.routes.DocumentController.index(r.id)">@Html(r.title.toScalaTags(true).render)</a>
+        <span class="badge badge-info">@PermissionLevel.toName(r.permissionLevel)</span>
         <p class="secondary-text">
         @messages("last.updated", platform.formatDate(r.updatedTime))
         </p>

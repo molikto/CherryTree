@@ -28,18 +28,18 @@ class UserRepository @Inject() (
   (implicit ex: ExecutionContext) extends IdentityService[User] with AuthInfoRepository with DatabaseAccessing {
 
 
-  def newUserDocument(): model.data.Node = initDocument.regenerateIds()
+  def newUserDocument(): model.data.Node = model.data.Node.create("New document")
 
-  private lazy val initDocument = {
-    val temp = env.classLoader.getResourceAsStream("docinit.json")
-    import model._
-    Json.fromJson[model.data.Node](Json.parse(temp)) match {
-      case JsSuccess(node, path) =>
-        node
-      case _ =>
-        model.data.Node.create("New document")
-    }
-  }
+//  private lazy val initDocument = {
+//    val temp = env.classLoader.getResourceAsStream("docinit.json")
+//    import model._
+//    Json.fromJson[model.data.Node](Json.parse(temp)) match {
+//      case JsSuccess(node, path) =>
+//        node
+//      case _ =>
+//        model.data.Node.create("New document")
+//    }
+//  }
 
   import utils.MyPostgresProfile.plainApi._
 
@@ -60,7 +60,9 @@ class UserRepository @Inject() (
     val createUser =
       sqlu"insert into users values (${u.userId}, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
     val documentQuery = createDocumentQuery(u.userId, initDocument, time)
-    db.run(DBIO.seq(createUser +: documentQuery : _*).transactionally).map(_ => u)
+    val addtionalDocumentQuery =
+      sqlu"insert into permissions values (${u.userId}, ${"17e51bae-1f34-4370-8265-9056f3e646f8"}, ${PermissionLevel.Read})"
+    db.run(DBIO.seq(createUser +: documentQuery :+ addtionalDocumentQuery : _*).transactionally).map(_ => u)
   }
 
   def permission(userId: UUID, documentId: UUID): _root_.scala.concurrent.Future[Int] = {

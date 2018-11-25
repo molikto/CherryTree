@@ -53,11 +53,12 @@ class ApplicationController @Inject() (
   def default = silhouette.UserAwareAction.async { implicit request =>
     request.identity match {
       case Some(user) =>
-        docs.list(user.userId).map(_.headOption).map {
-          case Some(res) =>
-            Redirect(controllers.routes.DocumentController.index(res.id))
-          case None =>
+        docs.list(user.userId).map { li =>
+          if (li.size == 1) {
+            Redirect(controllers.routes.DocumentController.index(li.head.id))
+          } else {
             Redirect(controllers.routes.DocumentsController.documents())
+          }
         }
       case None =>
         Future.successful(Ok(views.html.index()))

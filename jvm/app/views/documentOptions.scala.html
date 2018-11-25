@@ -29,7 +29,7 @@
       <div class="list-group-item">
         <p>@c._1.name</p>
         <p>@c._1.email</p>
-        <p>permission level: @c._2</p>
+        <span class="badge badge-info">@PermissionLevel.toName(c._2)</span>
 
         @if(res.permissionLevel >= PermissionLevel.Admin) {
           @helper.form(action = controllers.routes.DocumentsController.deleteCollabrator(res.id), 'autocomplete -> "off") {
@@ -61,9 +61,10 @@
       }
     }
 
+    <hr/>
+
     @if(res.permissionLevel >= PermissionLevel.Owner) {
 
-      <hr/>
       <h4>Danger zone</h4>
         <!-- Button trigger modal -->
       <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#deleteDocumentModal">
@@ -94,9 +95,8 @@
           </div>
         </div>
       </div>
-
+    } else {
+      <span>Owned by @{res.owner.name}</span>
     }
-
-
   </div>
 }
