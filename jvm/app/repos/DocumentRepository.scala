@@ -68,10 +68,10 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
       sql"""select #$ListColumns
            from documents, nodes, permissions where
               permissions.user_id = $uid and
-              permissions.document_id = documents.document_id and
+              permissions.document_id = $did and
               permissions.permission_level > ${0} and
+              documents.document_id = $did and
               documents.root_node_id = nodes.node_id
-           order by documents.last_updated_time desc
         """.as[ListResult].headOption)
 
   }
