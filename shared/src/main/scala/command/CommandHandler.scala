@@ -32,7 +32,7 @@ class CommandHandler(client: Client) extends CommandInterface {
   def settings: Settings = client
 
   val miscCommands = new defaults.Misc(settings, this)
-  val yankPaste = new defaults.YankPaste(settings)
+  val yankPaste = new defaults.YankPaste(settings, client.isReadOnly)
 
 
   val emptyCategory = new CommandCategory(client, "[]")

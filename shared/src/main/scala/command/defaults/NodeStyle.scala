@@ -6,7 +6,7 @@ import command.{CommandCategory, CommandInterface}
 import command.Key.{KeySeq, Shift}
 import doc.{DocState, DocTransaction}
 import model._
-import model.data.{Content, Text}
+import model.data.{CodeType, Content, Text}
 import model.range.IntRange
 import settings.Settings
 import command.Key._
@@ -23,7 +23,7 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asSingle
       DocTransaction(
-        Seq(operation.Node.Replace(cur, data.Content.Code(data.Unicode(a.node(cur).rich.toPlain), ""))),
+        Seq(operation.Node.Replace(cur, data.Content.Code(data.Unicode(a.node(cur).rich.toPlain), CodeType.Empty))),
         Some(a.copyContentMode(mode.Content.CodeNormal(false))))
     }
   }

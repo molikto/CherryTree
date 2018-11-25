@@ -30,7 +30,7 @@ trait ContentViewCreator {
   def latexMacroCache: LaTeXMacroCache
 
   def conentViewFromCode(a: data.Content.Code): Code = {
-    a.ty match {
+    a.lang match {
       case Embedded.HTML =>
         new EmbeddedHtmlView(a)
       case Embedded.LaTeX =>
@@ -75,7 +75,7 @@ trait ContentViewCreator {
   def contentViewMatches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
     (a, v.asInstanceOf[Any]) match {
       case (data.Content.Rich(r), v: RichView)  => true
-      case (c: data.Content.Code, v: Code) => contentViewMatches(c.ty, v)
+      case (c: data.Content.Code, v: Code) => contentViewMatches(c.lang, v)
       case _ => false
     }
   }

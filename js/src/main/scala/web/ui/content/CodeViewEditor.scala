@@ -45,7 +45,7 @@ private [content] class CodeViewEditor(
       if (!editorUpdated) {
         trans match {
           case model.operation.Content.CodeLang(lang) =>
-            editing.sync(c.ty)
+            editing.sync(c.lang)
           case model.operation.Content.CodeContent(op) =>
             editing.sync(Seq(op), c.unicode)
         }
@@ -69,7 +69,7 @@ private [content] class CodeViewEditor(
       case inside: model.mode.Content.CodeInside =>
         if (editing == null) {
           editing = documentView.sourceEditor
-          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(documentView.settings.enableModal), contentData.ty, documentView.canEditActiveEditor()))
+          editing.show(new SourceEditOption(contentData.unicode, CodeInside.empty(documentView.settings.enableModal), contentData.lang, documentView.canEditActiveEditor()))
         } else if (!editorUpdated) {
           editing.sync(inside)
         }

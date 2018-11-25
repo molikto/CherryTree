@@ -30,7 +30,7 @@ private [content] class WrappedCodeView(initData: model.data.Content.Code,
   }
 
   protected override def onUpdateContent(contentData: model.data.Content.Code): Unit = {
-    if (contentViewMatches(contentData.ty, codeView)) {
+    if (contentViewMatches(contentData.lang, codeView)) {
       codeView.updateContent(contentData)
     } else {
       codeView.destroy()
@@ -46,7 +46,7 @@ private [content] class WrappedCodeView(initData: model.data.Content.Code,
   }
 
   protected override def onUpdateContent(c: model.data.Content.Code, trans: operation.Content.Code, viewUpdated: Boolean): Unit = {
-    if (contentViewMatches(c.ty, codeView)) {
+    if (contentViewMatches(c.lang, codeView)) {
       codeView.updateContent(c, trans, viewUpdated)
     } else {
       codeView.destroy()

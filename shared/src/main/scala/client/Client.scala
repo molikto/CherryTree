@@ -93,7 +93,9 @@ class Client(
   with EditorInterface
   with DocInterface { self =>
 
-  val permissionLevel: Int =  initial.permissionLevel
+
+  val permissionLevel: Int = if (System.currentTimeMillis() % 2 == 0) PermissionLevel.Read else initial.permissionLevel
+  //val permissionLevel: Int =  initial.permissionLevel
 
   var _commandHandler: CommandHandler = new CommandHandler(this)
   def commands = _commandHandler
@@ -534,7 +536,7 @@ class Client(
           editorUpdated = true))
       case Some(model.mode.Node.Content(cur, model.mode.Content.CodeInside(mode, pos))) =>
         localChange(DocTransaction(
-          Seq(model.operation.Node.Content(cur, model.operation.Content.CodeLang(to.str)))
+          Seq(model.operation.Node.Content(cur, model.operation.Content.CodeLang(to)))
           , None, editorUpdated = true))
       case _ => throw new IllegalStateException("What??")
     }
@@ -729,7 +731,8 @@ class Client(
   private var previousCopyId: String = Random.nextInt().toString
 
   // html, plain, and ct
-  def onExternalCopyCut(isCut: Boolean): (Option[String], Option[String], Option[String]) = {
+  def onExternalCopyCut(isCut0: Boolean): (Option[String], Option[String], Option[String]) = {
+    val isCut = isCut0 && !isReadOnly
     val (trans, data) = defaults.yankSelection(state, _commandHandler, enableModal, isCut, reg = '*')
     localChange(trans)
     data.map {
@@ -750,6 +753,7 @@ class Client(
     * currently code editors system copy/paste is not handled by this
     */
   override def onExternalPasteInRichEditor(html: Option[String], plain: Option[String], ct: Option[String]): Unit = {
+    if (isReadOnly) return // in this case the commands does not exist
     var done = false
     ct match {
       case Some(a) if a == previousCopyId =>

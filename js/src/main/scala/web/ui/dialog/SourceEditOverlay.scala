@@ -12,22 +12,39 @@ import settings.Settings
 import web._
 import web.ui._
 import view._
+import web.ui.content.SourceView
 
 import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 
-class SourceEditOption(val str: Unicode, val mode: CodeInside, val codeType: CodeType, editable: Boolean) {
+class SourceEditOption(val str: Unicode, val mode: CodeInside, val codeType: CodeType, val editable: Boolean) {
 }
 
 object SourceEditOverlay {
   var globalDefined = false
+
+  def renderSourceInto(a0: String, codeType: CodeType, code: HTMLPreElement) = {
+    val a = if (a0.isEmpty) " " else a0
+    val cmMode = codeType.codeMirror
+    if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+      CodeMirror.requireMode(cmMode, () => {
+        if (code.textContent.isEmpty) {
+          CodeMirror.runMode(a, cmMode, code)
+        }
+      });
+    } else {
+      CodeMirror.runMode(a, cmMode, code)
+    }
+
+  }
 }
 
 trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   def settings: Settings
 
+  private var isEditable = false
   private var updating = false
   private val dollarSign = Unicode("$")
 
@@ -50,7 +67,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     justifyContent := "center",
     cls := "ct-desc").render
 
-  protected def predefined: Seq[SourceEditType]  = SourceEditType.all
+  protected def predefined: Seq[CodeType]  = CodeType.all
 
   private val selectView: HTMLSelectElement = select(
       height := "24px",
@@ -60,19 +77,20 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       onchange := { e: Event => {
         if (!updating) {
           val ee = e.target.asInstanceOf[HTMLSelectElement].value
-          val ct = predefined.find(_.ct.str == ee).get.ct
+          val ct = CodeType.parse(ee)
           setCodeType(ct)
           editor.onCodeTypeChangeAndEditorUpdated(ct)
         }
       }},
-      predefined.map(a => option(a.name, value := a.ct.str))
+      predefined.map(a => option(a.displayNmae, value := a.str))
     ).render
 
-  dom = form(
+
+  val editable = div(
     display := "flex",
     flexDirection := "column",
-    padding := "8px",
-    cls := "ct-card unselectable",
+    width := "100%",
+    height := "100%",
     ta,
     div(height := "24px",
       marginTop := "8px",
@@ -82,7 +100,40 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
       flexDirection := "row",
       desc,
       selectView
-    )).render
+    )
+  ).render
+
+
+
+  private val preCode = pre(
+    flex := "1 1",
+    cls := "ct-code-preview ct-scroll cm-s-oceanic-next").render
+
+  private val codeTypeDisplay = div(
+  ).render
+  val nonEditable = div(
+        width := "100%",
+  height := "100%",
+  display := "flex",
+  minWidth := "360px",
+  position := "relative",
+  flexDirection := "column-reverse",
+  overflow := "hidden",
+    div(display := "flex",
+      flexShrink := "0",
+      height := "min-content",
+      paddingTop := "4px",
+      flexDirection := "row-reverse",
+      codeTypeDisplay),
+    preCode
+  ).render
+
+  dom = form(
+    padding := "8px",
+    cls := "ct-card unselectable",
+    editable,
+    nonEditable
+   ).render
 
   selectView.addEventListener("keydown", (k: KeyboardEvent) => {
     val kk = KeyMap.get(k.key)
@@ -356,7 +407,7 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
   }
 
   override def focus(): Unit = {
-    codeMirror.focus()
+    if (isEditable) codeMirror.focus()
   }
 
   private var isInnerNormal = true
@@ -368,11 +419,15 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     val opt = this.opt
     super.onDismiss()
     editor.onExitSubMode()
-    codeMirror.setValue("")
-    if (settings.enableModal) {
-      if (isInnerInsert) {
-        CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
+    if (isEditable) {
+      codeMirror.setValue("")
+      if (settings.enableModal) {
+        if (isInnerInsert) {
+          CodeMirror.Vim.handleKey(codeMirror, "<Esc>", "mapping")
+        }
       }
+    } else {
+      preCode.innerHTML = ""
     }
   }
 
@@ -384,32 +439,38 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
 
   private def setCodeType(a: CodeType) = {
     codeType_ = a
-    val cmMode = a.codeMirror
-    if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
-      CodeMirror.requireMode(cmMode, () => {
-        if (a == codeType_) {
-          codeMirror.setOption("mode", cmMode)
-        }
-      });
-    } else {
-      codeMirror.setOption("mode", cmMode)
-    }
-    val index = predefined.indexWhere(_.ct == a)
-    val ii = if (index >= 0) index else predefined.size - 1
-    selectView.selectedIndex = ii
+    if (isEditable) {
+      val cmMode = a.codeMirror
+      if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
+        CodeMirror.requireMode(cmMode, () => {
+          if (a == codeType_) {
+            codeMirror.setOption("mode", cmMode)
+          }
+        });
+      } else {
+        codeMirror.setOption("mode", cmMode)
+      }
+      val index = predefined.indexWhere(_ == a)
+      val ii = if (index >= 0) index else predefined.size - 1
+      selectView.selectedIndex = ii
 
-    if (exitOnInputDollarSign) {
-      desc.textContent = "insert $ to exit"
-    } else if (a == LaTeXMacro) {
-      desc.textContent = "currently only support \\gdef"
+      if (exitOnInputDollarSign) {
+        desc.textContent = "insert $ to exit"
+      } else if (a == LaTeXMacro) {
+        desc.textContent = "currently only support \\gdef"
+      } else {
+        desc.textContent = ""
+      }
     } else {
-      desc.textContent = ""
+      codeTypeDisplay.textContent = a.displayNmae
     }
   }
 
   private def syncModeInner(a: CodeInside) = {
-    val pp = codeMirror.posFromIndex(a.pos)
-    codeMirror.setSelection(pp, pp)
+    if (isEditable) {
+      val pp = codeMirror.posFromIndex(a.pos)
+      codeMirror.setSelection(pp, pp)
+    }
   }
 
   def sync(a: CodeInside): Unit = {
@@ -425,29 +486,28 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     updating = false
   }
 
-  def sync(aa: Seq[operation.Unicode], assertEqual: model.data.Unicode = null): Unit = {
+  def sync(aa: Seq[operation.Unicode], content: model.data.Unicode): Unit = {
     updating = true
-    for (a <- aa) {
-      a match {
-        case operation.Unicode.Insert(at, u, _) =>
-          val strAt =  codeMirror.posFromIndex(str.toStringPosition(at))
-          codeMirror.replaceRange(u.str, strAt, strAt)
-        case operation.Unicode.Delete(r) =>
-          val strS =  codeMirror.posFromIndex(str.toStringPosition(r.start))
-          val strE =  codeMirror.posFromIndex(str.toStringPosition(r.until))
-          codeMirror.replaceRange("", strS, strE)
-        case _ =>
-          throw new IllegalArgumentException("Not supported")
+    str = content
+    if (isEditable) {
+      for (a <- aa) {
+        a match {
+          case operation.Unicode.Insert(at, u, _) =>
+            val strAt =  codeMirror.posFromIndex(str.toStringPosition(at))
+            codeMirror.replaceRange(u.str, strAt, strAt)
+          case operation.Unicode.Delete(r) =>
+            val strS =  codeMirror.posFromIndex(str.toStringPosition(r.start))
+            val strE =  codeMirror.posFromIndex(str.toStringPosition(r.until))
+            codeMirror.replaceRange("", strS, strE)
+          case _ =>
+            throw new IllegalArgumentException("Not supported")
+        }
+        if (aa.size > 1 || content == null || model.debug_view) {
+          str = Unicode(codeMirror.getValue().asInstanceOf[String]).guessProp
+        }
       }
-      if (aa.size > 1 || assertEqual == null || model.debug_view) {
-        str = Unicode(codeMirror.getValue().asInstanceOf[String]).guessProp
-      }
-    }
-    if (assertEqual != null) {
-      if (model.debug_view) {
-        assert(str == assertEqual, s"not equal $str, $assertEqual")
-      }
-      str = assertEqual
+    } else {
+      SourceEditOverlay.renderSourceInto(str.str, codeType_, preCode)
     }
     updating = false
   }
@@ -456,29 +516,40 @@ trait SourceEditOverlay[T <: SourceEditOption] extends OverlayT[T] {
     super.show(opt)
     str = opt.str
     editor.setRegister(-1)
+    isEditable = opt.editable
     codeType_ = opt.codeType
     updating = true
-    codeMirror.setValue(str.str)
     setCodeType(opt.codeType)
-    isInnerNormal = true
-    isInnerInsert = false
-    if (settings.enableModal) {
-      if (opt.mode.mode == "insert") {
-        syncModeInner(opt.mode)
-        window.setTimeout(() => {
-          if (!dismissed) {
-            fakeCommand = true
-            CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
-            CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
-            CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
-            fakeCommand = false
-          }
-        }, 0)
+    if (isEditable) {
+      editable.style.display = "flex"
+      nonEditable.style.display = "none"
+      codeMirror.setValue(str.str)
+      isInnerNormal = true
+      isInnerInsert = false
+      if (settings.enableModal) {
+        if (opt.mode.mode == "insert") {
+          syncModeInner(opt.mode)
+          window.setTimeout(() => {
+            if (!dismissed) {
+              fakeCommand = true
+              CodeMirror.Vim.handleKey(codeMirror, "i", "mapping")
+              CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
+              CodeMirror.Vim.handleKey(codeMirror, "\"", "mapping")
+              fakeCommand = false
+            }
+          }, 0)
+        }
       }
+      modeChanged = false
+      modeStr = opt.mode.mode
+      modePos = opt.mode.pos
+    } else {
+      editable.style.display = "none"
+      nonEditable.style.display = "flex"
+      codeTypeDisplay.textContent = codeType_.displayNmae
+      SourceEditOverlay.renderSourceInto(str.str, codeType_, preCode)
+
     }
-    modeChanged = false
-    modeStr = opt.mode.mode
-    modePos = opt.mode.pos
     updating = false
   }
 

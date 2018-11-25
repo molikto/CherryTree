@@ -462,7 +462,7 @@ private [content] class RichViewEditor(val documentView: DocumentView, val contr
                 case Some(model.mode.Content.RichCodeSubMode(range, code, modeBefore)) =>
                   c.op.transformToCodeChange(IntRange(range.start, range.until)) match {
                     case Some(edit) =>
-                      dialog.sync(edit)
+                      dialog.sync(edit, data.content.after(range.start - 1).text.asCoded.content)
                     case _ => clearEditor()
                   }
                   // no need to sync type change, this will dismiss the dialog instead

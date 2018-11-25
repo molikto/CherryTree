@@ -17,7 +17,7 @@ class InlineCodeDialog(
 
   override def showLineNumber = false
 
-  override protected def predefined: Seq[SourceEditType] = SourceEditType.inlineOnly
+  override protected def predefined: Seq[CodeType] = CodeType.inline
 
   override def onAttach(): Unit = {
     super.onAttach()

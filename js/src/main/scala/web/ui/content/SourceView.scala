@@ -11,12 +11,12 @@ import util.Rect
 import view.EditorInterface
 import web.view._
 import web.ui._
+import web.ui.dialog.SourceEditOverlay
 
 import scala.scalajs.js
 
-private [content] class SourceView(
-  initData: model.data.Content.Code,
-  val infinite: Boolean = false
+class SourceView(
+  initData: model.data.Content.Code
 ) extends StaticCodeView {
 
 
@@ -34,35 +34,21 @@ private [content] class SourceView(
 
   protected override def onUpdateContent(contentData: model.data.Content.Code) {
     removeAllChild(preCode)
-    val sourceType = SourceEditType.all.find(contentData.ty != EmptyCodeType && _.ct == contentData.ty)
-    val toRun = if (infinite) {
-      remainingView.textContent = sourceType.map(_.name).getOrElse("")
-      contentData.unicode.str
+    val sourceType = contentData.lang
+    val lines = contentData.unicode.str.lines
+    val look = lines.take(5).toVector
+    val remaining = lines.size
+    val totalSize = remaining + look.size
+    if (remaining > 0) {
+      val sourceString = sourceType.displayNmae  + ", "
+      remainingView.textContent = sourceString + s"$totalSize lines"
+    } else if (contentData.unicode.isBlank) {
+      remainingView.textContent = sourceType.displayNmae + ", empty"
     } else {
-      val lines = contentData.unicode.str.lines
-      val look = lines.take(5).toVector
-      val remaining = lines.size
-      val totalSize = remaining + look.size
-      if (remaining > 0) {
-        val sourceString = sourceType.map(_.name + ", ").getOrElse("")
-        remainingView.textContent = sourceString + s"$totalSize lines"
-      } else if (contentData.unicode.isBlank) {
-        remainingView.textContent = if (sourceType.isEmpty) "empty code block" else sourceType.get.name + ", empty"
-      } else {
-        remainingView.textContent = sourceType.map(_.name).getOrElse("")
-      }
-      look.mkString("\n")
+      remainingView.textContent = sourceType.displayNmae
     }
-    val cmMode = contentData.ty.codeMirror
-    if (cmMode != "" && !CodeMirror.modes.asInstanceOf[js.Object].hasOwnProperty(cmMode)) {
-      CodeMirror.requireMode(cmMode, () => {
-        if (this.contentData == contentData) {
-          CodeMirror.runMode(toRun, cmMode, preCode)
-        }
-      });
-    } else {
-      CodeMirror.runMode(toRun, cmMode, preCode)
-    }
+    val toRun = look.mkString("\n")
+    SourceEditOverlay.renderSourceInto(toRun, contentData.lang, preCode)
   }
 
   updateContent(initData)

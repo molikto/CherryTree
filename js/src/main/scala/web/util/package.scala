@@ -3,7 +3,7 @@ package web
 import java.util.regex.Pattern
 
 import model.data
-import model.data.{Content, Text, Unicode}
+import model.data.{Content, SourceCode, Text, Unicode, Embedded}
 import web.view._
 import org.scalajs.dom._
 import org.scalajs.dom.raw.{HTMLElement, HTMLImageElement, HTMLLinkElement, HTMLTextAreaElement}
@@ -219,7 +219,7 @@ package object util {
             )
             c = c.nextSibling
           case "PRE" =>
-            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.textContent), "source/javascript"))) // TODO get source somewhere
+            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.textContent), SourceCode("javascript")))) // TODO get source somewhere
             c = c.nextSibling
           case "HR" =>
             buffer.append(data.Node.create().attribute(data.Node.ContentType, data.Node.ContentType.Hr))
@@ -272,7 +272,7 @@ package object util {
             buffer.append(data.Node.create().copy(content = t))
             c = next
           case _ if c.isInstanceOf[HTMLElement] =>
-            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.asInstanceOf[HTMLElement].outerHTML), "embedded/html")))
+            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.asInstanceOf[HTMLElement].outerHTML), Embedded.HTML)))
             c = c.nextSibling
           case _ =>
             c = c.nextSibling
@@ -391,11 +391,11 @@ package object util {
             c = c.next
           case "code_block" =>
             assert(c.firstChild == null, "code_block has child")
-            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), "source/" + c.info)))
+            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), SourceCode(c.info))))
             c = c.next
           case "html_block" =>
             assert(c.firstChild == null, "html_block has child")
-            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), "embedded/html")))
+            buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.literal), Embedded.HTML)))
             c = c.next
           case "thematic_break" =>
             assert(c.firstChild == null)

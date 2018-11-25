@@ -51,7 +51,7 @@ case class Node(
 
   def isLaTeXMacro: Boolean =
     content match {
-      case c: Content.Code if c.ty == LaTeXMacro =>
+      case c: Content.Code if c.lang == LaTeXMacro =>
         true
       case _ =>
         false
@@ -124,7 +124,7 @@ case class Node(
     if (macros_ == null) {
       var cur: String = null
       content match {
-        case c: Content.Code if c.ty == LaTeXMacro =>
+        case c: Content.Code if c.lang == LaTeXMacro =>
           cur = c.unicode.str
         case _ =>
       }

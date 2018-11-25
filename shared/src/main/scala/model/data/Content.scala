@@ -2,81 +2,16 @@ package model.data
 
 import java.util.UUID
 
+import boopickle.{PickleState, Pickler, UnpickleState}
+import jdk.nashorn.internal.runtime.Undefined
 import model.range.IntRange
 import model.{data, mode}
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json._
 import search.{Search, SearchOccurrence}
-import model._
 import scalatags.Text.all.Frag
 
 import scala.util.Random
 
-
-case class SourceEditType(name: String, ct: CodeType, desc: String = "")
-
-object SourceEditType {
-  val inlineOnly: Seq[SourceEditType] = Seq(
-    SourceEditType("Embedded: LaTeX", Embedded.LaTeX),
-    SourceEditType("Embedded: HTML", Embedded.HTML)
-  )
-  val all: Seq[SourceEditType] = (Seq(
-    SourceEditType("Source: JavaScript", SourceCode("javascript")),
-    SourceEditType("Source: Markdown", SourceCode("markdown")),
-    SourceEditType("Source: Kotlin", SourceCode("kotlin")),
-    SourceEditType("LaTeX macro", LaTeXMacro),
-    SourceEditType("Plain text", PlainCodeType)) ++ SourceEditType.inlineOnly).sortBy(_.name) ++
-    Seq(SourceEditType("Undefined", EmptyCodeType))
-}
-
-sealed abstract class CodeType(val str: String) {
-  def codeType = str
-  def codeMirror: String = if (codeType == "stex") "latex" else if (codeType == "html") "htmlmixed" else codeType
-  def delimitation: SpecialChar.Delimitation = if (this == Embedded.LaTeX) {
-    SpecialChar.LaTeX
-  } else if (this == Embedded.HTML) {
-    SpecialChar.HTML
-  } else {
-    null
-  }
-}
-
-case class SourceCode(name: String) extends CodeType(s"source/$name") {
-  override def codeType: String = name
-}
-
-case object LaTeXMacro extends CodeType("latex-macro") {
-  override def codeType: String = "latex"
-}
-case class Embedded(name: String) extends CodeType(s"embedded/$name") {
-  override def codeType: String = name
-}
-object Embedded {
-  val LaTeX = Embedded("latex")
-  val HTML = Embedded("html")
-}
-case class OtherCodeType(name: String) extends CodeType(name)
-case object PlainCodeType extends CodeType("plain") {
-  override def codeMirror: String = ""
-}
-case object EmptyCodeType extends CodeType("")
-
-object CodeType {
-  def parse(a: String): CodeType = {
-    if (a.startsWith("source/")) {
-      SourceCode(a.substring("source/".length))
-    } else if (a == "latex-macro") {
-      LaTeXMacro
-    } else if (a == "plain") {
-      PlainCodeType
-    } else if (a == "") {
-      EmptyCodeType
-    } else if (a.startsWith("embedded/")) {
-      Embedded(a.substring("embedded/".length))
-    } else {
-      OtherCodeType(a)
-    }
-  }
-}
 
 abstract sealed class Content {
   def mapBy(map: Map[UUID, UUID]): Content
@@ -115,12 +50,10 @@ object Content extends DataObject[Content] {
     * code/mime
     *
     */
-  case class Code(unicode: Unicode, lang: String) extends Content {
+  case class Code(unicode: Unicode, lang: CodeType) extends Content {
 
     protected override def defaultNormalMode(): mode.Content.Normal = mode.Content.CodeNormal(false)
     protected override def defaultInsertMode(): mode.Content = mode.Content.CodeNormal(true)
-
-    val ty = CodeType.parse(lang)
 
     override def isEmpty: Boolean = unicode.isEmpty
 
@@ -134,7 +67,7 @@ object Content extends DataObject[Content] {
 
     override def toScalaTags(safe: Boolean): Frag = {
       import scalatags.Text.all._
-      if (ty == Embedded.HTML) {
+      if (this.lang == Embedded.HTML) {
         if (safe) raw(unicode.str)
         else pre("Embeded HTML")
       }
@@ -143,8 +76,11 @@ object Content extends DataObject[Content] {
   }
 
   object Code {
-    val empty: Content = Code(Unicode.empty, "")
-    val jsonFormat: Format[Code] = Json.format[Code]
+    val empty: Content = Code(Unicode.empty, CodeType.Empty)
+    val jsonFormat: Format[Code] = {
+      implicit val codeTypeFormat = CodeType.jsonFormat
+      Json.format[Code]
+    }
   }
 
   case class Rich(val content: data.Rich) extends Content {
@@ -184,7 +120,7 @@ object Content extends DataObject[Content] {
         case Code(u, l) =>
           writeInt(0)
           Unicode.pickler.pickle(u)
-          writeString(l)
+          writeString(l.str)
         case Rich(p) =>
           writeInt(1)
           data.Rich.pickler.pickle(p)
@@ -195,7 +131,7 @@ object Content extends DataObject[Content] {
       import state.dec._
       readInt match {
         case 0 =>
-          Code(Unicode.pickler.unpickle, readString)
+          Code(Unicode.pickler.unpickle, CodeType.parse(readString))
         case 1 =>
           Rich(data.Rich.pickler.unpickle)
       }
@@ -206,6 +142,6 @@ object Content extends DataObject[Content] {
     if (r.nextBoolean()) {
       Content.Rich(data.Rich.random(r))
     } else {
-      Content.Code(Unicode.random(r), "")
+      Content.Code(Unicode.random(r), CodeType.Empty)
     }
 }

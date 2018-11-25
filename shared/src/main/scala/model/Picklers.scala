@@ -27,5 +27,6 @@ trait Picklers extends Base with BasicImplicitPicklers with TransformPicklers wi
 
   implicit def pickler_EncodedSeq: Pickler[data.EncodedSeq] = data.EncodedSeq.pickler
   implicit def operationPickler_EncodedSeq: Pickler[operation.EncodedSeq] = operation.EncodedSeq.pickler
+  implicit def pickler_codeType: Pickler[data.CodeType] = data.CodeType.pickler
 
 }

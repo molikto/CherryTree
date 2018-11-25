@@ -2,6 +2,7 @@ package model.operation
 
 import model._
 import Type.Type
+import model.data.CodeType
 import model.operation.Node.Replace
 import model.range.IntRange
 
@@ -39,7 +40,7 @@ object Content extends OperationObject[data.Content, Content] {
 
     override def toString: String = op.toString
   }
-  case class CodeLang(lang: String) extends Code {
+  case class CodeLang(lang: CodeType) extends Code {
     override def ty: Type = Type.AddDelete
     override def apply(d: data.Content): data.Content = {
       d match {
@@ -96,7 +97,7 @@ object Content extends OperationObject[data.Content, Content] {
           Unicode.pickler.pickle(u)
         case CodeLang(l) =>
           writeInt(1)
-          writeString(l)
+          writeString(l.str)
         case Rich(u) =>
           writeInt(2)
           operation.Rich.pickler.pickle(u)
@@ -109,7 +110,7 @@ object Content extends OperationObject[data.Content, Content] {
         case 0 =>
           Content.CodeContent(Unicode.pickler.unpickle)
         case 1 =>
-          Content.CodeLang(readString)
+          Content.CodeLang(CodeType.parse(readString))
         case 2 =>
           Content.Rich(operation.Rich.pickler.unpickle)
       }
@@ -123,7 +124,7 @@ object Content extends OperationObject[data.Content, Content] {
         if (r.nextBoolean()) {
           CodeContent(operation.Unicode.random(unicode, r))
         } else {
-          CodeLang(r.nextInt(10).toString)
+          CodeLang(if (r.nextInt(2) == 1) CodeType.Plain else CodeType.Empty)
         }
     }
   }

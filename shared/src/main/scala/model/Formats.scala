@@ -3,8 +3,7 @@ package model
 import play.api.libs.json.Format
 
 trait Formats {
-
-
+  implicit def format_CodeType: Format[data.CodeType] = data.CodeType.jsonFormat
 
   implicit def format_Node: Format[data.Node] = data.Node.jsonFormat
 
@@ -15,5 +14,6 @@ trait Formats {
   implicit def format_Unicode: Format[data.Unicode] = data.Unicode.jsonFormat
 
   implicit def format_EncodedSeq: Format[data.EncodedSeq] = data.EncodedSeq.jsonFormat
+
 
 }

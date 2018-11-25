@@ -12,7 +12,7 @@ import model.range.IntRange
 import register.Registerable
 import settings.Settings
 
-class YankPaste(settings: Settings) extends CommandCategory(settings,"registers, yank and paste") {
+class YankPaste(settings: Settings, isReadOnly: Boolean) extends CommandCategory(settings,"registers, yank and paste") {
 
   abstract class Command extends super.Command {
     override def showInCommandMenu(modal: Boolean): Boolean = false
@@ -188,7 +188,8 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
     }
   }
 
-  val putAfter = new PutCommand {
+
+  val putAfter: PutCommand = if (isReadOnly) null else  new PutCommand {
     override val description: String = "put after"
     override def defaultKeys: Seq[KeySeq] = Seq("p")
 
@@ -202,7 +203,7 @@ class YankPaste(settings: Settings) extends CommandCategory(settings,"registers,
 
   }
 
-  val putBefore = new PutCommand {
+  val putBefore : PutCommand = if (isReadOnly) null else new PutCommand {
     override val description: String = "put before"
     override def defaultKeys: Seq[KeySeq] = Seq("P")
 
