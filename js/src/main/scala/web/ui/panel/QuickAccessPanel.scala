@@ -119,7 +119,11 @@ class QuickAccessPanel(client: Client, doc: => View, latexMacroCache: LaTeXMacro
       val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
       parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
       var tocChanged = false
-      if (emptyDataChange && previousNearestHeading == nearestHeading.map(_.uuid)) {
+      val headingSame = previousNearestHeading == nearestHeading.map(_.uuid)
+      if (!headingSame) {
+        dom.scrollTop = 0
+      }
+      if (emptyDataChange && headingSame) {
         // no toc changes
       } else {
         tocChanged = true

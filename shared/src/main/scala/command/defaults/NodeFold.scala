@@ -15,14 +15,15 @@ class NodeFold(settings: Settings) extends CommandCategory(settings, "node: fold
 
     override def showInCommandMenu(modal: Boolean): Boolean = !modal
 
-    override def priority(key: KeySeq): Int = 0
+    override def priority(key: KeySeq): Int = 1
 
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isSingle
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       DocTransaction.empty.copy(zoomAfter = Some(a.asSingle))
     }
   }
+
 
   new Command {
     override val description: String = "zoom into parent"
@@ -30,7 +31,7 @@ class NodeFold(settings: Settings) extends CommandCategory(settings, "node: fold
 
     override def showInCommandMenu(modal: Boolean): Boolean = false
 
-    override protected def available(a: DocState): Boolean = a.isNormal
+    override protected def available(a: DocState): Boolean = a.isSingle
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       if (a.zoom == cursor.Node.root) {

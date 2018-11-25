@@ -97,9 +97,15 @@ class RichInsert(settings: Settings) extends CommandCategory(settings,"rich text
   new RichInsertCommand with OverrideCommand {
     override val description: String = "open a new sibling if at text end"
     override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
-    override def priority(key: KeySeq): Int = 1
+    override def priority(key: KeySeq): Int = 2
+    override def available(a: DocState): Boolean = if (a.isRichInsert) {
+      val (node, rich, insert) =  a.asRichInsert
+      insert.pos == rich.size
+    } else {
+      false
+    }
 
-    override def available(a: DocState): Boolean = super.available(a)
+    override def emptyAsFalseInInsertMode: Boolean = true
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val (node, rich, insert) =  a.asRichInsert
@@ -115,6 +121,15 @@ class RichInsert(settings: Settings) extends CommandCategory(settings,"rich text
     }
   }
 
+
+  new RichInsertCommand with OverrideCommand {
+    override val description: String = ""
+    override val hardcodeKeys: Seq[KeySeq] = Seq(Enter)
+    override def priority(key: KeySeq): Int = 0
+    override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+      DocTransaction.empty
+    }
+  }
 
 
 

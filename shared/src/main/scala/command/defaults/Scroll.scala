@@ -1,6 +1,10 @@
 package command.defaults
 
-import command.CommandCategory
+import command.{CommandCategory, CommandInterface, CommandInterfaceAvailable, Motion}
+import command.Key.{Ctrl, KeySeq, PageDown, PageUp}
+import doc.{DocState, DocTransaction}
+import model.cursor.Node
+import model.data.Unicode
 import settings.Settings
 
 class Scroll(settings: Settings) extends CommandCategory(settings,"scrolling the page") {
@@ -24,4 +28,24 @@ class Scroll(settings: Settings) extends CommandCategory(settings,"scrolling the
   //zl            N  zl           scroll screen N characters to the left
   //zH            N  zH           scroll screen half a screenwidth to the right
   //zL            N  zL           scroll screen half a screenwidth to the left
+
+//  new Command with NodeMotionCommand {
+//    override val description: String = "scroll down"
+//
+//    override def defaultKeys: Seq[KeySeq] = Seq(PageDown, "d" + Ctrl)
+//
+//    override def move(data: DocState, a: Node): Option[Node] = {
+//      None
+//    }
+//  }
+//
+//  new Command with NodeMotionCommand {
+//    override val description: String = "scroll up"
+//
+//    override def defaultKeys: Seq[KeySeq] = Seq(PageUp, "u" + Ctrl)
+//
+//    override def move(data: DocState, a: Node): Option[Node] = {
+//      None
+//    }
+//  }
 }

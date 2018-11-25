@@ -84,7 +84,7 @@ class UserRepository @Inject() (
 
   def collabrators(uid: UUID, did: UUID): Future[Seq[(Collaborator, Int)]] = {
     db.run(sql""" select users.email, users.name_, users.avatar_url, permissions.permission_level from users, permissions
-       where permissions.user_id != ${uid} and users.user_id = permissions.user_id and permissions.document_id = ${did}""".as[(String, String, Option[String], Int)]).map(_.map(d => (Collaborator(d._1, d._2, d._3), d._4)))
+       where users.user_id = permissions.user_id and permissions.document_id = ${did}""".as[(String, String, Option[String], Int)]).map(_.map(d => (Collaborator(d._1, d._2, d._3), d._4)))
   }
 
   def activate(userId: UUID, activate: Boolean = true): Future[Option[Unit]] =

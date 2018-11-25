@@ -61,7 +61,7 @@
                 <option value="@{PermissionLevel.Admin}">Admin</option>
                 <option value="@{PermissionLevel.Edit}" selected>Edit</option>
                 <option value="@{PermissionLevel.Comment}">Comment</option>
-                <option value="@{PermissionLevel.Admin}">Admin</option>
+                <option value="@{PermissionLevel.Read}">Read-only</option>
               </select>
             </div>
             <button id="submit" type="submit" value="submit" class="btn btn-primary btn-block">Add</button>
@@ -104,8 +104,6 @@
           </div>
         </div>
       </div>
-    } else {
-      <span>Owned by @{res.owner.name}</span>
     }
   </div>
 }

@@ -13,5 +13,7 @@ import scala.concurrent.Future
 
 
 case class HasPermission[A <: Authenticator](documentId: UUID, users: UserRepository, level: Int = PermissionLevel.Read) extends Authorization[User, A] {
-  override def isAuthorized[B](identity: User, authenticator: A)(implicit request: Request[B]): Future[Boolean] = users.hasPermission(identity.userId, documentId, level)
+  override def isAuthorized[B](identity: User, authenticator: A)(implicit request: Request[B]): Future[Boolean] = {
+    users.hasPermission(identity.userId, documentId, level)
+  }
 }
