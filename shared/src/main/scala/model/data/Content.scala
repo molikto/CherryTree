@@ -7,6 +7,7 @@ import jdk.nashorn.internal.runtime.Undefined
 import model.range.IntRange
 import model.{data, mode}
 import play.api.libs.json._
+import scalatags.Text
 import search.{Search, SearchOccurrence}
 import scalatags.Text.all.Frag
 
@@ -25,6 +26,7 @@ abstract sealed class Content {
   def nonEmpty: Boolean = !isEmpty
 
   def toScalaTags(safe: Boolean): Frag
+  def toPlain(): String
 
   def defaultMode(enableModal: Boolean): mode.Content = if (enableModal) defaultNormalMode() else defaultInsertMode()
   protected def defaultInsertMode(): mode.Content
@@ -68,10 +70,14 @@ object Content extends DataObject[Content] {
     override def toScalaTags(safe: Boolean): Frag = {
       import scalatags.Text.all._
       if (this.lang == Embedded.HTML) {
-        if (safe) raw(unicode.str)
+        if (!safe) raw(unicode.str)
         else pre("Embeded HTML")
       }
       else pre(unicode.str)
+    }
+
+    override def toPlain(): String = {
+      unicode.str
     }
   }
 
@@ -100,6 +106,10 @@ object Content extends DataObject[Content] {
 
     override def toScalaTags(safe: Boolean): Frag = {
       Text.toScalaTags(content.text, safe)
+    }
+
+    override def toPlain(): String = {
+      content.toPlain
     }
   }
 

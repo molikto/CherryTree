@@ -60,8 +60,9 @@ class UserRepository @Inject() (
     val createUser =
       sqlu"insert into users values (${u.userId}, $time, ${u.name}, ${u.email}, ${u.avatarUrl.orNull: String}, ${u.activated}, ${u.loginInfo.providerID}, ${u.loginInfo.providerKey}, $authInfo)"
     val documentQuery = createDocumentQuery(u.userId, initDocument, time)
+    val docId = UUID.fromString("17e51bae-1f34-4370-8265-9056f3e646f8")
     val addtionalDocumentQuery =
-      sqlu"insert into permissions values (${u.userId}, ${"17e51bae-1f34-4370-8265-9056f3e646f8"}, ${PermissionLevel.Read})"
+      sqlu"insert into permissions values (${u.userId}, ${docId}, ${PermissionLevel.Read})"
     db.run(DBIO.seq(createUser +: documentQuery :+ addtionalDocumentQuery : _*).transactionally).map(_ => u)
   }
 

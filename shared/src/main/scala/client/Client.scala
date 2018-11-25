@@ -94,8 +94,8 @@ class Client(
   with DocInterface { self =>
 
 
-  val permissionLevel: Int = if (System.currentTimeMillis() % 2 == 0) PermissionLevel.Read else initial.permissionLevel
-  //val permissionLevel: Int =  initial.permissionLevel
+  //val permissionLevel: Int = if (System.currentTimeMillis() % 2 == 0) PermissionLevel.Read else initial.permissionLevel
+  val permissionLevel: Int =  initial.permissionLevel
 
   var _commandHandler: CommandHandler = new CommandHandler(this)
   def commands = _commandHandler

@@ -116,3 +116,9 @@ email.activate.account.subject = Activate account
 email.activate.account.hello = Hello {0},
 email.activate.account.html.text = Please follow <a href="{0}">this link</a> to confirm and activate your new account.
 email.activate.account.txt.text = Please follow the link to confirm and activate your new account: {0}
+
+# New document email
+email.new.collabrator.subject = {0} shared a new document with you
+email.new.collabrator.hello = Hello {0},
+email.new.collabrator.html.text = {0} shared a new document "{1}" with you. Please follow <a href="{2}">this link</a> to view the new document.
+email.new.collabrator.txt.text =  {0} shared a new document "{1}" with you. Please follow the link to view the new document: {2}

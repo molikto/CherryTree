@@ -1,0 +1,11 @@
+@import play.api.i18n.Messages
+@import play.twirl.api.Html
+
+@(user: models.User, from: models.User, document: model.data.Content, url: String)(implicit messages: Messages)
+
+<html>
+  <body>
+    <p>@messages("email.new.collabrator.hello", user.name)</p>
+    <p>@Html(messages("email.new.collabrator.html.text", from.name, document.toScalaTags(true).render, url))</p>
+  </body>
+</html>

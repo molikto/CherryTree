@@ -1,0 +1,6 @@
+@import play.api.i18n.Messages
+
+@(user: models.User, from: models.User, document: model.data.Content, url: String)(implicit messages: Messages)
+@messages("email.new.collabrator.hello", user.name)
+
+@messages("email.new.collabrator.txt.text", from.name, document.toPlain(), url)

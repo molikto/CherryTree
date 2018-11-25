@@ -8,16 +8,17 @@ import java.util.UUID
 import com.mohiva.play.silhouette.api.actions.SecuredRequest
 import com.mohiva.play.silhouette.api.{LogoutEvent, Silhouette}
 import javax.inject.Inject
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents}
 import repos.{DocumentRepository, UserRepository}
 import utils.auth.{CustomSecuredErrorHandler, DefaultEnv, HasPermission}
 import model._
 import api._
 import boopickle.BasicPicklers
-import forms.EmailForm
+import forms.{CollabratorForm, EmailForm}
 import play.{Environment, Play}
 import play.api.libs.json.{JsSuccess, Json}
+import play.api.libs.mailer.{Email, MailerClient}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,6 +28,7 @@ class DocumentsController @Inject() (
   users: UserRepository,
   docs: DocumentRepository,
   securedErrorHandler: CustomSecuredErrorHandler,
+  mailerClient: MailerClient
 )(implicit assets: AssetsFinder, ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
   def documents = silhouette.SecuredAction.async { implicit request =>
@@ -56,15 +58,32 @@ class DocumentsController @Inject() (
     docs.delete(documentId).map(_ => Redirect(routes.DocumentsController.documents()).flashing("success" -> "Success!"))
   }
 
-  def addCollabrator(documentId: UUID, permissionLevel: Int) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request => {
+  def addCollabrator(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users, PermissionLevel.Admin)).async { implicit request => {
     def fail(s: String) = Redirect(routes.DocumentsController.options(documentId)).flashing("error" -> s)
-    EmailForm.form.bindFromRequest.fold(
+    CollabratorForm.form.bindFromRequest.fold(
       form => ???,
       data => {
+        val permissionLevel = data.level.toInt
         if (permissionLevel <= PermissionLevel.Admin && permissionLevel > 0) {
-          users.retrieve(data).flatMap {
+          users.retrieve(data.email).flatMap {
             case Some(user) =>
-              users.addPermission(documentId, user.userId, PermissionLevel.Edit).flatMap(_ => Future.successful(Redirect(routes.DocumentsController.options(documentId))))
+              users.addPermission(documentId, user.userId, permissionLevel).flatMap(_ => {
+                docs.head(request.identity.userId, documentId)
+              }).map(res => {
+                res match {
+                  case Some(li) =>
+                    val url = controllers.routes.DocumentController.index(documentId).absoluteURL()
+                    mailerClient.send(Email(
+                      subject =  Messages("email.new.collabrator.subject"),
+                      from = Messages("email.from"),
+                      to = Seq(data.email),
+                      bodyText = Some(views.txt.emails.newCollabrator(user, request.identity, li.title, url).body),
+                      bodyHtml = Some(views.html.emails.newCollabrator(user, request.identity, li.title, url).body)
+                    ))
+                  case _ =>
+                }
+                Redirect(routes.DocumentsController.options(documentId))
+              })
             case None => Future.successful(fail("User not found"))
           }
         } else {
