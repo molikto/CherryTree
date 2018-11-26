@@ -19,7 +19,7 @@ object Server {
   case class InitResult(root: model.data.Node, version: Int, creators: Map[UUID, UUID])
 }
 
-abstract class Server[CTX <: Server.User](documentId: UUID, serverInit: Server.InitResult) {
+abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
 
 
   // states, now in single thread fashion
@@ -132,7 +132,7 @@ abstract class Server[CTX <: Server.User](documentId: UUID, serverInit: Server.I
             // this is not a stale request
             normalNormalCase()
           } else {
-            val take = after.drop(index).zipWithIndex.takeWhile(a => a._1._2 == ts(a._2)._2).size
+            val take = after.drop(index).zipWithIndex.takeWhile(a => a._2 < ts.size && a._1._2 == ts(a._2)._2).size
             val winners = after.take(index).map(_._1)
             if (model.debug_model) println(s"a request that ready been taken care of, with ${winners.size} and $take")
             Success(ChangeResponse(winners, take, clientVersion + winners.size + take, serverStatus(ctx)))

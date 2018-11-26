@@ -190,7 +190,7 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def ty: Type = Type.Add
     override def apply(d: data.Node): data.Node = {
       if (model.debug_model) {
-        d.assertNewNodes(childs.map(_.uuid))
+        //d.assertNewNodes(childs.map(_.uuid))
       }
       d.insert(at, childs)
     }

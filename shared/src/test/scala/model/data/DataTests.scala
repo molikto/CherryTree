@@ -102,14 +102,5 @@ object DataTests extends TestSuite {
         assert(Unicode("123456").surround(IntRange(1), Unicode("a"), Unicode("b")) == Unicode("1a2b3456"))
       }
     }
-
-    'implicitlyGenerated - {
-      for (i <- 0 until 10) {
-        val a: Try[InitResponse] = Success(InitResponse("falsdfjkdjf", data.Node.random(r), i, ServerStatus(1, false, false)))
-        val bytes = Pickle.intoBytes(a)(pickleState, implicitly)
-        val b = Unpickle[Try[InitResponse]](implicitly).fromBytes(bytes)(unpickleState)
-        assert(a == b)
-      }
-    }
   }
 }

@@ -168,6 +168,7 @@ case class DocState private (
 
 
   def consistencyCheck(enableModal: Boolean): Unit = {
+    if (!model.debug_model) return
 
     assert(node.get(zoom).isDefined, s"wrong zoom? $zoom")
     assert(mode0.inside(zoom), s"mode not inside zoom $mode0 $zoom")
@@ -188,30 +189,20 @@ case class DocState private (
         assert(!mo.isInstanceOf[model.mode.Content.RichNormalOrVisual])
       }
       def checkAtomicRichRange(a: IntRange) = {
-        try {
-          val r1 = rich.afters(a.start).next().range
-          val r2 = rich.befores(a.until).next().range
-          if (r1 == r2 && a == r1) {
-          } else {
-            val a = 1
-            assert(false, "what is this?")
-          }
-        } catch  {
-          case e: Throwable =>
-            throw e
+        val r1 = rich.afters(a.start).next().range
+        val r2 = rich.befores(a.until).next().range
+        if (r1 == r2 && a == r1) {
+        } else {
+          val a = 1
+          assert(false, "what is this?")
         }
       }
       def checkAtomicTextRichRange(a: IntRange) = {
-        try {
-          val r1 = rich.afters(a.start).next()
-          val r2 = rich.befores(a.until).next()
-          if (r1.textRange == r2.textRange && a == r1.textRange) {
-          } else {
-            assert(false)
-          }
-        } catch  {
-          case e: Throwable =>
-            throw e
+        val r1 = rich.afters(a.start).next()
+        val r2 = rich.befores(a.until).next()
+        if (r1.textRange == r2.textRange && a == r1.textRange) {
+        } else {
+          assert(false)
         }
       }
       def ret(mo: model.mode.Content.Rich): Unit = {
@@ -393,13 +384,11 @@ case class DocState private (
 
   def asContent: cursor.Node = mode match {
     case Some(model.mode.Node.Content(cur, _))  => cur
-    case Some(model.mode.Node.Visual(fix, move)) if fix == move => fix
     case _ => throw new IllegalStateException("not supported")
   }
 
   def isContent: Boolean = mode match {
     case Some(model.mode.Node.Content(_, _))  => true
-    case Some(model.mode.Node.Visual(fix, move)) if fix == move => true
     case _ => false
   }
 

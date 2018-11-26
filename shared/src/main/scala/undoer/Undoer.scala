@@ -272,12 +272,7 @@ trait Undoer extends UndoerInterface {
       case a => a
     }
     val (tt, pp) = ot.Node.rebaseT(reverse, aft).t
-    val (applied, afrom) = try {
-     operation.Node.apply(tt, currentDoc, enableModal)
-    } catch {
-      case t: Throwable =>
-        throw new Exception(s"seems reverse is wrong ${item.trans}, $reverse $aft", t)
-    }
+    val (applied, afrom) = operation.Node.apply(tt, currentDoc, enableModal)
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }

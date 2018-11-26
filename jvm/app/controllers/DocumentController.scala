@@ -91,7 +91,7 @@ class DocumentActor(id: UUID, docs: DocumentRepository) extends Actor {
   private def ensureInit(): Unit = {
     if (server == null) {
       val root = Await.result(docs.init(id), 10.seconds)
-      server = new Server[User](id, root) {
+      server = new Server[User](root) {
         override def persist(user: User, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
           if (changes.nonEmpty) Await.result(docs.changes(user.userId, id, version, changes), 10.seconds)
         }

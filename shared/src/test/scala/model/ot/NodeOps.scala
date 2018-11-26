@@ -1,7 +1,11 @@
 package model.ot
 
+import java.util.UUID
+
 import model._
+import model.data.CodeType
 import model.range.IntRange
+import play.api.libs.json.JsObject
 
 object NodeOps {
 
@@ -22,7 +26,7 @@ object NodeOps {
 
 
   def insertNode(at: Seq[Int], content: String): operation.Node = {
-    operation.Node.Insert(at, Seq(data.Node("", data.Content.Code(data.Unicode(content), ""), Map.empty, Seq.empty)))
+    operation.Node.Insert(at, Seq(data.Node(UUID.randomUUID(), data.Content.Code(data.Unicode(content), CodeType.Empty), JsObject(Seq.empty), Seq.empty)))
   }
 
   def insertContent(at: Seq[Int], p: Int, content: String): operation.Node = {

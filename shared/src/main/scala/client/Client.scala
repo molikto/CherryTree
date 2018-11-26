@@ -35,7 +35,7 @@ import undoer.Undoer
 import view.EditorInterface
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Random, Success, Try}
 
 
@@ -389,24 +389,37 @@ class Client(
 
   private def request[T](head: Int, a: Future[T], onSuccess: T => Unit): Unit = {
     requesting = true
-    a.onComplete {
-      case Success(r) =>
-        self.synchronized {
-          requesting = false
-          onSuccess(r)
-          tryTopRequest()
+    if (model.debug_testing) {
+      self.synchronized {
+        requesting = false
+        Try(Await.result(a, 1.minute)).toOption match {
+          case Some(r) =>
+            onSuccess(r)
+            tryTopRequest()
+          case None =>
+            putBackAndMarkNotConnected(head)
         }
-      case Failure(t) =>
-        println(t.getMessage)
-        self.synchronized {
-          requesting = false
-          connection_.modify(_.copy(offline = true))
-          t match {
-            case _ =>
-              // LATER properly handle this!
-              putBackAndMarkNotConnected(head)
+      }
+    } else {
+      a.onComplete {
+        case Success(r) =>
+          self.synchronized {
+            requesting = false
+            onSuccess(r)
+            tryTopRequest()
           }
-        }
+        case Failure(t) =>
+          println(t.getMessage)
+          self.synchronized {
+            requesting = false
+            connection_.modify(_.copy(offline = true))
+            t match {
+              case _ =>
+                // LATER properly handle this!
+                putBackAndMarkNotConnected(head)
+            }
+          }
+      }
     }
   }
 
@@ -481,31 +494,26 @@ class Client(
     } else if (tempDisableRemoteStateUpdate) {
       disabledStateUpdates.append(success)
     } else {
-      try {
-        val take = success.acceptedLosersCount
-        val winners = success.winners
-        // it is ok to flatten the server updates, as what they rebase for is not uploaded to server yet
-        val flatten = operation.Node.merge(winners.flatten)
-        val (loser, remaining) = uncommitted.splitAt(take)
-        // LATER handle conflict, modal handling of winner deletes loser
-        val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(flatten, loser)
-        committed = operation.Node.applyT(lp, operation.Node.apply(flatten, committed))
-        committedVersion = success.finalVersion
-        val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
-        uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
-        uncommittedIds = Seq.empty // each time we got a new return, it is safe to discard the previous ids
-        connection_.update(ConnectionStatus(success.serverStatus))
-        if (wp0.nonEmpty) {
-          val (last, from) = operation.Node.apply(wp0, state, enableModal)
-          updateState(
-            last,
-            from,
-            Seq.empty,
-            Undoer.Remote)
-        }
-      } catch {
-        case e: Exception =>
-          throw new Exception(s"Apply update from server failed $success #### $committed", e)
+      val take = success.acceptedLosersCount
+      val winners = success.winners
+      // it is ok to flatten the server updates, as what they rebase for is not uploaded to server yet
+      val flatten = operation.Node.merge(winners.flatten)
+      val (loser, remaining) = uncommitted.splitAt(take)
+      // LATER handle conflict, modal handling of winner deletes loser
+      val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(flatten, loser)
+      committed = operation.Node.applyT(lp, operation.Node.apply(flatten, committed))
+      committedVersion = success.finalVersion
+      val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
+      uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
+      uncommittedIds = Seq.empty // each time we got a new return, it is safe to discard the previous ids
+      connection_.update(ConnectionStatus(success.serverStatus))
+      if (wp0.nonEmpty) {
+        val (last, from) = operation.Node.apply(wp0, state, enableModal)
+        updateState(
+          last,
+          from,
+          Seq.empty,
+          Undoer.Remote)
       }
     }
   }

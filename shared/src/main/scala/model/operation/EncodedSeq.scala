@@ -338,7 +338,7 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
         } else if (r.start < range.start && r.until > range.until) {
           range.moveBy(left.size)
         } else {
-          throw new Exception("Not handled case")
+          throw new Exception(s"Not handled case $range, $r")
         }
         sub.copyWithRange(ran, transformRichMaybeBad(sub.modeBefore)._1)
     }, false)

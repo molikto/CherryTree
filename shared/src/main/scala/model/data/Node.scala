@@ -435,9 +435,9 @@ object Node extends DataObject[Node] {
 
     override private[model] def parse(aa: JsValue) = aa match {
       case JsString(a) =>
-        if (a.startsWith("h")) Heading(a.substring(1).toInt)
+        if (a == "hr" || a == "br") Hr
+        else if (a.startsWith("h")) Heading(a.substring(1).toInt)
         else if (a == "cite") Cite
-        else if (a == "hr" || a == "br") Hr
         else throw new IllegalStateException("Not possible")
       case _ => throw new IllegalStateException("Not possible")
     }

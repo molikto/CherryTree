@@ -14,10 +14,11 @@ package object model extends Picklers with Formats {
   def some[T, R](a: T, b: R): (Seq[T], Seq[R]) = (Seq(a), Seq(b))
 
 
+  var debug_testing = false
   val debug_katex = false
-  var debug_view = true
+  var debug_view = false
   val debug_scroll = debug_view && false
-  var debug_model = false
+  var debug_model = true
   var debug_webSocket = true
   val debug_transmit = false
   val debug_selection = debug_view && false

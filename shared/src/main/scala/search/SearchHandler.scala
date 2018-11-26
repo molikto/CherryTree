@@ -79,12 +79,12 @@ class SearchHandler(client: Client) extends SearchInterface with StartSearchInte
     }
   }
 
-  def commitSearching(): Unit = {
+  def commitSearching(force: Boolean = false): Unit = {
     if (lastState.term.nonEmpty) {
       lastSearch = lastState
       doSearch(lastSearch)
       // go to first highlighted mark
-      if (exitOnCommit) {
+      if (exitOnCommit || force) {
         searchState_.update(SearchState(None))
       }
     }
