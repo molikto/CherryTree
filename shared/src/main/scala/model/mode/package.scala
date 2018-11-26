@@ -113,8 +113,6 @@ package object mode {
     }
 
     sealed abstract class RichSubMode extends Rich {
-      def getTextRange(rich: data.Rich): IntRange = rich.after(range.start - 1).textRange
-      def getText(rich: data.Rich): Text.Delimited = rich.after(range.start - 1).text.asDelimited
       // range inside!
       def range: IntRange
       def modeBefore: Rich
@@ -130,12 +128,14 @@ package object mode {
       override def breakWhiteSpaceInserts: Boolean = code.breakWhiteSpaceInserts
       override def end: Int = modeBefore.end
       override def start: Int = modeBefore.start
+      def getText(rich: data.Rich): Text.Delimited = rich.after(range.start - 1).text.asDelimited
     }
 
     case class RichAttributeSubMode(override val range: IntRange, override val modeBefore: Rich) extends RichSubMode {
       override def copyWithRange(range: IntRange, rich: Rich): RichSubMode = this.copy(range = range, modeBefore = rich)
       override def end: Int = modeBefore.end
       override def start: Int = modeBefore.start
+      def getText(rich: data.Rich): Text.Delimited = rich.after(range.until).text.asDelimited
     }
 
     case class CodeNormal(backToInsert: Boolean) extends Code with Normal //

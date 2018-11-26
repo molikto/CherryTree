@@ -412,19 +412,19 @@ private [content] class RichViewEditor(val documentView: DocumentView, val contr
       case sub: mode.Content.RichSubMode =>
         updateViewMode(sub.modeBefore, false)
         sub match {
-          case mode.Content.RichAttributeSubMode(range, mode) =>
+          case attrSub@mode.Content.RichAttributeSubMode(range, mode) =>
             if (editor == null) {
-              val text = sub.getText(rich)
+              val text = attrSub.getText(rich)
               editor = documentView.attributeEditor
               val anchor = new AttributeEditDialog.Anchor(controller) {
                 override def rect: Rect = selectionRect
               }
               documentView.attributeEditor.show(anchor, text, documentView.canEditActiveEditor())
            }
-          case mode.Content.RichCodeSubMode(range, code, mode) =>
+          case codeSub@mode.Content.RichCodeSubMode(range, code, mode) =>
             if (editor == null) {
               editor = documentView.inlineEditor
-              val text = sub.getText(rich)
+              val text = codeSub.getText(rich)
               val anchor = new InlineCodeDialog.Anchor(text.asCoded.content, code, text.asDelimited.delimitation.codeType, documentView.canEditActiveEditor()) {
                 override def rect: Rect = selectionRect
               }
