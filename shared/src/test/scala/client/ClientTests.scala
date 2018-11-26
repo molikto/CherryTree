@@ -39,6 +39,7 @@ object ClientTests extends TestSuite  {
     }
     val s = new server.Server[TestUser](Server.InitResult(Node.create("Test document"), 0, Map.empty)) {
 
+      println(s"crated server")
     }
 
     val random = new Random()
@@ -60,22 +61,25 @@ object ClientTests extends TestSuite  {
       }
 
       override def requestBytes(path: String, content: ByteBuffer, method: String): Future[ByteBuffer] = {
-        if (path == s"/document/${documentId}/init") {
-          println("init called")
-          val res = s.init(TestUser(UUID.randomUUID()), 100)
-          Future.successful(Pickle.intoBytes(res))
-        } else if (path == s"/document/${documentId}/changes") {
-          val res = s.change(TestUser(UUID.randomUUID()), Unpickle[ChangeRequest](api.changeRequest).fromBytes(content), 100).get
-          if (random.nextInt(10) == 7) {
-            // network failures
-            Future.failed(new IOException())
+        import monix.execution.Scheduler.Implicits.global
+        Future.successful(Unit).flatMap(_ => {
+          if (path == s"/document/${documentId}/init") {
+            println("init called")
+            val res = s.init(TestUser(UUID.randomUUID()), 100)
+            Future.successful(Pickle.intoBytes(res))
+          } else if (path == s"/document/${documentId}/changes") {
+            val res = s.change(TestUser(UUID.randomUUID()), Unpickle[ChangeRequest](api.changeRequest).fromBytes(content), 100).get
+            if (random.nextInt(10) == 7) {
+              // network failures
+              Future.failed(new IOException())
+            } else {
+              Future.successful(Pickle.intoBytes[ChangeResponse](res))
+            }
           } else {
-            Future.successful(Pickle.intoBytes[ChangeResponse](res))
+            println(path)
+            ???
           }
-        } else {
-          println(path)
-          ???
-        }
+        })
       }
 
       override def setupWebSocket(path: String): (Closeable, Observable[Either[String, Throwable]]) = {
@@ -86,12 +90,12 @@ object ClientTests extends TestSuite  {
     }, documentId, None)
 
     'init - {
-      Await.result(cl("controller"), 5.seconds)
+      Await.result(cl("controller"), 10.seconds)
       Unit
     }
 
     'client - {
-      val clients = (0 until 5).map(i => Await.result(cl("controller" + i), 5.seconds))
+      val clients = (0 until 5).map(i => Await.result(cl("controller" + i), 10.seconds))
       val client = clients.head
 
       def insertTop: transaction.Node =

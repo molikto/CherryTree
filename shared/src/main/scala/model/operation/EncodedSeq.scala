@@ -61,9 +61,9 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
           mode.Content.RichNormal(transformRange(r))
         }
       case mode.Content.RichAttributeSubMode(range, rich) =>
-        val ran = if (at < range.start) {
+        val ran = if (at <= range.start) {
           range.moveBy(unicode.size)
-        } else if (at >= range.start && at <= range.until) {
+        } else if (at > range.start && at <= range.until) {
           IntRange(range.start, range.until + unicode.size)
         } else if (at > range.until) {
           range
@@ -332,7 +332,7 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
       case sub: mode.Content.RichSubMode =>
         val range = sub.range
         val ran = if (r.until < range.start) {
-          range.moveBy(left.size)
+          range.moveBy(left.size + right.size)
         } else if (r.start > range.until) {
           range
         } else if (r.start < range.start && r.until > range.until) {

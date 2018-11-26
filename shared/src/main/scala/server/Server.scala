@@ -37,7 +37,7 @@ abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
   def debugChanges = changes
 
 
-  def init(ctx: CTX, permissionLevel: Int): InitResponse = {
+  def init(ctx: CTX, permissionLevel: Int): InitResponse = this.synchronized {
     val state = InitResponse(
       document,
       version,
@@ -63,7 +63,7 @@ abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
 //  }
 
 
-  def change(ctx: CTX, changeRequest: ChangeRequest, permissionLevel: Int): Try[ChangeResponse] = {
+  def change(ctx: CTX, changeRequest: ChangeRequest, permissionLevel: Int): Try[ChangeResponse] = this.synchronized {
     val ChangeRequest(clientVersion, ts, mode, debugClientDoc) = changeRequest
     if (permissionLevel >= PermissionLevel.Edit) {
 
@@ -112,7 +112,7 @@ abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
             }
           }
         }
-        val cu = ChangeResponse(ws, ts.size, version, serverStatus(ctx))
+        val cu = ChangeResponse(ws, ts.size, version, if (model.debug_model) document.hashCode() else 0, serverStatus(ctx))
         //          if (transformed.nonEmpty) {
         //            debugSave("saved", Pickle.intoBytes(document)(implicitly, Node.pickler).array())
         //          }
@@ -135,7 +135,7 @@ abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
             val take = after.drop(index).zipWithIndex.takeWhile(a => a._2 < ts.size && a._1._2 == ts(a._2)._2).size
             val winners = after.take(index).map(_._1)
             if (model.debug_model) println(s"a request that ready been taken care of, with ${winners.size} and $take")
-            Success(ChangeResponse(winners, take, clientVersion + winners.size + take, serverStatus(ctx)))
+            Success(ChangeResponse(winners, take, clientVersion + winners.size + take, 0, serverStatus(ctx)))
           }
         case _ =>
           normalNormalCase()
@@ -158,12 +158,12 @@ abstract class Server[CTX <: Server.User](serverInit: Server.InitResult) {
     }
   }
 
-  def persist(ctx: CTX, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
+  protected def persist(ctx: CTX, changes: Seq[(model.transaction.Node, UUID, Seq[model.operation.Node.Diff])]): Unit = {
   }
 
-  def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
+  protected def loadChanges(from: Int, until: Int): Option[Seq[(model.transaction.Node, UUID)]] = None
 
-  def serverStatus(ctx: CTX): ServerStatus = {
+  private def serverStatus(ctx: CTX): ServerStatus = {
     ServerStatus(
       ctx.toCollabrator,
       collaborators.filter(_.userId != ctx.userId).map(u => u.toCollabrator))

@@ -162,11 +162,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
       case w@operation.Node.Replace(wc, _) =>
         loser match {
           case operation.Node.AttributeChange(lc, at, av) =>
-            if (wc == lc) {
-              Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
-            } else {
-              free(winner, loser)
-            }
+            free(winner, loser)
           case operation.Node.Content(lc, _) =>
             if (wc == lc) {
               Rebased(Set(conflict.Node.ReplacedByWinner()), (Seq(winner), Seq.empty))
@@ -240,11 +236,7 @@ object Node extends Ot[data.Node, operation.Node, conflict.Node] {
           case operation.Node.Content(lc, lo) =>
             free(winner, loser)
           case operation.Node.Replace(lc, _) =>
-            if (wc == lc) {
-              Rebased(Set(conflict.Node.ReplacedByLoser()), (Seq.empty, Seq(loser)))
-            } else {
-              free(winner, loser)
-            }
+            free(winner, loser)
           case operation.Node.Insert(lc, lcs) =>
             free(w.copy(at = cursor.Node.transformAfterInserted(lc, lcs.size, wc)), loser)
           case operation.Node.Delete(lr) =>

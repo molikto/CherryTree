@@ -32,7 +32,7 @@ case class Node(
   }
 
   def mapBy(map: Map[UUID, UUID]): Node = {
-    Node(uuid = map(uuid), content = content.mapBy(map), attributes = attributes, childs = childs.map(a => a.mapBy(map)))
+    copy(uuid = map(uuid), content = content.mapBy(map), childs = childs.map(a => a.mapBy(map)))
   }
 
   def regenerateIds(): Node = {
@@ -253,7 +253,7 @@ case class Node(
   }
 
   def attribute[T](t: NodeTag[T], a: T): Node = copy(attributes = attributes.+((t.name, t.serialize(a))))
-  def attribute(t: String, a: JsValue): Node = if (a == JsNull) copy (attributes = attributes - t) else copy(attributes = attributes.+((t, a)))
+  def attribute(t: String, a: JsValue): Node = if (a == JsNull) copy(attributes = attributes - t) else copy(attributes = attributes.+((t, a)))
 
   def attribute[T](a: NodeTag[T]): Option[T] = attributes.value.get(a.name).filter(_ != JsNull).map(a.parse)
   def attribute(a: String): JsValue = attributes.value.getOrElse(a, JsNull)

@@ -58,7 +58,7 @@ class RichSpecial(settings: Settings) extends CommandCategory(settings,"rich tex
         val trans = extraInsert.map(_ => model.operation.Node.rich(n, operation.Rich.delete(IntRange(insert, insert + keyU.size)))).toSeq :+ operation.Node.rich(n, k)
         val modeBefore = moveSomeInsertMode(if (deli.atomic) deli.emptySize else 1)
         val vms = if (deli == SpecialChar.Image) {
-          a.editAttribute(IntRange.len(insert + 1, 0), modeBefore)
+          a.editAttribute(IntRange.len(insert + 1, deli.attributes.size), modeBefore)
         } else if (deli == SpecialChar.LaTeX) {
           a.editCode(IntRange.len(insert + 1, 0), settings.enableModal, modeBefore)
         } else if (deli == SpecialChar.HTML) {

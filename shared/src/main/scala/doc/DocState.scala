@@ -440,7 +440,7 @@ case class DocState private (
   }
 
   def editAttribute(text: Atom): DocTransaction = {
-    editAttribute(IntRange.len(text.textRange.start + 1, text.text.asDelimited.contentSize))
+    editAttribute(IntRange(text.textRange.start + 1 + text.text.asDelimited.contentSize, text.textRange.until - 1))
   }
 
   def asRichAtom: (cursor.Node, Rich, Atom)  = {

@@ -272,7 +272,7 @@ trait Undoer extends UndoerInterface {
       case a => a
     }
     val (tt, pp) = ot.Node.rebaseT(reverse, aft).t
-    val (applied, afrom) = operation.Node.apply(tt, currentDoc, enableModal)
+    val (applied, _) = operation.Node.apply(tt, currentDoc, enableModal)
     if (isRedo) {
       history(item.ty.asInstanceOf[Undo].a).undoer = null
     }
@@ -293,13 +293,16 @@ trait Undoer extends UndoerInterface {
       Some(zz)
     }
     val changeZoom = zzz.map(z => applied.copy(zoom = z)).getOrElse(applied)
+    assert(cursor.Node.contains(changeZoom.zoom, coverage) && changeZoom.visible(coverage))
     val mode = oldDocAsNowForModes.mode0 match {
       case model.mode.Node.Visual(a, b) =>
         model.mode.Node.Visual(changeZoom.visibleParent(a), changeZoom.visibleParent(b))
       case a => a
     }
+    val finalMode = if (currentDoc.isInsertal || !enableModal) mode else convertInsertMode(applied.node, mode)
+    if (model.debug_model) changeZoom.copy(mode0 = finalMode, badMode = false).consistencyCheck(enableModal)
     DocTransaction(tt,
-      Some(if (currentDoc.isInsertal || !enableModal) mode else convertInsertMode(applied.node, mode)),
+      Some(finalMode),
       zoomAfter = zzz,
       undoType = Some(if (isRedo) Redo(i, pp) else Undo(i, pp)))
   }

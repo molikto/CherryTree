@@ -4,6 +4,7 @@ package client
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import com.softwaremill.quicklens._
 import monix.execution.Cancelable
@@ -126,7 +127,7 @@ class Client(
 
   override def localStorage: LocalStorage = api.localStorage
 
-  def debug_unmarkTempDisableMode() = {
+  def debug_unmarkTempDisableMode() = synchronized {
     state_ = state_.copy(badMode = false)
   }
 
@@ -236,7 +237,7 @@ class Client(
       tempDisables = tempDisables + reason
     } else {
       tempDisables = tempDisables - reason
-    }
+   }
     flushInner()
     updateConnectionStatusBasedOnDisableStatus()
   }
@@ -283,6 +284,7 @@ class Client(
     userFolds: Map[cursor.Node, Boolean] = Map.empty
   ): Unit = {
     a.consistencyCheck(enableModal)
+    if (model.debug_model) assert(model.operation.Node.applyT(uncommitted, committed) == a.node)
     val vv = viewAdded ++ from
     val res = DocUpdate(a,
       if (vv.isEmpty) Seq.empty else vv.zip(vv.tail.map(_._1) :+ a).map(a => (a._1._1, a._1._2, a._2)),
@@ -389,37 +391,24 @@ class Client(
 
   private def request[T](head: Int, a: Future[T], onSuccess: T => Unit): Unit = {
     requesting = true
-    if (model.debug_testing) {
-      self.synchronized {
-        requesting = false
-        Try(Await.result(a, 1.minute)).toOption match {
-          case Some(r) =>
-            onSuccess(r)
-            tryTopRequest()
-          case None =>
-            putBackAndMarkNotConnected(head)
+    a.onComplete {
+      case Success(r) =>
+        lockObject.synchronized {
+          requesting = false
+          onSuccess(r)
+          tryTopRequest()
         }
-      }
-    } else {
-      a.onComplete {
-        case Success(r) =>
-          self.synchronized {
-            requesting = false
-            onSuccess(r)
-            tryTopRequest()
+      case Failure(t) =>
+        println(t.getMessage)
+        lockObject.synchronized {
+          requesting = false
+          connection_.modify(_.copy(offline = true))
+          t match {
+            case _ =>
+              // LATER properly handle this!
+              putBackAndMarkNotConnected(head)
           }
-        case Failure(t) =>
-          println(t.getMessage)
-          self.synchronized {
-            requesting = false
-            connection_.modify(_.copy(offline = true))
-            t match {
-              case _ =>
-                // LATER properly handle this!
-                putBackAndMarkNotConnected(head)
-            }
-          }
-      }
+        }
     }
   }
 
@@ -497,11 +486,13 @@ class Client(
       val take = success.acceptedLosersCount
       val winners = success.winners
       // it is ok to flatten the server updates, as what they rebase for is not uploaded to server yet
-      val flatten = operation.Node.merge(winners.flatten)
+      // TODO seems merge here has bugs
+      val flatten = winners.flatten
       val (loser, remaining) = uncommitted.splitAt(take)
       // LATER handle conflict, modal handling of winner deletes loser
       val Rebased(cs0, (wp, lp)) = ot.Node.rebaseT(flatten, loser)
       committed = operation.Node.applyT(lp, operation.Node.apply(flatten, committed))
+      if (model.debug_model && success.debugHashCode != 0) assert(success.debugHashCode == committed.hashCode())
       committedVersion = success.finalVersion
       val Rebased(cs1, (wp0, uc)) = ot.Node.rebaseT(wp, remaining)
       uncommitted = uc//transaction.Node.mergeSingleOpTransactions(uc)
@@ -882,9 +873,10 @@ class Client(
                 val os = state_
                 val zz = r.transformBeforeDeleted(os.zoom)
                 val td = disableUpdateBecauseLocalNodeDelete._4
+                uncommitted = uncommitted.dropRight(1)
                 state_ = td.copy(userFoldedNodes = state_.userFoldedNodes, zoom = zz, mode0 = model.mode.Node.Content(zz, td.node(zz).content.defaultMode(enableModal)))
                 state_.consistencyCheck(enableModal)
-                uncommitted = uncommitted.dropRight(1)
+                if (model.debug_model) assert(model.operation.Node.applyT(uncommitted, committed) == state.node)
                 val inverse = d.reverse(state.node)
                 viewAdd = Seq((os, inverse))
                 val to = d.r.transformBeforeDeleted(at)
@@ -919,6 +911,7 @@ class Client(
     }
     val needsSync = !update.nonTransactional
     if (needsSync) {
+      if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
       updateState(last,
         from,
         viewAdd,
@@ -930,7 +923,6 @@ class Client(
         userFolds = ch, trace = update0.trace,
         mergeWithPreviousLocal = mergeWithPreviousLocal
       )
-      if (update.transaction.nonEmpty) uncommitted = uncommitted :+ update.transaction
     }
     for (m <- update.viewMessagesAfter) {
       viewMessages_.onNext(m)

@@ -387,6 +387,9 @@ object RebaseTests extends TestSuite {
       }
     }
 
+
+    // TODO rebase against merge and rebase against original
+
     'swap - {
       val n = node
       val random = new Random()

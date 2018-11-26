@@ -13,14 +13,17 @@ import scala.scalajs.js
 
 object EditorView {
 
-  def extractKey(event: KeyboardEvent): Key = {
-    var key = KeyMap.get(event.key).orNull
-    if (key == null) {
-      key = Key.Grapheme(model.data.Unicode(event.key))
+  def extractKey(event: KeyboardEvent): Key =
+    if (js.isUndefined(event.asInstanceOf[js.Dynamic].key)) {
+      Key(Key.Unknown("keycode" + event.keyCode))
+    } else {
+      var key = KeyMap.get(event.key).orNull
+      if (key == null) {
+        key = Key.Grapheme(model.data.Unicode(event.key))
+      }
+      if (key == null) key = Key.Unknown(event.key)
+      Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
     }
-    if (key == null) key = Key.Unknown(event.key)
-    Key(key, meta = event.metaKey, alt = event.altKey, shift = event.shiftKey, control = event.ctrlKey)
-  }
 }
 trait EditorView extends View {
 
@@ -77,10 +80,15 @@ trait EditorView extends View {
   val triggerReadSelectionKey = Key(";").copy(meta = true)
 
 
+  def isComposing(event: KeyboardEvent) = {
+    event.hasOwnProperty("isComposing") && event.asInstanceOf[js.Dynamic].isComposing.asInstanceOf[Boolean]
+  }
+
   override def onAttach(): Unit = {
     super.onAttach()
     event( "keydown", (event: KeyboardEvent) => {
-      if (!event.asInstanceOf[js.Dynamic].isComposing.asInstanceOf[Boolean]) {
+
+      if (!isComposing(event)) {
         flushBeforeKeyDown()
         hasShift = event.keyCode == 16
         val kk = EditorView.extractKey(event)
