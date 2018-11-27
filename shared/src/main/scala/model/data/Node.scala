@@ -3,7 +3,7 @@ package model.data
 import java.util.UUID
 
 import model._
-import Node.{ChildrenType, ContentType, IgnoreInSearch, Priority}
+import Node._
 import boopickle.BasicPicklers
 import model.range.IntRange
 import play.api.libs.json._
@@ -26,6 +26,27 @@ case class Node(
   content: Content,
   attributes: JsObject,
   childs: Seq[Node]) {
+
+
+  def shouldHaveEmptyContent: Boolean = contentType match {
+    case Some(a) => a match {
+      case ContentType.ParagraphsHack => true
+      case ContentType.Hr => true
+      case _ => false
+    }
+    case _ => false
+  }
+
+
+  def childCanBeLists: Boolean = contentType match {
+    case Some(ContentType.Heading(_)) => true
+    case None => true
+    case _ => false
+  }
+
+  def childIsLists: Boolean = contentType.isEmpty || attribute(ListType).nonEmpty
+
+  def canHaveChilds: Boolean = contentType != Some(ContentType.Hr)
 
   private def collectIds(map: mutable.Map[UUID, UUID]): Unit = {
     map.put(uuid, UUID.randomUUID())
@@ -215,7 +236,7 @@ case class Node(
     model.cursor.Node.root
   }
 
-  def isH1: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
+  def isFolder: Boolean = attribute(IsArticle).isDefined
   def isHeading: Boolean = attribute(ContentType).exists(_.isInstanceOf[ContentType.Heading])
 
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)
@@ -299,34 +320,37 @@ case class Node(
 
   def toScalaTags(hasWrapper: Boolean): Frag = {
     def contentWithoutP = content.toScalaTags(false)
-    def children: Frag = attribute(ChildrenType) match {
-      case Some(ChildrenType.Paragraphs) =>
+    def children(allowList: Boolean): Frag =
+      if (allowList) {
+        attribute(ListType) match {
+          case Some(ListType.OrderedList) =>
+            if (childs.isEmpty) Seq.empty[Frag]: Frag
+            else ol(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
+          case Some(ListType.DashList) =>
+            if (childs.isEmpty) Seq.empty[Frag]: Frag
+            else ul(cls := "dashed", childs.map(a => li(a.toScalaTags(hasWrapper = true))))
+          case _ =>
+            if (childs.isEmpty) Seq.empty[Frag]: Frag
+            else ul(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
+        }
+      } else {
         childs.map(_.toScalaTags)
-      case Some(ChildrenType.OrderedList) =>
-        if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ol(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
-      case Some(ChildrenType.DashList) =>
-        if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ul(cls := "dashed", childs.map(a => li(a.toScalaTags(hasWrapper = true))))
-      case _ =>
-        if (childs.isEmpty) Seq.empty[Frag]: Frag
-        else ul(childs.map(a => li(a.toScalaTags(hasWrapper = true))))
-    }
+      }
     attribute(ContentType) match {
       case Some(ContentType.Heading(h)) =>
-        Seq(tag(s"h$h")(contentWithoutP), children)
+        Seq(tag(s"h$h")(contentWithoutP), children(false))
       case Some(ContentType.Cite) =>
         blockquote(
-          children,
+          children(false),
           cite(contentWithoutP)
         )
       case Some(ContentType.Hr) =>
-        Seq(hr, children)
+        Seq(hr)
       case _ =>
         if (hasWrapper)
-          Seq(contentWithoutP, children)
+          Seq(contentWithoutP, children(true))
         else
-          Seq(p(contentWithoutP), children)
+          Seq(p(contentWithoutP), children(true))
     }
   }
 
@@ -369,8 +393,16 @@ object Node extends DataObject[Node] {
     override private[model] def serialize(t: Int) = JsNumber(t)
   }
 
-  sealed trait ChildrenType {
+  sealed trait ListType {
 
+  }
+
+  object IsArticle extends NodeTag[Unit] {
+    override private[model] val name = "is_article"
+
+    override private[model] def parse(a: JsValue): Unit = Unit
+
+    override private[model] def serialize(t: Unit): JsValue = JsTrue
   }
 
   object IgnoreInSearch extends NodeTag[Unit] {
@@ -378,21 +410,18 @@ object Node extends DataObject[Node] {
 
     override private[model] def parse(a: JsValue): Unit = Unit
 
-    override private[model] def serialize(t: Unit): JsValue = JsString("1")
+    override private[model] def serialize(t: Unit): JsValue = JsTrue
   }
 
 
-  object ChildrenType extends NodeTag[ChildrenType] {
-    case object Paragraphs extends ChildrenType {
-      override def toString: String = "paragraphs"
-    }
-    case object OrderedList extends ChildrenType {
+  object ListType extends NodeTag[ListType] {
+    case object OrderedList extends ListType {
       override def toString: String = "ordered list"
     }
-    case object UnorderedList extends ChildrenType {
+    case object UnorderedList extends ListType {
       override def toString: String = "bullet list"
     }
-    case object DashList extends ChildrenType {
+    case object DashList extends ListType {
       override def toString: String = "dash list"
     }
 
@@ -401,25 +430,21 @@ object Node extends DataObject[Node] {
     override private[model] def parse(aa: JsValue) = aa match {
       case JsString(a) =>
         a match {
-          case "p" => Paragraphs
           case "ol" => OrderedList
-          case "ul" => UnorderedList
           case "dl" => DashList
-          case _ => Paragraphs
+          case _ => UnorderedList
         }
-      case _ => Paragraphs
+      case _ => UnorderedList
     }
 
-    override private[model] def serialize(t: ChildrenType) = JsString(t match {
-      case Paragraphs => "p"
-      case OrderedList => "ol"
+    override private[model] def serialize(t: ListType) = JsString(t match {
       case UnorderedList => "ul"
+      case OrderedList => "ol"
       case DashList => "dl"
     })
   }
 
   sealed trait ContentType {
-    def preferredChildrenType: Option[ChildrenType] = None
   }
   object ContentType extends NodeTag[ContentType] {
     case object Cite extends ContentType {
@@ -431,6 +456,9 @@ object Node extends DataObject[Node] {
     case class Heading(i: Int) extends ContentType {
       override def toString: String = s"heading $i"
     }
+    case object ParagraphsHack extends ContentType {
+      override def toString: String = s"parent of paragraphs"
+    }
 
     override private[model] val name = "content_type"
 
@@ -439,6 +467,7 @@ object Node extends DataObject[Node] {
         if (a == "hr" || a == "br") Hr
         else if (a.startsWith("h")) Heading(a.substring(1).toInt)
         else if (a == "cite") Cite
+        else if (a == "ps") ParagraphsHack
         else throw new IllegalStateException("Not possible")
       case _ => throw new IllegalStateException("Not possible")
     }
@@ -447,6 +476,7 @@ object Node extends DataObject[Node] {
       case Heading(a) => "h" + a
       case Cite => "cite"
       case Hr => "hr"
+      case ParagraphsHack => "ps"
     })
   }
   def cloneNodes(n: Seq[Node]): Seq[Node] = {

@@ -55,7 +55,7 @@ class TagsPanel(val client: Client, doc: => View, quickSearch: => QuickSearchDia
 
   def render(): Unit = {
     val zoom = state.zoom
-    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
+    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isFolder)
     val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
     val zoomSame = previousZoom == zoom
     if (zoomSame && focusSame) {

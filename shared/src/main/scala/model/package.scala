@@ -17,6 +17,7 @@ package object model extends Picklers with Formats {
   var debug_testing = false
   val debug_katex = false
   var debug_view = false
+  var debug_debugPanel = true
   val debug_scroll = debug_view && false
   var debug_model = false
   var debug_webSocket = true

@@ -118,20 +118,19 @@ trait DocFramer extends ContentViewCreator {
           "ct-d-heading-error"
         }
         if (docFramerIsSmall == 0) {
-          if (j > 1) s"$headingStr ct-d-h$j" else s"ct-d-h1"
+          s"$headingStr ct-d-h$j"
         } else if (docFramerIsSmall == 1) {
-          if (j > 1) s"$headingStr ct-d-hs${if (j >= 4) "s" else j.toString}" else s"ct-d-hs1"
+          s"$headingStr ct-d-hs${if (j >= 4) "s" else j.toString}"
         } else {
-          if (j > 1) headingStr else s"ct-d-h1"
+          headingStr
         }
       case _ => ""
-    }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
-      case model.data.Node.ChildrenType.UnorderedList => "ct-d-ul"
-      case model.data.Node.ChildrenType.OrderedList => "ct-d-ol"
-      case model.data.Node.ChildrenType.Paragraphs => "ct-d-ps"
-      case model.data.Node.ChildrenType.DashList => "ct-d-dl"
-      case _ => ""
-    }.getOrElse("") + " " + (node.priority.getOrElse(0) match {
+    }.getOrElse("") + (if (node.isFolder) " ct-d-article " else " " )
+        + (if (node.childIsLists) node.attribute(model.data.Node.ListType).getOrElse(model.data.Node.ListType.UnorderedList) match {
+      case model.data.Node.ListType.OrderedList => "ct-d-ol"
+      case model.data.Node.ListType.DashList => "ct-d-dl"
+      case _ => "ct-d-ul"
+    } else "ct-d-ps")   + " " + (node.priority.getOrElse(0) match {
       case a if a <= -3 => "ct-p-n3plus"
       case -2 => "ct-p-n2"
       case -1 => "ct-p-n1"

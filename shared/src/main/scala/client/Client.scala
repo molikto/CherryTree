@@ -823,10 +823,10 @@ class Client(
       val toUnfold = (toggle -- toFold) ++ unfold.filter(a => folded0.folded(a._1))
       toFold = toFold -- toUnfold
       (folded0.userFoldedNodes
-        ++ toFold.filter(!_._2.isH1).map(_._2.uuid -> true).toMap
-        ++ toUnfold.filter(_._2.isH1).map(_._2.uuid -> false).toMap
-        -- toFold.filter(_._2.isH1).map(_._2.uuid)
-        -- toUnfold.filter(!_._2.isH1).map(_._2.uuid)
+        ++ toFold.filter(!_._2.isFolder).map(_._2.uuid -> true).toMap
+        ++ toUnfold.filter(_._2.isFolder).map(_._2.uuid -> false).toMap
+        -- toFold.filter(_._2.isFolder).map(_._2.uuid)
+        -- toUnfold.filter(!_._2.isFolder).map(_._2.uuid)
         , toFold.map(a => a._1 -> true).toMap ++ toUnfold.map(a => a._1 -> false).toMap)
     }
   }
@@ -843,6 +843,10 @@ class Client(
     } else {
       super.undo(currentDoc)
     }
+  }
+
+  def goTo(u: UUID, mustZoom: Boolean = false) = {
+    state.lookup(u).foreach(a => localChange(state.goTo(a, this, mustZoom)))
   }
 
   def localChange(

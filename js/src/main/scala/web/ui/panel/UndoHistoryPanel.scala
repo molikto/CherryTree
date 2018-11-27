@@ -1,10 +1,11 @@
 package web.ui.panel
 
 import client.Client
+import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom.all._
-import web.view.{UnselectableView, removeAllChild}
+import web.view.{UnselectableView, View, removeAllChild}
 
-class UndoHistoryPanel(val client: Client) extends UnselectableView  {
+class UndoHistoryPanel(val client: Client, val doc: View) extends UnselectableView  {
 
 
   dom = div(
@@ -18,19 +19,45 @@ class UndoHistoryPanel(val client: Client) extends UnselectableView  {
 
 
 
-
-  observe(client.stateUpdates.map(_ => 0).doOnNext(pair => {
-    removeAllChild(dom)
-    client.debug_undoHistory.takeRight(30).foreach(a =>
-      dom.appendChild(
-        div(
-          marginBottom := "8px",
-          div(span(a._1), " ", span(a._3)),
-          a._2.map(c => div(c.toString))
-        ).render
+  override def onAttach(): Unit = {
+    observe(client.stateUpdates.doOnNext(state => {
+      removeAllChild(dom)
+      state.to.node.foreach((cur, node) => {
+        if (!node.canHaveChilds && node.childs.nonEmpty) {
+          dom.appendChild(button("Node should not have childs",
+            onclick := ((ev: MouseEvent) => {
+              client.goTo(node.uuid)
+              doc.focus()
+            }),
+          ).render)
+        }
+        if (!state.to.canBe(cur, node.contentType)) {
+          dom.appendChild(button("Content type is wrong",
+            onclick := ((ev: MouseEvent) => {
+              client.goTo(node.uuid)
+              doc.focus()
+            }),
+          ).render)
+        }
+        if (!state.to.childCanBeLists(cur) && node.childIsLists) {
+          dom.appendChild(button("List type wrong",
+            onclick := ((ev: MouseEvent) => {
+              client.goTo(node.uuid)
+              doc.focus()
+            }),
+          ).render)
+        }
+      }, model.cursor.Node.root)
+      client.debug_undoHistory.takeRight(30).foreach(a =>
+        dom.appendChild(
+          div(
+            marginBottom := "8px",
+            div(span(a._1), " ", span(a._3)),
+            a._2.map(c => div(c.toString))
+          ).render
+        )
       )
-    )
-    scrollToBottom()
-  }))
-
+      scrollToBottom()
+    }))
+  }
 }

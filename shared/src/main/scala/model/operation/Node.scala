@@ -84,8 +84,8 @@ object Node extends OperationObject[data.Node, operation.Node] {
     override def apply(a: DocState, enableModal: Boolean): DocState = {
       var m= a.mode0
       var zoom = a.zoom
-      if (tag == data.Node.ContentType.name &&
-        to == data.Node.ContentType.serialize(data.Node.ContentType.Heading(1)) &&
+      if (tag == data.Node.IsArticle &&
+        to == data.Node.IsArticle.serialize(Unit) &&
         a.inViewport(at) &&
         a.viewAsFolded(at, true)) {
         a.mode0 match {

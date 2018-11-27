@@ -469,7 +469,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
 
       hold.title = (info ++ Seq(
           node.contentType.map("content type: " + _.toString).getOrElse(""),
-          node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
+          node.attribute(model.data.Node.ListType).map("list type: " + _.toString).getOrElse(""),
           s"items: ${node.count}",
           s"text size: ${node.content.size}",
           s"total text size: ${node.size}"

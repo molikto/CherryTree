@@ -30,7 +30,7 @@ abstract class InputRule(val a: String) {
 
 class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pattern.quote(a)) {
   override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
-    if (pos == a.length) {
+    if (pos == a.length && doc.canChangeTo(at, Some(ty))) {
       doc.changeContentType(at, Some(ty), Seq(operation.Node.rich(at, operation.Rich.delete(start, end))))
     } else {
       DocTransaction.empty
@@ -41,15 +41,15 @@ class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pa
 }
 
 
-class ParentChildrenTypeRule(a: String, ty: data.Node.ChildrenType) extends InputRule(Pattern.quote(a)) {
+class ParentListTypeRule(a: String, ty: data.Node.ListType) extends InputRule(Pattern.quote(a)) {
   override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
-    if (pos == a.length && at != doc.zoom) {
+    if (pos == a.length && at != doc.zoom && doc.childCanBeLists(model.cursor.Node.parent(at))) {
       val par = model.cursor.Node.parent(at)
-      if (doc.node(par).attribute(data.Node.ChildrenType).getOrElse(data.Node.ChildrenType.UnorderedList) != ty) {
+      if (doc.node(par).attribute(data.Node.ListType).getOrElse(data.Node.ListType.UnorderedList) != ty) {
         return DocTransaction(
           Seq(
             operation.Node.rich(at, operation.Rich.delete(start, end)),
-            operation.Node.AttributeChange(par, data.Node.ChildrenType, Some(ty))),
+            operation.Node.AttributeChange(par, data.Node.ListType, Some(ty))),
           None)
       }
     }

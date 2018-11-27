@@ -65,7 +65,7 @@ class LeftPanelSwitcher(private val cl: Client,
 
   private var childs = Seq(settings, commands, tags, quickAccess)
 
-  if (model.debug_view) {
+  if (model.debug_debugPanel) {
     childs = undoHistory +: childs
   }
   for (a <- childs) {
@@ -109,7 +109,7 @@ class LeftPanelSwitcher(private val cl: Client,
     } else if (active == tags) {
       new TagsPanel(cl, doc, quickSearch, latexMacroCache).attachToNode(container)
     } else if (active == undoHistory) {
-      new UndoHistoryPanel(cl).attachToNode(container)
+      new UndoHistoryPanel(cl, doc).attachToNode(container)
     } else {
       null
     }

@@ -33,7 +33,7 @@ class StaticDiffTocView(
   }
 
   override def update(newData0: Seq[Node]): Unit = {
-    super.update(newData0.filter(a => a.isHeading && !a.isH1))
+    super.update(newData0.filter(a => a.isHeading && !a.isFolder))
   }
 
   def updateFocus(uuid: Option[UUID], hideLevel: Int, list: HTMLElement): Boolean = {

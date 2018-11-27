@@ -5,6 +5,7 @@ import java.util.UUID
 import client.Client.ViewMessage
 import model.{cursor, data, mode, operation, transaction}
 import model.cursor.Node
+import model.data.Node.ContentType
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
@@ -25,17 +26,45 @@ case class DocState private (
   userFoldedNodes: Map[UUID, Boolean]
 ) {
 
+  def childCanBeLists(a: model.cursor.Node) = node(a).childCanBeLists
+
+  def childIsLists(a: model.cursor.Node) = node(a).childIsLists
+
+  def canBe(a: model.cursor.Node, c: Option[ContentType]): Boolean = {
+    if (a == model.cursor.Node.root || node(a).isFolder) {
+      c match {
+        case Some(model.data.Node.ContentType.Heading(_)) => true
+        case _ => false
+      }
+    } else {
+      if (childIsLists(model.cursor.Node.parent(asSingle))) {
+        c match {
+          case Some(model.data.Node.ContentType.ParagraphsHack) => true
+          case Some(model.data.Node.ContentType.Cite) => true
+          case None => true
+          case _ => false
+        }
+      } else {
+        c match {
+          case Some(model.data.Node.ContentType.ParagraphsHack) => false
+          case _ => true
+        }
+      }
+    }
+  }
+
+  def canChangeTo(a: Node, c: Option[ContentType]): Boolean = if (node(a).contentType == c) false else canBe(a, c)
+
+  def isParagraph(asSingle: Node): Boolean = {
+    asSingle.size > 1 && !node(model.cursor.Node.parent(asSingle)).childIsLists
+  }
+
   def changeContentType(cur: cursor.Node,
     to: Option[data.Node.ContentType],
     opts: transaction.Node = Seq.empty
   ): DocTransaction = {
-    val chidlren = if (!node(cur).has(data.Node.ChildrenType)) {
-      to.flatMap(_.preferredChildrenType).map(a => operation.Node.AttributeChange(cur, data.Node.ChildrenType, Some(a))).toSeq
-    } else {
-      Seq.empty
-    }
     DocTransaction(
-      opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren, None)
+      opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)), None)
   }
 
   def nodeRefRelative(uuid: UUID, zoomToEmpty: Boolean = true): String = {
@@ -157,7 +186,7 @@ case class DocState private (
       // not current search root, and not ignored in search
       a => a.uuid != n.uuid && a.ignoreInSearch).sortBy(cur => {
       val n = node(cur)
-      (!n.isH1, !n.isHeading)
+      (!n.isFolder, !n.isHeading)
     })
   }
 
@@ -238,14 +267,14 @@ case class DocState private (
 
   def folded(a: cursor.Node): Boolean = {
     val no = node(a)
-    userFoldedNodes.getOrElse(no.uuid, no.isH1)
+    userFoldedNodes.getOrElse(no.uuid, no.isFolder)
   }
 
   /**
     * you need to ensure when you call this, there is no parenting folded nodes
     */
   def viewAsFolded(a: data.Node): Boolean = {
-    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isH1)
+    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isFolder)
   }
 
   def viewAsNotFoldedAndNotHidden(a: cursor.Node): Boolean = inViewport(a) && !viewAsFolded(a) && !notVisible(a)
@@ -258,7 +287,7 @@ case class DocState private (
   def viewAsFolded(a: cursor.Node): Boolean = {
     assert(cursor.Node.contains(zoom, a))
     val no = node(a)
-    a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
+    a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isFolder)
   }
 
   /**

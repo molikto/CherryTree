@@ -103,7 +103,7 @@ class QuickAccessPanel(client: Client, doc: => View, latexMacroCache: LaTeXMacro
 
   def renderState(emptyDataChange: Boolean): Unit = {
     val zoom = state.zoom
-    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
+    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isFolder)
     val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
     val zoomSame = previousZoom == zoom
     if (zoomSame && focusSame) {
@@ -115,7 +115,7 @@ class QuickAccessPanel(client: Client, doc: => View, latexMacroCache: LaTeXMacro
     }
     if (checkShouldUpdate()) {
       previousZoom = zoom
-      val nearestHeadingCur = zoom.inits.find(l => state.node(l).isH1)
+      val nearestHeadingCur = zoom.inits.find(l => state.node(l).isFolder)
       val nearestHeading = nearestHeadingCur.map(cur => state.node(cur))
       parentsView.update(zoom.indices.map(a => state.node(zoom.take(a))))
       var tocChanged = false
