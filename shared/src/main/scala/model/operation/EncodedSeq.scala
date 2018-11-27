@@ -263,6 +263,8 @@ object EncodedSeq extends OperationObject[data.EncodedSeq, EncodedSeq] {
           range.moveBy(sizeDiff)
         } else if (r.start > range.until) {
           range
+        } else if (range.contains(r)) {
+          IntRange(range.start, range.until + sizeDiff)
         } else {
           throw new Exception("Not handled case")
         }

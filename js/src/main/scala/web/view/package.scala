@@ -83,12 +83,14 @@ package object view {
       if (model.debug_scroll) {
         window.console.log(s"scrolling to top", p, topCut, bottomCut, toTopCut, toBottomCut)
       }
-      scroll.scrollTop = scroll.scrollTop - (p.top + p.height * toTopCut / 100 - c.top)
+      val to = scroll.scrollTop - (p.top + p.height * toTopCut / 100 - c.top)
+      scroll.scrollTop = Math.min(scroll.scrollHeight - p.height, to)
     } else if (c.bottom > p.bottom - p.height * bottomCut / 100) {
       if (model.debug_scroll) {
         window.console.log(s"scrolling to bottom", p, topCut, bottomCut, toTopCut, toBottomCut)
       }
-      scroll.scrollTop = scroll.scrollTop + ((c.bottom - p.bottom + p.height * toBottomCut / 100) min (c.top - p.top - p.height * toTopCut / 100))
+      val to = scroll.scrollTop + ((c.bottom - p.bottom + p.height * toBottomCut / 100) min (c.top - p.top - p.height * toTopCut / 100))
+      scroll.scrollTop = Math.min(scroll.scrollHeight - p.height, to)
     }
   }
 

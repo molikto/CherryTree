@@ -215,12 +215,12 @@ object Rich extends OperationObject[data.Rich, Rich] {
     Rich(op1.flatMap(_.u), ty)
   }
 
-  def changeAttributeAt(rich: data.Rich, textStart: Int, attrs: Seq[SpecialChar], seq: Seq[Option[model.data.Unicode]]): Rich = {
-    val atom = rich.after(textStart)
+  def changeAttributeAt(rich: data.Rich, range: IntRange, attrs: Seq[SpecialChar], seq: Seq[Option[model.data.Unicode]]): Rich = {
+    val atom = rich.after(range.until)
     val text = atom.text.asDelimited
     Rich(
       attrs.reverse.zip(seq.reverse).filter(_._2.isDefined).map(a => {
-        EncodedSeq.ReplaceAtomic(text.rangeAttribute(a._1).moveBy(textStart), data.EncodedSeq.apply(a._2.get : model.data.Unicode))
+        EncodedSeq.ReplaceAtomic(text.rangeAttribute(a._1).moveBy(atom.textRange.start), data.EncodedSeq.apply(a._2.get : model.data.Unicode))
       }),
       Type.AddDelete)
   }

@@ -721,7 +721,7 @@ class Client(
       case Some(model.mode.Node.Content(node, model.mode.Content.RichAttributeSubMode(range, modeBefore))) =>
         val rich = state.node(node).rich
         localChange(DocTransaction(Seq(
-          operation.Node.rich(node, operation.Rich.changeAttributeAt(rich, range.start - 1, attrs, seq))
+          operation.Node.rich(node, operation.Rich.changeAttributeAt(rich, range, attrs, seq))
         ), None))
       case _ => throw new IllegalStateException("What??")
     }
