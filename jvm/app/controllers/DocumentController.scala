@@ -149,12 +149,8 @@ class DocumentController @Inject() (
     * html returning
     */
 
-  def index(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
-    Ok(views.html.editor(documentId, None))
-  }
-
-  def node(documentId: UUID, nid: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
-    Ok(views.html.editor(documentId, Some(nid)))
+  def index(documentId: UUID, nid: Option[UUID]) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)) { implicit request =>
+    Ok(views.html.editor(documentId, nid))
   }
 
   def json(documentId: UUID) = silhouette.SecuredAction(HasPermission[DefaultEnv#A](documentId, users)).async { implicit request =>

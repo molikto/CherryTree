@@ -38,8 +38,8 @@ case class DocState private (
       opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren, None)
   }
 
-  def nodeRefRelative(uuid: UUID): String = {
-    if (uuid == node.uuid) "" else model.data.Node.nodeRefRelative(uuid)
+  def nodeRefRelative(uuid: UUID, zoomToEmpty: Boolean = true): String = {
+    if (uuid == node.uuid && zoomToEmpty) "" else model.data.Node.nodeRefRelative(uuid)
   }
 
   def goTo(cur: Node, settings: Settings, mustZoom: Boolean = false): DocTransaction = {

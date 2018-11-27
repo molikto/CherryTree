@@ -4,6 +4,7 @@ import java.util.UUID
 
 import api.PermissionLevel
 import client.Client
+import io.lemonlabs.uri.Url
 import org.scalajs.dom._
 import org.scalajs.dom.raw._
 import web._
@@ -133,16 +134,25 @@ class ClientView(private val parent: HTMLElement, val client: Client, val onSett
 
   private var rootUrl: String = null
   private var duringGoTo = false
+
+
   if (global) {
     docView.focus()
     if (rootUrl == null) {
-      rootUrl = window.location.href
+      rootUrl = Url.parse(window.location.href).removeQueryString().toString()
     }
-    window.history.replaceState(client.state.zoomId.toString, document.title, rootUrl)
+    def formatUrl(uuid: UUID, zoomToEmpty: Boolean = true) = {
+      rootUrl + client.state.nodeRefRelative(uuid, zoomToEmpty)
+    }
+    if (window.location.href != rootUrl && window.location.href != formatUrl(client.state.zoomId, false)) {
+      window.history.pushState(client.state.zoomId.toString, document.title, rootUrl)
+      window.setTimeout(() => {
+        alert("Your url reference to a non-existing node", "warning")
+      }, 0.0)
+    }
     observe(client.stateUpdates.map(_.to.zoomId).distinctUntilChanged.doOnNext(uuid => {
       if (!duringGoTo) {
-        window.history.pushState(uuid.toString, document.title)
-         //, rootUrl + client.state.nodeRefRelative(uuid))
+        window.history.pushState(uuid.toString, document.title, formatUrl(uuid))
       }
     }))
     event(window, "popstate", (ev: PopStateEvent) => {

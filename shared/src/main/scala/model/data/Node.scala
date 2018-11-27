@@ -19,6 +19,7 @@ trait NodeTag[T] {
   private[model] def serialize(t: T): JsValue
 }
 
+
 // LATER simple type of node, so that it can be article, ordered list, unordered list, quote
 case class Node(
   uuid: UUID,
@@ -343,11 +344,11 @@ object Node extends DataObject[Node] {
 
 
   // TODO support multi document ref
-  def matchNodeRef(url: String): Option[UUID] = if (url.startsWith(NodeRefScheme)) Some(UUID.fromString(url.substring(NodeRefScheme.length + "node?node=".length))) else None
+  def matchNodeRef(url: String): Option[UUID] = if (url.startsWith(NodeRefScheme)) Some(UUID.fromString(url.substring(NodeRefScheme.length + "?node=".length))) else None
 
   def nodeRefRelative(nodeId: UUID): String = {
     val query = s"?node=$nodeId"
-    s"node$query"
+    s"$query"
   }
 
   def nodRef(nodeId: UUID): String = {

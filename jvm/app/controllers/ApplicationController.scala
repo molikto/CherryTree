@@ -55,7 +55,7 @@ class ApplicationController @Inject() (
       case Some(user) =>
         docs.list(user.userId).map { li =>
           if (li.size == 1) {
-            Redirect(controllers.routes.DocumentController.index(li.head.id))
+            Redirect(controllers.routes.DocumentController.index(li.head.id, None))
           } else {
             Redirect(controllers.routes.DocumentsController.documents())
           }

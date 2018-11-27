@@ -86,6 +86,7 @@ object Client {
 
 class Client(
   val docId: UUID,
+  var initNodeId: Option[UUID],
   initial: InitResponse,
   private val api: Api,
 ) extends SettingsImpl
@@ -198,10 +199,22 @@ class Client(
     * editor queue
     */
   private var state_ = {
-    val zoom = api.localStorage.get(docId + ".zoom1") match {
+    def localZoom(): model.cursor.Node = {
+      api.localStorage.get(docId + ".zoom1") match {
+        case Some(uuid) =>
+          committed.lookup(UUID.fromString(uuid)).getOrElse(model.cursor.Node.root)
+        case _ => cursor.Node.root
+      }
+    }
+    val zoom = initNodeId match {
       case Some(uuid) =>
-        committed.lookup(UUID.fromString(uuid)).getOrElse(model.cursor.Node.root)
-      case _ => cursor.Node.root
+        committed.lookup(uuid).map(cur => {
+          // save to local
+          api.localStorage.set(docId + ".zoom1", uuid.toString)
+          cur
+        }).getOrElse(localZoom())
+      case None =>
+        localZoom()
     }
     DocState(committed,
       zoom,

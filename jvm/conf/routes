@@ -41,8 +41,7 @@ GET         /document/:id/options            controllers.DocumentsController.opt
 POST /document/:id/collabrators/add          controllers.DocumentsController.addCollabrator(id: java.util.UUID)
 POST /document/:id/collabrators/delete       controllers.DocumentsController.deleteCollabrator(id: java.util.UUID)
 
-GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID)
-GET         /document/:id/node/:nid          controllers.DocumentController.node(id: java.util.UUID, nid: java.util.UUID)
+GET         /document/:id                    controllers.DocumentController.index(id: java.util.UUID, node: Option[java.util.UUID])
 GET         /document/:id/ws                 controllers.DocumentController.ws(id: java.util.UUID)
 GET         /document/json/:id               controllers.DocumentController.json(id: java.util.UUID)
 # ajax calls

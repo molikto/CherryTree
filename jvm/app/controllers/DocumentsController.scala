@@ -72,7 +72,7 @@ class DocumentsController @Inject() (
               }).map(res => {
                 res match {
                   case Some(li) =>
-                    val url = controllers.routes.DocumentController.index(documentId).absoluteURL()
+                    val url = controllers.routes.DocumentController.index(documentId, None).absoluteURL()
                     mailerClient.send(Email(
                       subject =  Messages("email.new.collabrator.subject"),
                       from = Messages("email.from"),
