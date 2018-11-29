@@ -215,7 +215,7 @@ case class Node(
     model.cursor.Node.root
   }
 
-  def isH1: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
+  def isFolder: Boolean = attribute(ContentType).contains(ContentType.Heading(1))
   def isHeading: Boolean = attribute(ContentType).exists(_.isInstanceOf[ContentType.Heading])
 
   def heading: Option[Int] = attribute(ContentType).filter(_.isInstanceOf[ContentType.Heading]).map(_.asInstanceOf[ContentType.Heading].i)

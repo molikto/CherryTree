@@ -157,7 +157,7 @@ case class DocState private (
       // not current search root, and not ignored in search
       a => a.uuid != n.uuid && a.ignoreInSearch).sortBy(cur => {
       val n = node(cur)
-      (!n.isH1, !n.isHeading)
+      (!n.isFolder, !n.isHeading)
     })
   }
 
@@ -238,14 +238,14 @@ case class DocState private (
 
   def folded(a: cursor.Node): Boolean = {
     val no = node(a)
-    userFoldedNodes.getOrElse(no.uuid, no.isH1)
+    userFoldedNodes.getOrElse(no.uuid, no.isFolder)
   }
 
   /**
     * you need to ensure when you call this, there is no parenting folded nodes
     */
   def viewAsFolded(a: data.Node): Boolean = {
-    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isH1)
+    a.uuid != zoomId && userFoldedNodes.getOrElse(a.uuid, a.isFolder)
   }
 
   def viewAsNotFoldedAndNotHidden(a: cursor.Node): Boolean = inViewport(a) && !viewAsFolded(a) && !notVisible(a)
@@ -258,7 +258,7 @@ case class DocState private (
   def viewAsFolded(a: cursor.Node): Boolean = {
     assert(cursor.Node.contains(zoom, a))
     val no = node(a)
-    a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isH1)
+    a != zoom && userFoldedNodes.getOrElse(no.uuid, no.isFolder)
   }
 
   /**
