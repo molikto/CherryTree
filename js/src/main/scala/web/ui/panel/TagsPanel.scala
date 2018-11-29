@@ -46,25 +46,12 @@ class TagsPanel(val client: Client, doc: => View, quickSearch: => QuickSearchDia
 
   private def state = client.state
 
-  private var previousZoom: model.cursor.Node = null
-  private var previousFocus: Option[UUID] = None
-
   override def renderDelayed(): Unit = render()
 
   private var previousTags: Object = null
 
   def render(): Unit = {
-    val zoom = state.zoom
-    val currentFocusTitleNode = state.focus.inits.map(a => state.node(a)).find(l => l.isHeading && !l.isH1)
-    val focusSame = previousFocus == currentFocusTitleNode.map(_.uuid)
-    val zoomSame = previousZoom == zoom
-    if (zoomSame && focusSame) {
-    } else {
-      previousUpdateTime = -1L
-    }
     if (checkShouldUpdate()) {
-      previousZoom = zoom
-      previousFocus = currentFocusTitleNode.map(_.uuid)
       val tags = state.node.allTags
       if (previousTags != tags) {
         previousTags = tags

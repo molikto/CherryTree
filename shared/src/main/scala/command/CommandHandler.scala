@@ -343,6 +343,7 @@ class CommandHandler(client: Client) extends CommandInterface {
           case Key.Grapheme(g) => buffer.append(Part.Char(g))
           case _ =>
             if (miscCommands.exit.keys.contains(Seq(key))) {
+              buffer.clear()
               buffer.append(Part.IdentifiedCommand(Some(Seq(key)), miscCommands.exit, Seq.empty))
             } else {
               buffer.append(Part.UnknownCommand(Seq(key)))

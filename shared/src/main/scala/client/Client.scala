@@ -845,6 +845,10 @@ class Client(
     }
   }
 
+  def goTo(u: UUID, mustZoom: Boolean = false) = {
+    state.lookup(u).foreach(a => localChange(state.goTo(a, this, mustZoom)))
+  }
+
   def localChange(
     update0: DocTransaction,
     isSmartInsert: Boolean = false,

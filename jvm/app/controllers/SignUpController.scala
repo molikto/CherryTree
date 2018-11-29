@@ -71,7 +71,7 @@ class SignUpController @Inject() (
                     name = data.name,
                     email = data.email,
                     avatarUrl = None,
-                    activated = true, // TODO remove the allowed stuff and actually send email
+                    activated = false,
                     loginInfo = loginInfo
                   )
                   for {
