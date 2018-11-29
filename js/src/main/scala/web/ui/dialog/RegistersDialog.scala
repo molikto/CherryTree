@@ -2,7 +2,7 @@ package web.ui.dialog
 
 import client.Client
 import command.Command
-import model.data.Node.ContentType
+import model.data.NodeType
 import model.data.Rich
 import org.scalajs.dom.raw._
 import register.Registerable
@@ -11,8 +11,8 @@ import web.ui.doc.{DocFramer, DocumentView, LaTeXMacroCache}
 import web.view._
 
 class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
-  override val latexMacroCache: LaTeXMacroCache) extends
-  StaticFilteringView[OverlayAnchor, (Int, Option[Registerable])]
+                      override val latexMacroCache: LaTeXMacroCache) extends
+    StaticFilteringView[OverlayAnchor, (Int, Option[Registerable])]
     with MountedOverlay[OverlayAnchor] with DocFramer
 {
 
@@ -65,7 +65,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
         marginLeft := "10px",
         t._2.map {
           case Registerable.Unicode(u) => code(cls := "ct-c-code", u.str)
-          case Registerable.Text(u) => contentViewCreate(model.data.Content.Rich(Rich(u)), None) : Frag
+          case Registerable.Text(u) => div(cls := "ct-document-style", contentViewCreate(model.data.Content.Rich(Rich(u)), None) : Frag)
           case Registerable.Node(a, _) =>
             if (a.isEmpty) "": Frag
             else {
@@ -75,7 +75,10 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
               } else {
                 div(
                   s"$count nodes",
-                  contentViewCreate(a.head.content, a.head.contentType)
+                  div(
+                    cls := "ct-document-style",
+                    contentViewCreate(a.head.content, a.head.contentType)
+                  )
                 )
               }
             }
