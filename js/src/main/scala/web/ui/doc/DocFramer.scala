@@ -2,6 +2,7 @@ package web.ui.doc
 
 import java.util.UUID
 
+import model.data.NodeType
 import org.scalajs.dom.raw.HTMLElement
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw._
@@ -56,7 +57,7 @@ trait DocFramer extends ContentViewCreator {
   }
 
   private def create(a: model.data.Node): General = {
-    val cv = contentViewCreate(a.content, a.contentType)
+    val cv = contentViewCreate(a.content)
     if (docFramerExtraClass != "") {
       cv.dom.classList.add(docFramerExtraClass)
     }
@@ -74,7 +75,7 @@ trait DocFramer extends ContentViewCreator {
 
   def updateContentViewInsideFrame(a: HTMLElement, data: model.data.Node): Unit = {
     val oldView = contentViewFromWithHold(a)
-    if (contentViewMatches(data.content, data.contentType, oldView)) {
+    if (contentViewMatches(data.content, oldView)) {
       oldView.updateContent(data.content)
       updateContentViewAndHoldAttribute(a, data)
     } else {

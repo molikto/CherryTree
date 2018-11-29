@@ -1,7 +1,7 @@
 package command.defaults
 
 import client.Client.ViewMessage
-import client.{ContentTypeRule, InputRule, ParentChildrenTypeRule}
+import client.{CreateListTypeRule, InputRule, NodeTypeRule}
 import command.{CommandCategory, CommandInterface}
 import command.Key.{KeySeq, Shift}
 import doc.{DocState, DocTransaction}
@@ -42,65 +42,49 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
 
 
-  class ContentStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ContentType]) extends TextualCommand {
-    override val description: String = s"content style: $desc"
-    override protected def available(a: DocState): Boolean = a.isSingle
+  class ContentStyleCommand(desc: String, ir: Seq[String], to: data.NodeType) extends TextualCommand {
+    override val description: String = s"node type: $desc"
+    override protected def available(a: DocState): Boolean = a.isSingle && a.canChangeTo(a.asSingle, to)
+
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
-      a.changeContentType(a.asSingle, to)
+      a.changeNodeTypeHeadingLevel(a.asSingle, to)
     }
 
-    override val inputRule: Seq[InputRule] = to.toSeq.flatMap(t => ir.map(i => new ContentTypeRule(i, t)))
+    override val inputRule: Seq[InputRule] = ir.map(i => new NodeTypeRule(i, to))
   }
 
 
-  // the reason is commands is textual declare ordered, so it's the input rule append order
-  for (i <- (2 to 6).reverse) {
-    new ContentStyleCommand(s"heading $i, h$i", Seq((0 until i).map(_ => "#").mkString("") + " "), Some(data.Node.ContentType.Heading(i))) {
-      override protected def available(a: DocState): Boolean = if (a.isSingle) {
-        if (i == 1) {
-          true
-        } else {
-          val cur = a.asSingle
-          if (cur == cursor.Node.root) {
-            false
-          } else {
-            a.node(cursor.Node.parent(cur)).heading match {
-              case Some(j) =>  i == j + 1
-              case None => true
-            }
-          }
-        }
-      } else {
-        false
-      }
-    }
-  }
+  new ContentStyleCommand("outliner", Seq.empty, data.NodeType.Outliner)
 
-  // evil char to affect sorting!
-  new ContentStyleCommand(s"\u200Bheading 1, h1, article", Seq("# "), Some(data.Node.ContentType.Heading(1)))
+  new ContentStyleCommand("article", Seq.empty, data.NodeType.Article)
 
-  new ContentStyleCommand("cite", Seq("> "), Some(data.Node.ContentType.Cite))
+  new ContentStyleCommand("heading", Seq("= "), data.NodeType.Heading)
 
-  new ContentStyleCommand("hr", Seq("___"), Some(data.Node.ContentType.Hr))
+  new ContentStyleCommand("block", Seq("> "), data.NodeType.Block)
 
-  new ContentStyleCommand("clear", Seq.empty, None)
+  new ContentStyleCommand("hr", Seq("___"), data.NodeType.Divider)
 
-  class ChildrenStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ChildrenType]) extends TextualCommand {
+  new ContentStyleCommand("paragraph", Seq.empty, data.NodeType.Paragraph)
+
+  new ContentStyleCommand("list item, li", Seq.empty, data.NodeType.Li)
+
+  new ContentStyleCommand("parent of paragraphs", Seq.empty, data.NodeType.LiParagraphs)
+
+  class ListStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ListType]) extends TextualCommand {
     override val description: String = s"list style: $desc"
-    override protected def available(a: DocState): Boolean = a.isSingle
+    override protected def available(a: DocState): Boolean = a.isSingle && a.nodeType(a.asSingle).isList
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asSingle
       DocTransaction(
-        Seq(operation.Node.AttributeChange(cur, data.Node.ChildrenType, to)),
+        Seq(operation.Node.AttributeChange(cur, data.Node.ListType, to)),
         a.mode)
     }
-    override val inputRule: Seq[InputRule] = to.toSeq.flatMap(t => ir.map(i => new ParentChildrenTypeRule(i, t)))
+    override val inputRule: Seq[InputRule] = to.toSeq.flatMap(t => ir.map(i => new CreateListTypeRule(i, t)))
   }
 
-  new ChildrenStyleCommand("paragraphs", Seq.empty, Some(data.Node.ChildrenType.Paragraphs))
-  new ChildrenStyleCommand("ordered list, ol", Seq("1. "), Some(data.Node.ChildrenType.OrderedList))
-  new ChildrenStyleCommand("unordered list, ul", Seq("+ ", "* "), Some(data.Node.ChildrenType.UnorderedList))
-  new ChildrenStyleCommand("dash list, dl", Seq("- "), Some(data.Node.ChildrenType.DashList))
+  new ListStyleCommand("ordered list, ol", Seq("1. "), Some(data.Node.ListType.OrderedList))
+  new ListStyleCommand("unordered list, ul", Seq("+ ", "* "), Some(data.Node.ListType.UnorderedList))
+  new ListStyleCommand("dash list, dl", Seq("- "), Some(data.Node.ListType.DashList))
 
 
 

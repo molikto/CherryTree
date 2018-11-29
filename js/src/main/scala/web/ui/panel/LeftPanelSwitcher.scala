@@ -109,7 +109,7 @@ class LeftPanelSwitcher(private val cl: Client,
     } else if (active == tags) {
       new TagsPanel(cl, doc, quickSearch, latexMacroCache).attachToNode(container)
     } else if (active == undoHistory) {
-      new UndoHistoryPanel(cl).attachToNode(container)
+      new UndoHistoryPanel(cl, doc).attachToNode(container)
     } else {
       null
     }

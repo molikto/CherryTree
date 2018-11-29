@@ -6,7 +6,6 @@ import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
 import util.QuickDiff
 import web.ui.content.ContentView
-import web.ui.doc.DocFramer
 import web.view.View
 
 

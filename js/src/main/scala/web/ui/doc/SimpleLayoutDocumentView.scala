@@ -3,7 +3,7 @@ package web.ui.doc
 import api.PermissionLevel
 import command.Key
 import doc.{DocInterface, DocState}
-import model.data.Node.ContentType
+import model.data.NodeType
 import model.{cursor, data, range}
 import model.data.{Node => _, _}
 import model.mode.Content.RichInsert
@@ -237,7 +237,7 @@ class SimpleLayoutDocumentView(
     parent.insertBefore(box, firstChild)
     val hold = tag("div")(contenteditable := "false", cls := "ct-d-hold").render
     parent.insertBefore(hold, firstChild)
-    contentViewCreate(root.content, root.contentType, canEditNode(root)).attachToNode(box)
+    contentViewCreate(root.content, canEditNode(root)).attachToNode(box)
     val list = div(cls := "ct-d-childlist").render
     // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
     // LATER our doc transaction/fold handling is MESSY!!!
@@ -283,12 +283,12 @@ class SimpleLayoutDocumentView(
   }
 
   def renderTransaction(s: DocState, t: model.operation.Node, to: DocState, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
-    def replaceContent(at: model.cursor.Node, c: model.data.Node, contentType: Option[ContentType]) = {
+    def replaceContent(at: model.cursor.Node, c: model.data.Node, contentType: Option[NodeType]) = {
       val previousContent = contentAt(at)
       val p = previousContent.dom.parentNode
       val before = previousContent.dom.nextSibling
       previousContent.destroy()
-      contentViewCreate(c.content, contentType, canEditNode(c)).attachToNode(p, before.asInstanceOf[HTMLElement])
+      contentViewCreate(c.content, canEditNode(c)).attachToNode(p, before.asInstanceOf[HTMLElement])
     }
 
     t match {
@@ -308,8 +308,8 @@ class SimpleLayoutDocumentView(
       case model.operation.Node.AttributeChange(at, _, _) =>
         if (s.visible(at)) {
           val old = to.node(at)
-          if (!contentViewMatches(old.content, old.contentType, contentAt(at))) {
-            replaceContent(at, old, to.node(at).contentType)
+          if (!contentViewMatches(old.content, contentAt(at))) {
+            replaceContent(at, old, to.node(at).nodeType)
           }
           boxAt(at).className = classesFromNodeAttribute(to.node(at))
           val fr = frameAt(at)
@@ -319,7 +319,7 @@ class SimpleLayoutDocumentView(
       case model.operation.Node.Replace(at, c) =>
         if (s.visible(at)) {
           val node = to.node(at)
-          replaceContent(at, node, node.contentType)
+          replaceContent(at, node, node.nodeType)
         }
       case model.operation.Node.Delete(r) =>
         if (s.viewAsNotFoldedAndNotHidden(r.parent)) {

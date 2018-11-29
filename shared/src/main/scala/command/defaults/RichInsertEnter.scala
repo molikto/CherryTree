@@ -26,9 +26,9 @@ class RichInsertEnter(settings: Settings) extends CommandCategory(settings,"rich
     override def available(a: DocState): Boolean = a.isNormal
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val pos = a.asContent
-      val (insertionPoint, ct) = insertPointAfter(a, pos)
+      val (insertionPoint, nt, h) = insertPointAfter(a, pos)
       DocTransaction(
-        Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.create().attribute(model.data.Node.ContentType, ct)))),
+        Seq(operation.Node.Insert(insertionPoint, Seq(model.data.Node.create().attribute(model.data.NodeType, nt).attribute(model.data.Node.HeadingLevel, h)))),
         Some(model.mode.Node.Content(insertionPoint, model.mode.Content.RichInsert(0))))
     }
 

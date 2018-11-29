@@ -20,7 +20,7 @@ class TagsPanel(val client: Client, doc: => View, quickSearch: => QuickSearchDia
   }) {
     override def contentOf(t: Text.HashTag): HTMLElement = {
       val data = model.data.Content.Rich(model.data.Rich(t.content))
-      val view = contentViewCreate(data, None).dom
+      val view = contentViewCreate(data).dom
       view.classList.add("ct-flat-selectable")
       val li: js.Function1[MouseEvent, _] =  (mouse: MouseEvent) => {
         quickSearch.showWithTag(t)

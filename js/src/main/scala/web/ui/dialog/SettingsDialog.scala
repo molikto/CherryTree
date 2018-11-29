@@ -9,7 +9,6 @@ import org.scalajs.dom.html.Input
 import org.scalajs.dom.raw._
 import scalatags.JsDom.all._
 import settings.{Settings, SettingsImpl, SpecialKeySettings}
-import web.ui.doc.{DocFramer, EditorView}
 import web.view.{CoveringOverlay, Overlay, OverlayLayer, OverlayT, UnselectableView}
 
 import scala.collection.mutable.ArrayBuffer

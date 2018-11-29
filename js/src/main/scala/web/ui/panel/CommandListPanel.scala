@@ -58,7 +58,7 @@ class CommandListPanel(val client: Client, doc: => View) extends UnselectableVie
                 paddingRight := "6px",
                 paddingTop := "4px",
                 paddingBottom := "4px",
-                i(cls := "ct-general-hold"),
+                i(cls := "ct-fold-arrow"),
                 div(marginLeft := "4px", name)
                 ).render
               h.addEventListener("click", onPanelClick)

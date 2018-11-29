@@ -197,7 +197,7 @@ class YankPaste(settings: Settings, isReadOnly: Boolean) extends CommandCategory
     override def select(selection: IntRange): Int = selection.until
 
     def putNode(a: DocState, at: cursor.Node, node: Seq[data.Node]): (operation.Node.Insert, mode.Node) = {
-      val (insertionPoint, _) = insertPointAfter(a, at)
+      val (insertionPoint, _, _) = insertPointAfter(a, at)
       (operation.Node.Insert(insertionPoint, node), mode.Node.Content(insertionPoint, node.head.content.defaultMode(settings.enableModal)))
     }
 

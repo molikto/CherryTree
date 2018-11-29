@@ -2,9 +2,9 @@ package web.ui.panel
 
 import client.Client
 import scalatags.JsDom.all._
-import web.view.{UnselectableView, removeAllChild}
+import web.view.{UnselectableView, View, removeAllChild}
 
-class UndoHistoryPanel(val client: Client) extends UnselectableView  {
+class UndoHistoryPanel(val client: Client, val doc: View) extends UnselectableView  {
 
 
   dom = div(

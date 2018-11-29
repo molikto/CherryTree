@@ -2,7 +2,6 @@ package web.ui.content
 
 import api.PermissionLevel
 import model.data
-import model.data.Node.ContentType
 import model.data.{Embedded, SourceCode}
 import model.range.IntRange
 import org.scalajs.dom
@@ -72,7 +71,7 @@ trait ContentViewCreator {
     null
   }
 
-  def contentViewMatches(a: data.Content, contentType: Option[ContentType], v: General): Boolean = {
+  def contentViewMatches(a: data.Content, v: General): Boolean = {
     (a, v.asInstanceOf[Any]) match {
       case (data.Content.Rich(r), v: RichView)  => true
       case (c: data.Content.Code, v: Code) => contentViewMatches(c.lang, v)
@@ -85,7 +84,7 @@ trait ContentViewCreator {
     *
     * @param editableInDoc should NOT change for a NODE for a user
     */
-  def contentViewCreate(a: data.Content, contentType: Option[ContentType], editableInDoc: Boolean = false): General = {
+  def contentViewCreate(a: data.Content, editableInDoc: Boolean = false): General = {
     (a match {
       case r: data.Content.Rich => new RichView(r, contentViewCreatedInDocument && editableInDoc, latexMacroCache)
       case s: data.Content.Code =>

@@ -5,7 +5,7 @@ import java.util.UUID
 import api.PermissionLevel
 import doc.{DocInterface, DocState}
 import model.data.Content
-import model.data.Node.ContentType
+import model.data.NodeType
 import model.mode.Node
 import model.operation
 import model.range.IntRange
@@ -17,7 +17,7 @@ import scalatags.JsDom.all.{s, _}
 import search.Search
 import settings.Settings
 import web.{Implicits, ui}
-import web.ui.content.{ContentView, ContentViewEditor, RichView}
+import web.ui.content.{ContentView, ContentViewCreator, ContentViewEditor, RichView}
 import web.view._
 import web.ui.dialog._
 
@@ -32,7 +32,7 @@ object DocumentView {
 /**
   * NOTE: this class only use the doc framer for class attributes, nothing more!
   */
-abstract class DocumentView extends View with EditorView with Implicits with DocFramer
+abstract class DocumentView extends View with EditorView with Implicits with ContentViewCreator
 {
   import DocumentView._
 
@@ -457,6 +457,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
     val ee = contentOfHold(hold)
     val cur = cursorOf(ee)
     val node = client.state.node(cur)
+    val contentType = client.state.nodeType(cur)
     client.getNodeInfo(node.uuid).onComplete(res => {
       val info = res match {
         case Success(Some(i)) =>
@@ -468,8 +469,8 @@ abstract class DocumentView extends View with EditorView with Implicits with Doc
       }
 
       hold.title = (info ++ Seq(
-          node.contentType.map("content type: " + _.toString).getOrElse(""),
-          node.attribute(model.data.Node.ChildrenType).map("children type: " + _.toString).getOrElse(""),
+          s"content type: ${contentType.name}",
+          node.attribute(model.data.Node.ListType).map("list type: " + _.toString).getOrElse(""),
           s"items: ${node.count}",
           s"text size: ${node.content.size}",
           s"total text size: ${node.size}"

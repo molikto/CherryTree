@@ -24,7 +24,7 @@ class SourceView(
   private val preCode = pre(cls := "ct-code-pre cm-s-oceanic-next").render
 
   private val remainingView = p(
-    cls := "ct-sans ct-hint-color",
+    cls := "ct-ui-font ct-hint-color",
     marginTop := "0px",
     marginLeft := "4px",
     marginBottom := "4px",
