@@ -197,14 +197,11 @@ package object util {
           case a if isHeadingTag(a) =>
             val b = new ArrayBuffer[data.Node]()
             val (_, title) = collectParagraph(c.firstChild)
-            var bb = data.Node.create().copy(content = title, childs = b).attribute(data.Node.ContentType, data.Node.ContentType.Heading(headingLevel(c.nodeName)))
+            var bb = data.Node.create().copy(content = title, childs = b).attribute(data.NodeType, data.NodeType.Heading).attribute(data.Node.HeadingLevel, headingLevel(c.nodeName))
             if (c.nextSibling != null) {
               c = collectTo(b, c.nextSibling, headingLevel(c.nodeName)) // collect until that
             } else {
               c = null
-            }
-            if (!bb.has(data.Node.ChildrenType)) {
-              bb = bb.attribute(data.Node.ChildrenType, data.Node.ChildrenType.Paragraphs)
             }
             buffer.append(bb)
           case "P" =>
@@ -215,14 +212,14 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.Node.ContentType, data.Node.ContentType.Cite)
+              .attribute(data.NodeType, data.NodeType.Block)
             )
             c = c.nextSibling
           case "PRE" =>
             buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.textContent), SourceCode("javascript")))) // TODO get source somewhere
             c = c.nextSibling
           case "HR" =>
-            buffer.append(data.Node.create().attribute(data.Node.ContentType, data.Node.ContentType.Hr))
+            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Divider))
             c = c.nextSibling
           case "OL" | "UL" =>
             val b = new ArrayBuffer[data.Node]()
@@ -238,8 +235,8 @@ package object util {
             } else {
               data.Node.create().copy(childs = b)
             }
-            buffer.append(tt.attribute(data.Node.ChildrenType,
-              if (c.nodeName == "OL") data.Node.ChildrenType.OrderedList else data.Node.ChildrenType.UnorderedList))
+            buffer.append(tt.attribute(data.Node.ListType,
+              if (c.nodeName == "OL") data.Node.ListType.OrderedList else data.Node.ListType.UnorderedList))
             c = c.nextSibling
           case "DL" =>
             val b = new ArrayBuffer[data.Node]()
@@ -260,7 +257,7 @@ package object util {
             } else {
               data.Node.create().copy(childs = b)
             }
-            buffer.append(tt.attribute(data.Node.ChildrenType, data.Node.ChildrenType.UnorderedList))
+            buffer.append(tt.attribute(data.Node.ListType, data.Node.ListType.UnorderedList))
             c = c.nextSibling
           case "META" | "#comment" |"#cdata-section" =>
             c = c.nextSibling
@@ -371,12 +368,10 @@ package object util {
           case "heading" =>
             val b = new ArrayBuffer[data.Node]()
             val title = collectParagraph(c.firstChild)
-            var bb = data.Node.create().copy(content = title, childs = b).attribute(data.Node.ContentType, data.Node.ContentType.Heading(c.level))
+
+            var bb = data.Node.create().copy(content = title, childs = b).attribute(data.NodeType, data.NodeType.Heading).attribute(data.Node.HeadingLevel, c.level)
             if (c.next != null) {
               c = collectTo(b, c.next, c.level) // collect until that
-            }
-            if (!bb.has(data.Node.ChildrenType)) {
-              bb = bb.attribute(data.Node.ChildrenType, data.Node.ChildrenType.Paragraphs)
             }
             buffer.append(bb)
           case "paragraph" =>
@@ -386,7 +381,7 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.Node.ContentType, data.Node.ContentType.Cite)
+              .attribute(data.NodeType, data.NodeType.Block)
             )
             c = c.next
           case "code_block" =>
@@ -399,7 +394,7 @@ package object util {
             c = c.next
           case "thematic_break" =>
             assert(c.firstChild == null)
-            buffer.append(data.Node.create().attribute(data.Node.ContentType, data.Node.ContentType.Hr))
+            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Divider))
             c = c.next
           case "list" => // LATER support dash list
             val b = new ArrayBuffer[data.Node]()
@@ -416,8 +411,8 @@ package object util {
             } else {
               data.Node.create().copy(childs = b)
             }
-            buffer.append(tt.attribute(data.Node.ChildrenType,
-              if (c.listType == "Ordered") data.Node.ChildrenType.OrderedList else data.Node.ChildrenType.UnorderedList))
+            buffer.append(tt.attribute(data.Node.ListType,
+              if (c.listType == "Ordered") data.Node.ListType.OrderedList else data.Node.ListType.UnorderedList))
             c = c.next
         }
       }

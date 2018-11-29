@@ -2,14 +2,16 @@ package command.defaults
 
 import client.Client.ViewMessage
 import client.{CreateListTypeRule, InputRule, NodeTypeRule}
-import command.{CommandCategory, CommandInterface}
+import command.{CommandCategory, CommandInterface, Motion}
 import command.Key.{KeySeq, Shift}
 import doc.{DocState, DocTransaction}
 import model._
-import model.data.{CodeType, Content, Text}
+import model.data.{CodeType, Content, Text, Unicode}
 import model.range.IntRange
 import settings.Settings
 import command.Key._
+import model.data.Node.HeadingLevel
+import model.operation.Node.AttributeChange
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -42,7 +44,7 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
 
 
-  class ContentStyleCommand(desc: String, ir: Seq[String], to: data.NodeType) extends TextualCommand {
+  class NodeTypeCommand(desc: String, ir: Seq[String], to: data.NodeType) extends TextualCommand {
     override val description: String = s"node type: $desc"
     override protected def available(a: DocState): Boolean = a.isSingle && a.canChangeTo(a.asSingle, to)
 
@@ -54,25 +56,41 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
   }
 
 
-  new ContentStyleCommand("outliner", Seq.empty, data.NodeType.Outliner)
+  for (i <- 1 to 6) {
+    new Command {
+      override val description: String = s"change heading level to $i"
+      override def defaultKeys: Seq[KeySeq] = Seq.empty
 
-  new ContentStyleCommand("article", Seq.empty, data.NodeType.Article)
+      override protected def available(a: DocState): Boolean = a.isSingle && a.node(a.asSingle).isHeading
 
-  new ContentStyleCommand("heading", Seq("= "), data.NodeType.Heading)
+      override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
+        DocTransaction(Seq(AttributeChange(a.asSingle, HeadingLevel, Some(i))), None)
+      }
+    }
+  }
 
-  new ContentStyleCommand("block", Seq("> "), data.NodeType.Block)
 
-  new ContentStyleCommand("hr", Seq("___"), data.NodeType.Divider)
+  new NodeTypeCommand("outliner", Seq.empty, data.NodeType.Outliner)
 
-  new ContentStyleCommand("paragraph", Seq.empty, data.NodeType.Paragraph)
+  new NodeTypeCommand("article", Seq.empty, data.NodeType.Article)
 
-  new ContentStyleCommand("list item, li", Seq.empty, data.NodeType.Li)
+  new NodeTypeCommand("heading", Seq("= "), data.NodeType.Heading)
 
-  new ContentStyleCommand("parent of paragraphs", Seq.empty, data.NodeType.LiParagraphs)
+  new NodeTypeCommand("block", Seq("> "), data.NodeType.Block)
+
+  new NodeTypeCommand("hr", Seq("___"), data.NodeType.Divider)
+
+  new NodeTypeCommand("paragraph", Seq.empty, data.NodeType.Paragraph)
+
+  new NodeTypeCommand("list item, li", Seq.empty, data.NodeType.Li)
+
+  new NodeTypeCommand("list", Seq.empty, data.NodeType.List)
+
+  new NodeTypeCommand("multi-paragraph list item", Seq.empty, data.NodeType.LiParagraphs)
 
   class ListStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ListType]) extends TextualCommand {
     override val description: String = s"list style: $desc"
-    override protected def available(a: DocState): Boolean = a.isSingle && a.nodeType(a.asSingle).isList
+    override protected def available(a: DocState): Boolean = a.isSingle && a.nodeAndType(a.asSingle).isList
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asSingle
       DocTransaction(

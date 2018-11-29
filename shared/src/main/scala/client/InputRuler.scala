@@ -28,31 +28,31 @@ abstract class InputRule(val a: String) {
    override def shortDesc: String = ""
  }
 
-class ContentTypeRule(a: String, ty: data.Node.ContentType) extends InputRule(Pattern.quote(a)) {
+class NodeTypeRule(a: String, ty: data.NodeType) extends InputRule(Pattern.quote(a)) {
   override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
-    if (pos == a.length) {
-      doc.changeContentType(at, Some(ty), Seq(operation.Node.rich(at, operation.Rich.delete(start, end))))
+    if (pos == a.length && doc.canChangeTo(at, ty)) {
+      doc.changeNodeTypeHeadingLevel(at, ty, Seq(operation.Node.rich(at, operation.Rich.delete(start, end))))
     } else {
       DocTransaction.empty
     }
   }
   override def shortDesc: String = a
-  override def longDesc: String = "typing at the beginning of a node to change to content type"
+  override def longDesc: String = "typing at the beginning of a node to change to node type"
 }
 
 
-class ParentChildrenTypeRule(a: String, ty: data.Node.ChildrenType) extends InputRule(Pattern.quote(a)) {
+class CreateListTypeRule(a: String, ty: data.Node.ListType) extends InputRule(Pattern.quote(a)) {
   override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
-    if (pos == a.length && at != doc.zoom) {
-      val par = model.cursor.Node.parent(at)
-      if (doc.node(par).attribute(data.Node.ChildrenType).getOrElse(data.Node.ChildrenType.UnorderedList) != ty) {
-        return DocTransaction(
-          Seq(
-            operation.Node.rich(at, operation.Rich.delete(start, end)),
-            operation.Node.AttributeChange(par, data.Node.ChildrenType, Some(ty))),
-          None)
-      }
-    }
+//    if (pos == a.length && at != doc.zoom && doc.childCanBeLists(model.cursor.Node.parent(at))) {
+//      val par = model.cursor.Node.parent(at)
+//      if (doc.node(par).attribute(data.Node.ListType).getOrElse(data.Node.ListType.UnorderedList) != ty) {
+//        return DocTransaction(
+//          Seq(
+//            operation.Node.rich(at, operation.Rich.delete(start, end)),
+//            operation.Node.AttributeChange(par, data.Node.ListType, Some(ty))),
+//          None)
+//      }
+//    }
     DocTransaction.empty
   }
   override def shortDesc: String = a

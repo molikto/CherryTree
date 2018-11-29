@@ -3,8 +3,10 @@ package doc
 import java.util.UUID
 
 import client.Client.ViewMessage
+import doc.DocState.NodeAndType
 import model.{cursor, data, mode, operation, transaction}
 import model.cursor.Node
+import model.data.NodeType
 import model.data.{Atom, Rich}
 import model.mode.Content.CodeInside
 import model.range.IntRange
@@ -14,6 +16,9 @@ import settings.Settings
 object DocState {
   private case class SearchCache(search: Search, mode: model.mode.Node, enableModal: Boolean) {
     var res: Seq[SearchOccurrence] = null
+  }
+  case class NodeAndType(val node: model.data.Node, folderType: NodeType, nodeType: NodeType) {
+    def isList = nodeType.isList(folderType)
   }
 }
 
@@ -25,17 +30,107 @@ case class DocState private (
   userFoldedNodes: Map[UUID, Boolean]
 ) {
 
-  def changeContentType(cur: cursor.Node,
-    to: Option[data.Node.ContentType],
-    opts: transaction.Node = Seq.empty
+  val rootNodeType = node.attribute(NodeType)
+      .filter(NodeType.folders.contains).getOrElse(NodeType.folders.head)
+
+  def nodeAndType(a: model.cursor.Node): NodeAndType = {
+    var t = rootNodeType
+    var folderType = t
+    var depth = 0
+    var n = node
+    while (depth < a.length) {
+      n = n.childs(a(depth))
+      t = n.attribute(NodeType).getOrElse(t.defaultChildrenType(folderType))
+      if (t.isFolder) folderType = t
+      depth += 1
+    }
+    NodeAndType(n, folderType, t)
+  }
+
+  def nodeType(a: model.cursor.Node) = {
+    var t = rootNodeType
+    var folderType = t
+    var depth = 0
+    var n = node
+    while (depth < a.length) {
+      n = n.childs(a(depth))
+      t = n.attribute(NodeType).getOrElse(t.defaultChildrenType(folderType))
+      if (t.isFolder) folderType = t
+      depth += 1
+    }
+    t
+  }
+
+  def allowedChildrenType(a: model.cursor.Node) = {
+    var t = rootNodeType
+    var j = rootNodeType.allowedChildrenType(t)
+    var folderType = t
+    var depth = 0
+    var n = node
+    while (depth < a.length) {
+      n = n.childs(a(depth))
+      t = n.attribute(NodeType).getOrElse(t.defaultChildrenType(folderType))
+      if (t.isFolder) folderType = t
+      j = t.allowedChildrenType(folderType)
+      depth += 1
+    }
+    j
+  }
+
+  def defaultChildrenType(a: model.cursor.Node) = {
+    var t = rootNodeType
+    var j = rootNodeType.defaultChildrenType(t)
+    var folderType = t
+    var depth = 0
+    var n = node
+    while (depth < a.length) {
+      n = n.childs(a(depth))
+      t = n.attribute(NodeType).getOrElse(j)
+      if (t.isFolder) folderType = t
+      j = t.defaultChildrenType(folderType)
+      depth += 1
+    }
+    j
+  }
+
+
+  def canBe(cur: model.cursor.Node, c: NodeType): Boolean = {
+    if (cur == model.cursor.Node.root) {
+      c.isFolder
+    } else {
+      allowedChildrenType(model.cursor.Node.parent(cur)).contains(c)
+    }
+  }
+
+  def canChangeTo(a: Node, c: NodeType): Boolean = if (nodeType(a) == c) false else canBe(a, c)
+
+  def changeNodeTypeHeadingLevel(cur: cursor.Node,
+                                 to: data.NodeType,
+                                 opts: transaction.Node = Seq.empty
   ): DocTransaction = {
-    val chidlren = if (!node(cur).has(data.Node.ChildrenType)) {
-      to.flatMap(_.preferredChildrenType).map(a => operation.Node.AttributeChange(cur, data.Node.ChildrenType, Some(a))).toSeq
+    val tt = if (cur == model.cursor.Node.root) Some(to) else if (defaultChildrenType(model.cursor.Node.parent(cur)) == to) None else Some(to)
+    val nc = node(cur)
+    val headingOp = if (tt.nonEmpty && nc.heading.isEmpty) { // we better find what's the parent heading level
+      if (to.isHeading == 1) {
+        val parentNode = node(model.cursor.Node.parent(cur))
+        val toHeading = parentNode.heading.map(_ + 1)
+            .orElse(parentNode.childs.flatMap(_.heading).headOption)
+        toHeading match {
+          case Some(i) =>
+            Seq(operation.Node.AttributeChange(cur, data.Node.HeadingLevel, toHeading))
+          case None =>
+            Seq.empty
+        }
+      } else if (to.isHeading == 2) {
+        Seq(operation.Node.AttributeChange(cur, data.Node.HeadingLevel, Some(1)))
+      } else {
+        Seq.empty
+      }
     } else {
       Seq.empty
     }
     DocTransaction(
-      opts ++ Seq(operation.Node.AttributeChange(cur, data.Node.ContentType, to)) ++ chidlren, None)
+      opts ++ Seq(operation.Node.AttributeChange(cur, data.NodeType, tt)) ++ headingOp, None)
   }
 
   def nodeRefRelative(uuid: UUID, zoomToEmpty: Boolean = true): String = {

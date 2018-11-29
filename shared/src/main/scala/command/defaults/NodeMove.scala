@@ -26,17 +26,13 @@ class NodeMove(settings: Settings) extends CommandCategory(settings,"node: move"
   }
 
   abstract class IndentCommand extends  Command {
-    override def available(a: DocState): Boolean = a.mode match {
-      case None => false
-      case Some(model.mode.Node.Content(_, model.mode.Content.CodeInside(_, _))) => false
-      case _ => true
-    }
-    def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node]
+    override def available(a: DocState): Boolean = a.mode.isDefined
+    def targetTo(a: DocState, node: range.Node): Option[cursor.Node]
 
 
     override def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       def act(r: range.Node) = {
-        val target = targetTo(a.mover(), r)
+        val target = targetTo(a, r)
         val trans = target.toSeq.flatMap(to =>  {
            changeHeadingLevel(a, r, model.cursor.Node.parent(to)) :+ operation.Node.Move(r, to)
         })
@@ -55,17 +51,24 @@ class NodeMove(settings: Settings) extends CommandCategory(settings,"node: move"
   new IndentCommand {
     override val description: String = "unindent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Shift + Tab, Ctrl + "h", "<")
-    override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
+    override def targetTo(a: DocState, node: range.Node): Option[cursor.Node] = {
+      val mover = a.mover()
       mover.parent(node.start).flatMap(p => {
         mover.parent(p).map(pp => pp :+ (p.last + 1))
       })
+    }
 
   }
   new IndentCommand {
     override val description: String = "indent the node"
     override def defaultKeys: Seq[KeySeq] = Seq(Tab, Ctrl + "l", ">")
-    override def targetTo(mover: cursor.Node.Mover, node: range.Node): Option[cursor.Node] =
+
+    override def available(a: DocState): Boolean = super.available(a)
+
+    override def targetTo(a: DocState, node: range.Node): Option[cursor.Node] = {
+      val mover = a.mover()
       mover.previous(node.start).map(a => a :+ mover.size(a))
+    }
   }
   new MoveCommand {
     override val description: String = "swap with next sibling"

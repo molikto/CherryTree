@@ -15,7 +15,6 @@ import scala.scalajs.js
 
 trait DocFramer extends ContentViewCreator {
 
-  val docFramerIsSmall: Int = 0
   val docFramerExtraClass: String = ""
 
   protected val parentHeadingLevel: Int = -1
@@ -91,7 +90,7 @@ trait DocFramer extends ContentViewCreator {
       display := "flex",
       flexDirection := "row",
       div(
-        cls := classesFromNodeAttribute(node),
+        cls := classesFromNodeAttribute(NodeType.Article, node, node.nodeType.getOrElse(NodeType.Li)),
         create(node)
       ),
       tag("span")(
@@ -105,43 +104,9 @@ trait DocFramer extends ContentViewCreator {
   }
 
   def updateContentViewAndHoldAttribute(a: HTMLElement, node: model.data.Node): Unit = {
-    a.childNodes(0).asInstanceOf[HTMLElement].className = classesFromNodeAttribute(node)
+    a.childNodes(0).asInstanceOf[HTMLElement].className =
+        classesFromNodeAttribute(NodeType.Article, node, node.nodeType.getOrElse(NodeType.Li))
   }
 
-  def classesFromNodeAttribute(node: model.data.Node): String = {
-    "ct-d-box " + (node.contentType.map {
-      case model.data.Node.ContentType.Cite => "ct-d-cite"
-      case model.data.Node.ContentType.Hr => "ct-d-hr"
-      case model.data.Node.ContentType.Heading(j) =>
-        val headingStr = if (parentHeadingLevel == -1 || j == parentHeadingLevel + 1) {
-          "ct-d-heading"
-        } else {
-          "ct-d-heading-error"
-        }
-        if (docFramerIsSmall == 0) {
-          if (j > 1) s"$headingStr ct-d-h$j" else s"ct-d-h1"
-        } else if (docFramerIsSmall == 1) {
-          if (j > 1) s"$headingStr ct-d-hs${if (j >= 4) "s" else j.toString}" else s"ct-d-hs1"
-        } else {
-          if (j > 1) headingStr else s"ct-d-h1"
-        }
-      case _ => ""
-    }.getOrElse("") + " " + node.attribute(model.data.Node.ChildrenType).map {
-      case model.data.Node.ChildrenType.UnorderedList => "ct-d-ul"
-      case model.data.Node.ChildrenType.OrderedList => "ct-d-ol"
-      case model.data.Node.ChildrenType.Paragraphs => "ct-d-ps"
-      case model.data.Node.ChildrenType.DashList => "ct-d-dl"
-      case _ => ""
-    }.getOrElse("") + " " + (node.priority.getOrElse(0) match {
-      case a if a <= -3 => "ct-p-n3plus"
-      case -2 => "ct-p-n2"
-      case -1 => "ct-p-n1"
-      case 0 => ""
-      case 1 => "ct-p-1"
-      case 2 => "ct-p-2"
-      case 3 => "ct-p-3"
-      case 4 => "ct-p-4"
-      case _ => "ct-p-5plus"
-    }))
-  }
+
 }

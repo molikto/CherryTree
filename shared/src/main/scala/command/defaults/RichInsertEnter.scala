@@ -4,7 +4,9 @@ import client.Client
 import command.{CommandCategory, CommandInterface}
 import command.Key._
 import doc.{DocState, DocTransaction}
+import model.data.Node.HeadingLevel
 import model.data.Rich
+import model.operation.Node.AttributeChange
 import model.range.IntRange
 import model.{cursor, operation}
 import settings.Settings
@@ -44,6 +46,7 @@ class RichInsertEnter(settings: Settings) extends CommandCategory(settings,"rich
         // LATER wrap?
         DocTransaction.empty
       } else {
+        a.node(pos).heading.map(h => AttributeChange(pos, HeadingLevel, h))
         DocTransaction(
           Seq(operation.Node.Insert(pos, Seq(model.data.Node.create()))),
           Some(model.mode.Node.Content(pos, model.mode.Content.RichInsert(0))))
