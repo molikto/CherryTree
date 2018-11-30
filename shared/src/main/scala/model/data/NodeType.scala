@@ -100,10 +100,10 @@ object NodeType extends NodeTag[NodeType] {
 
 
 
-  override private[model] val name = "type"
+  override private[model] val name = "content_type"
 
   override private[model] def parse(aa: JsValue) = aa match {
-    case JsString(a) => all.find(_.id == a).get
+    case JsString(a) => all.find(_.id == a).getOrElse(Li)
     case _ => throw new IllegalStateException("Not possible")
   }
 
