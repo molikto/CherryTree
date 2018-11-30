@@ -28,14 +28,9 @@ object NodeType extends NodeTag[NodeType] {
   private var all = Seq.empty[NodeType]
   lazy val folders = all.filter(_.isHeading == 2)
 
-  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Block, Divider, Outline)
+  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Cite, Hr, Outline)
   lazy val lis: Seq[NodeType] = Seq(Li)
   lazy val ois: Seq[NodeType] = Seq(Li, Heading, Outline, Article)
-
-  // these are defaults
-  trait Passive extends NodeType {
-
-  }
 
   case object Article extends NodeType {
     override def id: String = "article"
@@ -67,26 +62,26 @@ object NodeType extends NodeTag[NodeType] {
     override def shouldInsertAtChildOnOpenBellow: Boolean = true
   }
 
-  case object Block extends NodeType {
+  case object Cite extends NodeType {
     override def id: String = "block"
     override def name: String = "block"
     override def allowedChildrenType(folderType: NodeType) = ps
     override def shouldInsertAtChildOnOpenBellow: Boolean = true
   }
 
-  case object Paragraph extends NodeType with Passive {
+  case object Paragraph extends NodeType {
     override def id: String = "paragraph"
     override def name: String = "paragraph"
     override def allowedChildrenType(folderType: NodeType) = lis
     override def contentCanBeCode: Boolean = true
   }
 
-  case object Divider extends NodeType {
+  case object Hr extends NodeType {
     override def id: String = "divider"
     override def name: String = "divider, rule, hr"
   }
 
-  case object Li extends NodeType with Passive {
+  case object Li extends NodeType {
     override def id: String = "li"
     override def name: String = "list item, li"
     override def allowedChildrenType(folderType: NodeType) =

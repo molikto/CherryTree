@@ -212,14 +212,14 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.NodeType, data.NodeType.Block)
+              .attribute(data.NodeType, data.NodeType.Cite)
             )
             c = c.nextSibling
           case "PRE" =>
             buffer.append(data.Node.create().copy(content = Content.Code(Unicode(c.textContent), SourceCode("javascript")))) // TODO get source somewhere
             c = c.nextSibling
           case "HR" =>
-            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Divider))
+            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Hr))
             c = c.nextSibling
           case "OL" | "UL" =>
             val b = new ArrayBuffer[data.Node]()
@@ -381,7 +381,7 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.NodeType, data.NodeType.Block)
+              .attribute(data.NodeType, data.NodeType.Cite)
             )
             c = c.next
           case "code_block" =>
@@ -394,7 +394,7 @@ package object util {
             c = c.next
           case "thematic_break" =>
             assert(c.firstChild == null)
-            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Divider))
+            buffer.append(data.Node.create().attribute(data.NodeType, data.NodeType.Hr))
             c = c.next
           case "list" => // LATER support dash list
             val b = new ArrayBuffer[data.Node]()
