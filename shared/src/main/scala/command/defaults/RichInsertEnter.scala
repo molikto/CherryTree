@@ -46,7 +46,7 @@ class RichInsertEnter(settings: Settings) extends CommandCategory(settings,"rich
         // LATER wrap?
         DocTransaction.empty
       } else {
-        a.node(pos).heading.map(h => AttributeChange(pos, HeadingLevel, h))
+        a.node(pos).heading.map(h => AttributeChange(pos, HeadingLevel, Some(h)))
         DocTransaction(
           Seq(operation.Node.Insert(pos, Seq(model.data.Node.create()))),
           Some(model.mode.Node.Content(pos, model.mode.Content.RichInsert(0))))

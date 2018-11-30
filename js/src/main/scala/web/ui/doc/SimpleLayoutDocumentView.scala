@@ -33,7 +33,6 @@ class SimpleLayoutDocumentView(
 
 
   private val rootFrame = div(
-    cls := "ct-document-style ct-d-frame",
     width := "100%"
   ).render
 
@@ -49,69 +48,59 @@ class SimpleLayoutDocumentView(
     */
   //   frame = rootframe
   //     box
+  //       hold
   //       content
-  //       child list
-  //         frame...
-  //         frame...
-  //         frame...
-  //     hold
+  //     child-list
+  //       frame ...
   //    nonEditable...
 
   private def frameAt(at: model.cursor.Node): HTMLElement = {
     if (rootFrame == this.rootFrame) assert(currentDoc == null || currentDoc.inViewport(at), s"not in viewport $at, current view port is $currentZoom")
     def rec(a: Node, b: model.cursor.Node): Node = {
       if (b.isEmpty) a
-      else rec(a.childNodes(0).childNodes(1).childNodes(b.head), b.tail)
+      else rec(a.childNodes(1).childNodes(b.head), b.tail)
     }
     rec(rootFrame, at.drop(currentZoom.size)).asInstanceOf[HTMLElement]
   }
 
-  private def boxAt(at: model.cursor.Node): HTMLElement = {
-    frameAt(at).childNodes(0).asInstanceOf[HTMLElement]
-  }
-
-  private def boxOf(frame: HTMLElement): HTMLElement = {
-    frame.childNodes(0).asInstanceOf[HTMLElement]
-  }
-
   private def childListAt(at: model.cursor.Node): HTMLElement = {
-    boxAt(at).childNodes(1).asInstanceOf[HTMLElement]
+    frameAt(at).childNodes(1).asInstanceOf[HTMLElement]
   }
 
   private def childListOf(frame: HTMLElement): HTMLElement = {
-    boxOf(frame).childNodes(1).asInstanceOf[HTMLElement]
+    frame.childNodes(1).asInstanceOf[HTMLElement]
   }
 
   private def frameInList(parent: HTMLElement, at: Int) = parent.childNodes(at).asInstanceOf[HTMLElement]
 
 
   private def holdAt(at: model.cursor.Node): HTMLElement = {
-    frameAt(at).childNodes(1).asInstanceOf[HTMLElement]
+    frameAt(at).childNodes(0).childNodes(0).asInstanceOf[HTMLElement]
   }
 
   private def holdOf(at: HTMLElement): HTMLElement = {
-    at.childNodes(1).asInstanceOf[HTMLElement]
+    at.childNodes(0).childNodes(0).asInstanceOf[HTMLElement]
   }
 
-  override protected def contentOfHold(a: Node): ContentView.General = View.fromDom(a.previousSibling.firstChild)
+  override protected def contentOfHold(a: Node): ContentView.General = View.fromDom(a.nextSibling)
 
   private def contentOf(frame: HTMLElement): ContentView.General = {
-    val v = boxOf(frame).childNodes(0).asInstanceOf[HTMLElement]
+    val v = frame.childNodes(0).childNodes(1).asInstanceOf[HTMLElement]
     View.fromDom[ContentView.General](v)
   }
 
   override protected def contentAt(at: model.cursor.Node): ContentView.General = {
-    val v = boxAt(at).childNodes(0).asInstanceOf[HTMLElement]
+    val v = frameAt(at).childNodes(0).childNodes(1).asInstanceOf[HTMLElement]
     View.fromDom[ContentView.General](v)
   }
 
   override protected  def cursorOf[T <: model.data.Content, O <: model.operation.Content](a: ContentView[T, O]): model.cursor.Node = {
-    def rec(a: Node): Seq[Int] = {
-      val frame = a.parentNode.parentNode
+    def rec(frame: Node): Seq[Int] = {
       if (frame == rootFrame) {
         currentZoom
       } else {
-        val parent = frame.parentNode.childNodes
+        val list = frame.parentNode
+        val parent = list.childNodes
         var i = -1
         var j = 0
         while (i < 0 && j < parent.length) {
@@ -120,10 +109,10 @@ class SimpleLayoutDocumentView(
           }
           j += 1
         }
-        rec(frame.parentNode) :+ i
+        rec(list.parentNode) :+ i
       }
     }
-    rec(a.dom)
+    rec(a.dom.parentNode.parentNode)
   }
 
   private var previousNodeVisual: ArrayBuffer[Element] = new ArrayBuffer[Element]()
@@ -135,14 +124,14 @@ class SimpleLayoutDocumentView(
     val overall = model.cursor.Node.minimalRange(v.fix, v.move)
     overall match {
       case None =>
-        val rd = boxAt(currentZoom)
+        val rd = frameAt(currentZoom)
         newVisual.append(rd)
-      case Some(range) => range.foreach(c => newVisual.append(boxAt(c)))
+      case Some(range) => range.foreach(c => newVisual.append(frameAt(c)))
     }
     (newVisual -- previousNodeVisual).foreach(_.classList.add("ct-node-visual"))
     (previousNodeVisual -- newVisual).foreach(_.classList.remove("ct-node-visual"))
     previousNodeVisual = newVisual
-    val newMove = boxAt(v.move)
+    val newMove = frameAt(v.move)
     if (newMove != previousNodeMove) {
       if (previousNodeMove != null) previousNodeMove.classList.remove("ct-node-visual-move")
       previousNodeMove = newMove
@@ -199,14 +188,12 @@ class SimpleLayoutDocumentView(
 
 
 
-  private def toggleHoldRendering(cur: model.cursor.Node, node: model.data.Node, frame0: Node, childlist: Node, hold0: Node, fold: Boolean): Unit = {
-    val hold = hold0.asInstanceOf[HTMLElement]
+  private def toggleHoldRendering(doc: DocState, cur: model.cursor.Node, node: model.data.Node, frame0: Node, childlist: Node, fold: Boolean): Unit = {
     val frame = frame0.asInstanceOf[HTMLElement]
     val cl = if (childlist == null) null else childlist.asInstanceOf[HTMLElement]
     if (fold) {
       if (!frame.classList.contains("ct-d-folded")) {
         frame.classList.add("ct-d-folded")
-        hold.classList.add("ct-d-hold-folded")
         if (cl != null) {
           destroyContents(cl, 0, cl.childNodes.length)
           removeAllChild(cl)
@@ -215,8 +202,7 @@ class SimpleLayoutDocumentView(
     } else {
       if (frame.classList.contains("ct-d-folded")) {
         frame.classList.remove("ct-d-folded")
-        hold.classList.remove("ct-d-hold-folded")
-        if (cl != null) insertNodes(cur, cl, 0, node.childs)
+        if (cl != null) insertNodes(doc, cur, cl, 0, node.childs)
       }
     }
   }
@@ -225,20 +211,19 @@ class SimpleLayoutDocumentView(
 
   private def insertNodeRec(folderType: model.data.NodeType, cur: model.cursor.Node, root: model.data.Node, rootType: model.data.NodeType, parent: html.Element): Unit = {
     val firstChild = parent.firstChild
-    val box = div(cls := classesFromNodeAttribute(folderType, root, rootType)).render
+    val box = div(cls := "ct-box").render
     parent.insertBefore(box, firstChild)
-    val hold = tag("div")(contenteditable := "false", cls := "ct-d-hold").render
-    parent.insertBefore(hold, firstChild)
+    val hold = tag("div")(contenteditable := "false", cls := "ct-hold").render
+    hold.addEventListener("mouseover", handleHoverEvent)
+    box.appendChild(hold)
     contentViewCreate(root.content, canEditNode(root)).attachToNode(box)
     val list = div(cls := "ct-d-childlist").render
-    // LATER mmm... this is a wired thing. can it be done more efficiently, like not creating the list at all?
-    // LATER our doc transaction/fold handling is MESSY!!!
-    hold.addEventListener("mouseover", handleHoverEvent)
-    box.appendChild(list)
+    parent.insertBefore(list, firstChild)
     val folded = currentDoc.viewAsFolded(root)
-    toggleHoldRendering(cur, root, parent, null, hold, folded)
-    if (!folded) {
-      insertNodes(cur, list, 0, root.childs)
+    if (folded) {
+     parent.classList.add("ct-d-folded")
+    } else {
+      insertNodes(folderType, cur, rootType, list, 0, root.childs)
     }
   }
 
@@ -269,6 +254,7 @@ class SimpleLayoutDocumentView(
 
   def renderAll(): Unit = {
     val NodeAndType(node, folder, nt) = currentDoc.nodeAndType(currentZoom)
+    rootFrame.className = classesFromNodeAttribute(folder, node, nt)
     insertNodeRec(folder, currentZoom, node, nt, rootFrame)
   }
 
@@ -281,27 +267,49 @@ class SimpleLayoutDocumentView(
                          ): Unit = {
     val before = if (at == list.childNodes.length) null else  list.childNodes.apply(at)
     contents.zipWithIndex.foreach(a => {
-      val frame = div(cls := "ct-d-frame").render
-      list.insertBefore(frame, before)
       val nF = a._1.attribute(NodeType).filter(_.isFolder).getOrElse(folderType)
       val pt = a._1.nodeType(nF, parentType)
+      val frame = div(cls := classesFromNodeAttribute(nF, a._1, pt)).render
+      list.insertBefore(frame, before)
       insertNodeRec(nF, parentCur :+ a._2, a._1, pt, frame)
     })
   }
 
-  private def insertNodes(parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
-    val NodeAndType(node, folderType, parentType) =  currentDoc.nodeAndType(parentCur)
+  private def insertNodes(doc: DocState, parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
+    val NodeAndType(node, folderType, parentType) =  doc.nodeAndType(parentCur)
     insertNodes(folderType, parentCur, parentType, list, at, contents)
   }
 
 
   def toggleHold(a: model.cursor.Node, visible: Boolean): Unit = {
     val fr = frameAt(a)
-    toggleHoldRendering(a, currentDoc.node(a), fr, childListOf(fr), holdOf(fr), visible)
+    toggleHoldRendering(currentDoc, a, currentDoc.node(a), fr, childListOf(fr), visible)
   }
 
-  def syncNodeType(list: HTMLElement, from: Int, size: Int, folder: NodeType, t: NodeType) = {
+  def syncNodeType(list: HTMLElement, from: Int, ns: Seq[model.data.Node], folder: NodeType, t: NodeType): Unit = {
+    if (list.childNodes.length > 0) {
+      for (i <- from until (from + ns.size)) {
+        val n = ns(i - from)
+        val frame = frameInList(list, i)
+        val nt = n.nodeType(folder, t)
+        modifyClassNameExceptFold(frame, classesFromNodeAttribute(folder, n, nt))
+        val cl = childListOf(frame)
+        if (nt.isFolder) {
+          // no need to sync anymore, because it is already correct
+        } else {
+          syncNodeType(cl, 0, n.childs, folder, nt)
+        }
+      }
+    }
+  }
 
+  def modifyClassNameExceptFold(frame: HTMLElement, str: String) = {
+    if (frame.classList.contains("ct-d-folded")) {
+      frame.className = str
+      frame.classList.add("ct-d-folded")
+    } else {
+      frame.className = str
+    }
   }
 
   def renderTransaction(s: DocState, t: model.operation.Node, to: DocState, viewUpdated: Boolean, editorUpdated: Boolean): Unit = {
@@ -335,10 +343,9 @@ class SimpleLayoutDocumentView(
           }
           val NodeAndType(node, folder, t) = to.nodeAndType(at)
           val frame = frameAt(at)
-          boxOf(frame).className = classesFromNodeAttribute(folder, node, t)
-          syncNodeType(childListOf(frame), 0, node.size, folder, t)
-          val fr = frameAt(at)
-          toggleHoldRendering(at, old, fr, childListOf(fr), holdOf(fr), to.viewAsFolded(at))
+          modifyClassNameExceptFold(frame, classesFromNodeAttribute(folder, node, t))
+          toggleHoldRendering(s, at, old, frame, childListOf(frame), to.viewAsFolded(at))
+          syncNodeType(childListOf(frame), 0, node.childs, folder, t)
           clearNodeVisual() // previous is not valid maybe
         }
       case model.operation.Node.Replace(at, c) =>
@@ -354,7 +361,7 @@ class SimpleLayoutDocumentView(
         val pCur = model.cursor.Node.parent(at)
         if (s.visible(at)) {
           val root = childListAt(pCur)
-          insertNodes(pCur, root, at.last, childs)
+          insertNodes(s, pCur, root, at.last, childs)
         }
       case model.operation.Node.Move(range, to) =>
         val toP = model.cursor.Node.parent(to)
@@ -367,14 +374,14 @@ class SimpleLayoutDocumentView(
           nodes.foreach(n => {
             toParent.insertBefore(n, before)
           })
-          syncNodeType(toParent, to.last, to.last + range.size, folder, pt)
+          syncNodeType(toParent, to.last, s.node(range), folder, pt)
         } else if (s.viewAsNotFoldedAndNotHidden(range.parent)) {
           removeNodes(range)
         } else if (s.visible(to)) {
           val data = s.node(range)
           val p = model.cursor.Node.parent(to)
           val root = childListAt(p)
-          insertNodes(p, root, to.last, data)
+          insertNodes(s, p, root, to.last, data)
         }
     }
   }

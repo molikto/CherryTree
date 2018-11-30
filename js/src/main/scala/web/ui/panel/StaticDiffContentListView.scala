@@ -33,8 +33,6 @@ class StaticDiffContentListView(
   override val docFramerExtraClass: String = "ct-flat-selectable"
 
 
-  override val useFoldedIcon: Boolean = true
-
   def size: Int = list.childNodes.length - headerSize
 
   protected override def eq(a: Node, b: Node): Boolean = a.content == b.content && a.attributes == b.attributes

@@ -73,7 +73,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Con
 
   dom = div(
     position := "relative",
-    cls := "ct-scroll ct-document-view-root",
+    cls := "ct-scroll ct-document-view-root ct-document-style",
     flex := "1 1 auto",
     paddingLeft := "36px",
     paddingRight := "36px",
@@ -760,7 +760,7 @@ abstract class DocumentView extends View with EditorView with Implicits with Con
 
   event("click", (a: MouseEvent) => {
     a.target match {
-      case element: HTMLElement if element.className.contains("ct-d-hold") =>
+      case element: HTMLElement if element.className.contains("ct-hold") =>
         clearAllPreviousReading() // if mouseup is before us
       val ct = contentOfHold(element)
         endMouseDown(a, false, false)

@@ -43,7 +43,6 @@ a:hover {
     bottom: 100%;
     border: none;
     border-radius: 0px !important;
-    font-size: 15px;
     background: #212529b8;
 }
 
@@ -52,7 +51,7 @@ a:hover {
 }
 
 [class^='ion-'] {
-    font-size: 1.2em;
+    font-size: 1.2rem;
 }
 
 .has-feedback .form-control-feedback {
@@ -85,13 +84,13 @@ a:hover {
 
 .secondary-text {
   margin-bottom : 0px;
-  font-size: 13px;
+  font-size: 0.8rem;
   color: #cccccc;
 }
 
 .secondary-text-button {
   margin-bottom : 0px;
-  font-size: 13px;
+  font-size: 0.8rem;
   color: #cccccc;
   cursor: pointer;
 }
@@ -142,22 +141,21 @@ meter::-webkit-meter-optimum-value {
 /**
 
 part that is in editor before, but extracted
+        font-family: 'Gentium Book Basic', serif, sans-serif;
 */
 
 .ct-document-style {
   word-wrap: break-word;
   white-space: pre-wrap;
-        font-family: 'Gentium Book Basic', serif, sans-serif;
 }
 
 .ct-cg {
     font-style: normal;
     color: #636e83;
     font-weight:normal;
-        font-family: 'Gentium Book Basic', serif, sans-serif;
 }
 
 .ct-rich {
     margin-bottom: 0rem;
-    font-size: 22px;
+    font-size: 1.2rem;
 }

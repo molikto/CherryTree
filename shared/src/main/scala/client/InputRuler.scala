@@ -30,6 +30,7 @@ abstract class InputRule(val a: String) {
 
 class NodeTypeRule(a: String, ty: data.NodeType) extends InputRule(Pattern.quote(a)) {
   override def create(doc: DocState, at: Node, pos: Int, start: Int, end: Int): DocTransaction = {
+    // TODO handle the case of divider, remove the previous empty node and insert a new one
     if (pos == a.length && doc.canChangeTo(at, ty)) {
       doc.changeNodeTypeHeadingLevel(at, ty, Seq(operation.Node.rich(at, operation.Rich.delete(start, end))))
     } else {

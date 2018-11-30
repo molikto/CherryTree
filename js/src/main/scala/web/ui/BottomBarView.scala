@@ -72,7 +72,7 @@ class BottomBarView(val client: Client) extends UnselectableView  {
   dom = div(
     width := "100%",
     cls := "ct-panel",
-    fontSize := "14px",
+    fontSize := "0.87rem",
     alignSelf := "flex-end",
     height := size + "px",
     flexDirection := "row",

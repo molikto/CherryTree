@@ -83,7 +83,7 @@ class QuickAccessPanel(client: Client, doc: => View, latexMacroCache: LaTeXMacro
     height := "100%",
     overflowY := "scroll",
     cls := "ct-scroll ct-panel ct-document-style ",
-    fontSize := "16px",
+    fontSize := "1rem",
     padding := "24px",
     parentsView,
     div(height := "24px"),

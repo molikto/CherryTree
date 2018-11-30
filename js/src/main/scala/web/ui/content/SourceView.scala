@@ -28,7 +28,7 @@ class SourceView(
     marginTop := "0px",
     marginLeft := "4px",
     marginBottom := "4px",
-    fontSize := "70%",
+    fontSize := "0.70rem",
     "").render
   dom = div(contenteditable := "false", preCode, remainingView).render
 

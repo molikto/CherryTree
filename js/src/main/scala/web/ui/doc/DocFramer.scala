@@ -24,7 +24,6 @@ trait DocFramer extends ContentViewCreator {
   val onClick: UUID => Unit = null
   val onDoubleClick: UUID => Unit = null
 
-  val useFoldedIcon: Boolean = false
 
   def contentViewFromWithHold(a: raw.Node): ContentView.General = {
     View.fromDom[ContentView.General](a.childNodes(0).childNodes(0))
@@ -94,7 +93,7 @@ trait DocFramer extends ContentViewCreator {
         create(node)
       ),
       tag("span")(
-        cls := (if (useFoldedIcon) "ct-d-hold ct-d-hold-folded " else "ct-d-hold "),
+        cls := "ct-hold",
         if (docFramerIsSmall >= 2) {
           marginLeft := "-8px"
           marginTop := "6px"

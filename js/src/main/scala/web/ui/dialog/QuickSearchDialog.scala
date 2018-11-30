@@ -59,7 +59,7 @@ class QuickSearchDialog(val client: Client,
     width := "100%",
     height := "calc(100% - 57px)",
     cls := "ct-scroll ct-document-style ct-panel",
-    div(cls := "ct-desc", fontSize := "15px", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc)
+    div(cls := "ct-desc", fontSize := "0.93rem", paddingLeft := "10px", paddingRight := "10px", paddingBottom := "8px", specialDesc)
   ).render
 
   dom = div(

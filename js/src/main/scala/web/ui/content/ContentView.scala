@@ -103,8 +103,9 @@ trait ContentViewCreator {
   private val sb = new StringBuilder()
   def classesFromNodeAttribute(folderType: NodeType, node: model.data.Node, nodeType: NodeType): String = {
     sb.setLength(0)
-    sb.append("ct-d-box ct-d-")
+    sb.append("ct-d-")
     sb.append(nodeType.id)
+    if (nodeType.isFolder) sb.append(" ct-folder")
     if (nodeType.isHeading != 0) {
       val j = node.heading.getOrElse(7)
       sb.append(if (docFramerIsSmall == 0) {

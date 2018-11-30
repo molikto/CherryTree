@@ -6,7 +6,7 @@ import model._
 import Type.Type
 import com.softwaremill.quicklens._
 import doc.DocState
-import model.data.NodeTag
+import model.data.{NodeTag, NodeType}
 import model.range.IntRange
 import play.api.libs.json.{JsNull, JsObject, JsValue}
 

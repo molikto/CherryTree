@@ -70,21 +70,19 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
   }
 
 
-  new NodeTypeCommand("outliner", Seq.empty, data.NodeType.Outliner)
+  new NodeTypeCommand("outline", Seq.empty, data.NodeType.Outline)
 
   new NodeTypeCommand("article", Seq.empty, data.NodeType.Article)
 
   new NodeTypeCommand("heading", Seq("= "), data.NodeType.Heading)
 
-  new NodeTypeCommand("block", Seq("> "), data.NodeType.Block)
+  new NodeTypeCommand("block, blockquote", Seq("> "), data.NodeType.Block)
 
-  new NodeTypeCommand("hr", Seq("___"), data.NodeType.Divider)
+  new NodeTypeCommand("divider, hr", Seq("___"), data.NodeType.Divider)
 
   new NodeTypeCommand("paragraph", Seq.empty, data.NodeType.Paragraph)
 
   new NodeTypeCommand("list item, li", Seq.empty, data.NodeType.Li)
-
-  new NodeTypeCommand("list", Seq.empty, data.NodeType.List)
 
   new NodeTypeCommand("multi-paragraph list item", Seq.empty, data.NodeType.LiParagraphs)
 

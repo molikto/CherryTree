@@ -59,7 +59,7 @@ private [content] class CodeViewEditor(
   import contentView._
 
   override def updateMode(aa: model.mode.Content.Code, viewUpdated: Boolean, editorUpdated: Boolean, fromUser: Boolean): Unit = {
-    dom.classList.add("ct-selection")
+    dom.classList.add("ct-node-selection")
     if (fromUser) {
       web.view.scrollInToViewIfNotVisible(dom, documentView.dom)
     }
@@ -78,7 +78,7 @@ private [content] class CodeViewEditor(
 
   override def clearMode(): Unit = {
     removeEditor()
-    dom.classList.remove("ct-selection")
+    dom.classList.remove("ct-node-selection")
   }
 
   contentView.defer(_ => {
