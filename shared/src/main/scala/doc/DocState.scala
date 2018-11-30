@@ -106,7 +106,7 @@ case class DocState private (
     val cur = nodeType(a)
     // for nodes cannot have content, you cannot change to them, you can just insert them
     // also you cannot change back from them, because you have undo...
-    if (!cur.allowContent || !c.allowContent || cur == c) false else canBe(a, c)
+    if (cur == c) false else canBe(a, c)
   }
 
   def changeNodeTypeHeadingLevel(cur: cursor.Node,

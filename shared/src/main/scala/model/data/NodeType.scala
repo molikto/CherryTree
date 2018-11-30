@@ -11,15 +11,6 @@ sealed trait NodeType {
   def id: String
   def name: String
 
-  /**
-    * Phantom nodes don't get deleted, Phantom nodes is created as Phantom, and exists as Phantom,
-    * and don't die (by user editing, server might die them)
-    *
-    * this is locally determinatable (a node is phantom or not is decided by it's attribute only, and by default it is false)
-    *
-    * so, a node that is a default children type of some other node cannot be a phantom)
-    */
-  def allowContent: Boolean = true
   def isFolder = isHeading == 2
   def isHeading: Int = 0
   def shouldInsertAtChildOnOpenBellow: Boolean = false
@@ -37,8 +28,8 @@ object NodeType extends NodeTag[NodeType] {
   private var all = Seq.empty[NodeType]
   lazy val folders = all.filter(_.isHeading == 2)
 
-  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Block, List, Divider, Outline)
-  lazy val lis: Seq[NodeType] = Seq(Li, LiParagraphs)
+  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Block, Divider, Outline)
+  lazy val lis: Seq[NodeType] = Seq(Li)
   lazy val ois: Seq[NodeType] = Seq(Li, Heading, Outline, Article)
 
   // these are defaults
@@ -86,32 +77,13 @@ object NodeType extends NodeTag[NodeType] {
   case object Paragraph extends NodeType with Passive {
     override def id: String = "paragraph"
     override def name: String = "paragraph"
-    override def allowContent: Boolean = true
-    override def allowedChildrenType(folderType: NodeType) = Seq.empty
+    override def allowedChildrenType(folderType: NodeType) = lis
     override def contentCanBeCode: Boolean = true
   }
 
   case object Divider extends NodeType {
     override def id: String = "divider"
     override def name: String = "divider, rule, hr"
-    override def allowContent: Boolean = false
-  }
-
-
-  case object List extends NodeType {
-    override def id: String = "list"
-    override def name: String = "list"
-    override def allowContent: Boolean = false
-    override def allowedChildrenType(folderType: NodeType) = lis
-    override def isList(folderType: NodeType): Boolean = true
-    override def shouldInsertAtChildOnOpenBellow: Boolean = true
-  }
-
-  case object LiParagraphs extends NodeType {
-    override def id: String = "lip"
-    override def name: String = "multi-paragraph list item"
-    override def allowContent: Boolean = false
-    override def allowedChildrenType(folderType: NodeType) = ps
   }
 
   case object Li extends NodeType with Passive {

@@ -84,8 +84,6 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   new NodeTypeCommand("list item, li", Seq.empty, data.NodeType.Li)
 
-  new NodeTypeCommand("multi-paragraph list item", Seq.empty, data.NodeType.LiParagraphs)
-
   class ListStyleCommand(desc: String, ir: Seq[String], to: Option[data.Node.ListType]) extends TextualCommand {
     override val description: String = s"list style: $desc"
     override protected def available(a: DocState): Boolean = a.isSingle && a.nodeAndType(a.asSingle).isList
