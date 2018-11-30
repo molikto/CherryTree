@@ -28,7 +28,7 @@ object NodeType extends NodeTag[NodeType] {
   private var all = Seq.empty[NodeType]
   lazy val folders = all.filter(_.isHeading == 2)
 
-  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Cite, Hr, Outline)
+  private lazy val ps: Seq[NodeType] = Seq(Paragraph, Heading, Article, Block, Hr, Outline)
   lazy val lis: Seq[NodeType] = Seq(Li)
   lazy val ois: Seq[NodeType] = Seq(Li, Heading, Outline, Article)
 
@@ -62,7 +62,7 @@ object NodeType extends NodeTag[NodeType] {
     override def shouldInsertAtChildOnOpenBellow: Boolean = true
   }
 
-  case object Cite extends NodeType {
+  case object Block extends NodeType {
     override def id: String = "block"
     override def name: String = "block"
     override def allowedChildrenType(folderType: NodeType) = ps

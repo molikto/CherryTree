@@ -85,20 +85,20 @@ trait DocFramer extends ContentViewCreator {
 
   def contentViewAndHold(node: model.data.Node): HTMLElement = {
     div(
-      cls := "ct-d-folded",
+      cls := "ct-folded ct-frame",
       display := "flex",
       flexDirection := "row",
       div(
         cls := classesFromNodeAttribute(NodeType.Article, node, node.nodeType.getOrElse(NodeType.Li)),
+        tag("span")(
+          cls := "ct-hold",
+          if (docFramerIsSmall >= 2) {
+            marginLeft := "-8px"
+            marginTop := "6px"
+          } else border := "none"
+        ),
         create(node)
       ),
-      tag("span")(
-        cls := "ct-hold",
-        if (docFramerIsSmall >= 2) {
-          marginLeft := "-8px"
-          marginTop := "6px"
-        } else border := "none"
-      )
     ).render
   }
 

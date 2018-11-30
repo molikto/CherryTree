@@ -212,7 +212,7 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.NodeType, data.NodeType.Cite)
+              .attribute(data.NodeType, data.NodeType.Block)
             )
             c = c.nextSibling
           case "PRE" =>
@@ -381,7 +381,7 @@ package object util {
             val b = new ArrayBuffer[data.Node]()
             collectTo(b, c.firstChild, 0) // collect until that
             buffer.append(data.Node.create().copy(childs = b)
-              .attribute(data.NodeType, data.NodeType.Cite)
+              .attribute(data.NodeType, data.NodeType.Block)
             )
             c = c.next
           case "code_block" =>

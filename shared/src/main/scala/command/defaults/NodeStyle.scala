@@ -76,7 +76,7 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   new NodeTypeCommand("heading", Seq("= "), data.NodeType.Heading)
 
-  new NodeTypeCommand("block, blockquote", Seq("> "), data.NodeType.Cite)
+  new NodeTypeCommand("block, blockquote", Seq("> "), data.NodeType.Block)
 
   new NodeTypeCommand("divider, hr", Seq("___"), data.NodeType.Hr)
 

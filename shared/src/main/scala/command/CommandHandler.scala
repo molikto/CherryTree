@@ -234,6 +234,8 @@ class CommandHandler(client: Client) extends CommandInterface {
                 buffer.clear()
                 buffer.append(p2)
                 rec(waitForStrong)
+              case c =>
+                markUnknownPattern()
             }
           } else {
             tryMergeThenRec()
@@ -343,7 +345,6 @@ class CommandHandler(client: Client) extends CommandInterface {
           case Key.Grapheme(g) => buffer.append(Part.Char(g))
           case _ =>
             if (miscCommands.exit.keys.contains(Seq(key))) {
-              buffer.clear()
               buffer.append(Part.IdentifiedCommand(Some(Seq(key)), miscCommands.exit, Seq.empty))
             } else {
               buffer.append(Part.UnknownCommand(Seq(key)))
@@ -374,9 +375,14 @@ class CommandHandler(client: Client) extends CommandInterface {
         }
     }
 
-    val hasExit = buffer.exists {
+    val exists = buffer.filter {
       case IdentifiedCommand(k, c, _) if c == miscCommands.exit => true
       case _ => false
+    }
+    val hasExit = exists.nonEmpty
+    if (hasExit) {
+      buffer.clear()
+      buffer.appendAll(exists)
     }
     val res = tryComplete(true)
     if (hasExit) buffer.clear()

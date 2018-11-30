@@ -382,7 +382,7 @@ CLIENT VIEW
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4iPHBhdGggZmlsbD0iIzU1NWM3NSIgZD0iTTI1NiA4QzExOSA4IDggMTE5IDggMjU2czExMSAyNDggMjQ4IDI0OCAyNDgtMTExIDI0OC0yNDhTMzkzIDggMjU2IDh6Ii8+PC9zdmc+ ) /* fas(solid/circle) */;
 }
 
-.ct-d-folded > div > .ct-hold {
+.ct-folded > div > .ct-hold {
     opacity: 1;
 }
 
@@ -484,11 +484,11 @@ CLIENT VIEW
 
 
 
-.ct-d-folded.ct-folder > div > .ct-rich {
+.ct-folded.ct-folder > div > .ct-rich {
     font-size: 1rem !important;
 }
 
-.ct-d-folded.ct-folder > div > .ct-hold {
+.ct-folded.ct-folder > div > .ct-hold {
     margin-top: 4px !important;
 }
 

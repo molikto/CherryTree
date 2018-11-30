@@ -192,16 +192,16 @@ class SimpleLayoutDocumentView(
     val frame = frame0.asInstanceOf[HTMLElement]
     val cl = if (childlist == null) null else childlist.asInstanceOf[HTMLElement]
     if (fold) {
-      if (!frame.classList.contains("ct-d-folded")) {
-        frame.classList.add("ct-d-folded")
+      if (!frame.classList.contains("ct-folded")) {
+        frame.classList.add("ct-folded")
         if (cl != null) {
           destroyContents(cl, 0, cl.childNodes.length)
           removeAllChild(cl)
         }
       }
     } else {
-      if (frame.classList.contains("ct-d-folded")) {
-        frame.classList.remove("ct-d-folded")
+      if (frame.classList.contains("ct-folded")) {
+        frame.classList.remove("ct-folded")
         if (cl != null) insertNodes(doc, cur, cl, 0, node.childs)
       }
     }
@@ -221,7 +221,7 @@ class SimpleLayoutDocumentView(
     parent.insertBefore(list, firstChild)
     val folded = currentDoc.viewAsFolded(root)
     if (folded) {
-     parent.classList.add("ct-d-folded")
+     parent.classList.add("ct-folded")
     } else {
       insertNodes(folderType, cur, rootType, list, 0, root.childs)
     }
@@ -304,9 +304,9 @@ class SimpleLayoutDocumentView(
   }
 
   def modifyClassNameExceptFold(frame: HTMLElement, str: String) = {
-    if (frame.classList.contains("ct-d-folded")) {
+    if (frame.classList.contains("ct-folded")) {
       frame.className = str
-      frame.classList.add("ct-d-folded")
+      frame.classList.add("ct-folded")
     } else {
       frame.className = str
     }
