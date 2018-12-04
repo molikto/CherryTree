@@ -29,6 +29,7 @@ class StaticDiffTocView(
   override protected def onAddViewAndHold(view: HTMLElement, data: Node): Unit = {
     val od = new StaticDiffTocView(onClick, onDoubleClick, latexMacroCache, parentHeadingLevel + 1)
     od.update(data.childs)
+    od.dom.classList.add("ct-d-margin-left")
     insertExtraToContentView(view, od.dom)
   }
 

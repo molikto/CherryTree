@@ -26,18 +26,17 @@ trait DocFramer extends ContentViewCreator {
 
 
   def contentViewFromWithHold(a: raw.Node): ContentView.General = {
-    View.fromDom[ContentView.General](a.childNodes(0).childNodes(0))
+    View.fromDom[ContentView.General](a.childNodes(0).childNodes(1))
   }
 
 
 
   def insertExtraToContentView(a: HTMLElement, b: HTMLElement): Unit = {
-    val box = a.childNodes(0)
-    box.appendChild(b)
+    a.appendChild(b)
   }
 
   def extraViewInFrame(a: HTMLElement): HTMLElement = {
-    a.childNodes(0).childNodes(1).asInstanceOf[HTMLElement]
+    a.childNodes(1).asInstanceOf[HTMLElement]
   }
 
   def uuidOf(a: ContentView.General): UUID = {
@@ -85,11 +84,9 @@ trait DocFramer extends ContentViewCreator {
 
   def contentViewAndHold(node: model.data.Node): HTMLElement = {
     div(
-      cls := "ct-folded ct-frame",
-      display := "flex",
-      flexDirection := "row",
+      cls := "ct-folded ct-frame " + classesFromNodeAttribute(NodeType.Article, node, node.nodeType.getOrElse(NodeType.Li)),
       div(
-        cls := classesFromNodeAttribute(NodeType.Article, node, node.nodeType.getOrElse(NodeType.Li)),
+        cls := "ct-box",
         tag("span")(
           cls := "ct-hold",
           if (docFramerIsSmall >= 2) {
