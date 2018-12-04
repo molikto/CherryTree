@@ -322,9 +322,9 @@ case class Node(
         childs.map(_.toScalaTags)
       }
     attribute(NodeType) match {
-      case Some(NodeType.Heading(h)) =>
-        Seq(tag(s"h$h")(contentWithoutP), children(false))
-      case Some(NodeType.Cite) =>
+      case Some(NodeType.Heading) =>
+        Seq(tag(s"h${heading.getOrElse(6)}")(contentWithoutP), children(false))
+      case Some(NodeType.Block) =>
         blockquote(
           children(false),
           cite(contentWithoutP)

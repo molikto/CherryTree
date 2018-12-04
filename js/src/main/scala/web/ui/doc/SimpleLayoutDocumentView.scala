@@ -253,7 +253,7 @@ class SimpleLayoutDocumentView(
   }
 
   def renderAll(): Unit = {
-    val NodeAndType(node, folder, nt) = currentDoc.nodeAndType(currentZoom)
+    val NodeAndType(node, folder, _, nt) = currentDoc.nodeAndType(currentZoom)
     rootFrame.className = classesFromNodeAttribute(folder, node, nt)
     insertNodeRec(folder, currentZoom, node, nt, rootFrame)
   }
@@ -276,7 +276,7 @@ class SimpleLayoutDocumentView(
   }
 
   private def insertNodes(doc: DocState, parentCur: model.cursor.Node, list: HTMLElement, at: Int, contents: Seq[model.data.Node]): Unit = {
-    val NodeAndType(node, folderType, parentType) =  doc.nodeAndType(parentCur)
+    val NodeAndType(node, folderType, _, parentType) =  doc.nodeAndType(parentCur)
     insertNodes(folderType, parentCur, parentType, list, at, contents)
   }
 
@@ -341,7 +341,7 @@ class SimpleLayoutDocumentView(
           if (!contentViewMatches(old.content, contentAt(at))) {
             replaceContent(at, old)
           }
-          val NodeAndType(node, folder, t) = to.nodeAndType(at)
+          val NodeAndType(node, folder, _, t) = to.nodeAndType(at)
           val frame = frameAt(at)
           modifyClassNameExceptFold(frame, classesFromNodeAttribute(folder, node, t))
           toggleHoldRendering(s, at, old, frame, childListOf(frame), to.viewAsFolded(at))
@@ -366,7 +366,7 @@ class SimpleLayoutDocumentView(
       case model.operation.Node.Move(range, to) =>
         val toP = model.cursor.Node.parent(to)
         if (s.viewAsNotFoldedAndNotHidden(range.parent) && s.visible(to)) {
-          val NodeAndType(_, folder, pt) = s.nodeAndType(toP)
+          val NodeAndType(_, folder, _, pt) = s.nodeAndType(toP)
           val parent = childListAt(range.parent)
           val toParent = childListAt(toP)
           val nodes = range.childs.map(i => parent.childNodes.item(i)).toSeq

@@ -51,13 +51,14 @@ package object defaults {
     reg: Int = -1): (DocTransaction, Option[Registerable]) = {
     a.mode match {
       case Some(v@model.mode.Node.Visual(fix, _)) =>
-        val ns = v.minimalRange match {
-          case Some(k) => a.node(k)
+        val data = v.minimalRange match {
+          case Some(k) =>
+            val nt = a.nodeAndType(k.parent)
+            Registerable.Node(nt.folderType, nt.nodeType, nt.node(k.childs))
           case _ =>
             if (isDelete) return (DocTransaction.empty, None)
-            Seq(a.node)
+            Registerable.Node(a.node.nodeType.get, a.node.nodeType.get, Seq(a.node))
         }
-        val data = Registerable.Node(ns)
         commandState.registers.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           deleteNodeRange(a, commandState, v.minimalRange.get, enableModal, noHistory = true)
@@ -79,12 +80,12 @@ package object defaults {
         }
         (trans, Some(data))
       case Some(model.mode.Node.Content(pos, v@model.mode.Content.CodeNormal(_))) =>
-        val old = a.node(pos)
-        val data = Registerable.Node(Seq(old.copy(childs = Seq.empty)), None)
+        val old = a.nodeAndType(pos)
+        val data = Registerable.Node(old.folderType, old.parentType, Seq(old.node.copy(childs = Seq.empty)), None)
         commandState.registers.yank(data, isDelete = false, register = reg)
         val trans = if (isDelete) {
           DocTransaction(Seq(model.operation.Node.Replace(pos,
-            model.data.Content.Code(model.data.Unicode.empty, old.content.asInstanceOf[model.data.Content.Code].lang))), a.mode)
+            model.data.Content.Code(model.data.Unicode.empty, old.node.content.asInstanceOf[model.data.Content.Code].lang))), a.mode)
         } else {
           DocTransaction.empty
         }
@@ -100,11 +101,10 @@ package object defaults {
     register: Int = -1,
     noHistory: Boolean = false,
     goUp: Boolean = false): DocTransaction = {
-    val parent = a.node(rr.parent)
-    assert(rr.childs.until <= parent.childs.size)
     val r = rr
     if (!noHistory) {
-      commandState.registers.yank(Registerable.Node(a.node(rr), deletionFrom = Some(rr)), isDelete = true, register = register)
+      val nt = a.nodeAndType(rr.parent)
+      commandState.registers.yank(Registerable.Node(nt.folderType, nt.nodeType, nt.node(rr.childs), deletionFrom = Some(rr)), isDelete = true, register = register)
     }
     DocTransaction(Seq(operation.Node.Delete(r)), {
       val (nowPos, toPos) =

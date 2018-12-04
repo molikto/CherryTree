@@ -17,7 +17,7 @@ object DocState {
   private case class SearchCache(search: Search, mode: model.mode.Node, enableModal: Boolean) {
     var res: Seq[SearchOccurrence] = null
   }
-  case class NodeAndType(val node: model.data.Node, folderType: NodeType, nodeType: NodeType) {
+  case class NodeAndType(val node: model.data.Node, folderType: NodeType, parentType: NodeType, nodeType: NodeType) {
     def isList = nodeType.isList(folderType)
   }
 }
@@ -35,16 +35,20 @@ case class DocState private (
 
   def nodeAndType(a: model.cursor.Node): NodeAndType = {
     var t = rootNodeType
+    var p = t
     var folderType = t
     var depth = 0
     var n = node
     while (depth < a.length) {
       n = n.childs(a(depth))
+      p = t
       t = n.attribute(NodeType).getOrElse(t.defaultChildrenType(folderType))
-      if (t.isFolder) folderType = t
+      if (t.isFolder) {
+        folderType = t
+      }
       depth += 1
     }
-    NodeAndType(n, folderType, t)
+    NodeAndType(n, folderType, p, t)
   }
 
   def nodeType(a: model.cursor.Node) = {

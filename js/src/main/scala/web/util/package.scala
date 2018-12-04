@@ -3,7 +3,8 @@ package web
 import java.util.regex.Pattern
 
 import model.data
-import model.data.{Content, SourceCode, Text, Unicode, Embedded}
+import model.data._
+import model.data.Text
 import web.view._
 import org.scalajs.dom._
 import org.scalajs.dom.raw.{HTMLElement, HTMLImageElement, HTMLLinkElement, HTMLTextAreaElement}
@@ -281,7 +282,7 @@ package object util {
     collectTo(bf, root.firstChild,0)
     if (bf.isEmpty) Registerable.Text(Seq.empty)
     else if (bf.size == 1 && bf.head.childs.isEmpty && bf.head.content.isRich) Registerable.Text(bf.head.rich.text)
-    else Registerable.Node(bf, None)
+    else Registerable.Node(NodeType.Article, NodeType.Article, bf, None)
   }
 
 
