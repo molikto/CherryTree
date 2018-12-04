@@ -90,11 +90,6 @@ object NodeType extends NodeTag[NodeType] {
     override def contentCanBeCode: Boolean = true
   }
 
-
-
-
-
-
   override private[model] val name = "content_type"
 
   override private[model] def parse(aa: JsValue) = aa match {

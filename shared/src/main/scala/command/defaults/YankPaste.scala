@@ -69,7 +69,8 @@ class YankPaste(settings: Settings, isReadOnly: Boolean) extends CommandCategory
 
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val c = a.asContent
-      commandState.registers.yank(Registerable.Node(Seq(a.node(c))), isDelete = false)
+      val nt = a.nodeAndType(c)
+      commandState.registers.yank(Registerable.Node(nt.folderType, Seq(a.node(c))), isDelete = false)
       DocTransaction.empty
     }
   }
@@ -170,7 +171,7 @@ class YankPaste(settings: Settings, isReadOnly: Boolean) extends CommandCategory
         }
       }
       commandState.registers.retrieveSetRegisterAndSetToCloneNode(true) match {
-        case Some(Registerable.Node(n, range)) =>
+        case Some(Registerable.Node(_, _, n, range)) =>
           if (n.nonEmpty) {
             val (insertOp, mode) = putNode(a, cursor, if (range.isEmpty) data.Node.cloneNodes(n) else n)
             val pCur = model.cursor.Node.parent(insertOp.at)

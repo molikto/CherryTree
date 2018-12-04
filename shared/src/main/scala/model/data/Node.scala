@@ -321,23 +321,22 @@ case class Node(
       } else {
         childs.map(_.toScalaTags)
       }
-    ??? // TODO fix export ScalaTags
-//    attribute(NodeType) match {
-//      case Some(NodeType.Heading(h)) =>
-//        Seq(tag(s"h$h")(contentWithoutP), children(false))
-//      case Some(NodeType.Cite) =>
-//        blockquote(
-//          children(false),
-//          cite(contentWithoutP)
-//        )
-//      case Some(NodeType.Hr) =>
-//        Seq(hr)
-//      case _ =>
-//        if (hasWrapper)
-//          Seq(contentWithoutP, children(true))
-//        else
-//          Seq(p(contentWithoutP), children(true))
-//    }
+    attribute(NodeType) match {
+      case Some(NodeType.Heading(h)) =>
+        Seq(tag(s"h$h")(contentWithoutP), children(false))
+      case Some(NodeType.Cite) =>
+        blockquote(
+          children(false),
+          cite(contentWithoutP)
+        )
+      case Some(NodeType.Hr) =>
+        Seq(hr)
+      case _ =>
+        if (hasWrapper)
+          Seq(contentWithoutP, children(true))
+        else
+          Seq(p(contentWithoutP), children(true))
+    }
   }
 
   def toScalaTags: Frag = {
@@ -347,7 +346,7 @@ case class Node(
 
 object Node extends DataObject[Node] {
 
-  def toHtml(a: Seq[Node]): String =
+  def toHtml(ft: NodeType, pt: NodeType, a: Seq[Node]): String =
     if (a.isEmpty) ""
     else if (a.size == 1) a.head.toScalaTags.render
     else ul(a.map(a => li(a.toScalaTags))).render

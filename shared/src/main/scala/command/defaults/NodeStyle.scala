@@ -21,7 +21,7 @@ class NodeStyle(settings: Settings) extends CommandCategory(settings,"node: form
 
   new TextualCommand {
     override val description: String = "reset content to: code" // we don't want to reset root node to code, this will make document title display ugly...
-    override protected def available(a: DocState): Boolean = a.isRichNonSub && a.asSingle != model.cursor.Node.root
+    override protected def available(a: DocState): Boolean = a.isRichNonSub && { a.nodeType(a.asSingle).contentCanBeCode }
     override protected def action(a: DocState, commandState: CommandInterface, count: Int): DocTransaction = {
       val cur = a.asSingle
       DocTransaction(

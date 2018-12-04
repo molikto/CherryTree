@@ -1,6 +1,6 @@
 package register
 
-import model.data.Node
+import model.data.{Node, NodeType}
 import model.{data, range}
 
 sealed trait Registerable extends scala.AnyRef {
@@ -10,7 +10,7 @@ sealed trait Registerable extends scala.AnyRef {
 }
 
 object Registerable {
-  case class Node(a: Seq[data.Node], var deletionFrom: Option[range.Node] = None) extends Registerable {
+  case class Node(folderType: NodeType, parentType: NodeType, a: Seq[data.Node], var deletionFrom: Option[range.Node] = None) extends Registerable {
     override def isEmpty: Boolean = a.isEmpty
 
     override def equals(obj: scala.Any): Boolean = obj match {

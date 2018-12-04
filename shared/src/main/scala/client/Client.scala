@@ -750,9 +750,9 @@ class Client(
     data.map {
       case Registerable.Unicode(a) =>
         (None, Some(a.str), None)
-      case Registerable.Node(a, _) =>
+      case Registerable.Node(ft, pt, a, _) =>
         previousCopyId = Random.nextInt().toString
-        val html = model.data.Node.toHtml(a)
+        val html = model.data.Node.toHtml(ft, pt, a)
         (Some(html), Some(html): Option[String], Some(previousCopyId))
       case Registerable.Text(a) =>
         previousCopyId = Random.nextInt().toString

@@ -91,7 +91,7 @@ trait RegisterHandler extends RegisterInterface {
     }
     val reg = getRegisterable(set)
     val res = reg match {
-      case Some(r@Registerable.Node(a, deletionFrom)) =>
+      case Some(r@Registerable.Node(_, _, a, deletionFrom)) =>
         if (allowNode) {
           if (deletionFrom.isEmpty) {
             reg
@@ -179,11 +179,11 @@ trait RegisterHandler extends RegisterInterface {
       }
     }
     registerable match {
-      case Registerable.Node(na, deletionFrom) if deletionFrom.nonEmpty =>
+      case Registerable.Node(_, _, na, deletionFrom) if deletionFrom.nonEmpty =>
         registerables.flatMap(_._2).foreach(a => {
           if (a != registerable) {
             a match {
-              case b@Registerable.Node(nb, df) if df.nonEmpty =>
+              case b@Registerable.Node(_, _, nb, df) if df.nonEmpty =>
                 if (uuids(na).exists(uuids(nb))) {
                   b.deletionFrom = None
                 }
@@ -197,7 +197,7 @@ trait RegisterHandler extends RegisterInterface {
 
   def markAllAsNeedsClone(): Unit = {
     registerables.flatMap(_._2).foreach {
-      case b@Registerable.Node(nb, nc)  =>
+      case b@Registerable.Node(_, _, nb, nc)  =>
         b.deletionFrom = None
       case _ =>
     }

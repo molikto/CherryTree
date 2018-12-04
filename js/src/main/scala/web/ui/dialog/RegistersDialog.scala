@@ -66,7 +66,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
         t._2.map {
           case Registerable.Unicode(u) => code(cls := "ct-c-code", u.str)
           case Registerable.Text(u) => div(cls := "ct-document-style", contentViewCreate(model.data.Content.Rich(Rich(u))) : Frag)
-          case Registerable.Node(a, _) =>
+          case Registerable.Node(ft, pt, a, _) =>
             if (a.isEmpty) "": Frag
             else {
               val count = a.map(_.count).sum
@@ -76,7 +76,7 @@ class RegistersDialog(val client: Client, protected val layer: OverlayLayer,
                 div(
                   s"$count nodes",
                   div(
-                    cls := "ct-document-style",
+                    cls := "ct-document-style " + classesFromNodeAttribute(ft, a.head, a.head.nodeType(ft, pt)),
                     contentViewCreate(a.head.content)
                   )
                 )
