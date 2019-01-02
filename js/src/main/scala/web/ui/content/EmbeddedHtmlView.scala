@@ -1,10 +1,6 @@
 package web.ui.content
-import model._
-import model.data._
 import scalatags.JsDom.all._
 import web.view._
-
-import scala.scalajs.js
 
 private [content] class EmbeddedHtmlView(initData: model.data.Content.Code
 ) extends StaticCodeView  {

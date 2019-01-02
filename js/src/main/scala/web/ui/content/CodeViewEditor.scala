@@ -1,17 +1,11 @@
 package web.ui.content
 
-import model._
-import model.data._
 import model.mode.Content.CodeInside
-import settings.Settings
 import util.Rect
-import view.{EditorInterface, SourceEditInterface}
+import view.SourceEditInterface
 import web.ui.doc.DocumentView
 import web.view._
-import web.ui._
 import web.ui.dialog._
-
-import scala.scalajs.js
 
 
 private [content] class CodeViewEditor(
@@ -90,5 +84,4 @@ private [content] class CodeViewEditor(
   override def selectionRect: Rect = {
     toRect(dom.getBoundingClientRect())
   }
-
 }

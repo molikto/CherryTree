@@ -3,8 +3,6 @@ package web.ui.content
 import model._
 import org.scalajs.dom.raw.Event
 import util.Rect
-import web.view.View
-
 
 
 object ContentViewEditor {

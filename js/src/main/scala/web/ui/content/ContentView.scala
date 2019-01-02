@@ -1,13 +1,10 @@
 package web.ui.content
 
-import api.PermissionLevel
 import model.data
-import model.data.{Embedded, NodeType, SourceCode}
+import model.data.{Embedded, NodeType}
 import model.range.IntRange
-import org.scalajs.dom
 import org.scalajs.dom.raw
 import org.scalajs.dom.raw.HTMLElement
-import scalatags.JsDom.all.{cls, s}
 import view.EditorInterface
 import web.view.View
 import web.ui.doc.{DocumentView, LaTeXMacroCache}

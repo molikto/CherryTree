@@ -1,18 +1,12 @@
 package web.ui.doc
 
 import doc.DocState
-import model.data.{Content, LaTeXMacro, Node}
-import model.operation
-
-import scala.collection.mutable
 import scala.scalajs.js
-import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLElement
 import scalatags.JsDom.all._
 import web.ui._
 import web.ui.content._
 
-import scala.scalajs.js.|
 
 class LaTeXMacroException(message: String, cause: Throwable = null) extends Exception(message, cause)
 

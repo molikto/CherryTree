@@ -5,7 +5,6 @@ import java.util.UUID
 import model.data.{Text, Unicode}
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 trait RegisterInterface {
   def setRegister(a: Int): Unit

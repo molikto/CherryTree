@@ -2,23 +2,16 @@ package web.ui.content
 
 import model._
 import model.data._
-import model.mode.Content
-import model.mode.Content.RichVisual
 import model.range.IntRange
-import monix.execution.Cancelable
-import org.scalajs.dom
-import org.scalajs.dom.html.Paragraph
-import org.scalajs.dom.raw.{CompositionEvent, Element, Event, HTMLDivElement, HTMLElement, HTMLSpanElement, Node, Range}
-import org.scalajs.dom.{ClientRect, document, raw, window}
-import scalatags.JsDom.all._
+import org.scalajs.dom.raw.{Event, HTMLElement, HTMLSpanElement, Node, Range}
+import org.scalajs.dom.{document, raw, window}
 import util.Rect
-import view.{EditorInterface, RichEditInterface}
+import view.RichEditInterface
 import web.ui
 import web.ui.doc.DocumentView
 import web.view.{Overlay, _}
 import web.ui.dialog.{InlineCodeDialog, AttributeEditDialog}
 
-import scala.collection.mutable.ArrayBuffer
 import scala.scalajs.js
 
 private [content] class RichViewEditor(val documentView: DocumentView, val controller: RichEditInterface, override val contentView: RichView) extends ContentViewEditor[model.data.Content.Rich, model.operation.Content.Rich, model.mode.Content.Rich](contentView)  {

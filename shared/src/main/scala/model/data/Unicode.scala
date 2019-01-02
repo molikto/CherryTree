@@ -1,8 +1,5 @@
 package model.data
 
-import java.io.IOException
-import java.util.Locale
-import java.util.stream.IntStream
 
 import model._
 import model.range.IntRange
