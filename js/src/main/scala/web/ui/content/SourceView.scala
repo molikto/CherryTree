@@ -24,7 +24,7 @@ class SourceView(
   protected override def onUpdateContent(contentData: model.data.Content.Code) {
     removeAllChild(preCode)
     val sourceType = contentData.lang
-    val lines = contentData.unicode.str.lines
+    val lines = contentData.unicode.str.split('\n').toSeq
     val look = lines.take(5).toVector
     val remaining = lines.size
     val totalSize = remaining + look.size
