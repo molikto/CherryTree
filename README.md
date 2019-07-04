@@ -1,6 +1,12 @@
 # CherryTree
 
 
+A structural editor for rich text outliners, collaboratively
+
+Initially a project aimed as a commercial software, here is a demo for it: https://www.youtube.com/watch?v=97lAMRrAcF4&feature=youtu.be
+
+--------------
+
 compile/run/deploy as a standard Play app
 
 for local deployment, you need a Postgres database instance at `localhost:5432/cherrytree`, details see `application.conf`
