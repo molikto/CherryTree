@@ -39,7 +39,7 @@ class DocumentRepository@Inject() (protected val dbConfigProvider: DatabaseConfi
   import utils.MyPostgresProfile.plainApi._
 
   def create(userId: UUID, node: model.data.Node) = {
-    db.run(DBIO.seq(createDocumentQuery(userId, node, System.currentTimeMillis()) : _*).transactionally)
+    db.run(DBIO.seq(createDocumentQuery(userId, node, System.currentTimeMillis())._2 : _*).transactionally)
   }
 
 

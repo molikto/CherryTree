@@ -8,6 +8,7 @@ import com.mohiva.play.silhouette.impl.providers.{OAuth1Info, OAuth2Info, OpenID
 import model.{Pickle, Unpickle}
 import play.api.libs.json._
 import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
+import slick.sql.SqlAction
 
 
 package object repos {
@@ -87,13 +88,14 @@ package object repos {
 
   implicit val nodeInfoResult: GetResult[NodeInfo] = GetResult[NodeInfo](r => NodeInfo(r.<<, r.<<, Collaborator(r.<<, r.<<, r.<<)))
 
-  def createDocumentQuery(userId: UUID, node: model.data.Node, time: Long) = {
+  def createDocumentQuery(userId: UUID, node: model.data.Node, time: Long): (UUID, Seq[SqlAction[Int, NoStream, Effect]]) = {
     val documentId = UUID.randomUUID()
     val createDocument =
       sqlu"insert into documents values ($documentId, ${node.uuid}, $time, $time, ${0})"
     val createPermission =
       sqlu"insert into permissions values ($userId, $documentId, ${PermissionLevel.Owner})"
-    Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, UUID.randomUUID(), d))
+    val res = Seq(createDocument, createPermission) ++ model.operation.Node.createInsert(node).map(d => diffToQuery(userId, documentId, time, UUID.randomUUID(), d))
+    (documentId, res)
   }
 
   def diffToQuery(userId: UUID, did: UUID, time: Long, cid: UUID, a: model.operation.Node.Diff) = a match {
