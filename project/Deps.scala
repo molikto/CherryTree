@@ -1,7 +1,7 @@
 object Version {
   val boopickle = "1.3.0"
   val monocle = "1.4.0"
-  val scala = "2.12.6"
+  val scala = "2.12.9"
   val scalajsDom = "0.9.6"
   val scalajsScripts = "1.1.1"
   val silhouette = "5.0.5"
